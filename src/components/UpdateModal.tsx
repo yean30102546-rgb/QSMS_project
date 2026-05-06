@@ -6,9 +6,11 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle2, Clock, AlertCircle, Image, ImageOff, ExternalLink, FileText } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle, Image, ImageOff, ExternalLink, FileText, Download, FileImage } from 'lucide-react';
 import { ReworkCase } from '../services/api';
 import { formatThaiDate } from '../utils/helpers';
+import { useExportReport } from '../hooks/useExportReport';
+import { ExportTemplate } from './ExportTemplate';
 
 interface UpdateModalProps {
   isOpen: boolean;
@@ -30,6 +32,9 @@ export function UpdateModal({
   );
   // State สำหรับ lightbox (ดูรูปเต็มจอ)
   const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
+
+  // ===== Export Hook =====
+  const { exportRef, isExporting, exportProgress, exportPNG, exportPDF } = useExportReport();
 
   // Fix layout shift by managing body overflow
   React.useEffect(() => {
@@ -98,6 +103,7 @@ export function UpdateModal({
                       <p className="text-sm text-muted mt-1">{caseData?.id}</p>
                     </div>
                     <motion.button
+                      type="button"
                       onClick={onClose}
                       disabled={isLoading}
                       whileHover={{ scale: 1.1 }}
@@ -221,17 +227,23 @@ export function UpdateModal({
                                     <div className="space-y-1">
                                       <p className="text-[10px] font-bold text-muted uppercase">รูปภาพแนบ ({images.length}):</p>
                                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        {images.map((url, imgIndex) => (
+                                        {images.map((url, imgIndex) => {
+                                          let displayUrl = url;
+                                          const driveIdMatch = url.match(/id=([^&]+)/);
+                                          if (driveIdMatch && driveIdMatch[1]) {
+                                            displayUrl = `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
+                                          }
+                                          return (
                                           <motion.button
                                             key={imgIndex}
                                             type="button"
                                             whileHover={{ scale: 1.03 }}
                                             whileTap={{ scale: 0.97 }}
-                                            onClick={() => setLightboxUrl(url)}
+                                            onClick={() => setLightboxUrl(displayUrl)}
                                             className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-white hover:border-accent/50 transition-colors group cursor-zoom-in"
                                           >
                                             <img
-                                              src={url}
+                                              src={displayUrl}
                                               alt={`${item.itemName || 'Item'} - รูปที่ ${imgIndex + 1}`}
                                               className="w-full h-full object-cover"
                                               loading="lazy"
@@ -251,7 +263,7 @@ export function UpdateModal({
                                               </span>
                                             </div>
                                           </motion.button>
-                                        ))}
+                                        )})}
                                       </div>
                                     </div>
                                   )}
@@ -272,14 +284,15 @@ export function UpdateModal({
                         {(['Pending', 'In-Progress', 'Completed'] as const).map((status) => (
                           <motion.button
                             key={status}
+                            type="button"
                             onClick={() => setCaseStatus(status)}
                             disabled={isLoading}
                             whileHover={{ y: -2 }}
                             whileTap={{ y: 0 }}
                             transition={{ duration: 0.15 }}
                             className={`p-4 rounded-xl border-2 font-semibold disabled:opacity-50 transition-colors duration-200 will-change-transform ${caseStatus === status
-                                ? 'border-accent bg-accent/5 text-accent'
-                                : 'border-slate-200 text-muted hover:border-accent/50'
+                              ? 'border-accent bg-accent/5 text-accent'
+                              : 'border-slate-200 text-muted hover:border-accent/50'
                               }`}
                           >
                             {status === 'Pending' && (
@@ -298,32 +311,61 @@ export function UpdateModal({
                     </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="bg-slate-50 px-8 py-6 flex gap-4 border-t border-slate-200">
-                    <button
-                      onClick={onClose}
-                      disabled={isLoading}
-                      className="flex-1 py-3 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-100 active:bg-slate-200 transition-colors duration-200 disabled:opacity-50"
-                    >
-                      ยกเลิก
-                    </button>
-                    <motion.button
-                      onClick={handleUpdate}
-                      disabled={isLoading || !caseData}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      transition={{ duration: 0.15 }}
-                      className="flex-1 py-3 rounded-xl bg-accent text-white font-semibold hover:bg-black active:bg-black transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2 will-change-transform"
-                    >
-                      {isLoading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          กำลังบันทึก...
-                        </>
-                      ) : (
-                        'บันทึกการเปลี่ยนแปลง'
-                      )}
-                    </motion.button>
+                  {/* Footer — ปุ่ม Export (minimal) + ปุ่ม Action */}
+                  <div className="bg-slate-50 px-8 py-5 flex items-center justify-between border-t border-slate-200">
+                    {/* Export buttons (minimal icon + text) */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => caseData && exportPNG(caseData.id)}
+                        disabled={isExporting || !caseData}
+                        title="Export PNG"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <FileImage size={14} />
+                        PNG
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => caseData && exportPDF(caseData.id)}
+                        disabled={isExporting || !caseData}
+                        title="Export PDF"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Download size={14} />
+                        PDF
+                      </button>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isLoading}
+                        className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-50"
+                      >
+                        ยกเลิก
+                      </button>
+                      <motion.button
+                        type="button"
+                        onClick={handleUpdate}
+                        disabled={isLoading || !caseData}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        transition={{ duration: 0.15 }}
+                        className="px-6 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-black active:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 will-change-transform"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            กำลังบันทึก...
+                          </>
+                        ) : (
+                          'บันทึก'
+                        )}
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -369,6 +411,27 @@ export function UpdateModal({
           </>
         )}
       </AnimatePresence>
+
+      {/* ===== Export Overlay: แสดง Loading ขณะ Export ===== */}
+      <AnimatePresence>
+        {isExporting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] bg-black/60 flex items-center justify-center"
+          >
+            <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-xs w-full">
+              <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+              <p className="text-sm font-semibold text-foreground">กำลัง Export...</p>
+              <p className="text-xs text-muted text-center">{exportProgress}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== Ghost Export Template (ซ่อนจาก UI) ===== */}
+      <ExportTemplate ref={exportRef} caseData={caseData} />
     </>
   );
 }

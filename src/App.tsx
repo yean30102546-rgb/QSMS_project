@@ -727,8 +727,8 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         setIsModalOpen(false);
         setSelectedCase(null);
 
-        // Reload cases to ensure sync
-        await loadCases();
+        // We already updated local state, no need to reload all cases and show skeleton
+        // await loadCases();
       } else {
         throw new Error(result.error || 'Failed to update case');
       }

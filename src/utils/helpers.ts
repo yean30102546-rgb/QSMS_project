@@ -162,16 +162,16 @@ export function filterCasesByQuery(cases: any[], query: string): any[] {
 
   return cases.filter(
     (caseItem) =>
-      caseItem.id.toLowerCase().includes(lowerQuery) ||
-      caseItem.source.toLowerCase().includes(lowerQuery) ||
+      String(caseItem.id || '').toLowerCase().includes(lowerQuery) ||
+      String(caseItem.source || '').toLowerCase().includes(lowerQuery) ||
       // Search in all items, not just first one
-      caseItem.items.some((item: any) =>
-        item.itemName.toLowerCase().includes(lowerQuery) ||
-        item.itemNumber.toLowerCase().includes(lowerQuery) ||
-        item.itemCode.toLowerCase().includes(lowerQuery) ||
-        item.reason.toLowerCase().includes(lowerQuery) ||
-        item.responsible.toLowerCase().includes(lowerQuery) ||
-        (item.details && item.details.toLowerCase().includes(lowerQuery))
+      caseItem.items?.some((item: any) =>
+        String(item.itemName || '').toLowerCase().includes(lowerQuery) ||
+        String(item.itemNumber || '').toLowerCase().includes(lowerQuery) ||
+        String(item.itemCode || '').toLowerCase().includes(lowerQuery) ||
+        String(item.reason || '').toLowerCase().includes(lowerQuery) ||
+        String(item.responsible || '').toLowerCase().includes(lowerQuery) ||
+        String(item.details || '').toLowerCase().includes(lowerQuery)
       )
   );
 }

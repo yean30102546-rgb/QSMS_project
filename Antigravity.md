@@ -26,6 +26,8 @@
 | `src/components/AddCaseTab.tsx` | ฟอร์มเพิ่มงาน Rework |
 | `src/services/auth.ts` | Authentication service (loginWithPassword) |
 | `src/services/api.ts` | API bridge ไปยัง GAS |
+| `src/components/ExportTemplate.tsx` | Ghost template สำหรับ Export รายงาน (PNG/PDF) |
+| `src/hooks/useExportReport.ts` | Hook จัดการ Export PNG (Long Image) และ PDF (Multi-page) |
 | `gas/Code.gs` | Backend ทั้งหมด (Auth, CRUD, Drive) |
 
 ## Authentication (Password-based)
@@ -48,6 +50,7 @@
 12. **UpdateModal Image Gallery** — เพิ่มส่วนแสดงรูปภาพแนบในหน้าต่าง UpdateModal แบ่งตาม Item (Item 1, Item 2...) พร้อม Lightbox ดูรูปเต็มจอ + ลิงก์ไปยัง Google Drive + fallback เมื่อโหลดรูปไม่ได้
 13. **Bangkok Timezone Fix** — แก้ทุกฟังก์ชัน date/time (formatThaiDate, formatTimestamp, formatDateThai, generateCaseId) ให้ lock เป็น `Asia/Bangkok` เสมอ ทั้งใน helpers.ts และ CaseListTable.tsx
 14. **Image URL Fix (GAS)** — แก้ `uploadImageToDrive` ให้ return URL + setSharing public, `handleInsert` เก็บ URL แต่ละรูปแยก item (pipe-separated ในคอลัมน์ 15, folder URL ในคอลัมน์ 16), `handleReadAll` แยก imageUrls[] กลับเป็น array
+15. **Export Report (PNG/PDF)** — เพิ่มปุ่ม Export PNG (Long Image) และ Export PDF (Multi-page A4) ใน UpdateModal + สร้าง Ghost ExportTemplate ที่มี Header/Footer บริษัท + ใช้ html2canvas + jsPDF + Image Preload Sync + Loading Overlay แสดงสถานะการ Export
 
 ## GAS Script Properties Required
 ```
