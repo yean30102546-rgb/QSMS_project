@@ -63,9 +63,7 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
         />
 
         <div className="mb-12">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center text-white font-black text-lg">
-            SFC
-          </div>
+          <img src="/img/logo.png" alt="" className="h-20 object-contain drop-shadow-sm" />
         </div>
 
         <div className="mt-auto mb-auto max-w-md">

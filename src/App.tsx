@@ -290,7 +290,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
     itemId: null,
   });
 
-  const GAS_WEB_APP_URL = process.env.REACT_APP_GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbzauMRZeN18LqcEjqaa3DXQUdwz6Q1YxKBdtXUEOXS12YaKFEABKj5WYrXzCWS0WMQ/exec';
+  const GAS_WEB_APP_URL = process.env.REACT_APP_GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbzAJ4DSntkwXFRpGT0tSNlpDTxjAnkcfdC_KQGEN3GtKQDUOar0gm02j58ECasmi8nJ/exec';
 
   /**
    * Load all cases and master data on component mount
@@ -609,6 +609,20 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
       }
 
       // ===== SUBMIT TO BACKEND =====
+      // Save any new items to Item Master first
+      const newItemsToSave = formItems.filter(item => !itemMaster.has(item.itemNumber.trim()));
+      for (const item of newItemsToSave) {
+        try {
+          console.log(`Saving new item to master: ${item.itemNumber} - ${item.itemName}`);
+          await saveItemToMaster(item.itemNumber.trim(), item.itemName);
+        } catch (err) {
+          console.error("Failed to save new item:", err);
+        }
+      }
+      if (newItemsToSave.length > 0) {
+        await loadMasterData();
+      }
+
       const result = await insertCase(caseSource, formItems, uploadedImages);
 
       if (result.success) {
@@ -742,11 +756,6 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         return;
       }
 
-      const saveResult = await saveItemToMaster(confirmNewItemModal.itemNumber, itemName);
-      if (!saveResult.success) {
-        throw new Error(saveResult.error || 'Failed to save item master');
-      }
-
       // Auto-fill the item name in the form immediately
       if (confirmNewItemModal.itemId) {
         setFormItems(prev =>
@@ -761,9 +770,6 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         setAutoFillTriggeredItem(confirmNewItemModal.itemId);
         window.setTimeout(() => setAutoFillTriggeredItem(prev => (prev === confirmNewItemModal.itemId ? null : prev)), 1500);
       }
-
-      // Reload item master to include new item
-      await loadMasterData();
 
       // Close modal
       setConfirmNewItemModal({ isOpen: false, itemNumber: '', itemId: null });

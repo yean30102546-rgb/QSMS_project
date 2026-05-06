@@ -7,15 +7,18 @@
  * Generate a unique ID for a rework case
  * Format: RWYYMMDDHHmmMsRRR (e.g., RW2604251707123456)
  * Includes milliseconds and random suffix for uniqueness
+ * ✅ ใช้ timezone Asia/Bangkok เสมอ
  */
 export function generateCaseId(): string {
   const now = new Date();
-  const yy = now.getFullYear().toString().slice(2);
-  const mm = (now.getMonth() + 1).toString().padStart(2, '0');
-  const dd = now.getDate().toString().padStart(2, '0');
-  const hh = now.getHours().toString().padStart(2, '0');
-  const min = now.getMinutes().toString().padStart(2, '0');
-  const ms = now.getMilliseconds().toString().padStart(3, '0');
+  // แปลงเป็น Bangkok timezone
+  const bkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+  const yy = bkk.getFullYear().toString().slice(2);
+  const mm = (bkk.getMonth() + 1).toString().padStart(2, '0');
+  const dd = bkk.getDate().toString().padStart(2, '0');
+  const hh = bkk.getHours().toString().padStart(2, '0');
+  const min = bkk.getMinutes().toString().padStart(2, '0');
+  const ms = now.getMilliseconds().toString().padStart(3, '0'); // ms ไม่ต้องแปลง timezone
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
 
   return `RW${yy}${mm}${dd}${hh}${min}${ms}${random}`;
@@ -31,10 +34,12 @@ export function generateItemSubId(caseId: string, itemIndex: number): string {
 
 /**
  * Format date to Thai format
+ * ✅ ใช้ timezone Asia/Bangkok
  */
 export function formatDateThai(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString('th-TH', {
+    timeZone: 'Asia/Bangkok',
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -255,11 +260,13 @@ export function enforceNumeric(value: string): string {
 
 /**
  * Format timestamp to readable format
+ * ✅ ใช้ timezone Asia/Bangkok
  */
 export function formatTimestamp(timestamp: string): string {
   try {
     const date = new Date(timestamp);
     return date.toLocaleString('th-TH', {
+      timeZone: 'Asia/Bangkok',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -298,10 +305,13 @@ export function getStatistics(cases: any[]) {
  * Format ISO date to Thai format with time
  * Input: "2026-04-27T01:59:09.000Z"
  * Output: "27 เมษายน 2569, 08:59"
+ * ✅ ใช้ timezone Asia/Bangkok เสมอ
  */
 export function formatThaiDate(isoDate: string): string {
   try {
     const date = new Date(isoDate);
+    // แปลงเป็น Bangkok timezone เพื่อดึงค่า day/month/year/hours ที่ถูกต้อง
+    const bkk = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
     
     // Thai month names
     const thaiMonths = [
@@ -310,12 +320,12 @@ export function formatThaiDate(isoDate: string): string {
       'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
     ];
 
-    const day = date.getDate();
-    const month = thaiMonths[date.getMonth()];
+    const day = bkk.getDate();
+    const month = thaiMonths[bkk.getMonth()];
     // Thai year = Western year + 543
-    const year = date.getFullYear() + 543;
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const year = bkk.getFullYear() + 543;
+    const hours = String(bkk.getHours()).padStart(2, '0');
+    const minutes = String(bkk.getMinutes()).padStart(2, '0');
 
     return `${day} ${month} ${year}, ${hours}:${minutes}`;
   } catch {

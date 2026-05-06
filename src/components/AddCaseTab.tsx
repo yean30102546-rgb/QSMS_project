@@ -134,38 +134,22 @@ export function AddCaseTab({
         </div>
       </div>
 
-      {/* Success/Error Message */}
-      <AnimatePresence>
-        {saveMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`p-4 rounded-lg font-semibold text-sm ${
-              saveMessage.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}
-          >
-            {saveMessage.text}
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       <div className="space-y-8">
         {/* Global Info */}
         <div className="glass-card p-6 bg-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
-               <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em] ml-1">แหล่งที่มาของงาน (Source) *</label>
-               <select
-                 value={caseSource}
-                 onChange={(e) => setCaseSource(e.target.value)}
-                 className="w-full px-4 py-3 bg-slate-50 border border-border rounded-xl focus:outline-none focus:border-accent text-sm"
-               >
-                 <option>SFC</option>
-                 <option>Customer</option>
-               </select>
+              <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em] ml-1">แหล่งที่มาของงาน (Source) *</label>
+              <select
+                value={caseSource}
+                onChange={(e) => setCaseSource(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-border rounded-xl focus:outline-none focus:border-accent text-sm"
+              >
+                <option>SFC</option>
+                <option>Customer</option>
+              </select>
             </div>
           </div>
         </div>
@@ -315,11 +299,10 @@ export function AddCaseTab({
                                 updateFormItem(item.id, 'reasonSubtype', subtype);
                                 setExpandedLeakSelection(null);
                               }}
-                              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200 ${
-                                item.reasonSubtype === subtype
+                              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200 ${item.reasonSubtype === subtype
                                   ? 'bg-accent text-white border border-accent'
                                   : 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200'
-                              }`}
+                                }`}
                               disabled={isSaving}
                             >
                               {subtype}
@@ -356,7 +339,7 @@ export function AddCaseTab({
                           <option key={option} value={option} className="text-slate-900">{option}</option>
                         ))}
                       </select>
-                      {(item.responsible === 'SFC' || item.responsible === 'Supplier' || item.responsible === 'Customer') && (
+                      {(item.responsible === 'SFC' || item.responsible === 'Supplier') && (
                         <button
                           type="button"
                           onClick={() => setExpandedResponsibleSelection(expandedResponsibleSelection === item.id ? null : item.id)}
@@ -369,7 +352,7 @@ export function AddCaseTab({
                       )}
                     </div>
                     <AnimatePresence>
-                      {(item.responsible === 'SFC' || item.responsible === 'Supplier' || item.responsible === 'Customer') && expandedResponsibleSelection === item.id && (
+                      {(item.responsible === 'SFC' || item.responsible === 'Supplier') && expandedResponsibleSelection === item.id && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
@@ -384,11 +367,10 @@ export function AddCaseTab({
                                 updateFormItem(item.id, 'responsibleSubtype', subtype);
                                 setExpandedResponsibleSelection(null);
                               }}
-                              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200 ${
-                                item.responsibleSubtype === subtype
+                              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-200 ${item.responsibleSubtype === subtype
                                   ? 'bg-accent text-white border border-accent'
                                   : 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200'
-                              }`}
+                                }`}
                               disabled={isSaving}
                             >
                               {subtype}
@@ -397,11 +379,17 @@ export function AddCaseTab({
                         </motion.div>
                       )}
                     </AnimatePresence>
-                    {(item.responsible === 'SFC' || item.responsible === 'Supplier' || item.responsible === 'Customer') && item.responsibleSubtype && (
+                    {(item.responsible === 'SFC' || item.responsible === 'Supplier') && item.responsibleSubtype && (
                       <div className="px-3 py-2 bg-accent/10 border border-accent rounded-lg">
                         <p className="text-[10px] text-muted font-semibold mb-1">เลือก: </p>
                         <p className="text-sm font-semibold text-accent">{item.responsibleSubtype}</p>
                       </div>
+                    )}
+                    {item.responsible === 'SFC' && !item.responsibleSubtype && (
+                      <p className="text-[10px] text-amber-600 font-medium">⚠ กรุณาเลือกแผนก SFC</p>
+                    )}
+                    {item.responsible === 'Supplier' && !item.responsibleSubtype && (
+                      <p className="text-[10px] text-amber-600 font-medium">⚠ กรุณาเลือก Supplier</p>
                     )}
                   </div>
                 </div>
@@ -466,6 +454,24 @@ export function AddCaseTab({
               )}
             </motion.button>
           </div>
+
+          {/* Success/Error Message */}
+          <AnimatePresence>
+            {saveMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`p-4 rounded-lg font-semibold text-sm ${
+                  saveMessage.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {saveMessage.text}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

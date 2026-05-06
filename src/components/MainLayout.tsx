@@ -91,7 +91,7 @@ export function MainLayout({
           onClick={() => setActiveTab('overall')}
           whileHover={{ scale: 1.02 }}
         >
-          <div className="w-2 h-2 bg-accent rounded-full" />
+          <img src="/img/logo.png" alt="" className="h-12 object-contain drop-shadow-sm" />
           <h1 className="font-semibold text-[18px] tracking-tight text-foreground">
             QSMS Rework
           </h1>
@@ -141,17 +141,17 @@ export function MainLayout({
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="flex-1 overflow-hidden flex flex-col bg-bg">
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="p-8 md:p-10 lg:p-12">
         <AnimatePresence mode="wait">
           {/* ===== OVERALL TAB ===== */}
+          {/* OverallTab จัดการ scroll เอง → ไม่ห่อด้วย scroll wrapper เพื่อป้องกัน layout ดีด */}
           {activeTab === 'overall' && (
             <motion.div
               key="overall"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col overflow-hidden"
             >
               <OverallTab
                 cases={cases}
@@ -166,6 +166,7 @@ export function MainLayout({
             </motion.div>
           )}
 
+          {/* แท็บอื่นๆ ใช้ scroll wrapper ปกติ */}
           {activeTab === 'add' && (
             <motion.div
               key="add"
@@ -173,29 +174,31 @@ export function MainLayout({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
+              className="flex-1 overflow-y-auto overflow-x-hidden"
             >
-              <AddCaseTab
-                caseSource={caseSource}
-                setCaseSource={setCaseSource}
-                formItems={formItems}
-                addFormItem={addFormItem}
-                removeFormItem={removeFormItem}
-                updateFormItem={updateFormItem}
-                updateReasonAndResponsible={updateReasonAndResponsible}
-                updateResponsibleSelection={updateResponsibleSelection}
-                handleImagesSelected={handleImagesSelected}
-                uploadedImages={uploadedImages}
-                handleCheckItemNumber={handleCheckItemNumber}
-                handleItemNumberBlur={handleItemNumberBlur}
-                handleSubmit={handleSubmit}
-                isSaving={isSaving}
-                saveMessage={saveMessage}
-                isSaveDisabled={isSaveDisabled}
-                autoFillTriggeredItem={autoFillTriggeredItem}
-                selectionModal={selectionModal}
-                setSelectionModal={setSelectionModal}
-              />
-
+              <div className="p-8 md:p-10 lg:p-12">
+                <AddCaseTab
+                  caseSource={caseSource}
+                  setCaseSource={setCaseSource}
+                  formItems={formItems}
+                  addFormItem={addFormItem}
+                  removeFormItem={removeFormItem}
+                  updateFormItem={updateFormItem}
+                  updateReasonAndResponsible={updateReasonAndResponsible}
+                  updateResponsibleSelection={updateResponsibleSelection}
+                  handleImagesSelected={handleImagesSelected}
+                  uploadedImages={uploadedImages}
+                  handleCheckItemNumber={handleCheckItemNumber}
+                  handleItemNumberBlur={handleItemNumberBlur}
+                  handleSubmit={handleSubmit}
+                  isSaving={isSaving}
+                  saveMessage={saveMessage}
+                  isSaveDisabled={isSaveDisabled}
+                  autoFillTriggeredItem={autoFillTriggeredItem}
+                  selectionModal={selectionModal}
+                  setSelectionModal={setSelectionModal}
+                />
+              </div>
             </motion.div>
           )}
 
@@ -207,17 +210,18 @@ export function MainLayout({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
+              className="flex-1 overflow-y-auto overflow-x-hidden"
             >
-              <DashboardTab
-                cases={cases}
-                isLoadingCases={isLoadingCases}
-                isLoadingMaster={isLoadingMaster}
-              />
+              <div className="p-8 md:p-10 lg:p-12">
+                <DashboardTab
+                  cases={cases}
+                  isLoadingCases={isLoadingCases}
+                  isLoadingMaster={isLoadingMaster}
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-          </div>
-        </div>
       </main>
     </div>
   );
@@ -237,11 +241,10 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
       onClick={onClick}
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.98 }}
-      className={`w-full sidebar-item mb-2 flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer font-medium text-sm ${
-        active
-          ? 'bg-[#f4f4f5] text-foreground shadow-sm border border-border'
-          : 'text-muted hover:bg-slate-50 hover:text-foreground'
-      }`}
+      className={`w-full sidebar-item mb-2 flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer font-medium text-sm ${active
+        ? 'bg-[#f4f4f5] text-foreground shadow-sm border border-border'
+        : 'text-muted hover:bg-slate-50 hover:text-foreground'
+        }`}
     >
       {icon && <span className={`transition-colors ${active ? 'text-foreground' : 'text-muted'}`}>{icon}</span>}
       <span>{label}</span>

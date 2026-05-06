@@ -16,7 +16,7 @@ const TOKEN_EXPIRY_KEY = 'qsms_token_expiry';
 const REFRESH_TOKEN_KEY = 'qsms_refresh_token';
 const GAS_AUTH_URL =
   process.env.REACT_APP_GAS_WEB_APP_URL ||
-  'https://script.google.com/macros/s/AKfycbzauMRZeN18LqcEjqaa3DXQUdwz6Q1YxKBdtXUEOXS12YaKFEABKj5WYrXzCWS0WMQ/exec';
+  'https://script.google.com/macros/s/AKfycbzAJ4DSntkwXFRpGT0tSNlpDTxjAnkcfdC_KQGEN3GtKQDUOar0gm02j58ECasmi8nJ/exec';
 
 // Debug: Log the auth URL being used
 console.log('🔐 GAS Auth URL:', GAS_AUTH_URL);

@@ -551,7 +551,7 @@ function handleInsert(payload) {
     // Generate unique case ID with timestamp + random suffix, checked against existing sheet IDs.
     const caseId = generateCaseId(existingCaseIds);
     const now = new Date();
-    const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
+    const timestamp = Utilities.formatDate(now, "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss+07:00");
 
     // ===== สร้าง Folder สำหรับ Case นี้ (สร้างครั้งเดียว) =====
     // จะได้ folder URL ไว้บันทึกลง Google Sheet
@@ -562,29 +562,33 @@ function handleInsert(payload) {
     // ===== เตรียมข้อมูลแต่ละ item =====
     var rowsToInsert = [];
     var itemIds = [];
-    var hasAnyImages = false; // ตรวจว่ามีรูปไหม
 
     payload.items.forEach(function(item, index) {
       var itemId = caseId + '-' + String(index + 1).padStart(3, '0');
       itemIds.push(itemId);
 
       // ===== อัพโหลดรูปไปไว้ใน Folder ของ Case =====
+      var itemImageUrls = []; // เก็บ URL ของแต่ละรูป
+
       if (item.images && Array.isArray(item.images) && item.images.length > 0) {
         Logger.log('📸 Uploading ' + item.images.length + ' images for ' + itemId);
-        hasAnyImages = true;
 
         item.images.forEach(function(base64Data, imgIdx) {
           Logger.log('  Image ' + (imgIdx + 1) + '/' + item.images.length);
-          uploadImageToDrive(base64Data, itemId, caseFolder.id);
+          var imageUrl = uploadImageToDrive(base64Data, itemId, caseFolder.id);
+          if (imageUrl) {
+            itemImageUrls.push(imageUrl);
+          }
         });
 
-        Logger.log('✓ Done uploading images for ' + itemId);
+        Logger.log('✓ Done uploading images for ' + itemId + ' (' + itemImageUrls.length + ' URLs)');
       } else {
         Logger.log('ℹ️ No images for ' + itemId);
       }
 
       // ===== สร้าง row สำหรับเขียนลง Sheet =====
-      // คอลัม Image URLs จะเก็บ folder URL (ถ้ามีรูป) หรือว่าง (ถ้าไม่มี)
+      // คอลัมที่ 15: เก็บ URL ของรูปแต่ละภาพ คั่นด้วย | (pipe)
+      // คอลัมที่ 16: เก็บ folder URL
       rowsToInsert.push([
         itemId,
         caseId,
@@ -600,7 +604,8 @@ function handleInsert(payload) {
         sanitizeString(item.responsibleSubtype || ''),
         sanitizeString(item.details || ''),
         'Pending',
-        hasAnyImages ? caseFolderUrl : '', // เก็บ folder URL แทน URL ของแต่ละรูป
+        itemImageUrls.length > 0 ? itemImageUrls.join('|') : '', // คอลัม 15: URL แต่ละรูป คั่นด้วย |
+        itemImageUrls.length > 0 ? caseFolderUrl : '', // คอลัม 16: folder URL
       ]);
     });
 
@@ -650,11 +655,15 @@ function handleReadAll(payload) {
     // Skip header row and convert to objects
     const caseMap = new Map(); // Group items by case ID
 
-    // Assuming columns: Item ID | Case ID | Date | Source | ItemNumber | ItemName | ItemCode | Amount | Reason | Reason Subtype | Responsible | Responsible Subtype | Details | Status | Images
+    // Columns: Item ID | Case ID | Date | Source | ItemNumber | ItemName | ItemCode | Amount | Reason | Reason Subtype | Responsible | Responsible Subtype | Details | Status | ImageUrls (pipe-separated) | ImageFolderUrl
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const caseId = row[1];
       const itemId = row[0];
+
+      // ✅ แยก imageUrls จาก pipe-separated string เป็น array
+      const rawImageUrls = String(row[14] || '').trim();
+      const imageUrlsArray = rawImageUrls ? rawImageUrls.split('|').filter(function(u) { return u.trim() !== ''; }) : [];
 
       const item = {
         id: itemId,
@@ -668,8 +677,8 @@ function handleReadAll(payload) {
         responsibleSubtype: row[11] || '',
         details: row[12] || '',
         status: row[13] || 'Pending',
-        // คอลัม Image URLs ตอนนี้เก็บ folder URL เดี่ยว (ไม่ใช่ | คั่นแล้ว)
-        imageFolderUrl: String(row[14] || '').trim(),
+        imageUrls: imageUrlsArray,  // ✅ URL ของแต่ละภาพ
+        imageFolderUrl: String(row[15] || row[14] || '').trim(), // คอลัม 16 หรือ fallback คอลัม 15 (ข้อมูลเก่า)
       };
 
       if (!caseMap.has(caseId)) {
@@ -831,13 +840,15 @@ function generateCaseId(existingCaseIds) {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const now = new Date();
-    const yy = now.getFullYear().toString().slice(2);
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    const sec = String(now.getSeconds()).padStart(2, '0');
-    const ms = String(now.getMilliseconds()).padStart(3, '0');
+    const formatted = Utilities.formatDate(now, "Asia/Bangkok", "yy|MM|dd|HH|mm|ss|SSS");
+    const parts = formatted.split('|');
+    const yy = parts[0];
+    const mm = parts[1];
+    const dd = parts[2];
+    const hh = parts[3];
+    const min = parts[4];
+    const sec = parts[5];
+    const ms = parts[6];
     const rand = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
     const caseId = `RW${yy}${mm}${dd}${hh}${min}${sec}${ms}${rand}`;
 
@@ -1166,7 +1177,7 @@ function uploadImageToDrive(base64Data, itemId, folderId) {
     // ===== ตรวจสอบ input =====
     if (!base64Data || typeof base64Data !== 'string') {
       Logger.log('❌ Invalid image data for ' + itemId);
-      return;
+      return null;
     }
 
     // ===== ตรวจจับ MIME type (PNG หรือ JPEG) =====
@@ -1188,7 +1199,7 @@ function uploadImageToDrive(base64Data, itemId, folderId) {
 
     if (!base64Content) {
       Logger.log('❌ Empty base64 content for ' + itemId);
-      return;
+      return null;
     }
 
     // ===== decode base64 → blob → file =====
@@ -1201,11 +1212,20 @@ function uploadImageToDrive(base64Data, itemId, folderId) {
 
     // บันทึกไฟล์ลง folder
     var folder = DriveApp.getFolderById(folderId);
-    folder.createFile(blob);
+    var file = folder.createFile(blob);
 
-    Logger.log('✅ Uploaded: ' + filename + ' (' + mimeType + ')');
+    // ✅ ตั้งให้ทุกคนดูได้ (สำหรับแสดงรูปใน frontend)
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    // ✅ สร้าง URL ที่แสดงได้โดยตรงใน <img src>
+    var fileId = file.getId();
+    var viewUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w800';
+
+    Logger.log('✅ Uploaded: ' + filename + ' → ' + viewUrl);
+    return viewUrl;
 
   } catch (error) {
     Logger.log('❌ Upload failed for ' + itemId + ': ' + error.toString());
+    return null;
   }
 }
