@@ -30,8 +30,6 @@ interface MainLayoutProps {
   addFormItem: () => void;
   removeFormItem: (id: string) => void;
   updateFormItem: (id: string, field: string, value: string | number) => void;
-  updateReasonAndResponsible: (id: string, reason: string) => void;
-  updateResponsibleSelection: (id: string, responsible: string) => void;
   handleImagesSelected: (itemId: string, files: File[]) => void;
   uploadedImages: Record<string, File[]>;
   handleCheckItemNumber: (id: string) => void;
@@ -67,8 +65,6 @@ export function MainLayout({
   addFormItem,
   removeFormItem,
   updateFormItem,
-  updateReasonAndResponsible,
-  updateResponsibleSelection,
   handleImagesSelected,
   uploadedImages,
   handleCheckItemNumber,
@@ -184,8 +180,6 @@ export function MainLayout({
                   addFormItem={addFormItem}
                   removeFormItem={removeFormItem}
                   updateFormItem={updateFormItem}
-                  updateReasonAndResponsible={updateReasonAndResponsible}
-                  updateResponsibleSelection={updateResponsibleSelection}
                   handleImagesSelected={handleImagesSelected}
                   uploadedImages={uploadedImages}
                   handleCheckItemNumber={handleCheckItemNumber}

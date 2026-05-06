@@ -14,12 +14,14 @@ const USER_KEY = 'qsms_user';
 const ROLE_KEY = 'qsms_role';
 const TOKEN_EXPIRY_KEY = 'qsms_token_expiry';
 const REFRESH_TOKEN_KEY = 'qsms_refresh_token';
-const GAS_AUTH_URL =
-  process.env.REACT_APP_GAS_WEB_APP_URL ||
-  'https://script.google.com/macros/s/AKfycbzAJ4DSntkwXFRpGT0tSNlpDTxjAnkcfdC_KQGEN3GtKQDUOar0gm02j58ECasmi8nJ/exec';
+const GAS_AUTH_URL = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
 
-// Debug: Log the auth URL being used
-console.log('🔐 GAS Auth URL:', GAS_AUTH_URL);
+function ensureGasAuthUrl(): string {
+  if (!GAS_AUTH_URL.includes('script.google.com/macros/s') || !GAS_AUTH_URL.endsWith('/exec')) {
+    throw new Error('REACT_APP_GAS_WEB_APP_URL is not configured with a valid Google Apps Script /exec URL.');
+  }
+  return GAS_AUTH_URL;
+}
 
 export interface User {
   email: string;
@@ -128,6 +130,12 @@ export function hasPermission(permission: string): PermissionCheckResponse {
  * @param credentialResponse - Response from Google OAuth library
  */
 export async function loginWithGoogle(credentialResponse: any): Promise<AuthResponse> {
+  void credentialResponse;
+  return {
+    success: false,
+    error: 'Google login is disabled until tokens are verified by the GAS backend.',
+  };
+
   try {
     // Extract JWT from Google's credential response
     const googleToken = credentialResponse.credential;
@@ -207,7 +215,7 @@ export async function loginWithGoogle(credentialResponse: any): Promise<AuthResp
  */
 export async function loginWithPassword(userId: string, password: string): Promise<AuthResponse> {
   try {
-    const response = await fetch(GAS_AUTH_URL, {
+    const response = await fetch(ensureGasAuthUrl(), {
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'text/plain' },
@@ -313,25 +321,9 @@ export function logout(): void {
  * In production: This should come from backend
  */
 function generateSecureToken(email: string, profile?: string): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const iat = Math.floor(Date.now() / 1000);
-  const exp = iat + (AUTH_CONFIG.tokenExpiryHours * 3600);
-  const normalizedProfile = profile ? String(profile).trim().toUpperCase() : '';
-
-  const payload = btoa(
-    JSON.stringify({
-      sub: email,
-      profile: normalizedProfile || undefined,
-      iat,
-      exp,
-      // Add additional claims as needed
-      type: 'auth_token',
-    })
-  );
-
-  // In production: sign with backend private key
-  const signature = btoa(`${header}.${payload}.SECRET_KEY`);
-  return `${header}.${payload}.${signature}`;
+  void email;
+  void profile;
+  throw new Error('Client-side token signing is disabled. Use GAS-issued tokens only.');
 }
 
 /**
@@ -371,11 +363,16 @@ export async function validateToken(token: string): Promise<ValidateTokenRespons
       };
     }
 
-    // In production: verify with backend
-    // const response = await fetch('/api/auth/validate', {
-    //   method: 'POST',
-    //   headers: { 'Authorization': `Bearer ${token}` },
-    // });
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (parts[1].length % 4)) % 4))
+    );
+    if (payload.exp && Date.now() >= Number(payload.exp) * 1000) {
+      return {
+        success: false,
+        valid: false,
+        error: AUTH_ERROR_MESSAGES.SESSION_EXPIRED,
+      };
+    }
 
     return {
       success: true,
@@ -394,6 +391,11 @@ export async function validateToken(token: string): Promise<ValidateTokenRespons
  * Refresh token before expiry
  */
 export async function refreshToken(): Promise<AuthResponse> {
+  return {
+    success: false,
+    error: 'Token refresh is not available. Please login again.',
+  };
+
   try {
     const currentUser = getCurrentUser();
     if (!currentUser) {

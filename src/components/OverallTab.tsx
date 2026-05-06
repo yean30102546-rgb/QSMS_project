@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, RefreshCw, Plus, X, Filter, Calendar, SlidersHorizontal } from 'lucide-react';
-import { filterCasesByMultipleCriteria } from '../utils/helpers';
+import { useOverallFilters } from '../hooks/useOverallFilters';
+import { ReworkCase } from '../services/api';
 
 // Sub-components (แยกออกเพื่อให้โค้ดอ่านง่าย)
 import { CaseListTable } from './CaseListTable';
@@ -9,13 +10,13 @@ import { Pagination } from './Pagination';
 import { Tooltip } from './Tooltip';
 
 interface OverallTabProps {
-  cases: any[];
+  cases: ReworkCase[];
   isLoadingCases: boolean;
   caseError: string | null;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   loadCases: () => void;
-  openUpdateModal: (caseItem: any) => void;
+  openUpdateModal: (caseItem: ReworkCase) => void;
   stats: any;
 }
 
@@ -29,136 +30,37 @@ export function OverallTab({
   openUpdateModal,
   stats,
 }: OverallTabProps) {
-  const ITEMS_PER_PAGE = 10; // ✅ Locked: Always show 10 cases per page
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Filter states
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
-  const [reasonFilter, setReasonFilter] = useState<string[]>([]);
-  const [responsibleFilter, setResponsibleFilter] = useState<string[]>([]);
-  const [dateFromFilter, setDateFromFilter] = useState('');
-  const [dateToFilter, setDateToFilter] = useState('');
-
-  // Get unique values for filters
-  const uniqueSources = useMemo(() => {
-    const sources = new Set<string>();
-    cases.forEach(c => sources.add(c.source));
-    return Array.from(sources).sort();
-  }, [cases]);
-
-  const uniqueReasons = useMemo(() => {
-    const reasons = new Set<string>();
-    cases.forEach(c => {
-      if (c.items && c.items[0]?.reason) {
-        reasons.add(c.items[0].reason);
-      }
-    });
-    return Array.from(reasons).sort();
-  }, [cases]);
-
-  const uniqueResponsible = useMemo(() => {
-    const responsible = new Set<string>();
-    cases.forEach(c => {
-      if (c.items && c.items[0]?.responsible) {
-        responsible.add(c.items[0].responsible);
-      }
-    });
-    return Array.from(responsible).sort();
-  }, [cases]);
-
-  // Apply filters using comprehensive filter function
-  const filteredCases = useMemo(() => {
-    return filterCasesByMultipleCriteria(cases, {
-      status: statusFilter.length > 0 ? statusFilter : undefined,
-      source: sourceFilter.length > 0 ? sourceFilter : undefined,
-      reason: reasonFilter.length > 0 ? reasonFilter : undefined,
-      responsible: responsibleFilter.length > 0 ? responsibleFilter : undefined,
-      dateFrom: dateFromFilter || undefined,
-      dateTo: dateToFilter || undefined,
-      query: searchQuery || undefined,
-    });
-  }, [cases, statusFilter, sourceFilter, reasonFilter, responsibleFilter, dateFromFilter, dateToFilter, searchQuery]);
-
-  const hasActiveFilters = statusFilter.length > 0 || sourceFilter.length > 0 || 
-                          reasonFilter.length > 0 || responsibleFilter.length > 0 || 
-                          dateFromFilter || dateToFilter;
-
-  // นับจำนวนตัวกรองที่ใช้งานอยู่
-  const activeFilterCount = [statusFilter, sourceFilter, reasonFilter, responsibleFilter].filter(f => f.length > 0).length + (dateFromFilter || dateToFilter ? 1 : 0);
-
-  // ฟังก์ชันสำหรับลบตัวกรองทีละตัว
-  const removeFilter = (type: string, value?: string) => {
-    switch (type) {
-      case 'status':
-        if (value) setStatusFilter(statusFilter.filter(s => s !== value));
-        else setStatusFilter([]);
-        break;
-      case 'source':
-        if (value) setSourceFilter(sourceFilter.filter(s => s !== value));
-        else setSourceFilter([]);
-        break;
-      case 'reason':
-        if (value) setReasonFilter(reasonFilter.filter(r => r !== value));
-        else setReasonFilter([]);
-        break;
-      case 'responsible':
-        if (value) setResponsibleFilter(responsibleFilter.filter(r => r !== value));
-        else setResponsibleFilter([]);
-        break;
-      case 'date':
-        setDateFromFilter('');
-        setDateToFilter('');
-        break;
-    }
-  };
-
-  // ล้างตัวกรองทั้งหมด
-  const clearAllFilters = () => {
-    setStatusFilter([]);
-    setSourceFilter([]);
-    setReasonFilter([]);
-    setResponsibleFilter([]);
-    setDateFromFilter('');
-    setDateToFilter('');
-  };
-
-  // สลับการเลือก Status (Quick Filter)
-  const toggleStatusFilter = (status: string) => {
-    if (statusFilter.includes(status)) {
-      setStatusFilter(statusFilter.filter(s => s !== status));
-    } else {
-      setStatusFilter([...statusFilter, status]);
-    }
-  };
-
-  // ✅ ย้าย getDeadlineStatus และ formatTimestamp ไปอยู่ใน CaseListTable.tsx แล้ว
-
-  // นับจำนวน case ตาม status สำหรับ Quick Filter
-  const statusCounts = useMemo(() => ({
-    Pending: cases.filter(c => c.status === 'Pending').length,
-    'In-Progress': cases.filter(c => c.status === 'In-Progress').length,
-    Completed: cases.filter(c => c.status === 'Completed').length,
-  }), [cases]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredCases.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedCases = filteredCases.slice(startIndex, endIndex);
-
-  // Reset to page 1 when search query or filters change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter.length, sourceFilter.length, reasonFilter.length, responsibleFilter.length, dateFromFilter, dateToFilter]);
-
-  // ✅ Prevent Auto Scroll: เก็บ scroll position ไว้ ไม่ให้หน้าดีดขึ้นเมื่อเปลี่ยนหน้า
-  const handlePageChange = (newPage: number) => {
-    // ไม่ต้อง scroll — แค่เปลี่ยนหน้าอย่างเดียว
-    setCurrentPage(newPage);
-  };
-
+  const {
+    activeFilterCount,
+    clearAllFilters,
+    currentPage,
+    dateFromFilter,
+    dateToFilter,
+    filteredCases,
+    hasActiveFilters,
+    itemsPerPage,
+    paginatedCases,
+    reasonFilter,
+    removeFilter,
+    responsibleFilter,
+    setCurrentPage,
+    setDateFromFilter,
+    setDateToFilter,
+    setReasonFilter,
+    setResponsibleFilter,
+    setShowFilters,
+    setSourceFilter,
+    setStatusFilter,
+    showFilters,
+    sourceFilter,
+    statusCounts,
+    statusFilter,
+    toggleStatusFilter,
+    totalPages,
+    uniqueReasons,
+    uniqueResponsible,
+    uniqueSources,
+  } = useOverallFilters(cases, searchQuery);
   return (
     <div className="flex flex-col h-full overflow-hidden bg-bg">
       {/* ✅ HEADER & STATS - Fixed at Top (Non-Scrollable) */}
@@ -528,7 +430,7 @@ export function OverallTab({
               onClearFilters={clearAllFilters}
               searchQuery={searchQuery}
               hasActiveFilters={!!hasActiveFilters}
-              skeletonCount={ITEMS_PER_PAGE}
+              skeletonCount={itemsPerPage}
             />
           </div>
         </div>
@@ -539,7 +441,7 @@ export function OverallTab({
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={handlePageChange}
+          onPageChange={setCurrentPage}
           totalItems={filteredCases.length}
           isFiltered={!!hasActiveFilters}
         />

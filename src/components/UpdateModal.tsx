@@ -9,8 +9,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, Clock, AlertCircle, Image, ImageOff, ExternalLink, FileText, Download, FileImage } from 'lucide-react';
 import { ReworkCase } from '../services/api';
 import { formatThaiDate } from '../utils/helpers';
+import { toDisplayImageUrl } from '../utils/imageUrls';
 import { useExportReport } from '../hooks/useExportReport';
 import { ExportTemplate } from './ExportTemplate';
+import { DriveImage } from './DriveImage';
 
 interface UpdateModalProps {
   isOpen: boolean;
@@ -153,17 +155,14 @@ export function UpdateModal({
 
                     {/* ===== รายละเอียดและรูปภาพแนบ แบ่งตาม Item ===== */}
                     {caseData && (() => {
-                      // กรองเฉพาะ Item ที่มีรูปภาพ หรือ มีรายละเอียด
-                      const itemsToShow = caseData.items.filter(item =>
-                        (item.imageUrls && item.imageUrls.length > 0) ||
-                        (item.details && item.details.trim().length > 0)
-                      );
+                      // แสดงทุก Item ไม่ใช่กรองเฉพาะที่มีรูปภาพหรือรายละเอียด
+                      const itemsToShow = caseData.items;
 
                       if (itemsToShow.length === 0) {
                         return (
                           <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl text-sm text-muted">
                             <ImageOff size={18} className="text-slate-300" />
-                            <span>ไม่มีรายละเอียดและรูปภาพแนบสำหรับ Case นี้</span>
+                            <span>ไม่มีรายการ Item สำหรับ Case นี้</span>
                           </div>
                         );
                       }
@@ -181,6 +180,7 @@ export function UpdateModal({
                             const images = item.imageUrls || [];
                             const hasImages = images.length > 0;
                             const hasDetails = item.details && item.details.trim().length > 0;
+                            const hasAnyContent = hasImages || hasDetails;
 
                             return (
                               <div key={item.id || index} className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3">
@@ -213,49 +213,42 @@ export function UpdateModal({
 
                                 <div className={`grid grid-cols-1 ${hasDetails && hasImages ? 'md:grid-cols-2' : ''} gap-4`}>
                                   {/* ส่วนรายละเอียด */}
-                                  {hasDetails && (
+                                  {hasDetails ? (
                                     <div className="space-y-1">
                                       <p className="text-[10px] font-bold text-muted uppercase">รายละเอียด / อาการเสีย:</p>
                                       <div className="bg-white p-3 rounded-lg border border-slate-100 text-sm text-slate-700 whitespace-pre-wrap">
                                         {item.details}
                                       </div>
                                     </div>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      <p className="text-[10px] font-bold text-muted uppercase">รายละเอียด / อาการเสีย:</p>
+                                      <div className="bg-white p-3 rounded-lg border border-slate-100 text-sm text-slate-400 italic">
+                                        ไม่มีรายละเอียดเพิ่มเติม
+                                      </div>
+                                    </div>
                                   )}
 
                                   {/* ส่วนรูปภาพ */}
-                                  {hasImages && (
+                                  {hasImages ? (
                                     <div className="space-y-1">
                                       <p className="text-[10px] font-bold text-muted uppercase">รูปภาพแนบ ({images.length}):</p>
                                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                                         {images.map((url, imgIndex) => {
-                                          let displayUrl = url;
-                                          const driveIdMatch = url.match(/id=([^&]+)/);
-                                          if (driveIdMatch && driveIdMatch[1]) {
-                                            displayUrl = `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
-                                          }
                                           return (
                                           <motion.button
                                             key={imgIndex}
                                             type="button"
                                             whileHover={{ scale: 1.03 }}
                                             whileTap={{ scale: 0.97 }}
-                                            onClick={() => setLightboxUrl(displayUrl)}
+                                            onClick={() => setLightboxUrl(url)}
                                             className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-white hover:border-accent/50 transition-colors group cursor-zoom-in"
                                           >
-                                            <img
-                                              src={displayUrl}
+                                            <DriveImage
+                                              src={url}
                                               alt={`${item.itemName || 'Item'} - รูปที่ ${imgIndex + 1}`}
                                               className="w-full h-full object-cover"
                                               loading="lazy"
-                                              onError={(e) => {
-                                                const target = e.currentTarget;
-                                                target.style.display = 'none';
-                                                target.parentElement?.classList.add('flex', 'items-center', 'justify-center');
-                                                const placeholder = document.createElement('div');
-                                                placeholder.className = 'flex flex-col items-center gap-1 text-slate-300';
-                                                placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span class="text-[9px]">โหลดไม่ได้</span>`;
-                                                target.parentElement?.appendChild(placeholder);
-                                              }}
                                             />
                                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                               <span className="text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-black/50 px-2 py-1 rounded-md transition-opacity">
@@ -265,8 +258,14 @@ export function UpdateModal({
                                           </motion.button>
                                         )})}
                                       </div>
-                                    </div>
-                                  )}
+                                    </div>                                  ) : (
+                                    <div className="space-y-1">
+                                      <p className="text-[10px] font-bold text-muted uppercase">รูปภาพแนบ:</p>
+                                      <div className="bg-white p-3 rounded-lg border border-slate-100 text-sm text-slate-400 italic flex items-center gap-2">
+                                        <ImageOff size={16} className="text-slate-300" />
+                                        ไม่มีรูปภาพแนบ
+                                      </div>
+                                    </div>                                  )}
                                 </div>
                               </div>
                             );
@@ -395,7 +394,7 @@ export function UpdateModal({
               onClick={() => setLightboxUrl(null)}
             >
               <img
-                src={lightboxUrl}
+                src={toDisplayImageUrl(lightboxUrl, 2000)}
                 alt="ดูรูปเต็ม"
                 className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
                 onClick={(e) => e.stopPropagation()}

@@ -35,16 +35,11 @@ import {
   User,
 } from './services/auth';
 import {
-  generateCaseId,
-  generateItemSubId,
-  validateAllItems,
   isSaveDisabled,
   sortCasesByStatus,
   filterCasesByQuery,
   enforceNumeric,
-  formatTimestamp,
   getStatistics,
-  formatThaiDate,
   validateItemDetailed,
   findDuplicateItemNumbers,
 } from './utils/helpers';
@@ -141,91 +136,8 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
     }
   };
 
-  // ===== REASON HIERARCHY & RESPONSIBLE MAPPING =====
-  const REASON_MAIN_OPTIONS = [
-    'รั่ว',
-    'แตกตะเข็บ',
-    'รอยมีด',
-    'ขวดเปื้อน',
-    'กล่องเปื้อนอย่างเดียว',
-    'อื่นๆ',
-  ];
-
-  const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด'];
-
-  const REASON_DEFAULT_RESPONSIBLE: Record<string, 'SFC' | 'Supplier' | ''> = {
-    'รั่วซึม': 'SFC',
-    'รั่วตามด': 'Supplier',
-    'แตกตะเข็บ': 'Supplier',
-    'รอยมีด': 'Supplier',
-    'ขวดเปื้อน': 'SFC',
-  };
-
-  const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'];
-
-  const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
-    SFC: ['PDF', 'WFG', 'WPK', 'อื่นๆ'],
-    Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
-    Customer: ['Customer'],
-  };
-
   const [autoFillTriggeredItem, setAutoFillTriggeredItem] = useState<string | null>(null);
 
-  const getResponsibleDropdownOptions = (item: ReworkItem) => {
-    const base = [...RESPONSIBLE_MAIN_OPTIONS];
-    if (item.responsible && !base.includes(item.responsible)) {
-      base.push(item.responsible);
-    }
-    return base;
-  };
-
-  const getReasonDropdownOptions = (item: ReworkItem) => {
-    const options = [...REASON_MAIN_OPTIONS];
-    if (item.reason && !options.includes(item.reason)) {
-      options.push(item.reason);
-    }
-    return options;
-  };
-
-  const updateReasonAndResponsible = (id: string, reason: string) => {
-    // Note: This function is kept for API compatibility but the actual
-    // reason selection is now handled directly in AddCaseTab via updateFormItem
-    // No auto-fill of responsible person anymore
-    setFormItems(prev =>
-      prev.map(item =>
-        item.id === id
-          ? {
-            ...item,
-            reason,
-            reasonSubtype: '',
-          }
-          : item
-      )
-    );
-  };
-
-  const updateResponsibleSelection = (id: string, responsible: string) => {
-    // Note: This function is kept for API compatibility
-    // The actual responsible selection is now handled via selection modal with direct button clicks
-    setFormItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, responsible } : item
-      )
-    );
-  };
-
-  /**
-   * Calculate deadline status for a case
-   */
-  const getDeadlineStatus = (caseDate: string, status: string) => {
-    if (status === 'Completed') return null;
-
-    const daysSince = Math.floor((Date.now() - new Date(caseDate).getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysSince > 30) return 'danger'; // Over 30 days
-    if (daysSince > 7) return 'warning'; // Over 7 days
-    return null;
-  };
   // ===== TAB STATE =====
   const [activeTab, setActiveTab] = useState<Tab>('overall');
   const [searchQuery, setSearchQuery] = useState('');
@@ -290,7 +202,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
     itemId: null,
   });
 
-  const GAS_WEB_APP_URL = process.env.REACT_APP_GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbzAJ4DSntkwXFRpGT0tSNlpDTxjAnkcfdC_KQGEN3GtKQDUOar0gm02j58ECasmi8nJ/exec';
+  const GAS_WEB_APP_URL = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
 
   /**
    * Load all cases and master data on component mount
@@ -811,8 +723,6 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         addFormItem={addFormItem}
         removeFormItem={removeFormItem}
         updateFormItem={updateFormItem}
-        updateReasonAndResponsible={updateReasonAndResponsible}
-        updateResponsibleSelection={updateResponsibleSelection}
         handleImagesSelected={handleImagesSelected}
         uploadedImages={uploadedImages}
         handleCheckItemNumber={handleCheckItemNumber}

@@ -14,6 +14,8 @@
 import { useState, useRef, useCallback } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { fetchImageDataUrl } from '../services/api';
+import { toCorsProxyUrl, toDisplayImageUrl } from '../utils/imageUrls';
 
 // ===== ค่าคงที่สำหรับการ Export =====
 const PNG_SCALE = 2;           // ความละเอียดรูป PNG (2x = คมชัดมาก)
@@ -31,32 +33,38 @@ const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - PDF_MARGIN_MM * 2;
  * เพื่อแก้ปัญหา CORS ตอนที่ html2canvas พยายามวาดรูปลง canvas
  */
 async function fetchImageAsBase64(url: string): Promise<string> {
-  let displayUrl = url;
-  // แปลงจาก thumbnail เป็น uc?export=view
-  if (url.includes('drive.google.com/thumbnail?id=')) {
-    displayUrl = url.replace('thumbnail?id=', 'uc?export=view&id=').split('&sz=')[0];
-  }
+  const decodedUrl = url.includes('corsproxy.io/?')
+    ? decodeURIComponent(url.split('corsproxy.io/?')[1] || '')
+    : url;
+  const displayUrl = toDisplayImageUrl(decodedUrl, 1600);
+  const urlsToTry = [displayUrl, toCorsProxyUrl(displayUrl)];
 
   try {
-    // ใช้ CORS Proxy เพื่อข้ามข้อจำกัดของ Google Drive
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(displayUrl)}`;
-    const response = await fetch(proxyUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Proxy error: ${response.status}`);
-    }
-    
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.warn(`⚠️ Failed to convert image to Base64 via proxy: ${url}`, error);
-    return displayUrl; // ถ้าแปลงล้มเหลว ให้คืนค่า URL เดิมไปให้ html2canvas เสี่ยงดวง
+    return await fetchImageDataUrl(decodedUrl);
+  } catch {
+    // Fall back to browser fetch strategies for non-Drive or legacy URLs.
   }
+
+  for (const candidateUrl of urlsToTry) {
+    try {
+      const response = await fetch(candidateUrl);
+      if (!response.ok) {
+        throw new Error(`Image fetch error: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      // Try the next URL strategy.
+    }
+  }
+
+  return displayUrl;
 }
 
 /**
@@ -69,7 +77,8 @@ async function waitForImages(container: HTMLElement): Promise<void> {
   // 1. แปลง External URLs เป็น Base64
   for (const img of images) {
     if (img.src.startsWith('http') && !img.src.startsWith('data:')) {
-      const base64 = await fetchImageAsBase64(img.src);
+      const originalSrc = img.getAttribute('data-original-src') || img.src;
+      const base64 = await fetchImageAsBase64(originalSrc);
       img.src = base64;
     }
   }
@@ -138,9 +147,10 @@ export function useExportReport() {
         letterRendering: true, // ช่วยเรื่องการจัดเรียงตัวอักษร
         onclone: (clonedDoc) => {
           // บังคับให้ Element ที่ซ่อนอยู่แสดงผลในตัว Clone
-          const clonedEl = clonedDoc.body.children[0] as HTMLElement;
+          const clonedEl = clonedDoc.querySelector('[data-export-template="true"]') as HTMLElement;
           if (clonedEl) {
             clonedEl.style.display = 'block';
+            clonedEl.style.width = '800px';
           }
         },
       });
@@ -207,9 +217,10 @@ export function useExportReport() {
         letterRendering: true,
         onclone: (clonedDoc) => {
           // บังคับให้ Element ที่ซ่อนอยู่แสดงผลในตัว Clone
-          const clonedEl = clonedDoc.body.children[0] as HTMLElement;
+          const clonedEl = clonedDoc.querySelector('[data-export-template="true"]') as HTMLElement;
           if (clonedEl) {
             clonedEl.style.display = 'block';
+            clonedEl.style.width = '800px';
           }
         },
       });

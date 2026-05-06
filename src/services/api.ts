@@ -6,24 +6,33 @@
 import { getCurrentUser, getToken } from './auth';
 
 // ⚠️ GAS URL ต้องถูกตั้งค่าจาก App.tsx หรือ environment
-let GAS_WEB_APP_URL = '';
+const envGasUrl = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
+let GAS_WEB_APP_URL = envGasUrl;
 
 export function setGasWebAppUrl(url: string): void {
   const normalizedUrl = String(url || '').trim();
-  if (normalizedUrl && normalizedUrl.includes('script.google.com/macros/s') && normalizedUrl.endsWith('/exec')) {
+  if (isValidGasUrl(normalizedUrl)) {
     GAS_WEB_APP_URL = normalizedUrl;
   } else {
     console.warn('Invalid GAS Web App URL set:', url);
   }
 }
 
+export function getGasWebAppUrl(): string {
+  return GAS_WEB_APP_URL;
+}
+
+function isValidGasUrl(url: string): boolean {
+  return url.includes('script.google.com/macros/s') && url.endsWith('/exec');
+}
+
 function ensureGasWebAppUrl() {
-  if (!GAS_WEB_APP_URL) {
-    throw new Error('GAS_WEB_APP_URL is not configured. Call setGasWebAppUrl(url) before using the API.');
+  if (!isValidGasUrl(GAS_WEB_APP_URL)) {
+    throw new Error('REACT_APP_GAS_WEB_APP_URL is not configured with a valid Google Apps Script /exec URL.');
   }
 }
 
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -57,6 +66,10 @@ export interface ReworkCase {
   items: ReworkItem[];
 }
 
+type ReworkCaseResponse = ReworkCase & {
+  itemsRaw?: Array<Partial<ReworkItem> & { itemId?: string; url?: string; urls?: string[] }>;
+};
+
 /**
  * ฟังก์ชันช่วยแปลงไฟล์ภาพเป็น Base64
  */
@@ -70,8 +83,9 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 const DEFAULT_HEADERS = { 'Content-Type': 'text/plain' };
+const imageDataUrlCache = new Map<string, string>();
 
-function parseTokenPayload(token: string): Record<string, any> | null {
+function parseTokenPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = String(token || '').split('.');
     if (parts.length !== 3) return null;
@@ -95,9 +109,7 @@ async function postToGas<T>(payload: object): Promise<ApiResponse<T>> {
   try {
     const currentUser = getCurrentUser();
     const tokenPayload = parseTokenPayload(token);
-    const authProfile = currentUser?.name
-      ? String(currentUser.name).trim()
-      : String(tokenPayload?.profile || '').trim();
+    const authProfile = String(tokenPayload?.profile || currentUser?.name || '').trim();
     const authEmail = currentUser?.email
       ? String(currentUser.email).trim()
       : String(tokenPayload?.sub || '').trim();
@@ -205,12 +217,54 @@ export async function insertCase(
   }
 }
 
+function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
+  const sourceItems = Array.isArray(caseItem.items) && caseItem.items.length > 0
+    ? caseItem.items
+    : caseItem.itemsRaw || [];
+
+  return sourceItems.map((item) => {
+    const imageUrls = Array.isArray(item.imageUrls)
+      ? item.imageUrls
+      : Array.isArray(item.urls)
+        ? item.urls
+        : item.url
+          ? [String(item.url)]
+          : [];
+
+    return {
+      id: String(item.id || item.itemId || '').trim(),
+      itemNumber: String(item.itemNumber || ''),
+      itemName: String(item.itemName || ''),
+      itemCode: String(item.itemCode || ''),
+      amount: Number(item.amount || 0),
+      reason: String(item.reason || ''),
+      reasonSubtype: String(item.reasonSubtype || ''),
+      responsible: String(item.responsible || ''),
+      responsibleSubtype: String(item.responsibleSubtype || ''),
+      details: String(item.details || ''),
+      status: item.status || caseItem.status || 'Pending',
+      imageUrls,
+      imageFolderUrl: String(item.imageFolderUrl || ''),
+    };
+  });
+}
+
+function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
+  return cases.map((caseItem) => ({
+    id: String(caseItem.id || ''),
+    date: String(caseItem.date || ''),
+    source: String(caseItem.source || ''),
+    status: caseItem.status || 'Pending',
+    items: normalizeCaseItems(caseItem),
+  }));
+}
+
 /**
  * 2. Fetch all rework cases (ดึงข้อมูล)
  */
 export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
   try {
-    const result = await postToGas<ReworkCase[]>({ action: 'readAll' });
+    const result = await postToGas<ReworkCaseResponse[]>({ action: 'readAll' });
 
     if (result.success === false) {
       console.error('GAS Logic Error:', result.error);
@@ -219,7 +273,7 @@ export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
 
     return {
       success: result.success,
-      data: result.data || [],
+      data: normalizeCases(result.data || []),
       error: result.error,
     };
   } catch (error) {
@@ -299,4 +353,25 @@ export async function saveItemToMaster(itemNumber: string, itemName: string): Pr
   } catch (error) {
     return { success: false, error: 'Failed to save item master' };
   }
+}
+
+export async function fetchImageDataUrl(imageUrl: string): Promise<string> {
+  const normalizedUrl = String(imageUrl || '').trim();
+  if (!normalizedUrl) return '';
+  if (normalizedUrl.startsWith('data:')) return normalizedUrl;
+
+  const cached = imageDataUrlCache.get(normalizedUrl);
+  if (cached) return cached;
+
+  const result = await postToGas<{ dataUrl: string }>({
+    action: 'getImageDataUrl',
+    imageUrl: normalizedUrl,
+  });
+
+  if (!result.success || !result.data?.dataUrl) {
+    throw new Error(result.error || 'Failed to load image');
+  }
+
+  imageDataUrlCache.set(normalizedUrl, result.data.dataUrl);
+  return result.data.dataUrl;
 }

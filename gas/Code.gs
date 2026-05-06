@@ -12,18 +12,27 @@
  */
 
 // ===== CONFIGURATION =====
-// Replace with your actual Google Sheet ID
-const SHEET_ID = '1Zw66PocKhrTHpPj20Tt2DwBep1vHfbrWw9soX0afss0';
+// Configure these in Apps Script Properties.
+const SHEET_ID = getRequiredScriptProperty('GOOGLE_SHEET_ID');
 const SHEET_NAME = 'Rework Cases';
+const IMG_URL_SHEET_NAME = 'Img_Url';
 const ITEM_MASTER_SHEET_NAME = 'ItemMaster';
 const BACKUP_SHEET_NAME = 'Backup';
-const DRIVE_FOLDER_ID = '1QVYbfWc_kEBs4jONGpA3l6ai0gzvDQfj'; // Google Drive folder for images
+const DRIVE_FOLDER_ID = getRequiredScriptProperty('DRIVE_FOLDER_ID'); // Google Drive folder for images
 
 // ===== AUTHENTICATION SETTINGS =====
 const REQUIRE_TOKEN_VALIDATION = true;
 
 function getScriptProperty(key) {
   return String(PropertiesService.getScriptProperties().getProperty(key) || '').trim();
+}
+
+function getRequiredScriptProperty(key) {
+  const value = getScriptProperty(key);
+  if (!value) {
+    throw new Error(key + ' is not configured in script properties.');
+  }
+  return value;
 }
 
 function getAuthSecret() {
@@ -63,6 +72,49 @@ function getAuthProfileEmails() {
     }
   });
   return emails;
+}
+
+function getOrCreateSheet(sheetName, headers) {
+  const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+  let sheet = spreadsheet.getSheetByName(sheetName);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(sheetName);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#000000')
+      .setFontColor('#FFFFFF');
+    Logger.log('Created new sheet: ' + sheetName);
+    return sheet;
+  }
+
+  const firstRow = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  const headerMismatch = headers.some(function(header, index) {
+    return String(firstRow[index] || '').trim() !== header;
+  });
+
+  if (headerMismatch) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    Logger.log('Updated headers for sheet: ' + sheetName);
+  }
+
+  return sheet;
+}
+
+function createImgUrlLogRows(caseId, itemId, itemIndex, itemImageUrls, caseFolderUrl) {
+  const rows = [];
+  for (var i = 0; i < itemImageUrls.length; i++) {
+    rows.push([
+      caseId,
+      itemId,
+      itemIndex + 1,
+      i + 1,
+      itemImageUrls[i],
+      caseFolderUrl
+    ]);
+  }
+  return rows;
 }
 
 function createResponse(payload) {
@@ -456,6 +508,9 @@ function doPost(e) {
       case 'saveItemMaster':
         response = saveItemMaster(payload);
         break;
+      case 'getImageDataUrl':
+        response = getImageDataUrl(payload);
+        break;
       default:
         response = { success: false, error: 'Unknown action' };
     }
@@ -477,6 +532,7 @@ function doPost(e) {
  * Handle INSERT action - Create a new rework case
  */
 function handleInsert(payload) {
+  var lock;
   try {
     // ===== INPUT VALIDATION =====
     if (!payload.source || String(payload.source).trim() === '') {
@@ -535,6 +591,9 @@ function handleInsert(payload) {
     }
 
     // ===== DATA INSERTION =====
+    lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     const existingCaseIds = new Set();
     const lastRow = sheet.getLastRow();
@@ -562,6 +621,8 @@ function handleInsert(payload) {
     // ===== เตรียมข้อมูลแต่ละ item =====
     var rowsToInsert = [];
     var itemIds = [];
+    var imgLogRows = [];
+    var imgUrlSheet = getOrCreateSheet(IMG_URL_SHEET_NAME, ['Case ID', 'Item ID', 'Item Index', 'Image Index', 'Image URL', 'Case Folder URL']);
 
     payload.items.forEach(function(item, index) {
       var itemId = caseId + '-' + String(index + 1).padStart(3, '0');
@@ -578,6 +639,7 @@ function handleInsert(payload) {
           var imageUrl = uploadImageToDrive(base64Data, itemId, caseFolder.id);
           if (imageUrl) {
             itemImageUrls.push(imageUrl);
+            imgLogRows.push([caseId, itemId, index + 1, imgIdx + 1, imageUrl, caseFolderUrl]);
           }
         });
 
@@ -605,18 +667,30 @@ function handleInsert(payload) {
         sanitizeString(item.details || ''),
         'Pending',
         itemImageUrls.length > 0 ? itemImageUrls.join('|') : '', // คอลัม 15: URL แต่ละรูป คั่นด้วย |
-        itemImageUrls.length > 0 ? caseFolderUrl : '', // คอลัม 16: folder URL
+        caseFolderUrl, // คอลัม 16: folder URL
       ]);
     });
 
-    // Append rows to sheet
+    // Append rows to Rework Cases sheet
     if (rowsToInsert.length > 0) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, rowsToInsert[0].length)
         .setValues(rowsToInsert);
     }
 
+    // Append image URL rows to Img_Url sheet
+    if (imgLogRows.length > 0) {
+      imgUrlSheet.getRange(imgUrlSheet.getLastRow() + 1, 1, imgLogRows.length, imgLogRows[0].length)
+        .setValues(imgLogRows);
+      Logger.log('✓ Logged ' + imgLogRows.length + ' image URL rows to ' + IMG_URL_SHEET_NAME);
+    }
+
     // Create backup
     createBackup(sheet);
+
+    if (lock) {
+      lock.releaseLock();
+      lock = null;
+    }
 
     return {
       success: true,
@@ -628,6 +702,9 @@ function handleInsert(payload) {
       }
     };
   } catch (error) {
+    if (lock) {
+      lock.releaseLock();
+    }
     return {
       success: false,
       error: 'Insert failed: ' + error.toString(),
@@ -644,6 +721,21 @@ function handleReadAll(payload) {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     const data = sheet.getDataRange().getValues();
 
+    const imgUrlSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(IMG_URL_SHEET_NAME);
+    const imgUrlMap = new Map();
+    if (imgUrlSheet) {
+      const imgData = imgUrlSheet.getDataRange().getValues();
+      for (let i = 1; i < imgData.length; i++) {
+        const [caseId, itemId, itemIndex, imageIndex, imageUrl] = imgData[i];
+        const key = String(caseId || '').trim() + '|' + String(itemId || '').trim();
+        if (!key || !imageUrl) continue;
+        if (!imgUrlMap.has(key)) {
+          imgUrlMap.set(key, []);
+        }
+        imgUrlMap.get(key).push(String(imageUrl).trim());
+      }
+    }
+
     if (!data || data.length <= 1) {
       return {
         success: true,
@@ -658,12 +750,18 @@ function handleReadAll(payload) {
     // Columns: Item ID | Case ID | Date | Source | ItemNumber | ItemName | ItemCode | Amount | Reason | Reason Subtype | Responsible | Responsible Subtype | Details | Status | ImageUrls (pipe-separated) | ImageFolderUrl
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const caseId = row[1];
-      const itemId = row[0];
+      const caseId = String(row[1] || '').trim();
+      const itemId = String(row[0] || '').trim();
 
-      // ✅ แยก imageUrls จาก pipe-separated string เป็น array
       const rawImageUrls = String(row[14] || '').trim();
-      const imageUrlsArray = rawImageUrls ? rawImageUrls.split('|').filter(function(u) { return u.trim() !== ''; }) : [];
+      let imageUrlsArray = rawImageUrls ? rawImageUrls.split('|').filter(function(u) { return u.trim() !== ''; }) : [];
+      const imageKey = caseId + '|' + itemId;
+      if (imgUrlMap.has(imageKey)) {
+        const storedUrls = imgUrlMap.get(imageKey);
+        if (storedUrls && storedUrls.length > 0) {
+          imageUrlsArray = storedUrls;
+        }
+      }
 
       const item = {
         id: itemId,
@@ -677,8 +775,8 @@ function handleReadAll(payload) {
         responsibleSubtype: row[11] || '',
         details: row[12] || '',
         status: row[13] || 'Pending',
-        imageUrls: imageUrlsArray,  // ✅ URL ของแต่ละภาพ
-        imageFolderUrl: String(row[15] || row[14] || '').trim(), // คอลัม 16 หรือ fallback คอลัม 15 (ข้อมูลเก่า)
+        imageUrls: imageUrlsArray,
+        imageFolderUrl: String(row[15] || row[14] || '').trim(),
       };
 
       if (!caseMap.has(caseId)) {
@@ -715,7 +813,11 @@ function handleReadAll(payload) {
  * Handle UPDATE action - Update case status or details
  */
 function handleUpdate(payload) {
+  var lock;
   try {
+    lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     const data = sheet.getDataRange().getValues();
     const caseId = payload.caseId;
@@ -742,12 +844,20 @@ function handleUpdate(payload) {
     // Create backup
     createBackup(sheet);
 
+    if (lock) {
+      lock.releaseLock();
+      lock = null;
+    }
+
     return {
       success: true,
       message: `Updated ${updatedCount} items for case ${caseId}`,
       data: { updatedCount: updatedCount }
     };
   } catch (error) {
+    if (lock) {
+      lock.releaseLock();
+    }
     return {
       success: false,
       error: `Update failed: ${error.toString()}`
@@ -896,38 +1006,39 @@ function createBackup(sourceSheet) {
 function initializeSheet() {
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-    const firstRow = sheet.getRange(1, 1, 1, 15).getValues()[0];
-    
-    // Check if headers exist
-    if (!firstRow[0] || firstRow[0] === '') {
-      const headers = [
-        'Item ID',
-        'Case ID',
-        'Date',
-        'Source',
-        'Item Number',
-        'Item Name',
-        'Item Code',
-        'Amount (Box)',
-        'Reason',
-        'Reason Subtype',
-        'Responsible',
-        'Responsible Subtype',
-        'Details',
-        'Status',
-        'Image URLs'
-      ];
-      
+    const headers = [
+      'Item ID',
+      'Case ID',
+      'Date',
+      'Source',
+      'Item Number',
+      'Item Name',
+      'Item Code',
+      'Amount (Box)',
+      'Reason',
+      'Reason Subtype',
+      'Responsible',
+      'Responsible Subtype',
+      'Details',
+      'Status',
+      'Image URLs',
+      'Image Folder URL'
+    ];
+    const firstRow = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+    const headerMismatch = headers.some(function(header, index) {
+      return String(firstRow[index] || '').trim() !== header;
+    });
+
+    if (headerMismatch) {
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      
-      // Format header row
       const headerRange = sheet.getRange(1, 1, 1, headers.length);
       headerRange.setFontWeight('bold');
       headerRange.setBackground('#000000');
       headerRange.setFontColor('#FFFFFF');
-      
-      Logger.log('Sheet initialized successfully');
+      Logger.log('Rework Cases sheet header synced');
     }
+
+    getOrCreateSheet(IMG_URL_SHEET_NAME, ['Case ID', 'Item ID', 'Item Index', 'Image Index', 'Image URL', 'Case Folder URL']);
   } catch (error) {
     Logger.log('Initialization error: ' + error);
   }
@@ -1110,6 +1221,55 @@ function saveItemMaster(payload) {
   }
 }
 
+
+function extractDriveFileId(url) {
+  const normalizedUrl = String(url || '').trim();
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([^/]+)/,
+    /drive\.google\.com\/open\?id=([^&]+)/,
+    /drive\.google\.com\/uc\?(?:.*&)?id=([^&]+)/,
+    /drive\.google\.com\/thumbnail\?id=([^&]+)/,
+    /lh3\.googleusercontent\.com\/d\/([^/?]+)/
+  ];
+
+  for (var i = 0; i < patterns.length; i++) {
+    const match = normalizedUrl.match(patterns[i]);
+    if (match && match[1]) {
+      return decodeURIComponent(match[1]);
+    }
+  }
+
+  return normalizedUrl && normalizedUrl.indexOf('/') === -1 && normalizedUrl.indexOf('http') !== 0
+    ? normalizedUrl
+    : '';
+}
+
+function getImageDataUrl(payload) {
+  try {
+    const fileId = extractDriveFileId(payload.imageUrl || payload.fileId);
+    if (!fileId) {
+      return { success: false, error: 'Image file ID is required' };
+    }
+
+    const blob = DriveApp.getFileById(fileId).getBlob();
+    const contentType = blob.getContentType() || 'image/jpeg';
+    const base64 = Utilities.base64Encode(blob.getBytes());
+
+    return {
+      success: true,
+      data: {
+        fileId: fileId,
+        contentType: contentType,
+        dataUrl: 'data:' + contentType + ';base64,' + base64
+      }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Image load failed: ' + error.toString()
+    };
+  }
+}
 /**
  * สร้าง Folder สำหรับ Case ใน Google Drive (หรือใช้ folder เดิมถ้ามีอยู่แล้ว)
  * 
@@ -1219,7 +1379,7 @@ function uploadImageToDrive(base64Data, itemId, folderId) {
 
     // ✅ สร้าง URL ที่แสดงได้โดยตรงใน <img src>
     var fileId = file.getId();
-    var viewUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w800';
+    var viewUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1200';
 
     Logger.log('✅ Uploaded: ' + filename + ' → ' + viewUrl);
     return viewUrl;

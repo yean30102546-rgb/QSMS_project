@@ -11,8 +11,6 @@ interface AddCaseTabProps {
   addFormItem: () => void;
   removeFormItem: (id: string) => void;
   updateFormItem: (id: string, field: string, value: string | number) => void;
-  updateReasonAndResponsible: (id: string, reason: string) => void;
-  updateResponsibleSelection: (id: string, responsible: string) => void;
   handleImagesSelected: (itemId: string, files: File[]) => void;
   uploadedImages: Record<string, File[]>;
   handleCheckItemNumber: (id: string) => void;
@@ -33,8 +31,6 @@ export function AddCaseTab({
   addFormItem,
   removeFormItem,
   updateFormItem,
-  updateReasonAndResponsible,
-  updateResponsibleSelection,
   handleImagesSelected,
   uploadedImages,
   handleCheckItemNumber,

@@ -1,3 +1,23 @@
+import * as validationService from '../services/validation';
+
+/**
+ * Group rows by Item ID and collect URLs as array
+ * ใช้สำหรับข้อมูลที่ 1 URL ต่อ 1 แถว (ไม่ใช่ array)
+ * @param rows Array of objects with at least { itemId, url }
+ * @returns Array grouped by itemId, with urls: string[]
+ */
+export function groupItemsById<T extends { itemId: string; url: string }>(rows: T[]) {
+  const grouped = Object.values(
+    rows.reduce((acc, row) => {
+      if (!acc[row.itemId]) {
+        acc[row.itemId] = { ...row, urls: [] };
+      }
+      acc[row.itemId].urls.push(row.url);
+      return acc;
+    }, {} as Record<string, T & { urls: string[] }> )
+  );
+  return grouped;
+}
 /**
  * Utility Functions
  * Formatting, validation, and helper functions
@@ -55,35 +75,16 @@ export function formatDateThai(dateString: string): string {
 export function validateReworkItem(item: {
   itemNumber?: string | number;
   itemName?: string;
+  itemCode?: string | number;
   amount?: number | string;
   reason?: string;
   responsible?: string;
+  details?: string;
 }): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!item.itemNumber || String(item.itemNumber).trim() === '') {
-    errors.push('Item Number is required');
-  }
-
-  if (!item.itemName || String(item.itemName).trim() === '') {
-    errors.push('Item Name is required');
-  }
-
-  if (!item.amount || parseInt(String(item.amount)) <= 0) {
-    errors.push('Amount must be greater than 0');
-  }
-
-  if (!item.reason || String(item.reason).trim() === '') {
-    errors.push('Reason is required');
-  }
-
-  if (!item.responsible || String(item.responsible).trim() === '') {
-    errors.push('Responsible party is required');
-  }
-
+  const validation = validationService.validateReworkItem(item);
   return {
-    isValid: errors.length === 0,
-    errors,
+    isValid: validation.isValid,
+    errors: validation.errors.map((error) => error.message),
   };
 }
 
@@ -111,17 +112,7 @@ export function validateAllItems(items: any[]): { isValid: boolean; errors: Reco
  * Required fields: itemNumber, itemName, amount, reason, responsible
  */
 export function isSaveDisabled(items: any[]): boolean {
-  if (items.length === 0) return true;
-
-  return items.some(
-    (item) =>
-      !item.itemNumber ||
-      !item.itemName ||
-      !item.amount ||
-      item.amount <= 0 ||
-      !item.reason ||
-      !item.responsible
-  );
+  return validationService.isSaveDisabled(items);
 }
 
 /**
@@ -339,147 +330,58 @@ export function formatThaiDate(isoDate: string): string {
  * Validate ItemNumber format (alphanumeric, max 50 characters)
  */
 export function validateItemNumber(itemNumber: string): { valid: boolean; error?: string } {
-  const trimmed = String(itemNumber).trim();
-  
-  if (!trimmed) {
-    return { valid: false, error: 'Item Number is required' };
-  }
-  
-  if (!/^[a-zA-Z0-9]+$/.test(trimmed)) {
-    return { valid: false, error: 'Item Number must contain only letters and digits' };
-  }
-
-  if (trimmed.length > 50) {
-    return { valid: false, error: 'Item Number must not exceed 50 characters' };
-  }
-  
-  return { valid: true };
+  const error = validationService.validateItemNumber(itemNumber);
+  return error ? { valid: false, error: error.message } : { valid: true };
 }
 
 /**
  * Validate ItemCode format (numeric, max 11 digits or empty)
  */
 export function validateItemCode(itemCode: string): { valid: boolean; error?: string } {
-  const trimmed = String(itemCode).trim();
-  
-  if (!trimmed) {
-    return { valid: true }; // ItemCode is optional
-  }
-  
-  if (!/^\d+$/.test(trimmed)) {
-    return { valid: false, error: 'Item Code must contain only digits' };
-  }
-
-  if (trimmed.length > 11) {
-    return { valid: false, error: 'Item Code must not exceed 11 digits' };
-  }
-  
-  return { valid: true };
+  const error = validationService.validateItemCode(itemCode);
+  return error ? { valid: false, error: error.message } : { valid: true };
 }
 
 /**
  * Validate Amount range
  */
 export function validateAmount(amount: string | number): { valid: boolean; error?: string } {
-  const num = parseInt(String(amount));
-  
-  if (isNaN(num)) {
-    return { valid: false, error: 'Amount must be a valid number' };
-  }
-  
-  if (num <= 0) {
-    return { valid: false, error: 'Amount must be greater than 0' };
-  }
-  
-  if (num > 999999) {
-    return { valid: false, error: 'Amount must not exceed 999,999' };
-  }
-  
-  return { valid: true };
+  const error = validationService.validateAmount(amount);
+  return error ? { valid: false, error: error.message } : { valid: true };
 }
 
 /**
  * Validate ItemName (not empty, max 100 chars)
  */
 export function validateItemName(itemName: string): { valid: boolean; error?: string } {
-  const trimmed = String(itemName).trim();
-  
-  if (!trimmed) {
-    return { valid: false, error: 'Item Name is required' };
-  }
-  
-  if (trimmed.length > 100) {
-    return { valid: false, error: 'Item Name must not exceed 100 characters' };
-  }
-  
-  return { valid: true };
+  const error = validationService.validateItemName(itemName);
+  return error ? { valid: false, error: error.message } : { valid: true };
 }
 
 /**
  * Validate Reason (not empty)
  */
 export function validateReason(reason: string): { valid: boolean; error?: string } {
-  const trimmed = String(reason).trim();
-  
-  if (!trimmed) {
-    return { valid: false, error: 'Reason is required' };
-  }
-  
-  return { valid: true };
+  const error = validationService.validateReason(reason);
+  return error ? { valid: false, error: error.message } : { valid: true };
 }
 
 /**
  * Validate Responsible (not empty)
  */
 export function validateResponsible(responsible: string): { valid: boolean; error?: string } {
-  const trimmed = String(responsible).trim();
-  
-  if (!trimmed) {
-    return { valid: false, error: 'Responsible party is required' };
-  }
-  
-  return { valid: true };
+  const error = validationService.validateResponsible(responsible);
+  return error ? { valid: false, error: error.message } : { valid: true };
 }
 
 /**
  * Comprehensive validation for a single item with detailed error messages
  */
 export function validateItemDetailed(item: any): { isValid: boolean; fieldErrors: Record<string, string> } {
-  const fieldErrors: Record<string, string> = {};
-  
-  const itemNumberValidation = validateItemNumber(item.itemNumber);
-  if (!itemNumberValidation.valid) {
-    fieldErrors['itemNumber'] = itemNumberValidation.error || '';
-  }
-  
-  const itemNameValidation = validateItemName(item.itemName);
-  if (!itemNameValidation.valid) {
-    fieldErrors['itemName'] = itemNameValidation.error || '';
-  }
-  
-  const itemCodeValidation = validateItemCode(item.itemCode);
-  if (!itemCodeValidation.valid) {
-    fieldErrors['itemCode'] = itemCodeValidation.error || '';
-  }
-  
-  const amountValidation = validateAmount(item.amount);
-  if (!amountValidation.valid) {
-    fieldErrors['amount'] = amountValidation.error || '';
-  }
-  
-  const reasonValidation = validateReason(item.reason);
-  if (!reasonValidation.valid) {
-    fieldErrors['reason'] = reasonValidation.error || '';
-  }
-  
-  const responsibleValidation = validateResponsible(item.responsible);
-  if (!responsibleValidation.valid) {
-    fieldErrors['responsible'] = responsibleValidation.error || '';
-  }
-  
+  const validation = validationService.validateReworkItem(item);
   return {
-    isValid: Object.keys(fieldErrors).length === 0,
-    fieldErrors
+    isValid: validation.isValid,
+    fieldErrors: validationService.getFieldErrors(validation.errors),
   };
 }
 
@@ -497,23 +399,5 @@ export function sanitizeString(input: string): string {
  * Check for duplicate ItemNumbers in items array
  */
 export function findDuplicateItemNumbers(items: any[]): { hasDuplicates: boolean; duplicates: string[] } {
-  const seen = new Set<string>();
-  const duplicates: string[] = [];
-  
-  items.forEach(item => {
-    const num = String(item.itemNumber).trim();
-    if (num && seen.has(num)) {
-      if (!duplicates.includes(num)) {
-        duplicates.push(num);
-      }
-    }
-    if (num) {
-      seen.add(num);
-    }
-  });
-  
-  return {
-    hasDuplicates: duplicates.length > 0,
-    duplicates
-  };
+  return validationService.findDuplicateItemNumbers(items);
 }

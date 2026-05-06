@@ -1,132 +1,19 @@
 /**
- * Input Validation Service
- * Frontend validation for all form inputs
+ * Canonical frontend validation for rework forms.
+ * Keep these rules aligned with gas/Code.gs backend validation.
  */
 
-interface ValidationError {
+export interface ValidationError {
   field: string;
   message: string;
 }
 
-interface ValidationResult {
+export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
 }
 
-/**
- * Validate item number format (10-12 digits)
- */
-export function validateItemNumber(value: string | number): ValidationError | null {
-  const itemNum = String(value).trim();
-  if (!itemNum) {
-    return { field: 'itemNumber', message: 'Item number is required' };
-  }
-  if (!/^\d{10,12}$/.test(itemNum)) {
-    return { field: 'itemNumber', message: 'Item number must be 10-12 digits' };
-  }
-  return null;
-}
-
-/**
- * Validate item name (2-100 characters, alphanumeric + spaces/special chars)
- */
-export function validateItemName(value: string): ValidationError | null {
-  const name = String(value).trim();
-  if (!name) {
-    return { field: 'itemName', message: 'Item name is required' };
-  }
-  if (name.length < 2) {
-    return { field: 'itemName', message: 'Item name must be at least 2 characters' };
-  }
-  if (name.length > 100) {
-    return { field: 'itemName', message: 'Item name must not exceed 100 characters' };
-  }
-  // Check for XSS patterns
-  if (/<script|javascript:|onerror|onclick/i.test(name)) {
-    return { field: 'itemName', message: 'Item name contains invalid characters' };
-  }
-  return null;
-}
-
-/**
- * Validate item code (numeric, up to 12 digits)
- */
-export function validateItemCode(value: string | number): ValidationError | null {
-  if (!value) return null; // Optional field
-  
-  const code = String(value).trim();
-  if (!/^\d{1,12}$/.test(code)) {
-    return { field: 'itemCode', message: 'Item code must be numeric (1-12 digits)' };
-  }
-  return null;
-}
-
-/**
- * Validate quantity/amount (positive number, 1-1000)
- */
-export function validateAmount(value: string | number): ValidationError | null {
-  const amount = parseInt(String(value));
-  if (isNaN(amount)) {
-    return { field: 'amount', message: 'Quantity must be a number' };
-  }
-  if (amount < 1) {
-    return { field: 'amount', message: 'Quantity must be at least 1' };
-  }
-  if (amount > 1000) {
-    return { field: 'amount', message: 'Quantity must not exceed 1000' };
-  }
-  return null;
-}
-
-/**
- * Validate reason field
- */
-export function validateReason(value: string): ValidationError | null {
-  if (!value) {
-    return { field: 'reason', message: 'Reason is required' };
-  }
-  const validReasons = ['รั่ว', 'แตกตะเข็บ', 'รอยมีด', 'ขวดเปื้อน', 'กล่องเปื้อนอย่างเดียว', 'อื่นๆ'];
-  if (!validReasons.includes(value)) {
-    return { field: 'reason', message: 'Invalid reason selected' };
-  }
-  return null;
-}
-
-/**
- * Validate responsible field
- */
-export function validateResponsible(value: string): ValidationError | null {
-  if (!value) {
-    return { field: 'responsible', message: 'Responsible party is required' };
-  }
-  const validResponsible = ['SFC', 'Supplier', 'อื่นๆ', 'PDF', 'WFG', 'WPK', 'Customer', 'SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs'];
-  if (!validResponsible.includes(value)) {
-    return { field: 'responsible', message: 'Invalid responsible party selected' };
-  }
-  return null;
-}
-
-/**
- * Validate details/notes field
- */
-export function validateDetails(value: string | undefined): ValidationError | null {
-  if (!value) return null; // Optional field
-
-  const details = String(value).trim();
-  if (details.length > 500) {
-    return { field: 'details', message: 'Details must not exceed 500 characters' };
-  }
-  // Check for XSS
-  if (/<script|javascript:|onerror|onclick/i.test(details)) {
-    return { field: 'details', message: 'Details contain invalid content' };
-  }
-  return null;
-}
-
-/**
- * Validate complete rework item
- */
-export function validateReworkItem(item: {
+export interface ReworkItemValidationInput {
   itemNumber?: string | number;
   itemName?: string;
   itemCode?: string | number;
@@ -134,30 +21,98 @@ export function validateReworkItem(item: {
   reason?: string;
   responsible?: string;
   details?: string;
-}): ValidationResult {
-  const errors: ValidationError[] = [];
+}
 
-  // Validate required fields
-  const itemNumError = validateItemNumber(item.itemNumber || '');
-  if (itemNumError) errors.push(itemNumError);
+export function validateItemNumber(value: string | number): ValidationError | null {
+  const itemNumber = String(value).trim();
+  if (!itemNumber) {
+    return { field: 'itemNumber', message: 'Item Number is required' };
+  }
+  if (!/^[a-zA-Z0-9]+$/.test(itemNumber)) {
+    return { field: 'itemNumber', message: 'Item Number must contain only letters and digits' };
+  }
+  if (itemNumber.length > 50) {
+    return { field: 'itemNumber', message: 'Item Number must not exceed 50 characters' };
+  }
+  return null;
+}
 
-  const itemNameError = validateItemName(item.itemName || '');
-  if (itemNameError) errors.push(itemNameError);
+export function validateItemName(value: string): ValidationError | null {
+  const itemName = String(value || '').trim();
+  if (!itemName) {
+    return { field: 'itemName', message: 'Item Name is required' };
+  }
+  if (itemName.length > 100) {
+    return { field: 'itemName', message: 'Item Name must not exceed 100 characters' };
+  }
+  if (/<script|javascript:|onerror|onclick/i.test(itemName)) {
+    return { field: 'itemName', message: 'Item Name contains invalid content' };
+  }
+  return null;
+}
 
-  const itemCodeError = validateItemCode(item.itemCode || '');
-  if (itemCodeError) errors.push(itemCodeError);
+export function validateItemCode(value: string | number): ValidationError | null {
+  const itemCode = String(value || '').trim();
+  if (!itemCode) return null;
+  if (!/^\d+$/.test(itemCode)) {
+    return { field: 'itemCode', message: 'Item Code must contain only digits' };
+  }
+  if (itemCode.length > 11) {
+    return { field: 'itemCode', message: 'Item Code must not exceed 11 digits' };
+  }
+  return null;
+}
 
-  const amountError = validateAmount(item.amount || 1);
-  if (amountError) errors.push(amountError);
+export function validateAmount(value: string | number): ValidationError | null {
+  const amount = parseInt(String(value), 10);
+  if (isNaN(amount)) {
+    return { field: 'amount', message: 'Amount must be a valid number' };
+  }
+  if (amount <= 0) {
+    return { field: 'amount', message: 'Amount must be greater than 0' };
+  }
+  if (amount > 999999) {
+    return { field: 'amount', message: 'Amount must not exceed 999,999' };
+  }
+  return null;
+}
 
-  const reasonError = validateReason(item.reason || '');
-  if (reasonError) errors.push(reasonError);
+export function validateReason(value: string): ValidationError | null {
+  if (!String(value || '').trim()) {
+    return { field: 'reason', message: 'Reason is required' };
+  }
+  return null;
+}
 
-  const responsibleError = validateResponsible(item.responsible || '');
-  if (responsibleError) errors.push(responsibleError);
+export function validateResponsible(value: string): ValidationError | null {
+  if (!String(value || '').trim()) {
+    return { field: 'responsible', message: 'Responsible party is required' };
+  }
+  return null;
+}
 
-  const detailsError = validateDetails(item.details);
-  if (detailsError) errors.push(detailsError);
+export function validateDetails(value: string | undefined): ValidationError | null {
+  if (!value) return null;
+  const details = String(value).trim();
+  if (details.length > 500) {
+    return { field: 'details', message: 'Details must not exceed 500 characters' };
+  }
+  if (/<script|javascript:|onerror|onclick/i.test(details)) {
+    return { field: 'details', message: 'Details contain invalid content' };
+  }
+  return null;
+}
+
+export function validateReworkItem(item: ReworkItemValidationInput): ValidationResult {
+  const errors = [
+    validateItemNumber(item.itemNumber || ''),
+    validateItemName(item.itemName || ''),
+    validateItemCode(item.itemCode || ''),
+    validateAmount(item.amount ?? ''),
+    validateReason(item.reason || ''),
+    validateResponsible(item.responsible || ''),
+    validateDetails(item.details),
+  ].filter((error): error is ValidationError => Boolean(error));
 
   return {
     isValid: errors.length === 0,
@@ -165,12 +120,40 @@ export function validateReworkItem(item: {
   };
 }
 
-/**
- * Sanitize input string to prevent XSS
- */
+export function getFieldErrors(errors: ValidationError[]): Record<string, string> {
+  return errors.reduce<Record<string, string>>((acc, error) => {
+    acc[error.field] = error.message;
+    return acc;
+  }, {});
+}
+
+export function findDuplicateItemNumbers(items: Array<{ itemNumber?: string | number }>): { hasDuplicates: boolean; duplicates: string[] } {
+  const seen = new Set<string>();
+  const duplicates: string[] = [];
+
+  items.forEach((item) => {
+    const itemNumber = String(item.itemNumber || '').trim();
+    if (!itemNumber) return;
+    if (seen.has(itemNumber) && !duplicates.includes(itemNumber)) {
+      duplicates.push(itemNumber);
+    }
+    seen.add(itemNumber);
+  });
+
+  return {
+    hasDuplicates: duplicates.length > 0,
+    duplicates,
+  };
+}
+
+export function isSaveDisabled(items: ReworkItemValidationInput[]): boolean {
+  if (items.length === 0) return true;
+  return items.some((item) => !validateReworkItem(item).isValid);
+}
+
 export function sanitizeInput(input: string): string {
   return String(input)
-    .replace(/[<>\"']/g, (char) => {
+    .replace(/[<>"']/g, (char) => {
       const entities: Record<string, string> = {
         '<': '&lt;',
         '>': '&gt;',
@@ -182,17 +165,11 @@ export function sanitizeInput(input: string): string {
     .trim();
 }
 
-/**
- * Validate email format
- */
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
-/**
- * Validate username (3-20 alphanumeric characters)
- */
 export function validateUsername(username: string): ValidationError | null {
   if (!username) {
     return { field: 'username', message: 'Username is required' };
@@ -206,9 +183,6 @@ export function validateUsername(username: string): ValidationError | null {
   return null;
 }
 
-/**
- * Validate password strength
- */
 export function validatePassword(password: string): ValidationError | null {
   if (!password) {
     return { field: 'password', message: 'Password is required' };
@@ -219,9 +193,5 @@ export function validatePassword(password: string): ValidationError | null {
   if (password.length > 50) {
     return { field: 'password', message: 'Password must not exceed 50 characters' };
   }
-  // Optional: require mix of uppercase, lowercase, numbers
-  // if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-  //   return { field: 'password', message: 'Password must contain uppercase, lowercase, and numbers' };
-  // }
   return null;
 }
