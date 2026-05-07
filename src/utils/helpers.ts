@@ -1,4 +1,5 @@
 import * as validationService from '../services/validation';
+import type { ReworkCase, ReworkItem } from '../services/api';
 
 /**
  * Group rows by Item ID and collect URLs as array
@@ -91,7 +92,7 @@ export function validateReworkItem(item: {
 /**
  * Validate all form items
  */
-export function validateAllItems(items: any[]): { isValid: boolean; errors: Record<number, string[]> } {
+export function validateAllItems(items: ReworkItem[]): { isValid: boolean; errors: Record<number, string[]> } {
   const errors: Record<number, string[]> = {};
 
   items.forEach((item, idx) => {
@@ -111,7 +112,7 @@ export function validateAllItems(items: any[]): { isValid: boolean; errors: Reco
  * Check if save button should be disabled
  * Required fields: itemNumber, itemName, amount, reason, responsible
  */
-export function isSaveDisabled(items: any[]): boolean {
+export function isSaveDisabled(items: ReworkItem[]): boolean {
   return validationService.isSaveDisabled(items);
 }
 
@@ -119,9 +120,9 @@ export function isSaveDisabled(items: any[]): boolean {
  * Sort cases by status: Pending > In-Progress > Completed
  */
 export function sortCasesByStatus(
-  cases: any[]
-): any[] {
-  const statusOrder = { Pending: 0, 'In-Progress': 1, Completed: 2 };
+  cases: ReworkCase[]
+): ReworkCase[] {
+  const statusOrder: Record<ReworkCase['status'], number> = { Pending: 0, 'In-Progress': 1, Completed: 2 };
 
   return [...cases].sort(
     (a, b) =>
@@ -135,7 +136,7 @@ export function sortCasesByStatus(
  */
 export interface FilterOptions {
   query?: string;
-  status?: string[];
+  status?: ReworkCase['status'][];
   source?: string[];
   reason?: string[];
   responsible?: string[];
@@ -146,7 +147,7 @@ export interface FilterOptions {
 /**
  * Filter cases by search query
  */
-export function filterCasesByQuery(cases: any[], query: string): any[] {
+export function filterCasesByQuery(cases: ReworkCase[], query: string): ReworkCase[] {
   if (!query.trim()) return cases;
 
   const lowerQuery = query.toLowerCase();
@@ -156,7 +157,7 @@ export function filterCasesByQuery(cases: any[], query: string): any[] {
       String(caseItem.id || '').toLowerCase().includes(lowerQuery) ||
       String(caseItem.source || '').toLowerCase().includes(lowerQuery) ||
       // Search in all items, not just first one
-      caseItem.items?.some((item: any) =>
+      caseItem.items?.some((item) =>
         String(item.itemName || '').toLowerCase().includes(lowerQuery) ||
         String(item.itemNumber || '').toLowerCase().includes(lowerQuery) ||
         String(item.itemCode || '').toLowerCase().includes(lowerQuery) ||
@@ -171,9 +172,9 @@ export function filterCasesByQuery(cases: any[], query: string): any[] {
  * Filter cases by multiple criteria (comprehensive)
  */
 export function filterCasesByMultipleCriteria(
-  cases: any[],
+  cases: ReworkCase[],
   options: FilterOptions
-): any[] {
+): ReworkCase[] {
   return cases.filter((caseItem) => {
     // Status filter
     if (options.status && options.status.length > 0) {
@@ -191,7 +192,7 @@ export function filterCasesByMultipleCriteria(
 
     // Reason filter - check all items in case
     if (options.reason && options.reason.length > 0) {
-      const hasReason = caseItem.items.some((item: any) =>
+      const hasReason = caseItem.items.some((item) =>
         options.reason!.includes(item.reason)
       );
       if (!hasReason) {
@@ -201,7 +202,7 @@ export function filterCasesByMultipleCriteria(
 
     // Responsible filter - check all items in case
     if (options.responsible && options.responsible.length > 0) {
-      const hasResponsible = caseItem.items.some((item: any) =>
+      const hasResponsible = caseItem.items.some((item) =>
         options.responsible!.includes(item.responsible)
       );
       if (!hasResponsible) {
@@ -273,7 +274,7 @@ export function formatTimestamp(timestamp: string): string {
 /**
  * Calculate completion percentage
  */
-export function calculateCompletionRate(cases: any[]): number {
+export function calculateCompletionRate(cases: ReworkCase[]): number {
   if (cases.length === 0) return 0;
   const completed = cases.filter((c) => c.status === 'Completed').length;
   return Math.round((completed / cases.length) * 100);
@@ -282,7 +283,15 @@ export function calculateCompletionRate(cases: any[]): number {
 /**
  * Get statistics from cases
  */
-export function getStatistics(cases: any[]) {
+export interface CaseStatistics {
+  total: number;
+  pending: number;
+  inProgress: number;
+  completed: number;
+  completionRate: number;
+}
+
+export function getStatistics(cases: ReworkCase[]): CaseStatistics {
   return {
     total: cases.length,
     pending: cases.filter((c) => c.status === 'Pending').length,
@@ -377,7 +386,7 @@ export function validateResponsible(responsible: string): { valid: boolean; erro
 /**
  * Comprehensive validation for a single item with detailed error messages
  */
-export function validateItemDetailed(item: any): { isValid: boolean; fieldErrors: Record<string, string> } {
+export function validateItemDetailed(item: ReworkItem): { isValid: boolean; fieldErrors: Record<string, string> } {
   const validation = validationService.validateReworkItem(item);
   return {
     isValid: validation.isValid,
@@ -398,6 +407,6 @@ export function sanitizeString(input: string): string {
 /**
  * Check for duplicate ItemNumbers in items array
  */
-export function findDuplicateItemNumbers(items: any[]): { hasDuplicates: boolean; duplicates: string[] } {
+export function findDuplicateItemNumbers(items: ReworkItem[]): { hasDuplicates: boolean; duplicates: string[] } {
   return validationService.findDuplicateItemNumbers(items);
 }

@@ -3,8 +3,6 @@
  * Handles client-side image compression and validation
  */
 
-import imageCompression from 'browser-image-compression';
-
 interface CompressionConfig {
   maxSizeMB: number;
   maxWidthOrHeight: number;
@@ -23,32 +21,25 @@ interface CompressionResult {
   error?: string;
 }
 
-interface CompressionProgress {
-  progress: number; // 0-100
-  status: 'idle' | 'validating' | 'compressing' | 'complete' | 'error';
-}
-
-/**
- * Default compression configuration
- */
 const DEFAULT_CONFIG: CompressionConfig = {
   maxSizeMB: 0.5,
   maxWidthOrHeight: 1280,
 };
 
-/**
- * Allowed image types
- */
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png'];
 
-/**
- * Validate image file type and size
- * @param file - The file to validate
- * @returns Validation result
- */
+let imageCompressionLoader: Promise<typeof import('browser-image-compression').default> | null = null;
+
+async function loadImageCompression() {
+  if (!imageCompressionLoader) {
+    imageCompressionLoader = import('browser-image-compression').then((mod) => mod.default);
+  }
+
+  return imageCompressionLoader;
+}
+
 export function validateImageFile(file: File): ValidationResult {
-  // Check file type
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     return {
       valid: false,
@@ -56,17 +47,15 @@ export function validateImageFile(file: File): ValidationResult {
     };
   }
 
-  // Check file extension
   const fileName = file.name.toLowerCase();
-  const hasValidExtension = ALLOWED_IMAGE_EXTENSIONS.some(ext => fileName.endsWith(ext));
+  const hasValidExtension = ALLOWED_IMAGE_EXTENSIONS.some((ext) => fileName.endsWith(ext));
   if (!hasValidExtension) {
     return {
       valid: false,
-      error: `Invalid file extension. Only .jpg, .jpeg, and .png are allowed.`,
+      error: 'Invalid file extension. Only .jpg, .jpeg, and .png are allowed.',
     };
   }
 
-  // Check initial file size (before compression)
   const maxInitialSizeMB = 10;
   if (file.size > maxInitialSizeMB * 1024 * 1024) {
     return {
@@ -78,22 +67,14 @@ export function validateImageFile(file: File): ValidationResult {
   return { valid: true };
 }
 
-/**
- * Compress a single image file
- * @param file - The file to compress
- * @param config - Compression configuration
- * @param onProgress - Callback for progress updates (0-100)
- * @returns Compression result
- */
 export async function compressImage(
   file: File,
   config: Partial<CompressionConfig> = {},
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): Promise<CompressionResult> {
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
 
   try {
-    // Validate file first
     const validation = validateImageFile(file);
     if (!validation.valid) {
       return {
@@ -103,16 +84,15 @@ export async function compressImage(
       };
     }
 
+    const imageCompression = await loadImageCompression();
     const originalSize = file.size;
     onProgress?.(10);
 
-    // Start compression
     const compressedFile = await imageCompression(file, {
       maxSizeMB: mergedConfig.maxSizeMB,
       maxWidthOrHeight: mergedConfig.maxWidthOrHeight,
       useWebWorker: true,
       onProgress: (progress) => {
-        // progress is 0-100
         onProgress?.(10 + Math.floor(progress * 0.8));
       },
     });
@@ -134,31 +114,20 @@ export async function compressImage(
   }
 }
 
-/**
- * Compress multiple images
- * @param files - Array of files to compress
- * @param config - Compression configuration
- * @param onProgress - Callback for overall progress (0-100)
- * @returns Array of compression results
- */
 export async function compressMultipleImages(
   files: File[],
   config: Partial<CompressionConfig> = {},
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): Promise<CompressionResult[]> {
   const results: CompressionResult[] = [];
 
   for (let i = 0; i < files.length; i++) {
     const fileProgress = (i / files.length) * 100;
 
-    const result = await compressImage(
-      files[i],
-      config,
-      (progress) => {
-        const overallProgress = fileProgress + (progress / files.length);
-        onProgress?.(Math.floor(overallProgress));
-      }
-    );
+    const result = await compressImage(files[i], config, (progress) => {
+      const overallProgress = fileProgress + progress / files.length;
+      onProgress?.(Math.floor(overallProgress));
+    });
 
     results.push(result);
   }
@@ -167,11 +136,6 @@ export async function compressMultipleImages(
   return results;
 }
 
-/**
- * Convert file size from bytes to human-readable format
- * @param bytes - Size in bytes
- * @returns Formatted string (e.g., "2.5 MB")
- */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
 
@@ -182,16 +146,7 @@ export function formatFileSize(bytes: number): string {
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
-/**
- * Calculate compression ratio
- * @param originalSize - Original file size in bytes
- * @param compressedSize - Compressed file size in bytes
- * @returns Compression ratio as percentage (e.g., 45.5 for 45.5%)
- */
-export function calculateCompressionRatio(
-  originalSize: number,
-  compressedSize: number
-): number {
+export function calculateCompressionRatio(originalSize: number, compressedSize: number): number {
   if (originalSize === 0) return 0;
   return Math.round(((originalSize - compressedSize) / originalSize) * 100 * 10) / 10;
 }

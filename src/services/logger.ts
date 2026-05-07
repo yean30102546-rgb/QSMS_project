@@ -14,7 +14,7 @@ interface LogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
-  data?: any;
+  data?: unknown;
   stack?: string;
 }
 
@@ -44,10 +44,17 @@ class Logger {
     return new Date().toISOString();
   }
 
+  private toMetadataObject(value: unknown): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return value === undefined ? {} : { value };
+    }
+    return value as Record<string, unknown>;
+  }
+
   /**
    * Log entry with level and message
    */
-  private logEntry(level: LogLevel, message: string, data?: any, stack?: string) {
+  private logEntry(level: LogLevel, message: string, data?: unknown, stack?: string) {
     const entry: LogEntry = {
       timestamp: this.getTimestamp(),
       level,
@@ -76,7 +83,7 @@ class Logger {
   /**
    * Console logging with colors
    */
-  private consoleLog(level: LogLevel, message: string, data?: any, stack?: string) {
+  private consoleLog(level: LogLevel, message: string, data?: unknown, stack?: string) {
     const colors: Record<LogLevel, string> = {
       [LogLevel.DEBUG]: 'color: #999; font-weight: bold;',
       [LogLevel.INFO]: 'color: #0066cc; font-weight: bold;',
@@ -125,31 +132,31 @@ class Logger {
   /**
    * Debug level logging
    */
-  debug(message: string, data?: any) {
+  debug(message: string, data?: unknown) {
     this.logEntry(LogLevel.DEBUG, message, data);
   }
 
   /**
    * Info level logging
    */
-  info(message: string, data?: any) {
+  info(message: string, data?: unknown) {
     this.logEntry(LogLevel.INFO, message, data);
   }
 
   /**
    * Warning level logging
    */
-  warn(message: string, data?: any) {
+  warn(message: string, data?: unknown) {
     this.logEntry(LogLevel.WARN, message, data);
   }
 
   /**
    * Error level logging with stack trace
    */
-  error(message: string, error?: Error | any, data?: any) {
+  error(message: string, error?: unknown, data?: unknown) {
     const stack = error instanceof Error ? error.stack : undefined;
     const errorData = {
-      ...data,
+      ...this.toMetadataObject(data),
       errorMessage: error instanceof Error ? error.message : String(error),
     };
     this.logEntry(LogLevel.ERROR, message, errorData, stack);
@@ -158,17 +165,17 @@ class Logger {
   /**
    * Log performance metrics
    */
-  logPerformance(operation: string, duration: number, metadata?: any) {
+  logPerformance(operation: string, duration: number, metadata?: unknown) {
     this.info(`Performance: ${operation}`, {
       duration: `${duration.toFixed(2)}ms`,
-      ...metadata,
+      ...this.toMetadataObject(metadata),
     });
   }
 
   /**
    * Log API calls
    */
-  logApiCall(method: string, endpoint: string, status: number, duration: number, error?: any) {
+  logApiCall(method: string, endpoint: string, status: number, duration: number, error?: unknown) {
     const level = status >= 400 ? LogLevel.WARN : LogLevel.DEBUG;
     this.logEntry(level, `API ${method} ${endpoint}`, {
       status,
@@ -220,11 +227,11 @@ export const logger = new Logger();
  * Convenience functions for global use
  */
 export const log = {
-  debug: (msg: string, data?: any) => logger.debug(msg, data),
-  info: (msg: string, data?: any) => logger.info(msg, data),
-  warn: (msg: string, data?: any) => logger.warn(msg, data),
-  error: (msg: string, error?: Error | any, data?: any) => logger.error(msg, error, data),
-  performance: (op: string, duration: number, metadata?: any) => logger.logPerformance(op, duration, metadata),
-  api: (method: string, endpoint: string, status: number, duration: number, error?: any) =>
+  debug: (msg: string, data?: unknown) => logger.debug(msg, data),
+  info: (msg: string, data?: unknown) => logger.info(msg, data),
+  warn: (msg: string, data?: unknown) => logger.warn(msg, data),
+  error: (msg: string, error?: unknown, data?: unknown) => logger.error(msg, error, data),
+  performance: (op: string, duration: number, metadata?: unknown) => logger.logPerformance(op, duration, metadata),
+  api: (method: string, endpoint: string, status: number, duration: number, error?: unknown) =>
     logger.logApiCall(method, endpoint, status, duration, error),
 };

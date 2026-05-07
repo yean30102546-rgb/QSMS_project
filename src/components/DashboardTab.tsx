@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
 
+import type { ReworkCase } from '../services/api';
 import { Dashboard } from './Dashboard';
 
 interface DashboardTabProps {
-  cases: any[];
+  cases: ReworkCase[];
   isLoadingCases: boolean;
   isLoadingMaster: boolean;
 }
@@ -23,7 +24,7 @@ export function DashboardTab({
       className="space-y-8"
     >
       <header>
-        <p className="text-sm text-muted font-medium mb-1">
+        <p className="mb-1 text-sm font-medium text-muted">
           {new Date().toLocaleDateString('th-TH', {
             weekday: 'long',
             month: 'short',

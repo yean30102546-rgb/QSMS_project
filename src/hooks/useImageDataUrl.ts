@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 
 import { fetchImageDataUrl } from '../services/api';
+import { extractGoogleDriveFileId } from '../utils/imageUrls';
 
 export function useImageDataUrl(imageUrl: string) {
+  const initialUrl = String(imageUrl || '').trim();
+  const shouldFetchFromGas = Boolean(initialUrl) && Boolean(extractGoogleDriveFileId(initialUrl)) && !initialUrl.startsWith('data:');
   const [dataUrl, setDataUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(Boolean(imageUrl));
+  const [isLoading, setIsLoading] = useState(shouldFetchFromGas);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -12,6 +15,13 @@ export function useImageDataUrl(imageUrl: string) {
     const normalizedUrl = String(imageUrl || '').trim();
 
     if (!normalizedUrl) {
+      setDataUrl('');
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    if (!extractGoogleDriveFileId(normalizedUrl) || normalizedUrl.startsWith('data:')) {
       setDataUrl('');
       setIsLoading(false);
       setError(null);

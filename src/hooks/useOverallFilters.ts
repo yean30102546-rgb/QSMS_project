@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { ReworkCase } from '../services/api';
+import type { ReworkCase } from '../services/api';
 import { filterCasesByMultipleCriteria } from '../utils/helpers';
 
 const ITEMS_PER_PAGE = 10;
+type CaseStatus = ReworkCase['status'];
+type FilterType = 'status' | 'source' | 'reason' | 'responsible' | 'date';
 
 export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<CaseStatus[]>([]);
   const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [reasonFilter, setReasonFilter] = useState<string[]>([]);
   const [responsibleFilter, setResponsibleFilter] = useState<string[]>([]);
@@ -64,7 +66,7 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
   const activeFilterCount = [statusFilter, sourceFilter, reasonFilter, responsibleFilter]
     .filter((filter) => filter.length > 0).length + (dateFromFilter || dateToFilter ? 1 : 0);
 
-  const statusCounts = useMemo(() => ({
+  const statusCounts = useMemo<Record<CaseStatus, number>>(() => ({
     Pending: cases.filter((caseItem) => caseItem.status === 'Pending').length,
     'In-Progress': cases.filter((caseItem) => caseItem.status === 'In-Progress').length,
     Completed: cases.filter((caseItem) => caseItem.status === 'Completed').length,
@@ -78,7 +80,7 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
     setCurrentPage(1);
   }, [searchQuery, statusFilter.length, sourceFilter.length, reasonFilter.length, responsibleFilter.length, dateFromFilter, dateToFilter]);
 
-  const removeFilter = (type: string, value?: string) => {
+  const removeFilter = (type: FilterType, value?: string) => {
     switch (type) {
       case 'status':
         setStatusFilter((prev) => value ? prev.filter((status) => status !== value) : []);
@@ -108,7 +110,7 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
     setDateToFilter('');
   };
 
-  const toggleStatusFilter = (status: string) => {
+  const toggleStatusFilter = (status: CaseStatus) => {
     setStatusFilter((prev) => (
       prev.includes(status)
         ? prev.filter((selectedStatus) => selectedStatus !== status)

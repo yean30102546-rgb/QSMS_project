@@ -1,7 +1,7 @@
 # Antigravity.md — Project Context
 
 ## Project: QSMS Rework Management System
-**Last Updated:** 2026-05-06
+**Last Updated:** 2026-05-07
 
 ## Architecture
 - **Frontend:** React + Tailwind CSS (Vite dev server)
@@ -29,6 +29,8 @@
 | `src/components/ExportTemplate.tsx` | Ghost template สำหรับ Export รายงาน (PNG/PDF) |
 | `src/hooks/useExportReport.ts` | Hook จัดการ Export PNG (Long Image) และ PDF (Multi-page) |
 | `gas/Code.gs` | Backend ทั้งหมด (Auth, CRUD, Drive) |
+| `src/components/TutorialModal.tsx` | ระบบคู่มือการใช้งานแบบ Modal ภายในแอป |
+| `artifacts/user_guide.md` | คู่มือการใช้งานฉบับสมบูรณ์ (Markdown) |
 
 ## Authentication (Password-based)
 - Login ใช้ `loginWithPassword()` ส่ง `password` (ไม่จำกัดรูปแบบ/ความยาว)
@@ -51,6 +53,7 @@
 13. **Bangkok Timezone Fix** — แก้ทุกฟังก์ชัน date/time (formatThaiDate, formatTimestamp, formatDateThai, generateCaseId) ให้ lock เป็น `Asia/Bangkok` เสมอ ทั้งใน helpers.ts และ CaseListTable.tsx
 14. **Image URL Fix (GAS)** — แก้ `uploadImageToDrive` ให้ return URL + setSharing public, `handleInsert` เก็บ URL แต่ละรูปแยก item (pipe-separated ในคอลัมน์ 15, folder URL ในคอลัมน์ 16), `handleReadAll` แยก imageUrls[] กลับเป็น array
 15. **Export Report (PNG/PDF)** — เพิ่มปุ่ม Export PNG (Long Image) และ Export PDF (Multi-page A4) ใน UpdateModal + สร้าง Ghost ExportTemplate ที่มี Header/Footer บริษัท + ใช้ html2canvas + jsPDF + Image Preload Sync + Loading Overlay แสดงสถานะการ Export
+16. **Tutorial System** — สร้าง `TutorialModal.tsx` และเพิ่มปุ่ม "คู่มือการใช้งาน" ใน Sidebar เพื่อให้ผู้ใช้เข้าถึงคำแนะนำการใช้งานฟังก์ชันต่างๆ ได้ทันที พร้อมสร้างไฟล์ `user_guide.md` เป็นเอกสารอ้างอิงหลัก
 
 ## GAS Script Properties Required
 ```

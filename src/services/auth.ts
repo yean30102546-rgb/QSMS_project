@@ -54,6 +54,10 @@ export interface PermissionCheckResponse {
   reason?: string;
 }
 
+interface GoogleCredentialResponse {
+  credential?: string;
+}
+
 /**
  * Get current authenticated user
  */
@@ -129,7 +133,7 @@ export function hasPermission(permission: string): PermissionCheckResponse {
  * Requires Firebase setup or Google OAuth credentials
  * @param credentialResponse - Response from Google OAuth library
  */
-export async function loginWithGoogle(credentialResponse: any): Promise<AuthResponse> {
+export async function loginWithGoogle(credentialResponse: GoogleCredentialResponse): Promise<AuthResponse> {
   void credentialResponse;
   return {
     success: false,

@@ -296,19 +296,49 @@ function checkDuplicateItemNumbers(items) {
   const duplicates = [];
   
   for (let i = 0; i < items.length; i++) {
-    const itemNum = String(items[i].itemNumber).trim();
-    if (seen.has(itemNum)) {
-      if (!duplicates.includes(itemNum)) {
-        duplicates.push(itemNum);
+    const itemNum = String(items[i].itemNumber || '').trim();
+    const reason = String(items[i].reason || '').trim();
+    if (!itemNum || !reason) {
+      continue;
+    }
+
+    const compositeKey = itemNum + '||' + reason;
+    const duplicateLabel = itemNum + ' (' + reason + ')';
+    if (seen.has(compositeKey)) {
+      if (!duplicates.includes(duplicateLabel)) {
+        duplicates.push(duplicateLabel);
       }
     }
-    seen.add(itemNum);
+    seen.add(compositeKey);
   }
   
   return {
     hasDuplicates: duplicates.length > 0,
     duplicates: duplicates
   };
+}
+
+function normalizeSheetText(value) {
+  return String(value || '').trim();
+}
+
+function normalizeSheetAmount(value) {
+  var amount = Number(value);
+  return isNaN(amount) ? 0 : amount;
+}
+
+function createStableReadItemId(caseId, rawItemId, itemNumber, reason, rowIndex, seenIds) {
+  var preferredId = normalizeSheetText(rawItemId);
+  var fallbackId = [
+    normalizeSheetText(caseId) || 'case',
+    normalizeSheetText(itemNumber) || 'item',
+    normalizeSheetText(reason) || 'reason',
+    Utilities.formatString('%03d', rowIndex + 1)
+  ].join('__');
+  var baseId = preferredId || fallbackId;
+  var duplicateCount = seenIds[baseId] || 0;
+  seenIds[baseId] = duplicateCount + 1;
+  return duplicateCount === 0 ? baseId : baseId + '__' + (duplicateCount + 1);
 }
 
 // ===== AUTHENTICATION FUNCTIONS =====
@@ -559,12 +589,12 @@ function handleInsert(payload) {
       };
     }
 
-    // Check for duplicate ItemNumbers
+    // Check for duplicate ItemNumber + Reason combinations
     const dupCheck = checkDuplicateItemNumbers(payload.items);
     if (dupCheck.hasDuplicates) {
       return {
         success: false,
-        error: 'Duplicate Item Numbers found: ' + dupCheck.duplicates.join(', '),
+        error: 'Duplicate Item Number + Reason combinations found: ' + dupCheck.duplicates.join(', '),
         errorCode: 'DUPLICATE_ITEMS'
       };
     }
@@ -746,16 +776,28 @@ function handleReadAll(payload) {
 
     // Skip header row and convert to objects
     const caseMap = new Map(); // Group items by case ID
+    const seenItemIdsByCase = {};
 
     // Columns: Item ID | Case ID | Date | Source | ItemNumber | ItemName | ItemCode | Amount | Reason | Reason Subtype | Responsible | Responsible Subtype | Details | Status | ImageUrls (pipe-separated) | ImageFolderUrl
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const caseId = String(row[1] || '').trim();
-      const itemId = String(row[0] || '').trim();
+      const caseId = normalizeSheetText(row[1]);
+      if (!caseId) {
+        continue;
+      }
 
-      const rawImageUrls = String(row[14] || '').trim();
+      const rawItemId = normalizeSheetText(row[0]);
+      const itemNumber = normalizeSheetText(row[4]);
+      const reason = normalizeSheetText(row[8]);
+      if (!seenItemIdsByCase[caseId]) {
+        seenItemIdsByCase[caseId] = {};
+      }
+
+      const itemId = createStableReadItemId(caseId, rawItemId, itemNumber, reason, i, seenItemIdsByCase[caseId]);
+
+      const rawImageUrls = normalizeSheetText(row[14]);
       let imageUrlsArray = rawImageUrls ? rawImageUrls.split('|').filter(function(u) { return u.trim() !== ''; }) : [];
-      const imageKey = caseId + '|' + itemId;
+      const imageKey = caseId + '|' + rawItemId;
       if (imgUrlMap.has(imageKey)) {
         const storedUrls = imgUrlMap.get(imageKey);
         if (storedUrls && storedUrls.length > 0) {
@@ -765,26 +807,26 @@ function handleReadAll(payload) {
 
       const item = {
         id: itemId,
-        itemNumber: row[4] || '',
-        itemName: row[5] || '',
-        itemCode: row[6] || '',
-        amount: row[7] || 0,
-        reason: row[8] || '',
-        reasonSubtype: row[9] || '',
-        responsible: row[10] || '',
-        responsibleSubtype: row[11] || '',
-        details: row[12] || '',
-        status: row[13] || 'Pending',
+        itemNumber: itemNumber,
+        itemName: normalizeSheetText(row[5]),
+        itemCode: normalizeSheetText(row[6]),
+        amount: normalizeSheetAmount(row[7]),
+        reason: reason,
+        reasonSubtype: normalizeSheetText(row[9]),
+        responsible: normalizeSheetText(row[10]),
+        responsibleSubtype: normalizeSheetText(row[11]),
+        details: normalizeSheetText(row[12]),
+        status: normalizeSheetText(row[13]) || 'Pending',
         imageUrls: imageUrlsArray,
-        imageFolderUrl: String(row[15] || row[14] || '').trim(),
+        imageFolderUrl: normalizeSheetText(row[15] || row[14]),
       };
 
       if (!caseMap.has(caseId)) {
         caseMap.set(caseId, {
           id: caseId,
-          date: row[2] || '',
-          source: row[3] || '',
-          status: row[13] || 'Pending',
+          date: normalizeSheetText(row[2]),
+          source: normalizeSheetText(row[3]),
+          status: normalizeSheetText(row[13]) || 'Pending',
           items: [item]
         });
       } else {
@@ -821,24 +863,46 @@ function handleUpdate(payload) {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     const data = sheet.getDataRange().getValues();
     const caseId = payload.caseId;
+    const updates = payload.updates || {};
+
+    if (!caseId) {
+      return {
+        success: false,
+        error: 'Case ID is required'
+      };
+    }
 
     let updatedCount = 0;
+    let matchedRows = 0;
 
     // Find and update all rows with matching case ID
     for (let i = 1; i < data.length; i++) {
       if (data[i][1] === caseId) { // Column B is Case ID
+        matchedRows++;
         // Update status if provided
-        if (payload.updates.status) {
-          sheet.getRange(i + 1, 14).setValue(payload.updates.status); // Column N is Status (0-indexed: 13)
+        if (updates.status) {
+          sheet.getRange(i + 1, 14).setValue(updates.status); // Column N is Status (0-indexed: 13)
           updatedCount++;
         }
 
         // Update details if provided
-        if (payload.updates.items && payload.updates.items[0]) {
+        if (updates.items && updates.items[0]) {
           const detailsIndex = 13; // Column M is Details (0-indexed: 12)
-          sheet.getRange(i + 1, detailsIndex).setValue(payload.updates.items[0].details || '');
+          sheet.getRange(i + 1, detailsIndex).setValue(updates.items[0].details || '');
+          updatedCount++;
         }
       }
+    }
+
+    if (matchedRows === 0) {
+      if (lock) {
+        lock.releaseLock();
+        lock = null;
+      }
+      return {
+        success: false,
+        error: `Case ID not found: ${caseId}`
+      };
     }
 
     // Create backup
@@ -883,19 +947,33 @@ function handleDashboardStats(payload) {
       sourceWorkload: {}
     };
 
-    const caseIds = new Set();
+    const caseStats = new Map();
 
     for (let i = 1; i < data.length; i++) {
-      const caseId = data[i][1];
-      const status = data[i][13]; // Status column (0-indexed: 13)
-      const reason = data[i][8]; // Reason column
-      const source = data[i][3]; // Source column
+      const caseId = String(data[i][1] || '').trim();
+      const status = String(data[i][13] || 'Pending').trim();
+      const reason = String(data[i][8] || '').trim();
+      const source = String(data[i][3] || '').trim();
 
-      // Count unique cases for total
-      caseIds.add(caseId);
+      if (!caseId) {
+        continue;
+      }
 
-      // Count by status
-      switch (status) {
+      if (!caseStats.has(caseId)) {
+        caseStats.set(caseId, {
+          status: status,
+          source: source
+        });
+      }
+
+      // Count defect reasons
+      if (reason) {
+        stats.defectReasons[reason] = (stats.defectReasons[reason] || 0) + 1;
+      }
+    }
+
+    caseStats.forEach(function(caseInfo) {
+      switch (caseInfo.status) {
         case 'Pending':
           stats.pendingCases++;
           break;
@@ -907,18 +985,12 @@ function handleDashboardStats(payload) {
           break;
       }
 
-      // Count defect reasons
-      if (reason) {
-        stats.defectReasons[reason] = (stats.defectReasons[reason] || 0) + 1;
+      if (caseInfo.source) {
+        stats.sourceWorkload[caseInfo.source] = (stats.sourceWorkload[caseInfo.source] || 0) + 1;
       }
+    });
 
-      // Count source workload
-      if (source) {
-        stats.sourceWorkload[source] = (stats.sourceWorkload[source] || 0) + 1;
-      }
-    }
-
-    stats.totalCases = caseIds.size;
+    stats.totalCases = caseStats.size;
     stats.completionRate = stats.totalCases > 0 
       ? Math.round((stats.completedCases / stats.totalCases) * 100)
       : 0;

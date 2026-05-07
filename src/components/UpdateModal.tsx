@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, Clock, AlertCircle, Image, ImageOff, ExternalLink, FileText, Download, FileImage } from 'lucide-react';
 import { ReworkCase } from '../services/api';
 import { formatThaiDate } from '../utils/helpers';
-import { toDisplayImageUrl } from '../utils/imageUrls';
 import { useExportReport } from '../hooks/useExportReport';
 import { ExportTemplate } from './ExportTemplate';
 import { DriveImage } from './DriveImage';
@@ -393,8 +392,8 @@ export function UpdateModal({
               className="fixed inset-0 z-[70] flex items-center justify-center p-8"
               onClick={() => setLightboxUrl(null)}
             >
-              <img
-                src={toDisplayImageUrl(lightboxUrl, 2000)}
+              <DriveImage
+                src={lightboxUrl}
                 alt="ดูรูปเต็ม"
                 className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
                 onClick={(e) => e.stopPropagation()}

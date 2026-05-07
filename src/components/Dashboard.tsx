@@ -12,15 +12,16 @@ import {
 } from 'lucide-react';
 import { ReworkCase } from '../services/api';
 
+type CaseStatus = ReworkCase['status'];
+
 interface DashboardProps {
   cases: ReworkCase[];
   isLoading: boolean;
 }
 
 export function Dashboard({ cases, isLoading }: DashboardProps) {
-  // ===== FILTER STATE =====
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<CaseStatus[]>([]);
   const [reasonFilter, setReasonFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -66,7 +67,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
     setDateTo('');
   };
 
-  const toggleArrayFilter = (arr: string[], val: string, setter: (v: string[]) => void) => {
+  const toggleArrayFilter = <T extends string>(arr: T[], val: T, setter: (v: T[]) => void) => {
     setter(arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val]);
   };
 

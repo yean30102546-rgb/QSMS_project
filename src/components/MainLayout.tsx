@@ -1,32 +1,62 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { LayoutDashboard, Plus, BarChart3, LogOut } from 'lucide-react';
+import React, { Suspense } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle } from 'lucide-react';
 
-// Components
-import { OverallTab } from './OverallTab';
-import { AddCaseTab } from './AddCaseTab';
-import { DashboardTab } from './DashboardTab';
+import type { ReworkCase, ReworkItem } from '../services/api';
+import type { User } from '../services/auth';
+
+const OverallTab = React.lazy(async () => {
+  const mod = await import('./OverallTab');
+  return { default: mod.OverallTab };
+});
+
+const AddCaseTab = React.lazy(async () => {
+  const mod = await import('./AddCaseTab');
+  return { default: mod.AddCaseTab };
+});
+
+const DashboardTab = React.lazy(async () => {
+  const mod = await import('./DashboardTab');
+  return { default: mod.DashboardTab };
+});
 
 type Tab = 'overall' | 'add' | 'dashboard';
+
+type SaveMessage = {
+  type: 'success' | 'error';
+  text: string;
+} | null;
+
+type SelectionModalState = {
+  itemId: string;
+  type: 'reason' | 'responsible';
+  title: string;
+  options: string[];
+} | null;
 
 interface MainLayoutProps {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   onLogout: () => void;
   userName: string;
-  // Pass all necessary props for tabs
-  cases: any[];
+  userRole?: User['role'] | '';
+  cases: ReworkCase[];
   isLoadingCases: boolean;
   caseError: string | null;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   loadCases: () => void;
-  openUpdateModal: (caseItem: any) => void;
-  stats: any;
-  // Add case form props
+  openUpdateModal: (caseItem: ReworkCase) => void;
+  stats: {
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+    completionRate: number;
+  };
   caseSource: string;
   setCaseSource: (source: string) => void;
-  formItems: any[];
+  formItems: ReworkItem[];
   addFormItem: () => void;
   removeFormItem: (id: string) => void;
   updateFormItem: (id: string, field: string, value: string | number) => void;
@@ -36,14 +66,25 @@ interface MainLayoutProps {
   handleItemNumberBlur: (id: string) => void;
   handleSubmit: () => void;
   isSaving: boolean;
-  saveMessage: any;
-  isSaveDisabled: (items: any[]) => boolean;
+  saveMessage: SaveMessage;
+  isSaveDisabled: (items: ReworkItem[]) => boolean;
   autoFillTriggeredItem: string | null;
-  // Dashboard props
   isLoadingMaster: boolean;
-  // Selection Modal
-  selectionModal: any;
-  setSelectionModal: (modal: any) => void;
+  selectionModal: SelectionModalState;
+  setSelectionModal: (modal: SelectionModalState) => void;
+  onOpenTutorial: () => void;
+}
+
+function TabFallback() {
+  return (
+    <div className="flex-1 p-8 md:p-10 lg:p-12">
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 w-48 rounded bg-slate-200" />
+        <div className="h-24 rounded-2xl bg-slate-100" />
+        <div className="h-24 rounded-2xl bg-slate-100" />
+      </div>
+    </div>
+  );
 }
 
 export function MainLayout({
@@ -51,6 +92,7 @@ export function MainLayout({
   setActiveTab,
   onLogout,
   userName,
+  userRole = '',
   cases,
   isLoadingCases,
   caseError,
@@ -77,20 +119,18 @@ export function MainLayout({
   isLoadingMaster,
   selectionModal,
   setSelectionModal,
+  onOpenTutorial,
 }: MainLayoutProps) {
   return (
     <div className="flex h-full overflow-hidden bg-bg text-foreground font-sans">
-      {/* ===== SIDEBAR ===== */}
-      <aside className="w-[260px] bg-surface border-r border-border flex flex-col z-20 h-full py-8 px-5 overflow-y-auto">
+      <aside className="z-20 flex h-full w-[260px] flex-col overflow-y-auto border-r border-border bg-surface px-5 py-8">
         <motion.div
-          className="flex items-center gap-2 mb-14 cursor-pointer"
+          className="mb-14 flex cursor-pointer items-center gap-2"
           onClick={() => setActiveTab('overall')}
           whileHover={{ scale: 1.02 }}
         >
           <img src="/img/logo.png" alt="" className="h-12 object-contain drop-shadow-sm" />
-          <h1 className="font-semibold text-[18px] tracking-tight text-foreground">
-            QSMS Rework
-          </h1>
+          <h1 className="text-[18px] font-semibold tracking-tight text-foreground">QSMS Rework</h1>
         </motion.div>
 
         <nav className="flex-1 space-y-1">
@@ -106,10 +146,15 @@ export function MainLayout({
             label="เพิ่มงานใหม่ (Add Case)"
             icon={<Plus size={16} />}
           />
+          <SidebarItem
+            active={false}
+            onClick={onOpenTutorial}
+            label="คู่มือการใช้งาน"
+            icon={<HelpCircle size={16} />}
+          />
         </nav>
 
-        {/* Dashboard at bottom */}
-        <div className="pt-8 border-t border-border mt-auto">
+        <div className="mt-auto border-t border-border pt-8">
           <SidebarItem
             active={activeTab === 'dashboard'}
             onClick={() => setActiveTab('dashboard')}
@@ -118,16 +163,16 @@ export function MainLayout({
           />
         </div>
 
-        <div className="mt-8 pt-8 border-t border-border">
-          <div className="flex items-center justify-between text-sm py-3 px-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-all">
+        <div className="mt-8 border-t border-border pt-8">
+          <div className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm transition-all hover:bg-slate-50">
             <span className="font-medium text-slate-700">{userName || 'User'}</span>
-            <span className="text-[10px] uppercase font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-200 leading-none">
-              Admin
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold uppercase leading-none text-slate-500">
+              {String(userRole || 'Admin')}
             </span>
           </div>
           <button
             onClick={onLogout}
-            className="w-full mt-3 flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-all font-medium"
+            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-all hover:bg-red-50 hover:text-red-600"
           >
             <LogOut size={16} />
             Sign Out
@@ -135,87 +180,84 @@ export function MainLayout({
         </div>
       </aside>
 
-      {/* ===== MAIN CONTENT ===== */}
-      <main className="flex-1 overflow-hidden flex flex-col bg-bg">
-        <AnimatePresence mode="wait">
-          {/* ===== OVERALL TAB ===== */}
-          {/* OverallTab จัดการ scroll เอง → ไม่ห่อด้วย scroll wrapper เพื่อป้องกัน layout ดีด */}
-          {activeTab === 'overall' && (
-            <motion.div
-              key="overall"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col overflow-hidden"
-            >
-              <OverallTab
-                cases={cases}
-                isLoadingCases={isLoadingCases}
-                caseError={caseError}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                loadCases={loadCases}
-                openUpdateModal={openUpdateModal}
-                stats={stats}
-              />
-            </motion.div>
-          )}
-
-          {/* แท็บอื่นๆ ใช้ scroll wrapper ปกติ */}
-          {activeTab === 'add' && (
-            <motion.div
-              key="add"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="flex-1 overflow-y-auto overflow-x-hidden"
-            >
-              <div className="p-8 md:p-10 lg:p-12">
-                <AddCaseTab
-                  caseSource={caseSource}
-                  setCaseSource={setCaseSource}
-                  formItems={formItems}
-                  addFormItem={addFormItem}
-                  removeFormItem={removeFormItem}
-                  updateFormItem={updateFormItem}
-                  handleImagesSelected={handleImagesSelected}
-                  uploadedImages={uploadedImages}
-                  handleCheckItemNumber={handleCheckItemNumber}
-                  handleItemNumberBlur={handleItemNumberBlur}
-                  handleSubmit={handleSubmit}
-                  isSaving={isSaving}
-                  saveMessage={saveMessage}
-                  isSaveDisabled={isSaveDisabled}
-                  autoFillTriggeredItem={autoFillTriggeredItem}
-                  selectionModal={selectionModal}
-                  setSelectionModal={setSelectionModal}
-                />
-              </div>
-            </motion.div>
-          )}
-
-          {/* ===== DASHBOARD TAB ===== */}
-          {activeTab === 'dashboard' && (
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="flex-1 overflow-y-auto overflow-x-hidden"
-            >
-              <div className="p-8 md:p-10 lg:p-12">
-                <DashboardTab
+      <main className="flex flex-1 flex-col overflow-hidden bg-bg">
+        <Suspense fallback={<TabFallback />}>
+          <AnimatePresence mode="wait">
+            {activeTab === 'overall' && (
+              <motion.div
+                key="overall"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-1 flex-col overflow-hidden"
+              >
+                <OverallTab
                   cases={cases}
                   isLoadingCases={isLoadingCases}
-                  isLoadingMaster={isLoadingMaster}
+                  caseError={caseError}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  loadCases={loadCases}
+                  openUpdateModal={openUpdateModal}
+                  stats={stats}
                 />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+
+            {activeTab === 'add' && (
+              <motion.div
+                key="add"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="flex-1 overflow-x-hidden overflow-y-auto"
+              >
+                <div className="p-8 md:p-10 lg:p-12">
+                  <AddCaseTab
+                    caseSource={caseSource}
+                    setCaseSource={setCaseSource}
+                    formItems={formItems}
+                    addFormItem={addFormItem}
+                    removeFormItem={removeFormItem}
+                    updateFormItem={updateFormItem}
+                    handleImagesSelected={handleImagesSelected}
+                    uploadedImages={uploadedImages}
+                    handleCheckItemNumber={handleCheckItemNumber}
+                    handleItemNumberBlur={handleItemNumberBlur}
+                    handleSubmit={handleSubmit}
+                    isSaving={isSaving}
+                    saveMessage={saveMessage}
+                    isSaveDisabled={isSaveDisabled}
+                    autoFillTriggeredItem={autoFillTriggeredItem}
+                    selectionModal={selectionModal}
+                    setSelectionModal={setSelectionModal}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'dashboard' && (
+              <motion.div
+                key="dashboard"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="flex-1 overflow-x-hidden overflow-y-auto"
+              >
+                <div className="p-8 md:p-10 lg:p-12">
+                  <DashboardTab
+                    cases={cases}
+                    isLoadingCases={isLoadingCases}
+                    isLoadingMaster={isLoadingMaster}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Suspense>
       </main>
     </div>
   );
@@ -235,10 +277,11 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
       onClick={onClick}
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.98 }}
-      className={`w-full sidebar-item mb-2 flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer font-medium text-sm ${active
-        ? 'bg-[#f4f4f5] text-foreground shadow-sm border border-border'
-        : 'text-muted hover:bg-slate-50 hover:text-foreground'
-        }`}
+      className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
+        active
+          ? 'border border-border bg-[#f4f4f5] text-foreground shadow-sm'
+          : 'text-muted hover:bg-slate-50 hover:text-foreground'
+      }`}
     >
       {icon && <span className={`transition-colors ${active ? 'text-foreground' : 'text-muted'}`}>{icon}</span>}
       <span>{label}</span>

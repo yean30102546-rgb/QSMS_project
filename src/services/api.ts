@@ -66,6 +66,16 @@ export interface ReworkCase {
   items: ReworkItem[];
 }
 
+export interface DashboardStats {
+  totalCases: number;
+  pendingCases: number;
+  inProgressCases: number;
+  completedCases: number;
+  completionRate: number;
+  defectReasons: Record<string, number>;
+  sourceWorkload: Record<string, number>;
+}
+
 type ReworkCaseResponse = ReworkCase & {
   itemsRaw?: Array<Partial<ReworkItem> & { itemId?: string; url?: string; urls?: string[] }>;
 };
@@ -97,7 +107,7 @@ function parseTokenPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-async function postToGas<T>(payload: object): Promise<ApiResponse<T>> {
+async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiResponse<T>> {
   ensureGasWebAppUrl();
 
   // Verify user is authenticated
@@ -213,47 +223,79 @@ export async function insertCase(
     };
   } catch (error) {
     console.error('Error inserting case:', error);
-    return { success: false, error: 'Failed to insert case' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to insert case',
+    };
   }
+}
+
+function normalizeString(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function normalizeAmount(value: unknown): number {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function createNormalizedItemId(
+  caseId: string,
+  item: Partial<ReworkItem> & { itemId?: string },
+  index: number,
+  seenIds: Map<string, number>
+): string {
+  const preferredId = normalizeString(item.id || item.itemId);
+  const fallbackBase = [
+    caseId || 'case',
+    normalizeString(item.itemNumber) || 'item',
+    normalizeString(item.reason) || 'reason',
+    String(index + 1).padStart(3, '0'),
+  ].join('__');
+  const baseId = preferredId || fallbackBase;
+  const duplicateCount = seenIds.get(baseId) || 0;
+  seenIds.set(baseId, duplicateCount + 1);
+  return duplicateCount === 0 ? baseId : `${baseId}__${duplicateCount + 1}`;
 }
 
 function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
   const sourceItems = Array.isArray(caseItem.items) && caseItem.items.length > 0
     ? caseItem.items
     : caseItem.itemsRaw || [];
+  const seenIds = new Map<string, number>();
 
-  return sourceItems.map((item) => {
+  return sourceItems.map((item, index) => {
     const imageUrls = Array.isArray(item.imageUrls)
       ? item.imageUrls
       : Array.isArray(item.urls)
         ? item.urls
         : item.url
-          ? [String(item.url)]
+          ? [normalizeString(item.url)]
           : [];
 
     return {
-      id: String(item.id || item.itemId || '').trim(),
-      itemNumber: String(item.itemNumber || ''),
-      itemName: String(item.itemName || ''),
-      itemCode: String(item.itemCode || ''),
-      amount: Number(item.amount || 0),
-      reason: String(item.reason || ''),
-      reasonSubtype: String(item.reasonSubtype || ''),
-      responsible: String(item.responsible || ''),
-      responsibleSubtype: String(item.responsibleSubtype || ''),
-      details: String(item.details || ''),
+      id: createNormalizedItemId(caseItem.id, item, index, seenIds),
+      itemNumber: normalizeString(item.itemNumber),
+      itemName: normalizeString(item.itemName),
+      itemCode: normalizeString(item.itemCode),
+      amount: normalizeAmount(item.amount),
+      reason: normalizeString(item.reason),
+      reasonSubtype: normalizeString(item.reasonSubtype),
+      responsible: normalizeString(item.responsible),
+      responsibleSubtype: normalizeString(item.responsibleSubtype),
+      details: normalizeString(item.details),
       status: item.status || caseItem.status || 'Pending',
       imageUrls,
-      imageFolderUrl: String(item.imageFolderUrl || ''),
+      imageFolderUrl: normalizeString(item.imageFolderUrl),
     };
   });
 }
 
 function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
   return cases.map((caseItem) => ({
-    id: String(caseItem.id || ''),
-    date: String(caseItem.date || ''),
-    source: String(caseItem.source || ''),
+    id: normalizeString(caseItem.id),
+    date: normalizeString(caseItem.date),
+    source: normalizeString(caseItem.source),
     status: caseItem.status || 'Pending',
     items: normalizeCaseItems(caseItem),
   }));
@@ -278,7 +320,11 @@ export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
     };
   } catch (error) {
     console.error('Fetch Error:', error);
-    return { success: false, data: [], error: 'Failed to fetch' };
+    return {
+      success: false,
+      data: [],
+      error: error instanceof Error ? error.message : 'Failed to fetch',
+    };
   }
 }
 /**
@@ -295,21 +341,31 @@ export async function updateCase(
       updates,
     });
 
-    return { success: result.success, message: result.message };
+    return {
+      success: result.success,
+      message: result.message,
+      error: result.error,
+    };
   } catch (error) {
-    return { success: false, error: 'Update failed' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Update failed',
+    };
   }
 }
 
 /**
  * 4. Fetch dashboard statistics
  */
-export async function fetchDashboardStats(): Promise<ApiResponse> {
+export async function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>> {
   try {
-    const result = await postToGas({ action: 'dashboardStats' });
-    return { success: result.success, data: result.data };
+    const result = await postToGas<DashboardStats>({ action: 'dashboardStats' });
+    return { success: result.success, data: result.data, error: result.error };
   } catch (error) {
-    return { success: false };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch dashboard stats',
+    };
   }
 }
 
@@ -351,7 +407,10 @@ export async function saveItemToMaster(itemNumber: string, itemName: string): Pr
     });
     return { success: result.success, message: result.message, error: result.error };
   } catch (error) {
-    return { success: false, error: 'Failed to save item master' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save item master',
+    };
   }
 }
 

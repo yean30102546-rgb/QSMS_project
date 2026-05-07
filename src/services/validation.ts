@@ -127,17 +127,24 @@ export function getFieldErrors(errors: ValidationError[]): Record<string, string
   }, {});
 }
 
-export function findDuplicateItemNumbers(items: Array<{ itemNumber?: string | number }>): { hasDuplicates: boolean; duplicates: string[] } {
+export function findDuplicateItemNumbers(
+  items: Array<{ itemNumber?: string | number; reason?: string }>
+): { hasDuplicates: boolean; duplicates: string[] } {
   const seen = new Set<string>();
   const duplicates: string[] = [];
 
   items.forEach((item) => {
     const itemNumber = String(item.itemNumber || '').trim();
-    if (!itemNumber) return;
-    if (seen.has(itemNumber) && !duplicates.includes(itemNumber)) {
-      duplicates.push(itemNumber);
+    const reason = String(item.reason || '').trim();
+    if (!itemNumber || !reason) return;
+
+    const compositeKey = `${itemNumber}||${reason}`;
+    const duplicateLabel = `${itemNumber} (${reason})`;
+
+    if (seen.has(compositeKey) && !duplicates.includes(duplicateLabel)) {
+      duplicates.push(duplicateLabel);
     }
-    seen.add(itemNumber);
+    seen.add(compositeKey);
   });
 
   return {
