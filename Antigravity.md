@@ -54,6 +54,7 @@
 14. **Image URL Fix (GAS)** — แก้ `uploadImageToDrive` ให้ return URL + setSharing public, `handleInsert` เก็บ URL แต่ละรูปแยก item (pipe-separated ในคอลัมน์ 15, folder URL ในคอลัมน์ 16), `handleReadAll` แยก imageUrls[] กลับเป็น array
 15. **Export Report (PNG/PDF)** — เพิ่มปุ่ม Export PNG (Long Image) และ Export PDF (Multi-page A4) ใน UpdateModal + สร้าง Ghost ExportTemplate ที่มี Header/Footer บริษัท + ใช้ html2canvas + jsPDF + Image Preload Sync + Loading Overlay แสดงสถานะการ Export
 16. **Tutorial System** — สร้าง `TutorialModal.tsx` และเพิ่มปุ่ม "คู่มือการใช้งาน" ใน Sidebar เพื่อให้ผู้ใช้เข้าถึงคำแนะนำการใช้งานฟังก์ชันต่างๆ ได้ทันที พร้อมสร้างไฟล์ `user_guide.md` เป็นเอกสารอ้างอิงหลัก
+17. **Fixed Button Refreshes** — แก้ไขปัญหาการกดปุ่ม "คู่มือการใช้งาน" แล้วหน้าเว็บรีเฟรชเอง โดยการเพิ่ม `e.preventDefault()` ใน SidebarItem และกำหนด `type="button"` ให้กับปุ่มทั้งหมดในระบบ รวมถึงลบปุ่ม reload ที่ซ้ำซ้อนใน OverallTab ออกเพื่อลดความสับสน
 
 ## GAS Script Properties Required
 ```

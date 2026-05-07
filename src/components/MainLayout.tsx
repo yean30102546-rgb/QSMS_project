@@ -171,6 +171,7 @@ export function MainLayout({
             </span>
           </div>
           <button
+            type="button"
             onClick={onLogout}
             className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-all hover:bg-red-50 hover:text-red-600"
           >
@@ -274,7 +275,10 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
   return (
     <motion.button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.98 }}
       className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${

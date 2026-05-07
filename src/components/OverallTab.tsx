@@ -94,14 +94,7 @@ export function OverallTab({
                   <RefreshCw size={20} className={isLoadingCases ? 'animate-spin' : ''} />
                 </button>
               </Tooltip>
-              <Tooltip text="โหลดหน้าใหม่">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground transition-all hover:bg-slate-50"
-                >
-                  <Plus size={20} />
-                </button>
-              </Tooltip>
+
             </div>
           </header>
 
