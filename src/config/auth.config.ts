@@ -36,44 +36,44 @@ export const AUTH_CONFIG = {
 // ===== USER ROLES & PERMISSIONS =====
 export enum UserRole {
   ADMIN = 'admin',           // Full access
-  SUPERVISOR = 'supervisor', // Can approve, export, manage users
-  OPERATOR = 'operator',     // Can create, edit, view cases
-  VIEWER = 'viewer',         // Read-only access
+  QSMS = 'qsms',             // Full access, Delete, Edit
+  WFG = 'wfg',               // Add Case, Overall, Update Status, Resolution, Export
+  FINANCE = 'finance',       // Overall (Valuation only)
 }
 
 export const ROLE_PERMISSIONS = {
   [UserRole.ADMIN]: [
+    'view_dashboard',
+    'view_overall',
     'create_case',
     'edit_case',
     'delete_case',
-    'approve_case',
-    'view_dashboard',
+    'update_status',
+    'fill_resolution',
+    'fill_valuation',
     'export_data',
-    'manage_users',
-    'view_reports',
-    'manage_system',
   ],
-  [UserRole.SUPERVISOR]: [
+  [UserRole.QSMS]: [
+    'view_dashboard',
+    'view_overall',
     'create_case',
     'edit_case',
-    'view_case',
-    'approve_case',
-    'view_dashboard',
+    'delete_case',
+    'update_status',
+    'fill_resolution',
+    'fill_valuation',
     'export_data',
-    'manage_subordinates',
-    'view_reports',
   ],
-  [UserRole.OPERATOR]: [
+  [UserRole.WFG]: [
+    'view_overall',
     'create_case',
-    'edit_case',
-    'view_case',
-    'view_dashboard',
-    'view_reports',
+    'update_status',
+    'fill_resolution',
+    'export_data',
   ],
-  [UserRole.VIEWER]: [
-    'view_case',
-    'view_dashboard',
-    'view_reports',
+  [UserRole.FINANCE]: [
+    'view_overall',
+    'fill_valuation',
   ],
 };
 

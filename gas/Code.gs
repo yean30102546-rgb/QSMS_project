@@ -45,19 +45,33 @@ function getAuthSecret() {
 
 function getAuthProfiles() {
   return {
+    ADMIN: {
+      password: getScriptProperty('ADMIN_PASSWORD'),
+      email: getScriptProperty('ADMIN_USER') || getScriptProperty('ADMIN_EMAIL'),
+      name: getScriptProperty('ADMIN_NAME') || 'Admin',
+      role: 'admin',
+      department: 'Management',
+    },
     QSMS: {
       password: getScriptProperty('QSMS_PASSWORD'),
-      email: getScriptProperty('QSMS_EMAIL'),
+      email: getScriptProperty('QSMS_USER') || getScriptProperty('QSMS_EMAIL'),
       name: getScriptProperty('QSMS_NAME') || 'QSMS',
-      role: getScriptProperty('QSMS_ROLE') || 'operator',
-      department: getScriptProperty('QSMS_DEPARTMENT') || 'Rework',
+      role: 'qsms',
+      department: 'QSMS',
     },
     WFG: {
       password: getScriptProperty('WFG_PASSWORD'),
-      email: getScriptProperty('WFG_EMAIL'),
+      email: getScriptProperty('WFG_USER') || getScriptProperty('WFG_EMAIL'),
       name: getScriptProperty('WFG_NAME') || 'WFG',
-      role: getScriptProperty('WFG_ROLE') || 'operator',
-      department: getScriptProperty('WFG_DEPARTMENT') || 'Rework',
+      role: 'wfg',
+      department: 'WFG',
+    },
+    FINANCE: {
+      password: getScriptProperty('FINANCE_PASSWORD'),
+      email: getScriptProperty('FINANCE_USER') || getScriptProperty('FINANCE_EMAIL'),
+      name: getScriptProperty('FINANCE_NAME') || 'Finance',
+      role: 'finance',
+      department: 'Finance',
     },
   };
 }
@@ -68,7 +82,8 @@ function getAuthProfileEmails() {
   Object.keys(profiles).forEach(function (key) {
     const profile = profiles[key];
     if (profile && profile.email) {
-      emails[key] = profile.email;
+      // Normalize to lowercase for comparison
+      emails[key] = String(profile.email).trim().toLowerCase();
     }
   });
   return emails;
@@ -144,6 +159,22 @@ function validateItemNumber(itemNumber) {
 
   if (str.length > 50) {
     return { valid: false, error: 'Item Number must not exceed 50 characters. Got: ' + str + ' (' + str.length + ' chars)' };
+  }
+  
+  return { valid: true };
+}
+
+/**
+ * Validate BatchNo format (numeric only)
+ */
+function validateBatchNo(batchNo) {
+  if (!batchNo) {
+    return { valid: false, error: 'Batch No. is required' };
+  }
+  
+  const str = String(batchNo).trim();
+  if (!/^\d+$/.test(str)) {
+    return { valid: false, error: 'Batch No. must contain only digits. Got: ' + str };
   }
   
   return { valid: true };
@@ -272,6 +303,9 @@ function validateItem(item) {
   
   const itemCodeCheck = validateItemCode(item.itemCode);
   if (!itemCodeCheck.valid) errors.push(itemCodeCheck.error);
+
+  const batchNoCheck = validateBatchNo(item.batchNo);
+  if (!batchNoCheck.valid) errors.push(batchNoCheck.error);
   
   const amountCheck = validateAmount(item.amount);
   if (!amountCheck.valid) errors.push(amountCheck.error);
@@ -538,6 +572,9 @@ function doPost(e) {
       case 'saveItemMaster':
         response = saveItemMaster(payload);
         break;
+      case 'delete':
+        response = handleDelete(payload);
+        break;
       case 'getImageDataUrl':
         response = getImageDataUrl(payload);
         break;
@@ -654,9 +691,16 @@ function handleInsert(payload) {
     var imgLogRows = [];
     var imgUrlSheet = getOrCreateSheet(IMG_URL_SHEET_NAME, ['Case ID', 'Item ID', 'Item Index', 'Image Index', 'Image URL', 'Case Folder URL']);
 
+    var tempIdToNewId = {};
+
     payload.items.forEach(function(item, index) {
       var itemId = caseId + '-' + String(index + 1).padStart(3, '0');
       itemIds.push(itemId);
+      
+      // Store mapping for cross-item links
+      if (item.id) {
+        tempIdToNewId[item.id] = itemId;
+      }
 
       // ===== อัพโหลดรูปไปไว้ใน Folder ของ Case =====
       var itemImageUrls = []; // เก็บ URL ของแต่ละรูป
@@ -689,16 +733,28 @@ function handleInsert(payload) {
         sanitizeString(item.itemNumber),
         sanitizeString(item.itemName),
         sanitizeString(item.itemCode),
+        sanitizeString(item.batchNo || ''),
         item.amount,
         sanitizeString(item.reason),
         sanitizeString(item.reasonSubtype || ''),
+        sanitizeString(item.linkedSourceId || ''),
         sanitizeString(item.responsible),
         sanitizeString(item.responsibleSubtype || ''),
         sanitizeString(item.details || ''),
+        '', // Resolution Method
+        '', // Rework Cost
         'Pending',
-        itemImageUrls.length > 0 ? itemImageUrls.join('|') : '', // คอลัม 15: URL แต่ละรูป คั่นด้วย |
-        caseFolderUrl, // คอลัม 16: folder URL
+        itemImageUrls.length > 0 ? itemImageUrls.join('|') : '', // คอลัม 19: URL แต่ละรูป คั่นด้วย |
+        caseFolderUrl, // คอลัม 20: folder URL
       ]);
+    });
+
+    // ===== Second pass: Resolve temporary linkedSourceId to real itemId =====
+    rowsToInsert.forEach(function(row, index) {
+      var originalLinkedId = payload.items[index].linkedSourceId;
+      if (originalLinkedId && tempIdToNewId[originalLinkedId]) {
+        row[11] = tempIdToNewId[originalLinkedId]; // Update column 11 (Linked Source ID)
+      }
     });
 
     // Append rows to Rework Cases sheet
@@ -778,24 +834,22 @@ function handleReadAll(payload) {
     const caseMap = new Map(); // Group items by case ID
     const seenItemIdsByCase = {};
 
-    // Columns: Item ID | Case ID | Date | Source | ItemNumber | ItemName | ItemCode | Amount | Reason | Reason Subtype | Responsible | Responsible Subtype | Details | Status | ImageUrls (pipe-separated) | ImageFolderUrl
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const caseId = normalizeSheetText(row[1]);
-      if (!caseId) {
-        continue;
-      }
+      if (!caseId) continue;
 
       const rawItemId = normalizeSheetText(row[0]);
       const itemNumber = normalizeSheetText(row[4]);
-      const reason = normalizeSheetText(row[8]);
+      const reason = normalizeSheetText(row[9]);
+      
       if (!seenItemIdsByCase[caseId]) {
         seenItemIdsByCase[caseId] = {};
       }
 
       const itemId = createStableReadItemId(caseId, rawItemId, itemNumber, reason, i, seenItemIdsByCase[caseId]);
 
-      const rawImageUrls = normalizeSheetText(row[14]);
+      const rawImageUrls = normalizeSheetText(row[18]);
       let imageUrlsArray = rawImageUrls ? rawImageUrls.split('|').filter(function(u) { return u.trim() !== ''; }) : [];
       const imageKey = caseId + '|' + rawItemId;
       if (imgUrlMap.has(imageKey)) {
@@ -810,15 +864,17 @@ function handleReadAll(payload) {
         itemNumber: itemNumber,
         itemName: normalizeSheetText(row[5]),
         itemCode: normalizeSheetText(row[6]),
-        amount: normalizeSheetAmount(row[7]),
+        batchNo: normalizeSheetText(row[7]),
+        amount: normalizeSheetAmount(row[8]),
         reason: reason,
-        reasonSubtype: normalizeSheetText(row[9]),
-        responsible: normalizeSheetText(row[10]),
-        responsibleSubtype: normalizeSheetText(row[11]),
-        details: normalizeSheetText(row[12]),
-        status: normalizeSheetText(row[13]) || 'Pending',
+        reasonSubtype: normalizeSheetText(row[10]),
+        linkedSourceId: normalizeSheetText(row[11]),
+        responsible: normalizeSheetText(row[12]),
+        responsibleSubtype: normalizeSheetText(row[13]),
+        details: normalizeSheetText(row[14]),
+        status: normalizeSheetText(row[17]) || 'Pending',
         imageUrls: imageUrlsArray,
-        imageFolderUrl: normalizeSheetText(row[15] || row[14]),
+        imageFolderUrl: normalizeSheetText(row[19] || row[18]),
       };
 
       if (!caseMap.has(caseId)) {
@@ -826,7 +882,9 @@ function handleReadAll(payload) {
           id: caseId,
           date: normalizeSheetText(row[2]),
           source: normalizeSheetText(row[3]),
-          status: normalizeSheetText(row[13]) || 'Pending',
+          resolutionMethod: normalizeSheetText(row[15]),
+          reworkCost: normalizeSheetAmount(row[16]),
+          status: normalizeSheetText(row[17]) || 'Pending',
           items: [item]
         });
       } else {
@@ -864,68 +922,150 @@ function handleUpdate(payload) {
     const data = sheet.getDataRange().getValues();
     const caseId = payload.caseId;
     const updates = payload.updates || {};
+    const userRole = (payload.userRole || '').toUpperCase();
 
     if (!caseId) {
-      return {
-        success: false,
-        error: 'Case ID is required'
-      };
+      return { success: false, error: 'Case ID is required' };
     }
 
     let updatedCount = 0;
     let matchedRows = 0;
 
-    // Find and update all rows with matching case ID
+    // Check permissions for specific updates
+    const isAdminOrQSMS = (userRole === 'ADMIN' || userRole === 'QSMS');
+    const isFinance = (userRole === 'FINANCE');
+    const isWFG = (userRole === 'WFG');
+
+    // Indices (0-indexed)
+    const COL_DETAILS = 14;
+    const COL_RESOLUTION = 15;
+    const COL_COST = 16;
+    const COL_STATUS = 17;
+
     for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === caseId) { // Column B is Case ID
+      if (data[i][1] === caseId) { 
         matchedRows++;
-        // Update status if provided
-        if (updates.status) {
-          sheet.getRange(i + 1, 14).setValue(updates.status); // Column N is Status (0-indexed: 13)
+        const currentItemId = data[i][0];
+        
+        // 0. Administrative Source Edit
+        if (isAdminOrQSMS && updates.source) {
+          sheet.getRange(i + 1, 4).setValue(updates.source);
+        }
+
+        // 1. Update Resolution Method (WFG or Admin/QSMS)
+        if (updates.resolutionMethod !== undefined) {
+          if (isAdminOrQSMS || isWFG) {
+            sheet.getRange(i + 1, COL_RESOLUTION + 1).setValue(updates.resolutionMethod);
+            // Auto-update status to 'Awaiting Valuation' if method is set
+            if (updates.resolutionMethod.trim() !== '') {
+              sheet.getRange(i + 1, COL_STATUS + 1).setValue('Awaiting Valuation');
+            }
+            updatedCount++;
+          } else {
+            return { success: false, error: 'Permission denied: Only WFG or Admin can update resolution method' };
+          }
+        }
+
+        // 2. Update Rework Cost (Finance or Admin/QSMS)
+        if (updates.reworkCost !== undefined) {
+          if (isAdminOrQSMS || isFinance) {
+            sheet.getRange(i + 1, COL_COST + 1).setValue(updates.reworkCost);
+            // Auto-update status to 'Completed' if cost is set
+            if (updates.reworkCost > 0) {
+              sheet.getRange(i + 1, COL_STATUS + 1).setValue('Completed');
+            }
+            updatedCount++;
+          } else {
+            return { success: false, error: 'Permission denied: Only Finance or Admin can update rework cost' };
+          }
+        }
+
+        // 3. Update Status (Admin/QSMS can override)
+        if (updates.status && isAdminOrQSMS) {
+          sheet.getRange(i + 1, COL_STATUS + 1).setValue(updates.status);
           updatedCount++;
         }
 
-        // Update details if provided
-        if (updates.items && updates.items[0]) {
-          const detailsIndex = 13; // Column M is Details (0-indexed: 12)
-          sheet.getRange(i + 1, detailsIndex).setValue(updates.items[0].details || '');
-          updatedCount++;
+        // 4. Update Item-specific fields
+        if (updates.items && Array.isArray(updates.items)) {
+          // Find the update for this specific item ID
+          const itemUpdate = updates.items.find(function(u) { return u.id === currentItemId; });
+          
+          if (itemUpdate) {
+            if (itemUpdate.details !== undefined) {
+              sheet.getRange(i + 1, COL_DETAILS + 1).setValue(itemUpdate.details);
+              updatedCount++;
+            }
+            
+            // Administrative Edit (Admin/QSMS can edit core fields)
+            if (isAdminOrQSMS) {
+              if (itemUpdate.itemNumber) sheet.getRange(i + 1, 5).setValue(itemUpdate.itemNumber);
+              if (itemUpdate.itemName) sheet.getRange(i + 1, 6).setValue(itemUpdate.itemName);
+              if (itemUpdate.itemCode) sheet.getRange(i + 1, 7).setValue(itemUpdate.itemCode);
+              if (itemUpdate.batchNo) sheet.getRange(i + 1, 8).setValue(itemUpdate.batchNo);
+              if (itemUpdate.amount !== undefined) sheet.getRange(i + 1, 9).setValue(itemUpdate.amount);
+              if (itemUpdate.reason) sheet.getRange(i + 1, 10).setValue(itemUpdate.reason);
+              if (itemUpdate.reasonSubtype !== undefined) sheet.getRange(i + 1, 11).setValue(itemUpdate.reasonSubtype);
+              if (itemUpdate.responsible) sheet.getRange(i + 1, 13).setValue(itemUpdate.responsible);
+            }
+          }
         }
       }
     }
 
     if (matchedRows === 0) {
-      if (lock) {
-        lock.releaseLock();
-        lock = null;
-      }
-      return {
-        success: false,
-        error: `Case ID not found: ${caseId}`
-      };
+      if (lock) { lock.releaseLock(); lock = null; }
+      return { success: false, error: `Case ID not found: ${caseId}` };
     }
 
-    // Create backup
     createBackup(sheet);
-
-    if (lock) {
-      lock.releaseLock();
-      lock = null;
-    }
-
-    return {
-      success: true,
-      message: `Updated ${updatedCount} items for case ${caseId}`,
-      data: { updatedCount: updatedCount }
-    };
+    if (lock) { lock.releaseLock(); lock = null; }
+    return { success: true, message: `Updated case ${caseId} successfully`, data: { updatedCount } };
   } catch (error) {
-    if (lock) {
-      lock.releaseLock();
+    if (lock) lock.releaseLock();
+    return { success: false, error: `Update failed: ${error.toString()}` };
+  }
+}
+
+/**
+ * Handle DELETE action - Delete case and its rows
+ */
+function handleDelete(payload) {
+  var lock;
+  try {
+    const caseId = payload.caseId;
+    const userRole = (payload.userRole || '').toUpperCase();
+
+    if (!(userRole === 'ADMIN' || userRole === 'QSMS')) {
+      return { success: false, error: 'Permission denied: Only Admin or QSMS can delete cases' };
     }
-    return {
-      success: false,
-      error: `Update failed: ${error.toString()}`
-    };
+
+    lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    const data = sheet.getDataRange().getValues();
+    
+    // Iterate backwards to delete rows without affecting indices
+    let deletedRows = 0;
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][1] === caseId) {
+        sheet.deleteRow(i + 1);
+        deletedRows++;
+      }
+    }
+
+    if (deletedRows === 0) {
+      if (lock) lock.releaseLock();
+      return { success: false, error: `Case ID not found: ${caseId}` };
+    }
+
+    createBackup(sheet);
+    if (lock) { lock.releaseLock(); lock = null; }
+    return { success: true, message: `Deleted case ${caseId} and ${deletedRows} associated rows` };
+  } catch (error) {
+    if (lock) lock.releaseLock();
+    return { success: false, error: `Delete failed: ${error.toString()}` };
   }
 }
 
@@ -941,23 +1081,24 @@ function handleDashboardStats(payload) {
       totalCases: 0,
       pendingCases: 0,
       inProgressCases: 0,
+      awaitingValuationCases: 0,
       completedCases: 0,
       completionRate: 0,
       defectReasons: {},
-      sourceWorkload: {}
+      sourceWorkload: {},
+      stainFromLeakCount: 0 // Correlation Analysis
     };
 
     const caseStats = new Map();
 
     for (let i = 1; i < data.length; i++) {
       const caseId = String(data[i][1] || '').trim();
-      const status = String(data[i][13] || 'Pending').trim();
-      const reason = String(data[i][8] || '').trim();
+      const status = String(data[i][17] || 'Pending').trim(); // New status index
+      const reason = String(data[i][9] || '').trim(); // New reason index
+      const linkedSourceId = String(data[i][11] || '').trim(); // New linkedSourceId index
       const source = String(data[i][3] || '').trim();
 
-      if (!caseId) {
-        continue;
-      }
+      if (!caseId) continue;
 
       if (!caseStats.has(caseId)) {
         caseStats.set(caseId, {
@@ -970,6 +1111,11 @@ function handleDashboardStats(payload) {
       if (reason) {
         stats.defectReasons[reason] = (stats.defectReasons[reason] || 0) + 1;
       }
+
+      // Count Correlation (Stain from Leak)
+      if (linkedSourceId) {
+        stats.stainFromLeakCount++;
+      }
     }
 
     caseStats.forEach(function(caseInfo) {
@@ -978,9 +1124,15 @@ function handleDashboardStats(payload) {
           stats.pendingCases++;
           break;
         case 'In-Progress':
+        case 'กำลังดำเนินการ':
           stats.inProgressCases++;
           break;
+        case 'Awaiting Valuation':
+        case 'รอประเมินราคา':
+          stats.awaitingValuationCases++;
+          break;
         case 'Completed':
+        case 'เสร็จสิ้น':
           stats.completedCases++;
           break;
       }
@@ -1086,12 +1238,16 @@ function initializeSheet() {
       'Item Number',
       'Item Name',
       'Item Code',
+      'Batch no.',
       'Amount (Box)',
       'Reason',
       'Reason Subtype',
+      'Linked Source ID',
       'Responsible',
       'Responsible Subtype',
       'Details',
+      'Resolution Method',
+      'Rework Cost',
       'Status',
       'Image URLs',
       'Image Folder URL'
@@ -1114,6 +1270,45 @@ function initializeSheet() {
   } catch (error) {
     Logger.log('Initialization error: ' + error);
   }
+}
+
+/**
+ * ฟังก์ชันสำหรับแก้ไขข้อมูลที่เลื่อนคอลัมน์ (Data Shift)
+ * หากคุณมีข้อมูลเก่าและเพิ่มคอลัมน์ "Batch no." เข้าไปใหม่ ข้อมูลเดิมจะเบี้ยว
+ * ให้รันฟังก์ชันนี้หนึ่งครั้งเพื่อดันข้อมูลให้ตรงล็อก
+ */
+function fixSheetDataShift() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  if (data.length <= 1) return "No data to fix";
+  
+  let fixedCount = 0;
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    // ถ้า Amount (index 8) ไม่เป็นตัวเลข แต่ index 7 เป็นตัวเลข
+    // แสดงว่าข้อมูลอาจจะเลื่อนมาจากโครงสร้างเก่า (ที่ index 7 คือ Amount)
+    const valAt7 = row[7];
+    const valAt8 = row[8];
+    
+    if (!isNaN(parseFloat(valAt7)) && isNaN(parseFloat(valAt8)) && String(valAt8).trim() !== "") {
+      // ดันข้อมูลตั้งแต่ index 7 ไปทางขวา 1 ช่อง
+      const rangeToShift = sheet.getRange(i + 1, 8, 1, sheet.getLastColumn() - 7);
+      const valuesToShift = rangeToShift.getValues()[0];
+      
+      // แทรกค่าว่างที่ Batch no (index 8 ใน 1-based คือ column 8)
+      // แล้วขยับที่เหลือ
+      const newRowSegment = [""]; // Empty Batch No
+      for(let j=0; j<valuesToShift.length - 1; j++) {
+        newRowSegment.push(valuesToShift[j]);
+      }
+      
+      sheet.getRange(i + 1, 8, 1, newRowSegment.length).setValues([newRowSegment]);
+      fixedCount++;
+    }
+  }
+  
+  return "Fixed " + fixedCount + " rows";
 }
 
 /**

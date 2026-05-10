@@ -184,7 +184,7 @@ export async function loginWithGoogle(credentialResponse: GoogleCredentialRespon
     const user: User = {
       email,
       name: name || 'Google User',
-      role: UserRole.OPERATOR, // Default role - fetch from backend in production
+      role: UserRole.WFG, // Default role - fetch from backend in production
       avatar: picture,
     };
 
@@ -247,7 +247,7 @@ export async function loginWithPassword(userId: string, password: string): Promi
 
     const user: User = {
       ...result.data.user,
-      role: result.data.user.role || UserRole.OPERATOR,
+      role: result.data.user.role || UserRole.WFG,
     };
 
     storeAuthData(result.data.token, user, result.data.expiresIn);

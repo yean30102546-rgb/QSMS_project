@@ -12,6 +12,7 @@ interface OverallStats {
   total: number;
   pending: number;
   inProgress: number;
+  awaitingValuation: number;
   completed: number;
   completionRate: number;
 }
@@ -71,61 +72,66 @@ export function OverallTab({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-bg">
-      <div className="flex-shrink-0 space-y-12 overflow-hidden border-b border-border px-0 py-8">
-        <div className="px-8 md:px-10 lg:px-12">
-          <header className="mb-8 flex items-end justify-between">
+      <div className="flex-shrink-0 border-b border-border bg-white px-0 py-6 md:py-8 lg:py-10">
+        <div className="px-4 md:px-10 lg:px-12">
+          <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-1 text-sm font-medium text-muted">
+              <p className="mb-1 text-xs font-medium text-muted">
                 {new Date().toLocaleDateString('th-TH', {
                   weekday: 'long',
                   month: 'short',
                   day: 'numeric',
                 })}
               </p>
-              <h1 className="text-3xl font-medium tracking-tight text-foreground">สวัสดีตอนเช้า Admin</h1>
+              <h1 className="text-2xl font-bold tracking-normal text-foreground md:text-3xl">สวัสดี Admin</h1>
             </div>
-            <div className="flex gap-2">
-              <Tooltip text="รีเฟรชข้อมูลจากฐานข้อมูล">
+            <div className="flex items-center gap-2">
+              <Tooltip text="รีเฟรชข้อมูล">
                 <button
                   onClick={loadCases}
                   disabled={isLoadingCases}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground transition-all hover:bg-slate-50 disabled:opacity-50"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-foreground transition-all hover:bg-slate-50 disabled:opacity-50"
                 >
-                  <RefreshCw size={20} className={isLoadingCases ? 'animate-spin' : ''} />
+                  <RefreshCw size={18} className={isLoadingCases ? 'animate-spin' : ''} />
                 </button>
               </Tooltip>
-
             </div>
           </header>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-            <StatCard label="จำนวนงานทั้งหมด (Total)" value={stats.total.toString()} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+            <StatCard label="จำนวนงานทั้งหมด" value={stats.total.toString()} />
             <StatCard
-              label="รอดำเนินการ (Pending)"
+              label="รอดำเนินการ"
               value={stats.pending.toString()}
               trend={`${Math.round((stats.pending / (stats.total || 1)) * 100)}%`}
             />
-            <StatCard label="กำลังดำเนินการ (In-Progress)" value={stats.inProgress.toString()} />
-            <StatCard label="เสร็จสิ้น (Completed)" value={stats.completed.toString()} />
+            <StatCard label="กำลังดำเนินการ" value={stats.inProgress.toString()} />
+            <StatCard label="รอประเมินราคา" value={stats.awaitingValuation.toString()} />
+            <StatCard label="เสร็จสิ้น" value={stats.completed.toString()} />
+            <StatCard 
+              label="เปื้อนจากการรั่ว" 
+              value={cases.reduce((acc, c) => acc + (c.items?.filter(i => String(i.reason || '').includes('เปื้อน') && i.linkedSourceId).length || 0), 0).toString()} 
+              trend="Correlation"
+            />
           </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-hide bg-bg">
-        <div className="px-8 py-8 md:px-10 lg:px-12">
+        <div className="px-4 py-6 md:px-10 md:py-8 lg:px-12">
           <div className="space-y-6">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-base font-semibold italic tracking-tight text-foreground underline decoration-accent/20 underline-offset-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-1">
+                <h3 className="text-sm font-bold italic tracking-normal text-foreground underline decoration-accent/20 underline-offset-4 md:text-base">
                   รายการงาน Rework ล่าสุด
                 </h3>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="relative w-full sm:w-56">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
                     <input
                       type="text"
-                      placeholder="ค้นหา ID, ชื่อสินค้า..."
-                      className="w-56 rounded-xl border border-border bg-white py-2 pl-9 pr-4 text-xs font-medium transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                      placeholder="ค้นหา..."
+                      className="w-full rounded-xl border border-border bg-white py-2.5 pl-9 pr-4 text-xs font-medium transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -134,14 +140,14 @@ export function OverallTab({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                    className={`flex h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all sm:h-auto ${
                       showFilters || hasActiveFilters
                         ? 'bg-accent text-white shadow-lg shadow-accent/20'
                         : 'border border-border bg-white text-foreground hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <SlidersHorizontal size={14} />
-                    ตัวกรองขั้นสูง
+                    ตัวกรอง
                     {activeFilterCount > 0 && (
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-[10px] font-black text-accent">
                         {activeFilterCount}
@@ -151,9 +157,9 @@ export function OverallTab({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-1">
-                <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-muted">สถานะ:</span>
-                {(['all', 'Pending', 'In-Progress', 'Completed'] as const).map((status) => {
+              <div className="flex items-center gap-2 px-1 overflow-x-auto pb-2 scrollbar-hide">
+                <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-muted">สถานะ:</span>
+                {(['all', 'Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
                   const isAll = status === 'all';
                   const isActive = isAll ? statusFilter.length === 0 : statusFilter.includes(status);
                   const count = isAll ? cases.length : statusCounts[status] || 0;
@@ -163,8 +169,10 @@ export function OverallTab({
                       : status === 'Pending'
                         ? 'รอดำเนินการ'
                         : status === 'In-Progress'
-                          ? 'กำลังทำ'
-                          : 'เสร็จสิ้น';
+                          ? 'กำลังดำเนินการ'
+                          : status === 'Awaiting Valuation'
+                            ? 'รอประเมินราคา'
+                            : 'เสร็จสิ้น';
 
                   const activeColors = isAll
                     ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
@@ -172,7 +180,9 @@ export function OverallTab({
                       ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
                       : status === 'In-Progress'
                         ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
-                        : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20';
+                        : status === 'Awaiting Valuation'
+                          ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20'
+                          : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20';
 
                   return (
                     <motion.button
@@ -363,8 +373,8 @@ export function OverallTab({
                 >
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted">กรอง:</span>
                   {statusFilter.map((s) => (
-                    <span key={`tag-s-${s}`} className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700">
-                      {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังทำ' : 'เสร็จสิ้น'}
+                    <span key={`tag-s-${s}`} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-700">
+                      {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : s === 'Awaiting Valuation' ? 'รอประเมินราคา' : 'เสร็จสิ้น'}
                       <button onClick={() => removeFilter('status', s)} className="hover:text-amber-900"><X size={10} /></button>
                     </span>
                   ))}
@@ -437,14 +447,14 @@ interface StatCardProps {
 
 function StatCard({ label, value, trend }: StatCardProps) {
   return (
-    <div className="stat-card rounded-2xl border border-border bg-white p-6">
-      <p className="mb-3 text-[10px] font-bold uppercase leading-none tracking-[0.1em] text-muted">
+    <div className="stat-card rounded-2xl border border-border bg-white p-4 md:p-6">
+      <p className="mb-2 text-[9px] font-bold uppercase leading-none tracking-[0.1em] text-muted md:mb-3 md:text-[10px]">
         {label}
       </p>
-      <div className="flex items-end justify-between">
-        <h3 className="text-[28px] font-bold leading-none tracking-tighter text-foreground">{value}</h3>
+      <div className="flex items-end justify-between gap-2">
+        <h3 className="text-xl font-bold leading-none tracking-tighter text-foreground md:text-[28px]">{value}</h3>
         {trend && (
-          <span className="rounded-full border border-border bg-slate-50 px-2 py-0.5 text-[9px] font-bold uppercase leading-none tracking-widest text-muted">
+          <span className="shrink-0 rounded-full border border-border bg-slate-50 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-widest text-muted md:px-2 md:text-[9px]">
             {trend}
           </span>
         )}

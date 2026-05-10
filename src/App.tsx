@@ -11,6 +11,7 @@ import {
   fetchAllCases,
   insertCase,
   updateCase,
+  deleteCase,
   setGasWebAppUrl,
   fetchItemMaster,
   saveItemToMaster,
@@ -85,6 +86,22 @@ function AuthWrapper() {
   return <MainAppContent user={appUser} onLogout={refreshAuth} />;
 }
 
+const initialFormItem: ReworkItem = {
+  id: 'form-1',
+  itemNumber: '',
+  itemName: '',
+  itemCode: '',
+  batchNo: '',
+  amount: 1,
+  reason: '',
+  reasonSubtype: '',
+  responsible: '',
+  responsibleSubtype: '',
+  details: '',
+  imageUrls: [],
+  linkedSourceId: '',
+};
+
 /**
  * ===== MAIN APP CONTENT COMPONENT =====
  */
@@ -99,19 +116,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
   const [isLoadingMaster, setIsLoadingMaster] = useState(true);
   const [caseSource, setCaseSource] = useState('SFC');
   const [formItems, setFormItems] = useState<ReworkItem[]>([
-    {
-      id: 'form-1',
-      itemNumber: '',
-      itemName: '',
-      itemCode: '',
-      amount: 1,
-      reason: '',
-      reasonSubtype: '',
-      responsible: '',
-      responsibleSubtype: '',
-      details: '',
-      imageUrls: [],
-    },
+    { ...initialFormItem }
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -161,6 +166,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
   const loadCases = async () => {
     try {
       setIsLoadingCases(true);
+      setCaseError(null);
       const result = await fetchAllCases();
       if (result.success && result.data) {
         setCases(sortCasesByStatus(result.data));
@@ -181,10 +187,8 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
 
   const addFormItem = () => {
     setFormItems([...formItems, {
-      id: `form-${Date.now()}`,
-      itemNumber: '', itemName: '', itemCode: '', amount: 1,
-      reason: '', reasonSubtype: '', responsible: '', responsibleSubtype: '',
-      details: '', imageUrls: [],
+      ...initialFormItem,
+      id: `form-${Date.now()}`
     }]);
   };
 
@@ -205,11 +209,13 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
     }
     setFormItems(prev => prev.map(item => {
       if (item.id !== id) return item;
-      const normalizedValue = field === 'itemCode' ? enforceNumeric(String(value)).slice(0, 11) :
+      const normalizedValue = (field === 'itemCode' || field === 'batchNo') ? enforceNumeric(String(value)).slice(0, 50) :
         field === 'amount' ? Math.max(0, parseInt(String(value)) || 0) : value;
       return { ...item, [field]: normalizedValue };
     }));
   };
+
+
 
   const handleCheckItemNumber = (id: string, showModal: boolean = true) => {
     const item = formItems.find(i => i.id === id);
@@ -234,13 +240,21 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
       const result = await insertCase(caseSource, formItems, uploadedImages);
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
-        setFormItems([{ id: 'form-1', itemNumber: '', itemName: '', itemCode: '', amount: 1, reason: '', reasonSubtype: '', responsible: '', responsibleSubtype: '', details: '', imageUrls: [] }]);
+        setFormItems([{ ...initialFormItem }]);
         setUploadedImages({});
         await loadCases();
         setTimeout(() => setSaveMessage(null), 4000);
+      } else {
+        setSaveMessage({ 
+          type: 'error', 
+          text: result.error || 'ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง' 
+        });
       }
     } catch (error) {
-      setSaveMessage({ type: 'error', text: 'เกิดข้อผิดพลาด' });
+      setSaveMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึก' 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -251,8 +265,26 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
       setIsModalLoading(true);
       const result = await updateCase(caseId, updates);
       if (result.success) {
-        setCases(cases.map(c => c.id === caseId ? { ...c, ...updates } : c));
+        // Always refetch from source of truth to avoid 'ghost' updates
+        await loadCases();
         setIsModalOpen(false);
+      } else {
+        console.error('Update failed:', result.error);
+        alert(`บันทึกไม่สำเร็จ: ${result.error}`);
+      }
+    } finally {
+      setIsModalLoading(false);
+    }
+  };
+
+  const handleDeleteCase = async (caseId: string) => {
+    try {
+      setIsModalLoading(true);
+      const result = await deleteCase(caseId);
+      if (result.success) {
+        setCases(cases.filter(c => c.id !== caseId));
+        setIsModalOpen(false);
+        setSelectedCase(null);
       }
     } finally {
       setIsModalLoading(false);
@@ -267,7 +299,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         onLogout={handleLogout}
         userName={user?.name || ''}
         userRole={user?.role || ''}
-        cases={filterCasesByQuery(cases, searchQuery)}
+        cases={cases}
         isLoadingCases={isLoadingCases}
         caseError={caseError}
         searchQuery={searchQuery}
@@ -302,12 +334,13 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         isLoading={isModalLoading}
         onClose={() => { setIsModalOpen(false); setSelectedCase(null); }}
         onUpdate={handleUpdateCase}
+        onDelete={handleDeleteCase}
       />
 
       <ConfirmNewItemModal
         isOpen={confirmNewItemModal.isOpen}
         itemNumber={confirmNewItemModal.itemNumber}
-        onConfirm={(name) => {
+        onConfirm={async (name) => {
           setFormItems(prev => prev.map(i => i.id === confirmNewItemModal.itemId ? { ...i, itemName: name } : i));
           setConfirmNewItemModal({ isOpen: false, itemNumber: '', itemId: null });
         }}

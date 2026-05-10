@@ -1,0 +1,19 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "QSMS",
+  "loginPassword": "Qsms123",
+  "executionArgs": {
+    "projectName": "Rework demo",
+    "projectPath": "C:\\Users\\sapho\\OneDrive\\Desktop\\Rework demo 003\\Rework demo",
+    "testIds": [],
+    "additionalInstruction": "",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-bVimmLRRE37Sppi0bFSNdl6w-DoOBABTlooUjwNR0cYVFgKnCZw4z9eWwtB1TmvREc8tUCKSVXdKIKkzMMfAJW_tmcz80EPTvkJpRt2JkODmIwnJWneiH9W7X7m-X_xb3dw"
+    }
+  },
+  "serverPort": 62760
+}

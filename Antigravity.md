@@ -1,68 +1,239 @@
-# Antigravity.md — Project Context
+# Antigravity.md — บริบทของโปรเจกต์ (Project Context)
 
-## Project: QSMS Rework Management System
-**Last Updated:** 2026-05-07
+## โปรเจกต์: ระบบจัดการ Rework QSMS
+**อัปเดตล่าสุด:** 2026-05-10
+**รายละเอียด:** เว็บแอปพลิเคชันสมัยใหม่สำหรับจัดการกรณี rework พร้อมการรวมข้อมูลแบบเรียลไทม์กับ Google Sheets
 
-## Architecture
-- **Frontend:** React + Tailwind CSS (Vite dev server)
+## สถาปัตยกรรมระบบ (System Architecture)
+- **Frontend:** React + Tailwind CSS (Vite)
 - **Backend:** Google Apps Script (GAS)
-- **Database:** Google Sheets
-- **Storage:** Google Drive (per-case folders)
+- **ฐานข้อมูล:** Google Sheets
+- **พื้นที่จัดเก็บ:** Google Drive (เก็บรูปภาพตามแต่ละกรณี)
 
-## Key Files
-| File | Purpose |
-|------|---------|
-| `src/App.tsx` | Main app, state management, API bridge |
-| `src/components/OverallTab.tsx` | รายการ Rework + Filters (ใช้ sub-components) |
-| `src/components/CaseListTable.tsx` | ตารางรายการ + Skeleton/Empty/Error states |
-| `src/components/Pagination.tsx` | ส่วนเลือกหน้า (reusable) |
-| `src/components/Tooltip.tsx` | คำอธิบายเมื่อ hover (เพื่อผู้ใช้ใหม่) |
-| `src/components/ToastContainer.tsx` | Toast notification UI |
-| `src/hooks/useToast.ts` | Hook จัดการ toast state |
-| `src/hooks/useImageCompression.ts` | Hook บีบอัดรูปภาพด้วย browser-image-compression |
-| `src/components/Dashboard.tsx` | สถิติ/กราฟ + Interactive Filters |
-| `src/components/DashboardTab.tsx` | Wrapper สำหรับ Dashboard |
-| `src/components/Login.tsx` | Login ด้วย Password (ไม่ใช่ PIN) |
-| `src/components/AddCaseTab.tsx` | ฟอร์มเพิ่มงาน Rework |
-| `src/services/auth.ts` | Authentication service (loginWithPassword) |
-| `src/services/api.ts` | API bridge ไปยัง GAS |
-| `src/components/ExportTemplate.tsx` | Ghost template สำหรับ Export รายงาน (PNG/PDF) |
-| `src/hooks/useExportReport.ts` | Hook จัดการ Export PNG (Long Image) และ PDF (Multi-page) |
-| `gas/Code.gs` | Backend ทั้งหมด (Auth, CRUD, Drive) |
-| `src/components/TutorialModal.tsx` | ระบบคู่มือการใช้งานแบบ Modal ภายในแอป |
-| `artifacts/user_guide.md` | คู่มือการใช้งานฉบับสมบูรณ์ (Markdown) |
+## บริบทของไฟล์ (File Context)
+| ไฟล์ | วัตถุประสงค์ | รายละเอียดบริบท |
+| :--- | :--- | :--- |
+| `src/App.tsx` | กระบวนการหลัก & สถานะ | จัดการสถานะส่วนกลาง (Global State), การกำหนดเส้นทางแท็บ และการเชื่อมต่อ API |
+| `src/components/MainLayout.tsx` | เลย์เอาต์หลัก | ประกอบด้วย Sidebar และพื้นที่แสดงเนื้อหาหลัก |
+| `src/components/OverallTab.tsx` | รายการ Rework | แสดงรายการ, ตัวกรองขั้นสูง (แหล่งที่มา, เหตุผล, วันที่) |
+| `src/components/AddCaseTab.tsx` | ฟอร์มเพิ่มข้อมูลใหม่ | จัดการการป้อนข้อมูลหลายรายการ, อัปโหลดรูปภาพ และการตรวจสอบความถูกต้อง |
+| `src/components/Dashboard.tsx` | สถิติ & กราฟ | แสดง KPI, กราฟวิเคราะห์ข้อผิดพลาด และปริมาณงาน |
+| `src/components/UpdateModal.tsx` | อัปเดตสถานะ | Modal รายละเอียดสำหรับแก้ไขสถานะ, ดูรูปภาพ และออกรายงาน |
+| `src/components/CaseListTable.tsx` | ตารางข้อมูล | แสดงรายการเคสพร้อมเอฟเฟกต์ loading skeleton |
+| `src/components/ConfirmNewItemModal.tsx` | ยืนยัน Item ใหม่ | Modal สำหรับยืนยันเมื่อผู้ใช้กรอก Item Number ที่ยังไม่มีในระบบ |
+| `src/components/Login.tsx` | เข้าสู่ระบบ | ตรวจสอบสิทธิ์ผู้ใช้ด้วยรหัสผ่าน (QSMS/WFG) |
+| `src/components/ErrorBoundary.tsx` | จัดการข้อผิดพลาด | ส่วนประกอบสำหรับดักจับและแสดงข้อผิดพลาดเมื่อแอปเกิดปัญหา |
+| `src/components/MainLayout.tsx` | เลย์เอาต์หลัก | จัดการ Sidebar, แถบนำทาง และพื้นที่บรรจุเนื้อหาแบบไดนามิก |
+| `src/services/api.ts` | การรวม GAS | ประกอบด้วยฟังก์ชัน fetch, insert, update ที่เชื่อมต่อกับ backend Apps Script |
+| `src/utils/helpers.ts` | ยูทิลิตี้ช่วยเหลือ | ฟังก์ชันรูปแบบวันที่ (Bangkok), การตรวจสอบข้อมูล และตรรกะเสริม |
+| `gas/Code.gs` | ตรรกะ Backend | จัดการการตรวจสอบสิทธิ์, CRUD บน Sheets และการจัดการไฟล์บน Drive |
+| `src/components/ExportTemplate.tsx` | เทมเพลตส่งออกรายงาน | เทมเพลตที่ซ่อนอยู่สำหรับสร้างไฟล์ PNG/PDF ระดับมืออาชีพ |
+| `src/components/TutorialModal.tsx` | คู่มือการใช้งาน | ระบบแนะนำการใช้งานโดยตรงภายในแอปพลิเคชัน |
+| `src/hooks/useImageCompression.ts`| การบีบอัดรูปภาพ | ปรับขนาดรูปภาพให้เหมาะสมก่อนอัปโหลดไปยัง Drive |
 
-## Authentication (Password-based)
-- Login ใช้ `loginWithPassword()` ส่ง `password` (ไม่จำกัดรูปแบบ/ความยาว)
-- GAS ใช้ Script Properties: `QSMS_PASSWORD`, `WFG_PASSWORD`
-- Backend function: `handlePasswordLogin()`
+## การเปลี่ยนแปลงล่าสุด (Recent Changes)
+1. **รวมบริบท (2026-05-10):** อัปเดต `Antigravity.md` เพื่อครอบคลุมโครงสร้างโปรเจกต์ทั้งหมดและบทบาทของไฟล์ต่างๆ
+2. **รองรับภาษาไทย:** เปลี่ยนเอกสารบริบททั้งหมดเป็นภาษาไทยตามคำขอของผู้ใช้
+3. **ปรับปรุง UI/UX:** อัปเดต Pagination ให้อยู่คงที่ที่ส่วนท้ายของหน้า และเพิ่ม Tooltip สำหรับปุ่มฟังก์ชัน
+4. **ระบบ Export:** รวม `html2canvas` และ `jsPDF` เพื่อส่งออกรายงานแบบรูปภาพยาว (Long Image) และ PDF หลายหน้า
+5. **แก้ไข Timezone:** ตรวจสอบให้แน่ใจว่าการแสดงเวลาทั้งหมดใช้โซนเวลา `Asia/Bangkok`
+6. **เอกสารข้อกำหนด (2026-05-10):** สร้าง `testsprite_spec.md` เพื่อใช้เป็น PRD สำหรับระบบทดสอบอัตโนมัติ Testsprite
 
-## Recent Changes (2026-05-06)
-1. **OverallTab Filters** — Quick Status Pills + Advanced Filter Panel (Source, Reason, Responsible, Date Range) + Active Filter Tags
-2. **Dashboard Filters** — Status Pills + Reason chips + Date Range, reactive charts
-3. **Fixed Pagination** — ใช้ flex-grow ให้ Pagination ตรึงล่างเสมอ
-4. **No Auto Scroll** — OverallTab ได้ full-height ตรงจาก MainLayout
-5. **Skeleton Screen** — แสดง 10 แถว placeholder ระหว่างโหลด
-6. **PIN → Password Migration** — Login.tsx, auth.ts, Code.gs ทั้งหมดเปลี่ยนแล้ว
-7. **Validation Warning** — เพิ่มการแจ้งเตือน "กรุณาเลือกแผนก SFC" และ "กรุณาเลือก Supplier"
-8. **New Item Logic & Notification** — Modal กรอกชื่อ New Item ทันที, บันทึกลง Master ตอนกด Save Case
-9. **Update Logo** — ใช้ `/img/logo.png` แทนโลโก้ Text เก่า
-10. **Anti-Scroll & Stable Layout** — ลบ double-scroll wrapper, ใช้ flex-grow ดัน Pagination
-11. **Refactor & Friendly UI** — แยก CaseListTable, Pagination, Tooltip, ToastContainer ออกจาก OverallTab + สร้าง useImageCompression hook + useToast hook + ปรับ Empty State เป็นภาษาไทย + เพิ่ม Tooltip บนปุ่ม icon
-12. **UpdateModal Image Gallery** — เพิ่มส่วนแสดงรูปภาพแนบในหน้าต่าง UpdateModal แบ่งตาม Item (Item 1, Item 2...) พร้อม Lightbox ดูรูปเต็มจอ + ลิงก์ไปยัง Google Drive + fallback เมื่อโหลดรูปไม่ได้
-13. **Bangkok Timezone Fix** — แก้ทุกฟังก์ชัน date/time (formatThaiDate, formatTimestamp, formatDateThai, generateCaseId) ให้ lock เป็น `Asia/Bangkok` เสมอ ทั้งใน helpers.ts และ CaseListTable.tsx
-14. **Image URL Fix (GAS)** — แก้ `uploadImageToDrive` ให้ return URL + setSharing public, `handleInsert` เก็บ URL แต่ละรูปแยก item (pipe-separated ในคอลัมน์ 15, folder URL ในคอลัมน์ 16), `handleReadAll` แยก imageUrls[] กลับเป็น array
-15. **Export Report (PNG/PDF)** — เพิ่มปุ่ม Export PNG (Long Image) และ Export PDF (Multi-page A4) ใน UpdateModal + สร้าง Ghost ExportTemplate ที่มี Header/Footer บริษัท + ใช้ html2canvas + jsPDF + Image Preload Sync + Loading Overlay แสดงสถานะการ Export
-16. **Tutorial System** — สร้าง `TutorialModal.tsx` และเพิ่มปุ่ม "คู่มือการใช้งาน" ใน Sidebar เพื่อให้ผู้ใช้เข้าถึงคำแนะนำการใช้งานฟังก์ชันต่างๆ ได้ทันที พร้อมสร้างไฟล์ `user_guide.md` เป็นเอกสารอ้างอิงหลัก
-17. **Fixed Button Refreshes** — แก้ไขปัญหาการกดปุ่ม "คู่มือการใช้งาน" แล้วหน้าเว็บรีเฟรชเอง โดยการเพิ่ม `e.preventDefault()` ใน SidebarItem และกำหนด `type="button"` ให้กับปุ่มทั้งหมดในระบบ รวมถึงลบปุ่ม reload ที่ซ้ำซ้อนใน OverallTab ออกเพื่อลดความสับสน
+## บันทึกการสนทนา (Conversation Logs)
 
-## GAS Script Properties Required
-```
-AUTH_TOKEN_SECRET, QSMS_PASSWORD, QSMS_EMAIL, QSMS_NAME, QSMS_ROLE,
-WFG_PASSWORD, WFG_EMAIL, WFG_NAME, WFG_ROLE, DRIVE_FOLDER_ID
-```
+### [2026-05-10] รวมบริบทโปรเจกต์
+**คำขอของผู้ใช้:** รวมไฟล์ใน Project โดยเอา context ไว้ที่ Antigravity.md
+**การดำเนินการ:**
+- สแกนโฟลเดอร์โปรเจกต์ทั้งหมดเพื่อระบุไฟล์ที่สำคัญ
+- สรุปข้อมูลจาก `README.md` และไฟล์ซอร์สโค้ดเพื่อสร้างตาราง "บริบทของไฟล์"
+- ปรับโครงสร้าง `Antigravity.md` เพื่อให้ติดตามบริบทได้ง่ายขึ้นสำหรับเซสชันถัดไป
 
-## Environment
-- `.env` → `REACT_APP_GAS_WEB_APP_URL` ต้องตรงกับ GAS deployment ID
-- ทุกครั้งที่แก้ `Code.gs` ต้อง Deploy version ใหม่ใน GAS IDE
+### [2026-05-10] เปลี่ยนภาษาเป็นไทย
+**คำขอของผู้ใช้:** เปลี่ยน comment ใน Antigeavity.md เป็นภาษาไทยครับ
+**การดำเนินการ:**
+- แปลเนื้อหาทั้งหมดใน `Antigravity.md` จากภาษาเวียดนามเป็นภาษาไทย
+- อัปเดตบันทึกการสนทนาให้เป็นภาษาไทย
+- บันทึกการเปลี่ยนแปลงล่าสุดลงในไฟล์
 
+### [2026-05-10] สร้างไฟล์กำหนดค่า Agent และ Skill
+**คำขอของผู้ใช้:** สร้าง Agent.md และ Skill.md ในโฟลเดอร์ .Agent เพื่อครอบคลุมการพัฒนาโปรเจกต์
+**การดำเนินการ:**
+- สร้างโฟลเดอร์ `.Agent` (หากยังไม่มี)
+- สร้าง `Agent.md`: กำหนดบทบาท แนวทางการทำงาน และหลักการพัฒนาสำหรับ AI Agent
+- สร้าง `Skill.md`: รวบรวมทักษะทางเทคนิคที่จำเป็น เช่น การจัดการ UI, การเชื่อมต่อ API (GAS), การบีบอัดภาพ และการออกรายงาน
+- บันทึกการดำเนินงานลงใน `Antigravity.md` ตามกฎที่กำหนด
+
+### [2026-05-10] แก้ไขและปรับปรุงระบบกรองข้อมูล (Dashboard & Filtering)
+**คำขอของผู้ใช้:** ทำการ Debug ในส่วน Filtering Dashboard ที่มีภาษาแปลกๆและส่วนอื่นๆ
+**การดำเนินการ:**
+- **ทำความสะอาดข้อมูล (Data Cleaning):** ปรับปรุง `uniqueReasons`, `uniqueSources`, และ `uniqueResponsible` ให้มีการใช้ `.trim()` และข้ามค่าว่าง เพื่อป้องกัน "ภาษาแปลกๆ" หรือช่องว่างที่มาจากฐานข้อมูล
+- **ปรับปรุงความสอดคล้องของภาษา:** เปลี่ยนคำว่า "กำลังทำ" เป็น "กำลังดำเนินการ" ในทุกส่วนของแอปพลิเคชัน (Dashboard, OverallTab, CaseListTable)
+- **แปลภาษาเพิ่มเติม:** แปลคำศัพท์ภาษาอังกฤษที่ยังหลงเหลืออยู่ใน UI เช่น "Source:", "Box", "Total", "Pending" ให้เป็นภาษาไทยทั้งหมด (แหล่งที่มา, กล่อง, ทั้งหมด, รอดำเนินการ)
+- **ปรับแต่ง UI Dashboard:** เปลี่ยน "Defect Reasons" เป็น "สาเหตุข้อบกพร่อง" และปรับคำอธิบายต่างๆ ให้เป็นภาษาไทยที่เข้าใจง่ายสำหรับมือใหม่
+- **ตรวจสอบตรรกะการกรอง:** ตรวจสอบให้แน่ใจว่าการกรองข้อมูลใน Dashboard ทำงานร่วมกับข้อมูลที่ผ่านการทำความสะอาดแล้วได้อย่างถูกต้อง
+
+### [2026-05-10] ปรับปรุงความยืดหยุ่น (Responsive Design)
+**คำขอของผู้ใช้:** ปรับปรุงให้ Front end เป็นแบบ Responsive
+**การดำเนินการ:**
+- **MainLayout:** เพิ่มระบบ Sidebar แบบ Mobile (Overlay + Hamburger Menu) เพื่อให้แสดงผลบนมือถือได้ดีขึ้น
+- **OverallTab:** ปรับปรุง Header และ Grid ของ Stat Cards ให้ยืดหยุ่นตามหน้าจอ พร้อมระบบ Tag แบบเลื่อนได้ (Horizontal Scroll)
+- **Dashboard:** ปรับปรุงตารางสัดส่วนสถานะงาน (Status Distribution) ให้ซ้อนกันบนมือถือ และปรับแต่ง Metric Cards
+- **AddCaseTab:** ปรับปรุงปุ่มบันทึกและปุ่มเพิ่มรายการให้ซ้อนกันในแนวตั้งเมื่อเปิดผ่านมือถือ
+- บันทึกการดำเนินงานลงใน `Antigravity.md` ตามกฎที่กำหนด
+
+### [2026-05-10] แก้ไข Hamburger Menu และการแสดงผลภาษาไทย
+**คำขอของผู้ใช้:** แก้ไขภาษาไทยที่แสดงผลแปลกๆ และหาสาเหตุที่ Hamburger Menu กดแล้ว Error
+**การดำเนินการ:**
+- **แก้ไข Hamburger Menu:** พบสาเหตุมาจากการลืม Import ตัวไอคอน `X` ในไฟล์ `MainLayout.tsx` ทำให้เกิด Error เมื่อกดเปิดเมนูบนมือถือ ได้ทำการเพิ่มการ Import ให้ครบถ้วนแล้ว
+- **แก้ไขการแสดงผลภาษาไทย (Text Rendering):**
+    - ปรับปรุง `index.css` โดยเลื่อนฟอนต์ **Sarabun** ขึ้นมาเป็นอันดับแรกใน `font-sans` เพื่อให้รองรับการแสดงผลภาษาไทยที่ถูกต้องและสวยงาม
+    - ลบ `tracking-tight` (การบีบระยะห่างตัวอักษร) ออกจากส่วนที่เป็นข้อความภาษาไทย เนื่องจากทำให้สระและวรรณยุกต์ซ้อนทับกัน (เช่นใน Dashboard และ OverallTab)
+    - เพิ่มคลาส `tracking-normal` ในส่วนของ Chip/Tag ต่างๆ เพื่อความชัดเจน
+- **ความสอดคล้องของภาษา:** อัปเดตสถานะ "กำลังทำ" ให้เป็น "กำลังดำเนินการ" ใน Dashboard ให้ตรงตามมาตรฐานที่กำหนดไว้ก่อนหน้า
+- ตรวจสอบความถูกต้องของการ Import และการใช้ Component ทั่วทั้งโปรเจกต์
+
+### [2026-05-10] ปรับปรุงโครงสร้างสาเหตุและเพิ่มฟิลด์ Batch no.
+**คำขอของผู้ใช้:** 
+1. ย้ายสาเหตุ "แตกตะเข็บ" และ "รอยมีด" ไปอยู่ในหมวดหมู่ย่อยของ "รั่ว"
+2. เพิ่มช่องกรอก Batch no. (ตัวเลขเท่านั้น) ในหน้าเพิ่มงาน และแสดงผลในหน้าอัปเดตงาน
+**การดำเนินการ:**
+- **ปรับปรุงโครงสร้างสาเหตุ (Reason Structure):**
+    - แก้ไข `AddCaseTab.tsx`: นำ "แตกตะเข็บ" และ "รอยมีด" ออกจากตัวเลือกหลัก และเพิ่มเข้าไปใน `LEAK_SUBTYPES` (หมวดหมู่ย่อยของรั่ว)
+- **เพิ่มฟิลด์ Batch no.:**
+    - **API & Type:** เพิ่มฟิลด์ `batchNo` ใน interface `ReworkItem` และปรับปรุงตรรกะการ Mapping/Normalization ใน `api.ts`
+    - **Validation:** เพิ่มฟังก์ชัน `validateBatchNo` เพื่อตรวจสอบว่าเป็นตัวเลขและห้ามว่าง
+    - **AddCaseTab:** เพิ่มช่อง Input สำหรับ `Batch no.` พร้อมกำหนดให้รับเฉพาะตัวเลข และปรับ Layout ของ Grid เป็น 4 คอลัมน์เพื่อให้ดูสวยงาม
+    - **App Logic:** ปรับปรุงสถานะเริ่มต้นและฟังก์ชัน `updateFormItem` ใน `App.tsx` ให้รองรับการกรอก Batch no.
+    - **UpdateModal:** เพิ่มการแสดงผลป้าย Batch no. สีฟ้าในรายการ Item เพื่อให้ตรวจสอบได้ง่าย
+- ตรวจสอบความสอดคล้องของข้อมูลทั่วทั้งระบบ
+
+### [2026-05-10] จัดกลุ่มหมวดหมู่สาเหตุ "เปื้อน"
+**คำขอของผู้ใช้:** เพิ่ม "เปื้อน" ในหัวข้อหลัก และย้าย "กล่องเปื้อน" และ "ขวดเปื้อน" ไปเป็นหัวข้อย่อย
+**การดำเนินการ:**
+- **ปรับปรุงหัวข้อหลัก (Main Options):** แก้ไข `AddCaseTab.tsx`: เปลี่ยนตัวเลือกหลักให้เหลือเพียง "รั่ว", "เปื้อน", และ "อื่นๆ"
+- **ปรับปรุงหัวข้อย่อย (Subtypes):** 
+    - สร้าง `STAIN_SUBTYPES`: ประกอบด้วย "ขวดเปื้อน" และ "กล่องเปื้อน"
+    - อัปเดตตรรกะ UI ให้รองรับการเลือกหัวข้อย่อยสำหรับทั้ง "รั่ว" และ "เปื้อน" โดยใช้ State ร่วมกัน (`expandedReasonSelection`)
+    - ปรับปรุงข้อความแจ้งเตือน (Validation Message) ให้เปลี่ยนตามหัวข้อที่เลือกโดยอัตโนมัติ (เช่น "กรุณาเลือกรูปแบบ เปื้อน")
+- ตรวจสอบความถูกต้องของการบันทึกข้อมูล Subtype ลงในระบบ
+
+### [2026-05-10] พัฒนาตัวเลือก Subtype แบบเลือกได้หลายรายการ (Multi-select)
+**คำขอของผู้ใช้:** ปรับปรุงส่วนเลือก Subtype ของ "เปื้อน" ให้เลือกได้หลายอย่างพร้อมกัน (เช่น ขวดเปื้อน และ กล่องเปื้อน)
+**การดำเนินการ:**
+- **ตรรกะการเลือก (Toggle Logic):** เพิ่มฟังก์ชัน `toggleReasonSubtype` เพื่อจัดการการเพิ่ม/ลบค่าในสตริง (เชื่อมด้วยเครื่องหมายคอมมา) เมื่อมีการคลิกปุ่ม
+- **รูปแบบการแสดงผล (Chips Pattern):**
+    - ใช้ปุ่มกดแบบ Chips แทน Checkbox เพื่อความพรีเมียมและใช้งานง่ายบนมือถือ
+    - **สถานะการเลือก (Selected State):** เมื่อถูกเลือก ปุ่มจะเปลี่ยนเป็นสีเทาเข้ม (`bg-slate-800`) และข้อความสีขาว พร้อมเงาที่ชัดเจน
+- **การจัดการข้อมูล:** ตรวจสอบว่าข้อมูลที่ส่งไปยัง Backend (GAS) จะรวมค่าที่เลือกทั้งหมดเข้าด้วยกันโดยอัตโนมัติ (เช่น "ขวดเปื้อน, กล่องเปื้อน")
+- **ความเสถียรของ UI:** ใช้ `transition-all` เพื่อให้การเปลี่ยนสีและสถานะของปุ่มลื่นไหล ไม่เกิดอาการกระตุกหรือ Layout ดีด
+- ตรวจสอบให้แน่ใจว่า "รั่ว" ยังคงเป็นการเลือกแบบรายการเดียว (Single-select) ตามปกติ
+
+### [2026-05-10] ระบบตรวจจับความเชื่อมโยงระหว่างไอเทม (Cross-Item Leakage Logic)
+**คำขอของผู้ใช้:** พัฒนาตรรกะเชื่อมโยงข้อมูล หากมีไอเทมหนึ่ง "รั่ว" และอีกไอเทมหนึ่ง "เปื้อน" ในเคสเดียวกัน ให้สามารถระบุได้ว่าไอเทมที่เปื้อนมีสาเหตุมาจากไอเทมที่รั่ว
+**การดำเนินการ:**
+- **ตรรกะการตรวจสอบ (Cross-Item Detection):** เพิ่มการตรวจสอบในอาเรย์ `formItems` ว่ามีไอเทมใดถูกระบุว่า "รั่ว" หรือไม่
+- **Conditional UI:** 
+    - สำหรับไอเทมที่มีสาเหตุเป็น "เปื้อน" ระบบจะแสดงส่วน "ระบุความเชื่อมโยง (Cross-Item Link)" โดยอัตโนมัติหากพบไอเทมอื่นในเคสที่ "รั่ว"
+    - ใช้ Checkbox เพื่อให้ผู้ใช้ยืนยันว่า "สาเหตุมาจากไอเทมที่รั่วในเคสนี้"
+    - หากติ๊กถูก จะแสดง Dropdown ให้เลือก **Item Number** ของไอเทมต้นเหตุที่รั่ว
+- **การจัดการข้อมูล (Data Schema):**
+    - เพิ่มฟิลด์ `linkedSourceId` ใน `ReworkItem` interface เพื่อเก็บ ID ของไอเทมต้นเหตุ
+    - ปรับปรุงการ Mapping ข้อมูลใน `api.ts` เพื่อส่งค่า `linkedSourceId` ไปยัง Backend (GAS)
+- **User Experience:**
+    - ใช้ `AnimatePresence` และ `motion` เพื่อให้ส่วน Link Source ปรากฏขึ้นมาอย่างนุ่มนวล ไม่ทำให้ Layout ดีด (No Layout Shift)
+    - ออกแบบ UI ส่วนนี้ด้วยสี Amber (เหลืองส้ม) เพื่อเน้นย้ำว่าเป็นข้อมูลความเชื่อมโยงที่สำคัญ
+
+### [2026-05-10] ตรวจสอบและแก้ไข Logic สาเหตุ "เปื้อน" และความเชื่อมโยง
+**การดำเนินการ:**
+- **การล้างข้อมูล (State Cleanup):** ปรับปรุงฟังก์ชัน `handleReasonChange` ใน `AddCaseTab.tsx` ให้ล้างค่า `reasonSubtype` และ `linkedSourceId` ทันทีที่มีการเปลี่ยนสาเหตุหลัก เพื่อป้องกันข้อมูลขยะค้างในระบบ
+- **การแสดงผลข้อมูลความเชื่อมโยง (Link Source Display):**
+    - อัปเดต `UpdateModal.tsx` ให้แสดงข้อมูลไอเทมต้นเหตุหากมีการระบุความเชื่อมโยงไว้
+    - แสดงเป็นแถบสีส้ม (Amber) พร้อมไอคอน `HelpCircle` และระบุหมายเลขไอเทมต้นเหตุเพื่อให้ตรวจสอบย้อนกลับได้ง่าย
+- **ความถูกต้องของ Type:** ตรวจสอบความสอดคล้องของ `ReworkItem` interface ในไฟล์ต่างๆ
+
+### [2026-05-10] พัฒนา Dashboard วิเคราะห์ข้อมูล 2 มิติ (Dual-View Analysis)
+**คำขอของผู้ใช้:** พัฒนา Dashboard ให้รองรับการวิเคราะห์ข้อมูล 2 มิติ (Units vs Defects) จากข้อมูลที่เป็น Array (Subtype) พร้อมระบบ Drill-down และ KPI ความเชื่อมโยง
+**การดำเนินการ:**
+- **ตรรกะการประมวลผลข้อมูล (Data Processing):**
+    - **Unit Count (By Quantity):** คำนวณผลรวมของฟิลด์ `Amount` ตามหมวดหมู่สาเหตุหลัก
+    - **Defect Frequency (By Subtype):** ทำการ Flatten ข้อมูลใน `reasonSubtype` (เช่น "กล่องเปื้อน, ขวดเปื้อน") และนับแยกกันโดยอ้างอิงจากจำนวน `Amount`
+- **ส่วนแสดงผลอัจฉริยะ (Interactive Visualization):**
+    - **Toggle View Mode:** เพิ่มปุ่มสลับมุมมองระหว่าง "ปริมาณสินค้า (Units)" และ "ความถี่ปัญหา (Defects)"
+    - **Drill-down Capability:** พัฒนาระบบที่ผู้ใช้สามารถคลิกที่แท่งกราฟสาเหตุหลักเพื่อเจาะลึกดูรายละเอียดสาเหตุมือย่อย (Subtypes) ได้ทันที
+- **Multi-Item Linkage Summary:**
+    - เพิ่มการ์ด KPI "เปื้อนจากการรั่ว" เพื่อแสดงจำนวนเคสที่มีความเชื่อมโยงกันผ่าน `linkedSourceId` (Correlation Analysis)
+- **UI/UX Design:**
+    - ออกแบบ Dashboard ใหม่ให้ดูพรีเมียมด้วยระบบสี Blue (Units) และ Orange (Defects)
+    - ใช้ `framer-motion` สำหรับ Transition การ Drill-down ที่ลื่นไหล
+    - เพิ่ม Tooltip อธิบายข้อมูลในแต่ละการ์ด KPI
+    - รองรับ Responsive 100% สำหรับการใช้งานบนแท็บเล็ตและมือถือ
+- ตรวจสอบความถูกต้องของข้อมูลและการ Mapping ใน `api.ts` และการใช้งานใน `Dashboard.tsx`
+
+### [2026-05-10] พัฒนาขั้นตอนการประเมินราคา (Financial Valuation Workflow)
+**คำขอของผู้ใช้:** ปรับปรุง Flow การอัปเดตสถานะใน Update Modal ให้รองรับการประเมินราคาจากฝ่ายการเงิน โดยมีการกรอกวิธีแก้ไขและราคาประเมิน
+**การดำเนินการ:**
+- **โครงสร้างข้อมูลและสิทธิ์การใช้งาน:**
+    - **API & Type:** เพิ่มสถานะ `Awaiting Valuation` ใน interface `ReworkCase` และ `ReworkItem` พร้อมเพิ่มฟิลด์ `resolutionMethod` และ `reworkCost`
+    - **Role-Based Access (RBAC):** เพิ่มบทบาท `FINANCE` ใน `auth.config.ts` และกำหนดสิทธิ์ `finance_valuation` เพื่อจำกัดการกรอกข้อมูลราคาเฉพาะผู้ที่มีสิทธิ์เท่านั้น
+- **Update Modal Workflow:**
+    - พัฒนา UI แบบ State-driven โดยแบ่งเป็น 2 ระยะ:
+        1. **ระยะดำเนินการ (In-Progress):** เพิ่มช่อง TextArea สำหรับระบุ "วิธีแก้ไขปัญหา" เมื่อบันทึกระบบจะเปลี่ยนสถานะเป็น "รอประเมินราคา" โดยอัตโนมัติ
+        2. **ระยะประเมินราคา (Awaiting Valuation):** แสดงวิธีแก้ไขปัญหาแบบ Read-only และเปิดช่องระบุ "ราคาประเมิน" (เฉพาะฝ่ายการเงิน) เมื่อบันทึกระบบจะเปลี่ยนสถานะเป็น "เสร็จสิ้น"
+    - เพิ่มระบบป้องกันการบันทึก (Validation) หากข้อมูลจำเป็นไม่ครบถ้วนตามขั้นตอน
+- **การแสดงผลและตัวกรอง (UI Consistency):**
+    - **Status Badge:** เพิ่มสีม่วง (Purple) สำหรับสถานะ "รอประเมินราคา" ทั่วทั้งระบบ (OverallTab, Dashboard, CaseListTable)
+    - **Dashboard & Stats:** อัปเดตการคำนวณสถิติและระบบตัวกรองใน Dashboard ให้รองรับสถานะใหม่ เพื่อให้ฝ่ายการเงินติดตามงานที่ค้างประเมินได้ง่าย
+    - **Helpers:** ปรับปรุงตรรกะการจัดเรียง (Sorting) และการคำนวณสถิติส่วนกลางใน `helpers.ts`
+- **User Experience:**
+    - ใช้ไอคอนใหม่ (`Landmark`, `Calculator`, `PenTool`) เพื่อสื่อสารขั้นตอนงานได้ชัดเจนขึ้น
+    - เพิ่ม Micro-animations เมื่อสลับระหว่างขั้นตอนงานเพื่อลดความสับสนของผู้ใช้
+
+### [2026-05-10] วางระบบ Role-Based Access Control (RBAC) สมบูรณ์
+**คำขอของผู้ใช้:** เริ่มการทำระบบ RBAC โดยแบ่งสิทธิ์ตามบทบาท (Admin, QSMS, WFG, Finance) ทั้งหน้าบ้านและหลังบ้าน
+**การดำเนินการ:**
+- **โครงสร้างสิทธิ์ (Permissions Matrix):**
+    - **Admin & QSMS:** สิทธิ์สูงสุด เข้าถึงได้ทุกหน้า (Dashboard, Overall, Add Case) สามารถ "แก้ไขข้อมูลพื้นฐาน" และ "ลบรายการ" ได้
+    - **WFG (Warehouse/Production):** เพิ่มงานได้ ดูภาพรวมได้ อัปเดตวิธีแก้ไขปัญหาได้ แต่ห้ามเข้า Dashboard และห้ามลบ/แก้ไขข้อมูลหลัก
+    - **Finance (การเงิน):** เข้าถึงหน้า Overall เพื่อประเมินราคาเท่านั้น ห้ามเพิ่มงาน ห้ามเข้า Dashboard และห้ามแก้ไขข้อมูลอื่น
+- **ความปลอดภัยของ UI (Navigation & Actions):**
+    - **Sidebar Protection:** ซ่อนเมนู Dashboard และ Add Case อัตโนมัติตามบทบาทผู้ใช้
+    - **Tab Security:** เพิ่มระบบ Auto-Redirect หากผู้ใช้พยายามเข้าถึง Tab ที่ไม่มีสิทธิ์ผ่านการแก้ไข State หรือพิมพ์ URL
+    - **Action Restrictions:** แสดงปุ่ม "แก้ไขข้อมูล" และ "ลบรายการ" เฉพาะบทบาท Admin/QSMS ในหน้า Update Modal
+- **Update Modal Logic:**
+    - พัฒนา **"Administrative Edit Mode"** สำหรับ Admin เพื่อแก้ไขข้อมูลที่ผิดพลาดได้ทุกส่วน (แหล่งที่มา, ชื่อสินค้า, รายละเอียด)
+    - จำกัดการกรอกข้อมูลตาม Workflow: WFG กรอกวิธีแก้ไข, Finance กรอกราคาประเมิน
+- **Data Integrity:**
+    - ปรับปรุง `api.ts` ให้ส่ง `userRole` ไปกับทุก Request เพื่อให้ Google Apps Script ตรวจสอบสิทธิ์ซ้ำที่ฝั่ง Server ก่อนทำคำสั่งลบหรืออัปเดตราคา
+    - เพิ่มฟังก์ชัน `deleteCase` เพื่อรองรับการลบข้อมูลโดย Admin
+- **คู่มือและการบันทึก:** ปฏิบัติตามหลักการใน `Agent.md` และ `Skill.md` โดยเน้นโค้ดที่อ่านง่ายและโครงสร้างที่ยืดหยุ่น
+### [2026-05-10] ปรับปรุง Code.gs ให้เข้ากับฟีเจอร์ล่าสุด
+**คำขอของผู้ใช้:** ปรับปรุง code.gs ให้เข้ากับโปรเจคปัจจุบันที่อัพเดทใหม่ล่าสุด
+**การดำเนินการ:**
+- **อัปเดตโครงสร้างข้อมูล (Schema Update):**
+    - เพิ่มคอลัมน์ใหม่ใน Google Sheets: `Batch no.`, `Linked Source ID`, `Resolution Method`, และ `Rework Cost`
+    - ปรับปรุงลำดับคอลัมน์ใน `initializeSheet` และการดึงข้อมูลใน `handleReadAll` ให้ตรงกับโครงสร้างล่าสุด
+- **ระบบความปลอดภัย (RBAC Backend):**
+    - เพิ่มการตรวจสอบ `userRole` ในทุกคำสั่งสำคัญ
+- **การตรวจสอบและ Debug ระบบ (Major Fixes):**
+    - **แก้ไข Workflow ของ WFG:** ปรับปรุง `UpdateModal.tsx` ให้แสดงช่องกรอก "วิธีแก้ไข" ตั้งแต่สถานะ `Pending` และ `In-Progress` เพื่อให้ WFG ดำเนินการต่อได้ทันที
+    - **แก้ไขปัญหาค่า Box (Amount) ขึ้น 0:** สาเหตุเกิดจากการเพิ่มคอลัมน์ `Batch no.` ทำให้ข้อมูลเก่าใน Sheet เลื่อนลำดับ
+    - **เพิ่มเครื่องมือ Migration:** เพิ่มฟังก์ชัน `fixSheetDataShift` ใน `Code.gs` เพื่อกู้คืนข้อมูลเก่าที่เลื่อนให้กลับมาตรงคอลัมน์
+    - **ปรับปรุงการเปลี่ยนสถานะ:** เมื่อเปิดเคสใหม่ สถานะจะเปลี่ยนจาก `Pending` เป็น `In-Progress` อัตโนมัติเมื่อมีการบันทึก เพื่อให้ Workflow ไหลลื่น
+    - **ความปลอดภัย:** ตรวจสอบสิทธิ์การเข้าถึง (Authentication) ให้สอดคล้องกับบทบาทใหม่ (Admin, QSMS, WFG, Finance) ทั้งฝั่งหน้าบ้านและหลังบ้าน
+- **ตรรกะ Workflow ใหม่:**
+    - พัฒนาฟังก์ชัน `handleDelete` เพื่อรองรับการลบ Case โดย Admin
+    - ปรับปรุง `handleUpdate` ให้เปลี่ยนสถานะอัตโนมัติ (เช่น เมื่อกรอกวิธีแก้ไขจะเปลี่ยนเป็น "รอประเมินราคา")
+    - เพิ่มการคำนวณสถิติ "เปื้อนจากการรั่ว" (Correlation) ใน Dashboard Stats
+- **การตรวจสอบข้อมูล (Validation):** เพิ่มฟังก์ชัน `validateBatchNo` เพื่อตรวจสอบความถูกต้องของข้อมูลก่อนบันทึก
+- ตรวจสอบความสอดคล้องกับ `api.ts` เพื่อให้การรับส่งข้อมูล JSON สมบูรณ์ 100%
+
+### [2026-05-10] จัดทำเอกสาร Product Specification สำหรับ Testsprite
+**คำขอของผู้ใช้:** ช่วยเขียน Product Specification Doc สำหรับ Testsprite ไว้ในไฟล์ testsprite_spec.md
+**การดำเนินการ:**
+- **วิเคราะห์ความต้องการ:** ศึกษาข้อมูลเกี่ยวกับ Testsprite (AI Autonomous Testing) เพื่อจัดทำเอกสาร PRD ที่เหมาะสมสำหรับการทดสอบอัตโนมัติ
+- **สร้างไฟล์ `testsprite_spec.md`:** เขียนรายละเอียดผลิตภัณฑ์ในภาษาไทย ครอบคลุม:
+    - วัตถุประสงค์ของระบบ Rework QSMS
+    - รายละเอียดบทบาทผู้ใช้ (Admin, QSMS, WFG, Finance) และสิทธิ์การเข้าถึง (RBAC)
+    - ฟีเจอร์หลัก (Add Case, Multi-item, Cross-Item Linkage, Dashboard, Workflow)
+    - ขอบเขตการทดสอบ (Testing Scope) ที่ Testsprite ควรตรวจสอบ เช่น การตรวจสอบฟอร์ม, ความถูกต้องของสถานะ และความปลอดภัยของสิทธิ์
+- **รักษามาตรฐาน:** เขียนด้วยภาษาที่เข้าใจง่าย เหมาะสำหรับมือใหม่ และบันทึกประวัติลงใน `Antigravity.md` ตามกฎ

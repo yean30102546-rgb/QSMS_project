@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Sarabun", sans-serif;
+  --font-sans: "Sarabun", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
   --font-thai: "Sarabun", sans-serif;
   
   --color-bg: #fdfdfd;

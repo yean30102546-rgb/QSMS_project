@@ -186,14 +186,14 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
           )}
         </div>
         <div className="mt-1 text-[12px] text-muted">
-          {formatTimestamp(caseItem.date)} &bull; Source: <span className="font-bold">{caseItem.source}</span> &bull;{' '}
+          {formatTimestamp(caseItem.date)} &bull; แหล่งที่มา: <span className="font-bold">{caseItem.source}</span> &bull;{' '}
           <span className="font-mono text-accent">{caseItem.id}</span>
         </div>
       </div>
 
       <div className="mr-8 text-right">
-        <p className="text-xs font-bold text-foreground">{firstItem?.amount || 0} Box</p>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">{firstItem?.reason || 'N/A'}</p>
+        <p className="text-xs font-bold text-foreground">{firstItem?.amount || 0} กล่อง</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">{firstItem?.reason || 'ไม่ระบุ'}</p>
       </div>
 
       <StatusPill status={caseItem.status} />
@@ -207,19 +207,22 @@ interface StatusPillProps {
 
 function StatusPill({ status }: StatusPillProps) {
   const styles: Record<ReworkCase['status'], string> = {
-    Pending: 'bg-[#fef9c3] text-amber-700 border-amber-200',
-    'In-Progress': 'bg-[#f4f4f5] text-foreground border-border',
-    Completed: 'bg-[#f0fdf4] text-emerald-700 border-emerald-200',
+    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    'In-Progress': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Awaiting Valuation': 'bg-purple-50 text-purple-700 border-purple-200 shadow-sm',
+    Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
 
   const thaiLabels: Record<ReworkCase['status'], string> = {
     Pending: 'รอดำเนินการ',
     'In-Progress': 'กำลังดำเนินการ',
+    'Awaiting Valuation': 'รอประเมินราคา',
     Completed: 'เสร็จสิ้น',
   };
 
   return (
-    <span className={`rounded-full border px-3 py-1 text-[9px] font-bold uppercase tracking-widest ${styles[status]}`}>
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-widest ${styles[status]}`}>
+      {status === 'Awaiting Valuation' && <span className="w-1 h-1 rounded-full bg-current mr-1 animate-pulse" />}
       {thaiLabels[status]}
     </span>
   );

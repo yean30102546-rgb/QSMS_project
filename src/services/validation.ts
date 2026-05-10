@@ -21,6 +21,10 @@ export interface ReworkItemValidationInput {
   reason?: string;
   responsible?: string;
   details?: string;
+  batchNo?: string;
+  reasonSubtype?: string;
+  responsibleSubtype?: string;
+  linkedSourceId?: string;
 }
 
 export function validateItemNumber(value: string | number): ValidationError | null {
@@ -103,6 +107,17 @@ export function validateDetails(value: string | undefined): ValidationError | nu
   return null;
 }
 
+export function validateBatchNo(value: string | undefined): ValidationError | null {
+  const batchNo = String(value || '').trim();
+  if (!batchNo) {
+    return { field: 'batchNo', message: 'Batch no. is required' };
+  }
+  if (!/^\d+$/.test(batchNo)) {
+    return { field: 'batchNo', message: 'Batch no. must contain only digits' };
+  }
+  return null;
+}
+
 export function validateReworkItem(item: ReworkItemValidationInput): ValidationResult {
   const errors = [
     validateItemNumber(item.itemNumber || ''),
@@ -112,6 +127,12 @@ export function validateReworkItem(item: ReworkItemValidationInput): ValidationR
     validateReason(item.reason || ''),
     validateResponsible(item.responsible || ''),
     validateDetails(item.details),
+    validateBatchNo(item.batchNo),
+    // Subtype Validation (Logic for Thailand)
+    (item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !String(item.reasonSubtype || '').trim() 
+      ? { field: 'reasonSubtype', message: `กรุณาระบุรูปแบบการ${item.reason}` } : null,
+    (item.responsible === 'SFC' || item.responsible === 'Supplier') && !String(item.responsibleSubtype || '').trim()
+      ? { field: 'responsibleSubtype', message: 'กรุณาระบุหน่วยงานที่รับผิดชอบ' } : null,
   ].filter((error): error is ValidationError => Boolean(error));
 
   return {

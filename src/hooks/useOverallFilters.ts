@@ -20,7 +20,8 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
   const uniqueSources = useMemo(() => {
     const sources = new Set<string>();
     cases.forEach((caseItem) => {
-      if (caseItem.source) sources.add(caseItem.source);
+      const trimmedSource = String(caseItem.source || '').trim();
+      if (trimmedSource) sources.add(trimmedSource);
     });
     return Array.from(sources).sort();
   }, [cases]);
@@ -29,7 +30,8 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
     const reasons = new Set<string>();
     cases.forEach((caseItem) => {
       caseItem.items?.forEach((item) => {
-        if (item.reason) reasons.add(item.reason);
+        const trimmedReason = String(item.reason || '').trim();
+        if (trimmedReason) reasons.add(trimmedReason);
       });
     });
     return Array.from(reasons).sort();
@@ -39,7 +41,8 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
     const responsible = new Set<string>();
     cases.forEach((caseItem) => {
       caseItem.items?.forEach((item) => {
-        if (item.responsible) responsible.add(item.responsible);
+        const trimmedResponsible = String(item.responsible || '').trim();
+        if (trimmedResponsible) responsible.add(trimmedResponsible);
       });
     });
     return Array.from(responsible).sort();
@@ -69,6 +72,7 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
   const statusCounts = useMemo<Record<CaseStatus, number>>(() => ({
     Pending: cases.filter((caseItem) => caseItem.status === 'Pending').length,
     'In-Progress': cases.filter((caseItem) => caseItem.status === 'In-Progress').length,
+    'Awaiting Valuation': cases.filter((caseItem) => caseItem.status === 'Awaiting Valuation').length,
     Completed: cases.filter((caseItem) => caseItem.status === 'Completed').length,
   }), [cases]);
 

@@ -235,19 +235,19 @@ export function getAvailableRoles(): Array<{ value: UserRole; label: string; des
       description: 'Full system access, user management, and system configuration',
     },
     {
-      value: UserRole.SUPERVISOR,
-      label: 'Supervisor',
-      description: 'Can approve cases, manage subordinates, and view reports',
+      value: UserRole.QSMS,
+      label: 'QSMS',
+      description: 'Full system access, delete, and advanced editing',
     },
     {
-      value: UserRole.OPERATOR,
-      label: 'Operator',
-      description: 'Can create, edit, and view rework cases',
+      value: UserRole.WFG,
+      label: 'WFG',
+      description: 'Can create cases and update resolution methods',
     },
     {
-      value: UserRole.VIEWER,
-      label: 'Viewer',
-      description: 'Read-only access to cases and reports',
+      value: UserRole.FINANCE,
+      label: 'Finance',
+      description: 'Valuation and rework cost assessment only',
     },
   ];
 }

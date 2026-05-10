@@ -1,17 +1,13 @@
-/**
- * Update Modal Component
- * Fast, smooth modal for updating case status
- * Optimized animations for 60fps performance
- */
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle2, Clock, AlertCircle, Image, ImageOff, ExternalLink, FileText, Download, FileImage } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator } from 'lucide-react';
 import { ReworkCase } from '../services/api';
 import { formatThaiDate } from '../utils/helpers';
 import { useExportReport } from '../hooks/useExportReport';
 import { ExportTemplate } from './ExportTemplate';
 import { DriveImage } from './DriveImage';
+import { getCurrentUserRole } from '../services/auth';
+import { UserRole } from '../config/auth.config';
 
 interface UpdateModalProps {
   isOpen: boolean;
@@ -19,6 +15,7 @@ interface UpdateModalProps {
   isLoading: boolean;
   onClose: () => void;
   onUpdate: (caseId: string, updates: Partial<ReworkCase>) => Promise<void>;
+  onDelete?: (caseId: string) => Promise<void>;
 }
 
 export function UpdateModal({
@@ -27,18 +24,32 @@ export function UpdateModal({
   isLoading,
   onClose,
   onUpdate,
+  onDelete,
 }: UpdateModalProps) {
-  const [caseStatus, setCaseStatus] = React.useState<'Pending' | 'In-Progress' | 'Completed'>(
+  const [caseStatus, setCaseStatus] = useState<ReworkCase['status']>(
     caseData?.status || 'Pending'
   );
+  const [resolutionMethod, setResolutionMethod] = useState('');
+  const [reworkCost, setReworkCost] = useState<number | string>('');
+  
   // State สำหรับ lightbox (ดูรูปเต็มจอ)
-  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  // Administrative Edit Mode
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedSource, setEditedSource] = useState('');
+  const [editedItems, setEditedItems] = useState<ReworkCase['items']>([]);
+
+  const userRole = getCurrentUserRole();
+  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.QSMS;
+  const isFinance = userRole === UserRole.FINANCE || isAdmin;
+  const isWFG = userRole === UserRole.WFG || isAdmin;
 
   // ===== Export Hook =====
   const { exportRef, isExporting, exportProgress, exportPNG, exportPDF } = useExportReport();
 
   // Fix layout shift by managing body overflow
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
@@ -52,18 +63,86 @@ export function UpdateModal({
     }
   }, [isOpen]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (caseData) {
       setCaseStatus(caseData.status);
+      setResolutionMethod(caseData.resolutionMethod || '');
+      setReworkCost(caseData.reworkCost || '');
+      setEditedSource(caseData.source);
+      setEditedItems([...caseData.items]);
     }
   }, [caseData]);
 
   const handleUpdate = async () => {
     if (!caseData) return;
 
-    await onUpdate(caseData.id, {
+    const updates: Partial<ReworkCase> = {
       status: caseStatus,
-    });
+    };
+
+    // Auto-transition logic based on role and current state
+    if (caseData.status === 'Pending' || caseData.status === 'In-Progress') {
+      // If resolution is provided, move to Awaiting Valuation
+      if (resolutionMethod.trim() !== '') {
+        updates.status = 'Awaiting Valuation';
+        updates.resolutionMethod = resolutionMethod;
+      } else if (caseStatus === 'In-Progress') {
+        // If they manually picked In-Progress
+        updates.status = 'In-Progress';
+      } else if (caseData.status === 'Pending' && !isEditMode) {
+        // Default to In-Progress if Admin/WFG opens and saves a Pending case
+        updates.status = 'In-Progress';
+      }
+    } else if (caseData.status === 'Awaiting Valuation') {
+      // Finance logic
+      if (isFinance && reworkCost !== '' && Number(reworkCost) > 0) {
+        updates.status = 'Completed';
+        updates.reworkCost = Number(reworkCost);
+      }
+    }
+
+    // Always send items if they've been edited (even by WFG)
+    if (isAdmin || isWFG) {
+      updates.items = editedItems;
+    }
+
+    // Administrative Overrides (persisting source)
+    if (isEditMode && isAdmin) {
+      updates.source = editedSource;
+      if (resolutionMethod.trim() !== '') updates.resolutionMethod = resolutionMethod;
+      if (reworkCost !== '') updates.reworkCost = Number(reworkCost);
+      updates.status = caseStatus; // Admin can manually override status
+    }
+
+    await onUpdate(caseData.id, updates);
+    setIsEditMode(false);
+  };
+
+  const handleDelete = async () => {
+    if (!caseData || !onDelete) return;
+    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+      await onDelete(caseData.id);
+    }
+  };
+
+  const getStatusIcon = (status: ReworkCase['status']) => {
+    switch (status) {
+      case 'Pending': return <AlertCircle size={20} className="mx-auto mb-2" />;
+      case 'In-Progress': return <Clock size={20} className="mx-auto mb-2" />;
+      case 'Awaiting Valuation': return <Landmark size={20} className="mx-auto mb-2" />;
+      case 'Completed': return <CheckCircle2 size={20} className="mx-auto mb-2" />;
+      default: return null;
+    }
+  };
+
+  const getStatusLabel = (status: ReworkCase['status']) => {
+    switch (status) {
+      case 'Pending': return 'รอดำเนินการ';
+      case 'In-Progress': return 'กำลังดำเนินการ';
+      case 'Awaiting Valuation': return 'รอประเมินราคา';
+      case 'Completed': return 'เสร็จสิ้น';
+      default: return status;
+    }
   };
 
   return (
@@ -120,32 +199,30 @@ export function UpdateModal({
                   <div className="px-8 py-6 space-y-8 overflow-y-auto flex-1">
                     {/* Case Info */}
                     {caseData && (
-                      <div className="bg-slate-50 rounded-xl p-6 space-y-4">
-                        <div className="grid grid-cols-2 gap-6">
+                      <div className="bg-slate-50 rounded-xl p-6 space-y-4 shadow-inner border border-slate-100">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                           <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">
-                              แหล่งที่มา
-                            </p>
-                            <p className="text-base font-semibold text-foreground">{caseData.source}</p>
+                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">แหล่งที่มา</p>
+                            {isEditMode ? (
+                              <input 
+                                value={editedSource} 
+                                onChange={(e) => setEditedSource(e.target.value)}
+                                className="w-full px-2 py-1 text-sm border rounded bg-white font-bold"
+                              />
+                            ) : (
+                              <p className="text-sm font-bold text-foreground">{caseData.source}</p>
+                            )}
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">
-                              วันที่
-                            </p>
-                            <p className="text-base font-semibold text-foreground">{formatThaiDate(caseData.date)}</p>
+                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">วันที่</p>
+                            <p className="text-sm font-bold text-foreground">{formatThaiDate(caseData.date)}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">
-                              จำนวนรายการ
-                            </p>
-                            <p className="text-base font-semibold text-foreground">
-                              {caseData.items.length} items
-                            </p>
+                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">จำนวนรายการ</p>
+                            <p className="text-sm font-bold text-foreground">{caseData.items.length} รายการ</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">
-                              สถานะปัจจุบัน
-                            </p>
+                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">สถานะปัจจุบัน</p>
                             <StatusBadge status={caseData.status} />
                           </div>
                         </div>
@@ -153,190 +230,253 @@ export function UpdateModal({
                     )}
 
                     {/* ===== รายละเอียดและรูปภาพแนบ แบ่งตาม Item ===== */}
-                    {caseData && (() => {
-                      // แสดงทุก Item ไม่ใช่กรองเฉพาะที่มีรูปภาพหรือรายละเอียด
-                      const itemsToShow = caseData.items;
+                    {caseData && (
+                      <div className="space-y-5">
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} className="text-accent" />
+                          <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
+                            รายละเอียดและรูปภาพแนบ
+                          </label>
+                        </div>
 
-                      if (itemsToShow.length === 0) {
-                        return (
-                          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl text-sm text-muted">
-                            <ImageOff size={18} className="text-slate-300" />
-                            <span>ไม่มีรายการ Item สำหรับ Case นี้</span>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="space-y-5">
-                          <div className="flex items-center gap-2">
-                            <FileText size={16} className="text-accent" />
-                            <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
-                              รายละเอียดเพิ่มเติมและรูปภาพ
-                            </label>
-                          </div>
-
-                          {itemsToShow.map((item, index) => {
-                            const images = item.imageUrls || [];
-                            const hasImages = images.length > 0;
-                            const hasDetails = item.details && item.details.trim().length > 0;
-                            const hasAnyContent = hasImages || hasDetails;
-
-                            return (
-                              <div key={item.id || index} className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3">
-                                {/* หัวข้อ Item */}
-                                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-md bg-accent/10 text-accent text-[10px] font-black flex items-center justify-center">
-                                      {caseData.items.findIndex(i => i.id === item.id) + 1}
-                                    </span>
-                                    <p className="text-sm font-bold text-foreground">
-                                      {item.itemName || item.itemNumber || `Item`}
-                                    </p>
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-medium">
-                                      {item.amount} ชิ้น
-                                    </span>
+                        {editedItems.map((item, index) => {
+                          const images = item.imageUrls || [];
+                          return (
+                            <div key={item.id || index} className="bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4">
+                              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                                <div className="flex items-center gap-3">
+                                  <span className="w-7 h-7 rounded-lg bg-accent text-white text-xs font-black flex items-center justify-center shadow-sm">
+                                    {index + 1}
+                                  </span>
+                                  <div>
+                                    {isEditMode ? (
+                                      <input 
+                                        value={item.itemName} 
+                                        onChange={(e) => {
+                                          const newItems = [...editedItems];
+                                          newItems[index] = { ...newItems[index], itemName: e.target.value };
+                                          setEditedItems(newItems);
+                                        }}
+                                        className="text-sm font-bold px-2 py-0.5 border rounded bg-white"
+                                      />
+                                    ) : (
+                                      <p className="text-sm font-bold text-foreground">{item.itemName || item.itemNumber}</p>
+                                    )}
+                                    <p className="text-[10px] text-muted font-bold">{item.itemCode}</p>
                                   </div>
-                                  {/* ลิงก์ไปยัง Google Drive folder */}
-                                  {item.imageFolderUrl && (
-                                    <a
-                                      href={item.imageFolderUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-[10px] text-accent font-semibold hover:underline bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm"
-                                    >
-                                      <ExternalLink size={12} />
-                                      Drive Folder
-                                    </a>
+                                  <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-600">
+                                    {item.amount} ชิ้น
+                                  </span>
+                                </div>
+                                {item.linkedSourceId && (
+                                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-lg">
+                                    <HelpCircle size={14} className="text-amber-600" />
+                                    <span className="text-[10px] font-bold text-amber-800">Linked to leaking source</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest">อาการเสีย/รายละเอียด:</p>
+                                  {isEditMode || isWFG ? (
+                                    <textarea 
+                                      value={item.details || ''} 
+                                      onChange={(e) => {
+                                        const newItems = [...editedItems];
+                                        newItems[index] = { ...newItems[index], details: e.target.value };
+                                        setEditedItems(newItems);
+                                      }}
+                                      className="w-full bg-white p-3 rounded-xl border border-slate-200 text-sm text-slate-700 min-h-[60px] focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                    />
+                                  ) : (
+                                    <div className="bg-white p-3 rounded-xl border border-slate-200 text-sm text-slate-700 min-h-[60px] whitespace-pre-wrap leading-relaxed shadow-sm">
+                                      {item.details || <span className="text-slate-400 italic">ไม่มีข้อมูล</span>}
+                                    </div>
                                   )}
                                 </div>
 
-                                <div className={`grid grid-cols-1 ${hasDetails && hasImages ? 'md:grid-cols-2' : ''} gap-4`}>
-                                  {/* ส่วนรายละเอียด */}
-                                  {hasDetails ? (
-                                    <div className="space-y-1">
-                                      <p className="text-[10px] font-bold text-muted uppercase">รายละเอียด / อาการเสีย:</p>
-                                      <div className="bg-white p-3 rounded-lg border border-slate-100 text-sm text-slate-700 whitespace-pre-wrap">
-                                        {item.details}
-                                      </div>
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest">รูปภาพแนบ ({images.length}):</p>
+                                  {images.length > 0 ? (
+                                    <div className="grid grid-cols-4 gap-2">
+                                      {images.map((url, imgIdx) => (
+                                        <motion.button
+                                          key={imgIdx}
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={() => setLightboxUrl(url)}
+                                          className="aspect-square rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-white"
+                                        >
+                                          <DriveImage src={url} alt="Rework" className="w-full h-full object-cover" />
+                                        </motion.button>
+                                      ))}
                                     </div>
                                   ) : (
-                                    <div className="space-y-1">
-                                      <p className="text-[10px] font-bold text-muted uppercase">รายละเอียด / อาการเสีย:</p>
-                                      <div className="bg-white p-3 rounded-lg border border-slate-100 text-sm text-slate-400 italic">
-                                        ไม่มีรายละเอียดเพิ่มเติม
-                                      </div>
+                                    <div className="bg-white p-4 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400">
+                                      <ImageOff size={20} className="mb-1 opacity-20" />
+                                      <span className="text-[10px] font-bold">ไม่มีรูปภาพ</span>
                                     </div>
                                   )}
-
-                                  {/* ส่วนรูปภาพ */}
-                                  {hasImages ? (
-                                    <div className="space-y-1">
-                                      <p className="text-[10px] font-bold text-muted uppercase">รูปภาพแนบ ({images.length}):</p>
-                                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        {images.map((url, imgIndex) => {
-                                          return (
-                                          <motion.button
-                                            key={imgIndex}
-                                            type="button"
-                                            whileHover={{ scale: 1.03 }}
-                                            whileTap={{ scale: 0.97 }}
-                                            onClick={() => setLightboxUrl(url)}
-                                            className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-white hover:border-accent/50 transition-colors group cursor-zoom-in"
-                                          >
-                                            <DriveImage
-                                              src={url}
-                                              alt={`${item.itemName || 'Item'} - รูปที่ ${imgIndex + 1}`}
-                                              className="w-full h-full object-cover"
-                                              loading="lazy"
-                                            />
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                              <span className="text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-black/50 px-2 py-1 rounded-md transition-opacity">
-                                                ดูเต็ม
-                                              </span>
-                                            </div>
-                                          </motion.button>
-                                        )})}
-                                      </div>
-                                    </div>                                  ) : (
-                                    <div className="space-y-1">
-                                      <p className="text-[10px] font-bold text-muted uppercase">รูปภาพแนบ:</p>
-                                      <div className="bg-white p-3 rounded-lg border border-slate-100 text-sm text-slate-400 italic flex items-center gap-2">
-                                        <ImageOff size={16} className="text-slate-300" />
-                                        ไม่มีรูปภาพแนบ
-                                      </div>
-                                    </div>                                  )}
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Status Update Section - Case Level */}
-                    <div className="space-y-4">
-                      <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
-                        สถานะ Case ทั้งหมด *
-                      </label>
-                      <div className="grid grid-cols-3 gap-4">
-                        {(['Pending', 'In-Progress', 'Completed'] as const).map((status) => (
-                          <motion.button
-                            key={status}
-                            type="button"
-                            onClick={() => setCaseStatus(status)}
-                            disabled={isLoading}
-                            whileHover={{ y: -2 }}
-                            whileTap={{ y: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className={`p-4 rounded-xl border-2 font-semibold disabled:opacity-50 transition-colors duration-200 will-change-transform ${caseStatus === status
-                              ? 'border-accent bg-accent/5 text-accent'
-                              : 'border-slate-200 text-muted hover:border-accent/50'
-                              }`}
-                          >
-                            {status === 'Pending' && (
-                              <AlertCircle size={20} className="mx-auto mb-2" />
-                            )}
-                            {status === 'In-Progress' && (
-                              <Clock size={20} className="mx-auto mb-2" />
-                            )}
-                            {status === 'Completed' && (
-                              <CheckCircle2 size={20} className="mx-auto mb-2" />
-                            )}
-                            <div className="text-xs">{status}</div>
-                          </motion.button>
-                        ))}
+                            </div>
+                          );
+                        })}
                       </div>
+                    )}
+
+                    {/* ===== UPDATE WORKFLOW SECTION ===== */}
+                    <div className="space-y-6 pt-4">
+                      <div className="flex items-center gap-2">
+                        <Clock size={16} className="text-accent" />
+                        <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
+                          จัดการสถานะและขั้นตอนงาน
+                        </label>
+                      </div>
+
+                      {/* Status Selector (Disabled for flow control, but showing for visibility) */}
+                      <div className="grid grid-cols-4 gap-4">
+                        {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
+                          const isActive = caseStatus === status;
+                          const isAllowed = isAdmin; // Only admin can manually jump statuses
+                          return (
+                            <button
+                              key={status}
+                              type="button"
+                              disabled={!isAllowed}
+                              onClick={() => setCaseStatus(status)}
+                              className={`p-4 rounded-2xl border-2 font-bold text-center transition-all flex flex-col items-center justify-center gap-1 ${isActive
+                                ? 'border-accent bg-accent/5 text-accent shadow-lg shadow-accent/5'
+                                : isAllowed 
+                                  ? 'border-slate-100 bg-white text-slate-400 hover:border-slate-200 hover:text-slate-600'
+                                  : 'border-slate-100 bg-slate-50 text-slate-300 opacity-50 cursor-not-allowed'
+                                }`}
+                            >
+                              {getStatusIcon(status)}
+                              <span className="text-[10px] leading-tight">{getStatusLabel(status)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Input fields based on status */}
+                      <AnimatePresence mode="wait">
+                        {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isWFG && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-3 bg-blue-50/50 p-6 rounded-2xl border border-blue-100"
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <PenTool size={16} className="text-blue-600" />
+                              <label className="text-xs font-bold text-blue-900">วิธีแก้ไขปัญหา (Resolution Method) *</label>
+                            </div>
+                            <textarea
+                              value={resolutionMethod}
+                              onChange={(e) => setResolutionMethod(e.target.value)}
+                              placeholder="กรอกรายละเอียดการแก้ไขปัญหา..."
+                              className="w-full px-4 py-3 rounded-xl border border-blue-200 bg-white text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none min-h-[100px]"
+                            />
+                            <div className="flex flex-col gap-1">
+                              <p className="text-[10px] text-blue-600 font-bold">💡 สถานะปัจจุบัน: {getStatusLabel(caseData.status)}</p>
+                              <p className="text-[10px] text-blue-600 font-bold">⚠️ เมื่อกรอกวิธีแก้ไขและบันทึก สถานะจะเปลี่ยนเป็น "รอประเมินราคา" อัตโนมัติ</p>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {caseData?.status === 'Awaiting Valuation' && isFinance && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-5 bg-purple-50/50 p-6 rounded-2xl border border-purple-100"
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <PenTool size={14} className="text-slate-400" />
+                                <label className="text-[10px] font-bold text-muted uppercase">วิธีแก้ไขปัญหา (Read-only)</label>
+                              </div>
+                              <div className="bg-white/50 px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-600">
+                                {resolutionMethod || '-'}
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Calculator size={16} className="text-purple-600" />
+                                <label className="text-xs font-bold text-purple-900">ราคาประเมิน (Rework Cost) *</label>
+                              </div>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  value={reworkCost}
+                                  onChange={(e) => setReworkCost(e.target.value)}
+                                  disabled={userRole !== UserRole.FINANCE && !isAdmin}
+                                  placeholder="0.00"
+                                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-purple-200 bg-white text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all outline-none font-bold"
+                                />
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 font-bold">฿</span>
+                                {userRole !== UserRole.FINANCE && !isAdmin && (
+                                  <div className="mt-2 flex items-center gap-1.5 text-red-500">
+                                    <AlertCircle size={12} />
+                                    <span className="text-[10px] font-bold uppercase">เฉพาะฝ่ายการเงินเท่านั้นที่สามารถระบุราคาได้</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-purple-600 font-bold">⚠️ เมื่อบันทึก สถานะจะเปลี่ยนเป็น "เสร็จสิ้น" อัตโนมัติ</p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
 
-                  {/* Footer — ปุ่ม Export (minimal) + ปุ่ม Action */}
+                  {/* Footer — ปุ่ม Export + ปุ่ม Action */}
                   <div className="bg-slate-50 px-8 py-5 flex items-center justify-between border-t border-slate-200">
-                    {/* Export buttons (minimal icon + text) */}
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => caseData && exportPNG(caseData.id)}
                         disabled={isExporting || !caseData}
-                        title="Export PNG"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40"
                       >
-                        <FileImage size={14} />
-                        PNG
+                        <FileImage size={14} /> PNG
                       </button>
                       <button
                         type="button"
                         onClick={() => caseData && exportPDF(caseData.id)}
                         disabled={isExporting || !caseData}
-                        title="Export PDF"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40"
                       >
-                        <Download size={14} />
-                        PDF
+                        <Download size={14} /> PDF
                       </button>
                     </div>
 
-                    {/* Action buttons */}
                     <div className="flex gap-3">
+                      {isAdmin && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditMode(!isEditMode)}
+                            disabled={isLoading}
+                            className={`px-6 py-2.5 rounded-xl border text-sm font-semibold transition-colors disabled:opacity-50 ${
+                              isEditMode 
+                              ? 'bg-amber-50 border-amber-200 text-amber-700' 
+                              : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {isEditMode ? 'ยกเลิกการแก้ไข' : 'แก้ไขข้อมูล'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDelete}
+                            disabled={isLoading}
+                            className="px-6 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-50"
+                          >
+                            ลบรายการ
+                          </button>
+                        </>
+                      )}
                       <button
                         type="button"
                         onClick={onClose}
@@ -348,20 +488,19 @@ export function UpdateModal({
                       <motion.button
                         type="button"
                         onClick={handleUpdate}
-                        disabled={isLoading || !caseData}
+                        disabled={
+                          isLoading || 
+                          !caseData || 
+                          (caseData.status === 'Awaiting Valuation' && !isFinance) ||
+                          ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isWFG)
+                        }
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
-                        transition={{ duration: 0.15 }}
-                        className="px-6 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-black active:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 will-change-transform"
+                        className="px-8 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:bg-slate-900 active:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
                       >
                         {isLoading ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            กำลังบันทึก...
-                          </>
-                        ) : (
-                          'บันทึก'
-                        )}
+                          <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> กำลังบันทึก...</>
+                        ) : 'ยืนยันการบันทึก'}
                       </motion.button>
                     </div>
                   </div>
@@ -372,7 +511,7 @@ export function UpdateModal({
         )}
       </AnimatePresence>
 
-      {/* ===== Lightbox: ดูรูปเต็มจอ ===== */}
+      {/* Lightbox component remains same */}
       <AnimatePresence>
         {lightboxUrl && (
           <>
@@ -380,70 +519,86 @@ export function UpdateModal({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
               onClick={() => setLightboxUrl(null)}
-              className="fixed inset-0 bg-black/80 z-[60] cursor-zoom-out"
+              className="fixed inset-0 bg-black/90 z-[100] cursor-zoom-out backdrop-blur-sm"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[70] flex items-center justify-center p-8"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-12"
               onClick={() => setLightboxUrl(null)}
             >
               <DriveImage
                 src={lightboxUrl}
-                alt="ดูรูปเต็ม"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                alt="Fullscreen Preview"
+                className="max-w-full max-h-full object-contain rounded-xl shadow-2xl select-none"
                 onClick={(e) => e.stopPropagation()}
               />
               <button
                 type="button"
                 onClick={() => setLightboxUrl(null)}
-                className="absolute top-6 right-6 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center text-white transition-colors"
+                className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors border border-white/20"
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* ===== Export Overlay: แสดง Loading ขณะ Export ===== */}
+      {/* Export Overlay */}
       <AnimatePresence>
         {isExporting && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[80] bg-black/60 flex items-center justify-center"
-          >
-            <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-xs w-full">
-              <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
-              <p className="text-sm font-semibold text-foreground">กำลัง Export...</p>
-              <p className="text-xs text-muted text-center">{exportProgress}</p>
+          <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-8">
+            <div className="bg-white rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full text-center">
+              <div className="relative">
+                <div className="w-20 h-20 border-4 border-accent/10 border-t-accent rounded-full animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Download size={24} className="text-accent animate-bounce" />
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-black text-slate-900 mb-1">กำลังเตรียมเอกสาร...</h4>
+                <p className="text-sm text-slate-500">{exportProgress}</p>
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }} 
+                  animate={{ width: '100%' }} 
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-full bg-accent" 
+                />
+              </div>
             </div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* ===== Ghost Export Template (ซ่อนจาก UI) ===== */}
       <ExportTemplate ref={exportRef} caseData={caseData} />
     </>
   );
 }
 
-function StatusBadge({ status }: { status: 'Pending' | 'In-Progress' | 'Completed' }) {
-  const styles = {
+function StatusBadge({ status }: { status: ReworkCase['status'] }) {
+  const styles: Record<ReworkCase['status'], string> = {
     Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    'In-Progress': 'bg-slate-100 text-slate-700 border-slate-300',
+    'In-Progress': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Awaiting Valuation': 'bg-purple-50 text-purple-700 border-purple-200',
     Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
 
+  const thaiLabels: Record<ReworkCase['status'], string> = {
+    Pending: 'รอดำเนินการ',
+    'In-Progress': 'กำลังดำเนินการ',
+    'Awaiting Valuation': 'รอประเมินราคา',
+    Completed: 'เสร็จสิ้น',
+  };
+
   return (
-    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${styles[status]}`}>
-      {status}
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-wider ${styles[status]}`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse" />
+      {thaiLabels[status]}
     </span>
   );
 }

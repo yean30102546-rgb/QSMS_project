@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle } from 'lucide-react';
+import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu } from 'lucide-react';
 
 import type { ReworkCase, ReworkItem } from '../services/api';
 import type { User } from '../services/auth';
@@ -51,6 +51,7 @@ interface MainLayoutProps {
     total: number;
     pending: number;
     inProgress: number;
+    awaitingValuation: number;
     completed: number;
     completionRate: number;
   };
@@ -77,7 +78,7 @@ interface MainLayoutProps {
 
 function TabFallback() {
   return (
-    <div className="flex-1 p-8 md:p-10 lg:p-12">
+    <div className="flex-1 p-4 md:p-8 lg:p-12">
       <div className="animate-pulse space-y-4">
         <div className="h-8 w-48 rounded bg-slate-200" />
         <div className="h-24 rounded-2xl bg-slate-100" />
@@ -121,12 +122,48 @@ export function MainLayout({
   setSelectionModal,
   onOpenTutorial,
 }: MainLayoutProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    closeSidebar();
+  };
+
+  // RBAC: Redirect to overall if accessing unauthorized tab
+  React.useEffect(() => {
+    if (activeTab === 'dashboard' && userRole !== 'admin' && userRole !== 'qsms') {
+      setActiveTab('overall');
+    }
+    if (activeTab === 'add' && userRole === 'finance') {
+      setActiveTab('overall');
+    }
+  }, [activeTab, userRole, setActiveTab]);
+
   return (
     <div className="flex h-full overflow-hidden bg-bg text-foreground font-sans">
-      <aside className="z-20 flex h-full w-[260px] flex-col overflow-y-auto border-r border-border bg-surface px-5 py-8">
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeSidebar}
+            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-border bg-surface px-5 py-8 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+      >
         <motion.div
           className="mb-14 flex cursor-pointer items-center gap-2"
-          onClick={() => setActiveTab('overall')}
+          onClick={() => handleTabChange('overall')}
           whileHover={{ scale: 1.02 }}
         >
           <img src="/img/logo.png" alt="" className="h-12 object-contain drop-shadow-sm" />
@@ -136,32 +173,39 @@ export function MainLayout({
         <nav className="flex-1 space-y-1">
           <SidebarItem
             active={activeTab === 'overall'}
-            onClick={() => setActiveTab('overall')}
+            onClick={() => handleTabChange('overall')}
             label="ภาพรวม (Overall)"
             icon={<LayoutDashboard size={16} />}
           />
-          <SidebarItem
-            active={activeTab === 'add'}
-            onClick={() => setActiveTab('add')}
-            label="เพิ่มงานใหม่ (Add Case)"
-            icon={<Plus size={16} />}
-          />
+          {userRole !== 'finance' && (
+            <SidebarItem
+              active={activeTab === 'add'}
+              onClick={() => handleTabChange('add')}
+              label="เพิ่มงานใหม่ (Add Case)"
+              icon={<Plus size={16} />}
+            />
+          )}
           <SidebarItem
             active={false}
-            onClick={onOpenTutorial}
+            onClick={() => {
+              onOpenTutorial();
+              closeSidebar();
+            }}
             label="คู่มือการใช้งาน"
             icon={<HelpCircle size={16} />}
           />
         </nav>
 
-        <div className="mt-auto border-t border-border pt-8">
-          <SidebarItem
-            active={activeTab === 'dashboard'}
-            onClick={() => setActiveTab('dashboard')}
-            label="แดชบอร์ด (Dashboard)"
-            icon={<BarChart3 size={16} />}
-          />
-        </div>
+        {(userRole === 'admin' || userRole === 'qsms') && (
+          <div className="mt-auto border-t border-border pt-8">
+            <SidebarItem
+              active={activeTab === 'dashboard'}
+              onClick={() => handleTabChange('dashboard')}
+              label="แดชบอร์ด (Dashboard)"
+              icon={<BarChart3 size={16} />}
+            />
+          </div>
+        )}
 
         <div className="mt-8 border-t border-border pt-8">
           <div className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm transition-all hover:bg-slate-50">
@@ -181,7 +225,25 @@ export function MainLayout({
         </div>
       </aside>
 
-      <main className="flex flex-1 flex-col overflow-hidden bg-bg">
+      <main className="relative flex flex-1 flex-col overflow-hidden bg-bg">
+        {/* Mobile Header */}
+        <div className="flex h-14 items-center justify-between border-b border-border bg-white px-4 md:hidden">
+          <div className="flex items-center gap-2">
+            <img src="/img/logo.png" alt="" className="h-8 object-contain" />
+            <span className="text-sm font-bold">QSMS Rework</span>
+          </div>
+          <button
+            onClick={toggleSidebar}
+            className="rounded-lg p-2 text-foreground hover:bg-slate-100"
+          >
+            {isSidebarOpen ? <X size={20} /> : <div className="space-y-1">
+              <div className="h-0.5 w-5 bg-foreground"></div>
+              <div className="h-0.5 w-5 bg-foreground"></div>
+              <div className="h-0.5 w-5 bg-foreground"></div>
+            </div>}
+          </button>
+        </div>
+
         <Suspense fallback={<TabFallback />}>
           <AnimatePresence mode="wait">
             {activeTab === 'overall' && (
@@ -206,7 +268,7 @@ export function MainLayout({
               </motion.div>
             )}
 
-            {activeTab === 'add' && (
+            {activeTab === 'add' && userRole !== 'finance' && (
               <motion.div
                 key="add"
                 initial={{ opacity: 0, y: 20 }}
@@ -234,12 +296,13 @@ export function MainLayout({
                     autoFillTriggeredItem={autoFillTriggeredItem}
                     selectionModal={selectionModal}
                     setSelectionModal={setSelectionModal}
+                    onOpenTutorial={onOpenTutorial}
                   />
                 </div>
               </motion.div>
             )}
 
-            {activeTab === 'dashboard' && (
+            {activeTab === 'dashboard' && (userRole === 'admin' || userRole === 'qsms') && (
               <motion.div
                 key="dashboard"
                 initial={{ opacity: 0, y: 20 }}
@@ -281,11 +344,10 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
       }}
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.98 }}
-      className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
-        active
+      className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${active
           ? 'border border-border bg-[#f4f4f5] text-foreground shadow-sm'
           : 'text-muted hover:bg-slate-50 hover:text-foreground'
-      }`}
+        }`}
     >
       {icon && <span className={`transition-colors ${active ? 'text-foreground' : 'text-muted'}`}>{icon}</span>}
       <span>{label}</span>

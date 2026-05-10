@@ -8,11 +8,12 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingDown, TrendingUp, CheckCircle2, Clock, AlertCircle,
-  Package, SlidersHorizontal, X, Calendar,
+  Package, SlidersHorizontal, X, Calendar, Layers, Link2, ChevronLeft, ArrowRight
 } from 'lucide-react';
-import { ReworkCase } from '../services/api';
+import { ReworkCase, ReworkItem } from '../services/api';
 
 type CaseStatus = ReworkCase['status'];
+type ViewMode = 'units' | 'defects';
 
 interface DashboardProps {
   cases: ReworkCase[];
@@ -25,11 +26,18 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
   const [reasonFilter, setReasonFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  
+  // New States for Dual-View Analysis
+  const [viewMode, setViewMode] = useState<ViewMode>('units');
+  const [selectedMainReason, setSelectedMainReason] = useState<string | null>(null);
 
   // ===== EXTRACT UNIQUE VALUES =====
   const uniqueReasons = useMemo(() => {
     const reasons = new Set<string>();
-    cases.forEach(c => c.items?.forEach(item => { if (item.reason) reasons.add(item.reason); }));
+    cases.forEach(c => c.items?.forEach(item => {
+      const trimmedReason = String(item.reason || '').trim();
+      if (trimmedReason) reasons.add(trimmedReason);
+    }));
     return Array.from(reasons).sort();
   }, [cases]);
 
@@ -73,30 +81,104 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
 
   // ===== CALCULATE STATS FROM FILTERED DATA =====
   const stats = useMemo(() => {
-    if (!filteredCases || filteredCases.length === 0) {
-      return { total: 0, pending: 0, inProgress: 0, completed: 0, completionRate: 0, defectReasons: {} as Record<string, number>, sources: {} as Record<string, number> };
-    }
-    const defectReasons: Record<string, number> = {};
-    const sources: Record<string, number> = {};
-    let pending = 0, inProgress = 0, completed = 0;
+    const initialStats = {
+      total: 0,
+      pending: 0,
+      inProgress: 0,
+      awaitingValuation: 0,
+      completed: 0,
+      completionRate: 0,
+      linkedCount: 0, // Correlation KPI
+      unitsByReason: {} as Record<string, number>,
+      frequencyByReason: {} as Record<string, number>,
+      subtypesByMainReason: {} as Record<string, Record<string, { units: number; frequency: number }>>,
+      sources: {} as Record<string, number>
+    };
+
+    if (!filteredCases || filteredCases.length === 0) return initialStats;
 
     filteredCases.forEach(caseItem => {
-      if (caseItem.status === 'Pending') pending++;
-      else if (caseItem.status === 'In-Progress') inProgress++;
-      else if (caseItem.status === 'Completed') completed++;
-      sources[caseItem.source] = (sources[caseItem.source] || 0) + 1;
+      if (caseItem.status === 'Pending') initialStats.pending++;
+      else if (caseItem.status === 'In-Progress') initialStats.inProgress++;
+      else if (caseItem.status === 'Awaiting Valuation') initialStats.awaitingValuation++;
+      else if (caseItem.status === 'Completed') initialStats.completed++;
+
+      const source = String(caseItem.source || '').trim();
+      if (source) {
+        initialStats.sources[source] = (initialStats.sources[source] || 0) + 1;
+      }
+
       caseItem.items?.forEach(item => {
-        defectReasons[item.reason] = (defectReasons[item.reason] || 0) + 1;
+        const amount = item.amount || 0;
+        const mainReason = String(item.reason || 'ไม่ระบุ').trim();
+        
+        // Count Correlation (Linkage)
+        if (mainReason.includes('เปื้อน') && item.linkedSourceId) {
+          initialStats.linkedCount++;
+        }
+
+        // Logic 1: Unit Count (By Quantity) - Sum of Amount per Main Reason
+        initialStats.unitsByReason[mainReason] = (initialStats.unitsByReason[mainReason] || 0) + amount;
+
+        // Logic 2: Defect Frequency (By Subtype) - Flatten Subtypes
+        const subtypes = String(item.reasonSubtype || '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        // If no subtypes, count main reason once for frequency
+        if (subtypes.length === 0) {
+          initialStats.frequencyByReason[mainReason] = (initialStats.frequencyByReason[mainReason] || 0) + amount;
+        } else {
+          subtypes.forEach(st => {
+            // Main Reason Frequency (total subtypes occurrences * amount)
+            initialStats.frequencyByReason[mainReason] = (initialStats.frequencyByReason[mainReason] || 0) + amount;
+
+            // Subtype specific counts
+            if (!initialStats.subtypesByMainReason[mainReason]) {
+              initialStats.subtypesByMainReason[mainReason] = {};
+            }
+            if (!initialStats.subtypesByMainReason[mainReason][st]) {
+              initialStats.subtypesByMainReason[mainReason][st] = { units: 0, frequency: 0 };
+            }
+            // Units: How many items have this subtype? 
+            // In Unit count mode, "1 item with 2 stains counts as 1 case of units"
+            // But user said for Frequency: "Flatten Subtype... count separately (Box+5, Bottle+5)"
+            // So for Subtype drill-down, both units and frequency use the amount.
+            initialStats.subtypesByMainReason[mainReason][st].units += amount;
+            initialStats.subtypesByMainReason[mainReason][st].frequency += amount;
+          });
+        }
       });
     });
 
-    const total = filteredCases.length;
-    return { total, pending, inProgress, completed, completionRate: total > 0 ? Math.round((completed / total) * 100) : 0, defectReasons, sources };
+    initialStats.total = filteredCases.length;
+    initialStats.completionRate = initialStats.total > 0 ? Math.round((initialStats.completed / initialStats.total) * 100) : 0;
+    
+    return initialStats;
   }, [filteredCases]);
 
-  const defectReasonEntries = Object.entries(stats.defectReasons).sort(([, a], [, b]) => b - a).slice(0, 5);
+  // Chart Data preparation based on View Mode and Drill-down
+  const chartData = useMemo(() => {
+    if (selectedMainReason) {
+      // Subtype View
+      const subtypes = stats.subtypesByMainReason[selectedMainReason] || {};
+      return Object.entries(subtypes)
+        .map(([name, counts]) => ({
+          name,
+          value: viewMode === 'units' ? counts.units : counts.frequency
+        }))
+        .sort((a, b) => b.value - a.value);
+    } else {
+      // Main Reason View
+      return Object.entries(viewMode === 'units' ? stats.unitsByReason : stats.frequencyByReason)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
+    }
+  }, [selectedMainReason, viewMode, stats]);
+
+  const maxChartValue = Math.max(1, ...chartData.map(d => d.value));
   const sourceEntries = Object.entries(stats.sources).sort(([, a], [, b]) => b - a);
-  const maxDefectCount = Math.max(1, ...defectReasonEntries.map(([, c]) => c));
 
   // ===== LOADING STATE =====
   if (isLoading) {
@@ -120,13 +202,13 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       {/* ===== FILTER TOOLBAR ===== */}
       <div className="flex flex-col gap-4">
         {/* Quick Status Pills + Filter Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-muted uppercase tracking-widest mr-1">สถานะ:</span>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-muted mr-1">สถานะ:</span>
             {([
               { key: 'all', label: 'ทั้งหมด', color: 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' },
               { key: 'Pending', label: 'รอดำเนินการ', color: 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' },
-              { key: 'In-Progress', label: 'กำลังทำ', color: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
+              { key: 'In-Progress', label: 'กำลังดำเนินการ', color: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
               { key: 'Completed', label: 'เสร็จสิ้น', color: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' },
             ] as const).map(({ key, label, color }) => {
               const isAll = key === 'all';
@@ -135,7 +217,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               return (
                 <motion.button key={key} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                   onClick={() => isAll ? setStatusFilter([]) : toggleArrayFilter(statusFilter, key, setStatusFilter)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 ${isActive ? color : 'bg-white border border-border text-muted hover:bg-slate-50'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 ${isActive ? color : 'bg-white border border-border text-muted hover:bg-slate-50'}`}
                 >
                   {label} <span className={`text-[10px] font-black ${isActive ? 'opacity-80' : 'opacity-50'}`}>{count}</span>
                 </motion.button>
@@ -144,9 +226,9 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
           </div>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${showFilters || hasActiveFilters ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-white border border-border text-foreground hover:bg-slate-50'}`}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all sm:w-auto ${showFilters || hasActiveFilters ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-white border border-border text-foreground hover:bg-slate-50'}`}
           >
-            <SlidersHorizontal size={14} /> ตัวกรองขั้นสูง
+            <SlidersHorizontal size={14} /> ตัวกรอง
             {activeFilterCount > 0 && <span className="bg-white/90 text-accent text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">{activeFilterCount}</span>}
           </motion.button>
         </div>
@@ -161,7 +243,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center"><SlidersHorizontal size={16} className="text-accent" /></div>
                   <div>
-                    <h4 className="text-sm font-bold text-foreground">ตัวกรอง Dashboard</h4>
+                    <h4 className="text-sm font-bold text-foreground">ตัวกรองแดชบอร์ด</h4>
                     <p className="text-[10px] text-muted">เลือกเงื่อนไขเพื่อกรองข้อมูลในกราฟ</p>
                   </div>
                 </div>
@@ -171,21 +253,43 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Reason Filter */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">⚠️ ประเภท Defect (Reason)</label>
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">⚠️ ประเภทข้อบกพร่อง (Reason)</label>
                   <div className="flex flex-wrap gap-2">
                     {uniqueReasons.map(reason => (
                       <motion.button key={reason} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                         onClick={() => toggleArrayFilter(reasonFilter, reason, setReasonFilter)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${reasonFilter.includes(reason) ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-normal transition-all ${reasonFilter.includes(reason) ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                       >{reason}</motion.button>
                     ))}
                     {uniqueReasons.length === 0 && <span className="text-xs text-muted italic">ไม่มีข้อมูล</span>}
                   </div>
                 </div>
 
+                {/* Status Filter */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">📊 สถานะ (Status)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map(status => {
+                      const isActive = statusFilter.includes(status);
+                      const labels = {
+                        Pending: 'รอดำเนินการ',
+                        'In-Progress': 'กำลังดำเนินการ',
+                        'Awaiting Valuation': 'รอประเมินราคา',
+                        Completed: 'เสร็จสิ้น'
+                      };
+                      return (
+                        <motion.button key={status} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          onClick={() => toggleArrayFilter(statusFilter, status, setStatusFilter)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-normal transition-all ${isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >{labels[status]}</motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Date Range */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em] flex items-center gap-1.5"><Calendar size={12} /> ช่วงเวลา (Date Range)</label>
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em] flex items-center gap-1.5"><Calendar size={12} /> ช่วงเวลา (วันที่)</label>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 relative">
                       <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
@@ -221,9 +325,9 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold text-muted uppercase tracking-widest">กรอง:</span>
               {statusFilter.map(s => (
-                <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">
-                  {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังทำ' : 'เสร็จสิ้น'}
-                  <button onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-amber-900"><X size={10} /></button>
+                <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-bold">
+                  {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : s === 'Awaiting Valuation' ? 'รอประเมินราคา' : 'เสร็จสิ้น'}
+                  <button onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-slate-900"><X size={10} /></button>
                 </span>
               ))}
               {reasonFilter.map(r => (
@@ -246,97 +350,196 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
 
       {/* ===== KEY METRICS ===== */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <MetricCard label="งานทั้งหมด (Total)" value={stats.total.toString()} icon={<Package size={24} className="text-blue-500" />} bgColor="bg-blue-50" trend={`บันทึกแล้ว ${filteredCases.length}`} />
-        <MetricCard label="รอดำเนินการ (Pending)" value={stats.pending.toString()} icon={<AlertCircle size={24} className="text-amber-500" />} bgColor="bg-amber-50" trend={`${Math.round((stats.pending / Math.max(stats.total, 1)) * 100)}% ของทั้งหมด`} />
-        <MetricCard label="กำลังดำเนินการ (In-Progress)" value={stats.inProgress.toString()} icon={<Clock size={24} className="text-orange-500" />} bgColor="bg-orange-50" trend="กำลังจัดการอยู่" />
-        <MetricCard label="อัตราเสร็จสิ้น (Completion)" value={`${stats.completionRate}%`} icon={<CheckCircle2 size={24} className="text-emerald-500" />} bgColor="bg-emerald-50" trend={`เสร็จแล้ว ${stats.completed} รายการ`} />
+        <MetricCard label="งานทั้งหมด" value={stats.total.toString()} icon={<Package size={24} className="text-blue-500" />} bgColor="bg-blue-50" trend={`บันทึกแล้ว ${filteredCases.length} เคส`} />
+        <MetricCard label="เสร็จสิ้นแล้ว" value={stats.completed.toString()} icon={<CheckCircle2 size={24} className="text-emerald-500" />} bgColor="bg-emerald-50" trend={`${stats.completionRate}% ความสำเร็จ`} />
+        {/* Correlation KPI Card */}
+        <MetricCard 
+          label="เปื้อนจากการรั่ว" 
+          value={stats.linkedCount.toString()} 
+          icon={<Link2 size={24} className="text-amber-600" />} 
+          bgColor="bg-amber-50" 
+          trend="Correlation Detection"
+          tooltip="จำนวนรายการที่เปื้อนเนื่องมาจากการรั่วไหลของไอเทมอื่น"
+        />
+        <MetricCard label="อัตราเสร็จสิ้น" value={`${stats.completionRate}%`} icon={<TrendingUp size={24} className="text-indigo-500" />} bgColor="bg-indigo-50" trend="Overall Progress" />
       </div>
 
-      {/* ===== CHARTS ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Defect Reasons Bar Chart */}
-        <div className="bg-white rounded-2xl p-8 border border-border">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-foreground">สาเหตุข้อบกพร่อง (Defect Reasons)</h3>
-            <TrendingDown size={20} className="text-amber-500" />
-          </div>
-          {defectReasonEntries.length > 0 ? (
-            <div className="space-y-4">
-              {defectReasonEntries.map(([reason, count]) => (
-                <div key={reason} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground mb-1">{reason}</p>
-                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${(count / maxDefectCount) * 100}%` }} transition={{ duration: 0.5, ease: 'easeOut' }}
-                        className="h-full bg-amber-400 rounded-full" />
-                    </div>
-                  </div>
-                  <span className="ml-4 text-sm font-bold text-foreground w-12 text-right">{count}</span>
-                </div>
-              ))}
+      {/* ===== MAIN ANALYTICS VIEW ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Dual-View Analysis Chart (2/3 width) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 md:p-8 border border-border shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              {selectedMainReason && (
+                <motion.button
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={() => setSelectedMainReason(null)}
+                  className="p-2 rounded-lg hover:bg-slate-100 text-muted transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </motion.button>
+              )}
+              <div>
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Layers size={18} className="text-accent" />
+                  {selectedMainReason ? `รายละเอียด: ${selectedMainReason}` : 'วิเคราะห์สาเหตุข้อบกพร่อง'}
+                </h3>
+                <p className="text-xs text-muted">
+                  {selectedMainReason ? 'เจาะลึกรายละเอียดย่อย (Subtypes)' : 'ภาพรวมสาเหตุหลัก (Main Reasons)'}
+                </p>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-muted text-center py-8">ไม่มีข้อมูล (No data available)</p>
-          )}
-        </div>
 
-        {/* Workload by Source */}
-        <div className="bg-white rounded-2xl p-8 border border-border">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-foreground">ปริมาณงานตามแหล่ง (Workload by Source)</h3>
-            <TrendingUp size={20} className="text-blue-500" />
+            {/* Toggle View Mode */}
+            <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
+              <button
+                onClick={() => setViewMode('units')}
+                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'units' ? 'bg-white text-foreground shadow-sm' : 'text-muted hover:text-foreground'}`}
+              >
+                ปริมาณสินค้า (Units)
+              </button>
+              <button
+                onClick={() => setViewMode('defects')}
+                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'defects' ? 'bg-white text-foreground shadow-sm' : 'text-muted hover:text-foreground'}`}
+              >
+                ความถี่ปัญหา (Defects)
+              </button>
+            </div>
           </div>
-          {sourceEntries.length > 0 ? (
-            <div className="space-y-4">
-              {sourceEntries.map(([source, count]) => {
-                const percentage = Math.round((count / stats.total) * 100);
-                return (
-                  <div key={source} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground mb-1">{source}</p>
-                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${percentage}%` }} transition={{ duration: 0.5, ease: 'easeOut' }}
-                          className="h-full bg-blue-400 rounded-full" />
+
+          <div className="space-y-6">
+            <AnimatePresence mode="wait">
+              {chartData.length > 0 ? (
+                <motion.div
+                  key={selectedMainReason || 'main'}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-5"
+                >
+                  {chartData.map((item) => (
+                    <div 
+                      key={item.name} 
+                      className={`group relative ${!selectedMainReason ? 'cursor-pointer' : ''}`}
+                      onClick={() => !selectedMainReason && setSelectedMainReason(item.name)}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-slate-700">{item.name}</span>
+                          {!selectedMainReason && (
+                            <ArrowRight size={12} className="text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
+                        </div>
+                        <span className="text-sm font-black text-foreground">{item.value.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }} 
+                          animate={{ width: `${(item.value / maxChartValue) * 100}%` }} 
+                          transition={{ duration: 0.8, ease: 'circOut' }}
+                          className={`h-full rounded-full ${viewMode === 'units' ? 'bg-blue-500' : 'bg-orange-500'}`} 
+                        />
                       </div>
                     </div>
-                    <div className="ml-4 text-right">
-                      <span className="text-sm font-bold text-foreground block">{count}</span>
-                      <span className="text-xs text-muted">{percentage}%</span>
+                  ))}
+                </motion.div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-muted">
+                  <Package size={48} className="opacity-20 mb-4" />
+                  <p className="text-sm font-medium">ไม่มีข้อมูลที่จะแสดงผล</p>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          {/* Legend */}
+          <div className="mt-8 pt-6 border-t border-slate-50 flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              <span className="text-[10px] font-bold text-muted uppercase">ปริมาณชิ้นงาน</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              <span className="text-[10px] font-bold text-muted uppercase">ความถี่ของปัญหา</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Workload by Source (1/3 width) */}
+        <div className="bg-white rounded-2xl p-6 md:p-8 border border-border shadow-sm">
+          <h3 className="text-lg font-bold text-foreground mb-6">แหล่งที่มาของงาน</h3>
+          <div className="space-y-6">
+            {sourceEntries.length > 0 ? (
+              sourceEntries.map(([source, count]) => {
+                const percentage = Math.round((count / stats.total) * 100);
+                return (
+                  <div key={source} className="flex flex-col">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold text-slate-700">{source}</span>
+                      <span className="text-xs font-black text-slate-900">{count} เคส ({percentage}%)</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }} 
+                        animate={{ width: `${percentage}%` }} 
+                        transition={{ duration: 1, ease: 'easeOut' }}
+                        className="h-full bg-indigo-500 rounded-full shadow-sm" 
+                      />
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-muted text-center py-8">ไม่มีข้อมูล (No data available)</p>
-          )}
+              })
+            ) : (
+              <p className="text-sm text-muted text-center py-8">ไม่มีข้อมูล</p>
+            )}
+          </div>
         </div>
+
       </div>
 
-      {/* Status Distribution */}
-      <div className="bg-white rounded-2xl p-8 border border-border">
-        <h3 className="text-lg font-semibold text-foreground mb-6">สถานะงาน (Status Distribution)</h3>
-        <div className="grid grid-cols-3 gap-6">
+      {/* Status Distribution Details */}
+      <div className="bg-white rounded-2xl p-6 md:p-8 border border-border shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-lg font-bold text-foreground">สัดส่วนสถานะการจัดการ</h3>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-amber-400" />
+            <span className="text-[10px] font-bold text-muted uppercase">Pending</span>
+            <span className="w-3 h-3 rounded-full bg-blue-400 ml-2" />
+            <span className="text-[10px] font-bold text-muted uppercase">In-Progress</span>
+            <span className="w-3 h-3 rounded-full bg-purple-400 ml-2" />
+            <span className="text-[10px] font-bold text-muted uppercase">Awaiting Valuation</span>
+            <span className="w-3 h-3 rounded-full bg-emerald-400 ml-2" />
+            <span className="text-[10px] font-bold text-muted uppercase">Completed</span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {[
-            { label: 'รอดำเนินการ (Pending)', count: stats.pending, color: 'amber' },
-            { label: 'กำลังดำเนินการ (In-Progress)', count: stats.inProgress, color: 'orange' },
-            { label: 'เสร็จสิ้น (Completed)', count: stats.completed, color: 'emerald' },
-          ].map(({ label, count, color }) => {
+            { label: 'รอดำเนินการ', count: stats.pending, color: 'amber', icon: <AlertCircle size={20} /> },
+            { label: 'กำลังดำเนินการ', count: stats.inProgress, color: 'blue', icon: <Clock size={20} /> },
+            { label: 'เสร็จสิ้น', count: stats.completed, color: 'emerald', icon: <CheckCircle2 size={20} /> },
+          ].map(({ label, count, color, icon }) => {
             const percentage = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
             const colorClasses: Record<string, string> = {
-              amber: 'bg-amber-100 text-amber-700',
-              orange: 'bg-orange-100 text-orange-700',
-              emerald: 'bg-emerald-100 text-emerald-700',
+              amber: 'bg-amber-50 text-amber-600 border-amber-100',
+              blue: 'bg-blue-50 text-blue-600 border-blue-100',
+              emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
             };
             return (
-              <div key={label} className="text-center">
-                <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-4 ${colorClasses[color]}`}>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{count}</div>
-                    <div className="text-xs font-semibold">{percentage}%</div>
+              <div key={label} className={`flex items-center gap-4 p-4 rounded-2xl border ${colorClasses[color]}`}>
+                <div className={`p-3 rounded-xl bg-white shadow-sm`}>
+                  {icon}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-muted mb-0.5">{label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-slate-900">{count}</span>
+                    <span className="text-xs font-bold text-slate-500">{percentage}%</span>
                   </div>
                 </div>
-                <p className="font-medium text-foreground text-sm">{label}</p>
               </div>
             );
           })}
@@ -353,17 +556,35 @@ interface MetricCardProps {
   icon: React.ReactNode;
   bgColor: string;
   trend?: string;
+  tooltip?: string;
 }
 
-function MetricCard({ label, value, icon, bgColor, trend }: MetricCardProps) {
+function MetricCard({ label, value, icon, bgColor, trend, tooltip }: MetricCardProps) {
   return (
-    <div className="bg-white rounded-2xl p-6 border border-border">
-      <div className={`w-12 h-12 rounded-lg ${bgColor} flex items-center justify-center mb-4`}>
+    <div className="bg-white rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow relative group">
+      <div className={`w-12 h-12 rounded-2xl ${bgColor} flex items-center justify-center mb-5 shadow-inner`}>
         {icon}
       </div>
-      <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">{label}</p>
-      <h3 className="text-3xl font-bold text-foreground mb-2">{value}</h3>
-      {trend && <p className="text-xs text-muted font-medium">{trend}</p>}
+      <p className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] mb-2">{label}</p>
+      <div className="flex items-baseline gap-2">
+        <h3 className="text-3xl font-black text-foreground leading-none">{value}</h3>
+      </div>
+      {trend && <p className="text-[10px] font-bold text-slate-400 mt-3 flex items-center gap-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+        {trend}
+      </p>}
+      
+      {tooltip && (
+        <div className="absolute top-4 right-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="relative group/tip">
+            <AlertCircle size={14} className="cursor-help" />
+            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-50">
+              {tooltip}
+              <div className="absolute top-full right-2 border-4 border-transparent border-t-slate-900" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

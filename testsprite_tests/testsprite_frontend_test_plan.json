@@ -1,0 +1,63 @@
+[
+  {
+    "id": "TC001",
+    "title": "Login with valid credentials",
+    "description": "Verify that a user can log in with a valid username/PIN and reach the main dashboard.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      "Open the app at /",
+      "Enter a valid username such as QSMS or WFG",
+      "Enter a valid PIN/password",
+      "Click the login button",
+      "Confirm the main app dashboard or tabs are displayed"
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Create a new rework case",
+    "description": "Verify that a user can add a new rework case with item details and submit it successfully.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      "Log in successfully",
+      "Navigate to the Add Case tab",
+      "Select the case source",
+      "Enter item number and check master data",
+      "Enter item name, code, amount, reason, and responsible party",
+      "Upload one or more images for the item",
+      "Submit the case",
+      "Verify a success message or updated case list"
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "View and manage existing rework cases",
+    "description": "Verify that rework cases load correctly and can be updated or deleted from the dashboard.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      "Log in successfully",
+      "Confirm the list of existing cases is displayed",
+      "Open a case details or update modal",
+      "Make an edit and save the case",
+      "Delete a case if allowed",
+      "Verify the case list refreshes"
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Auto-fill item name from item master",
+    "description": "Verify item number lookup and optional new item confirmation when item master data is missing.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      "Log in successfully",
+      "Go to Add Case tab",
+      "Enter an item number",
+      "Click the check button",
+      "If item exists, confirm the item name is auto-filled",
+      "If item does not exist, confirm the new item modal appears"
+    ]
+  }
+]

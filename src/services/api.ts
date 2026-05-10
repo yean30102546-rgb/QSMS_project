@@ -55,15 +55,19 @@ export interface ReworkItem {
   details?: string;
   imageUrls?: string[];
   imageFolderUrl?: string; // URL ของ folder ใน Google Drive ที่เก็บรูปทั้งหมดของ case นี้
-  status?: 'Pending' | 'In-Progress' | 'Completed';
+  status?: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
+  batchNo?: string;
+  linkedSourceId?: string;
 }
 
 export interface ReworkCase {
   id: string;
   date: string;
   source: string;
-  status: 'Pending' | 'In-Progress' | 'Completed';
+  status: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
   items: ReworkItem[];
+  resolutionMethod?: string;
+  reworkCost?: number;
 }
 
 export interface DashboardStats {
@@ -119,7 +123,8 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
   try {
     const currentUser = getCurrentUser();
     const tokenPayload = parseTokenPayload(token);
-    const authProfile = String(tokenPayload?.profile || currentUser?.name || '').trim();
+    // CRITICAL: Must use ROLE (ADMIN, WFG, etc.) not Name for authProfile
+    const authProfile = String(tokenPayload?.profile || currentUser?.role || '').trim().toUpperCase();
     const authEmail = currentUser?.email
       ? String(currentUser.email).trim()
       : String(tokenPayload?.sub || '').trim();
@@ -130,7 +135,13 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
       method: 'POST',
       mode: 'cors',
       headers: DEFAULT_HEADERS,
-      body: JSON.stringify({ ...payload, token, authProfile, authEmail }), // Include auth context for backend validation
+      body: JSON.stringify({ 
+        ...payload, 
+        token, 
+        authProfile, 
+        authEmail,
+        userRole: currentUser?.role || '' // Include userRole for backend validation
+      }), 
     });
 
     if (!response.ok) {
@@ -183,6 +194,7 @@ export async function insertCase(
       });
 
       return {
+        id: item.id,
         itemNumber: item.itemNumber,
         itemName: item.itemName,
         itemCode: item.itemCode,
@@ -192,6 +204,8 @@ export async function insertCase(
         responsible: item.responsible,
         responsibleSubtype: item.responsibleSubtype || '',
         details: item.details || '',
+        batchNo: item.batchNo || '',
+        linkedSourceId: item.linkedSourceId || '',
         images: base64Images // ส่งเป็น Array ของ string (base64)
       };
     }));
@@ -287,6 +301,8 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
       status: item.status || caseItem.status || 'Pending',
       imageUrls,
       imageFolderUrl: normalizeString(item.imageFolderUrl),
+      batchNo: normalizeString(item.batchNo || item.batch_no),
+      linkedSourceId: normalizeString(item.linkedSourceId || item.linked_source_id),
     };
   });
 }
@@ -298,6 +314,8 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
     source: normalizeString(caseItem.source),
     status: caseItem.status || 'Pending',
     items: normalizeCaseItems(caseItem),
+    resolutionMethod: normalizeString(caseItem.resolutionMethod),
+    reworkCost: normalizeAmount(caseItem.reworkCost),
   }));
 }
 
@@ -433,4 +451,27 @@ export async function fetchImageDataUrl(imageUrl: string): Promise<string> {
 
   imageDataUrlCache.set(normalizedUrl, result.data.dataUrl);
   return result.data.dataUrl;
+}
+
+/**
+ * 7. Delete a rework case
+ */
+export async function deleteCase(caseId: string): Promise<ApiResponse> {
+  try {
+    const result = await postToGas({
+      action: 'delete',
+      caseId,
+    });
+
+    return {
+      success: result.success,
+      message: result.message,
+      error: result.error,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Delete failed',
+    };
+  }
 }

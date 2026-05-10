@@ -19,6 +19,7 @@ export function groupItemsById<T extends { itemId: string; url: string }>(rows: 
   );
   return grouped;
 }
+
 /**
  * Utility Functions
  * Formatting, validation, and helper functions
@@ -117,12 +118,17 @@ export function isSaveDisabled(items: ReworkItem[]): boolean {
 }
 
 /**
- * Sort cases by status: Pending > In-Progress > Completed
+ * Sort cases by status: Pending > In-Progress > Awaiting Valuation > Completed
  */
 export function sortCasesByStatus(
   cases: ReworkCase[]
 ): ReworkCase[] {
-  const statusOrder: Record<ReworkCase['status'], number> = { Pending: 0, 'In-Progress': 1, Completed: 2 };
+  const statusOrder: Record<ReworkCase['status'], number> = { 
+    Pending: 0, 
+    'In-Progress': 1, 
+    'Awaiting Valuation': 2,
+    Completed: 3 
+  };
 
   return [...cases].sort(
     (a, b) =>
@@ -252,7 +258,7 @@ export function enforceNumeric(value: string): string {
 
 /**
  * Format timestamp to readable format
- * ✅ ใช้ timezone Asia/Bangkok
+ * ✅ ใช้ timezone Asia/Bangkok เสมอ
  */
 export function formatTimestamp(timestamp: string): string {
   try {
@@ -287,17 +293,29 @@ export interface CaseStatistics {
   total: number;
   pending: number;
   inProgress: number;
+  awaitingValuation: number;
   completed: number;
   completionRate: number;
+  linkedCount: number;
 }
 
 export function getStatistics(cases: ReworkCase[]): CaseStatistics {
+  const total = cases.length;
+  const pending = cases.filter((c) => c.status === 'Pending').length;
+  const inProgress = cases.filter((c) => c.status === 'In-Progress').length;
+  const awaitingValuation = cases.filter((c) => c.status === 'Awaiting Valuation').length;
+  const completed = cases.filter((c) => c.status === 'Completed').length;
+  const completionRate = total > 0 ? (completed / total) * 100 : 0;
+  const linkedCount = cases.reduce((acc, c) => acc + (c.items?.filter(i => String(i.reason || '').includes('เปื้อน') && i.linkedSourceId).length || 0), 0);
+
   return {
-    total: cases.length,
-    pending: cases.filter((c) => c.status === 'Pending').length,
-    inProgress: cases.filter((c) => c.status === 'In-Progress').length,
-    completed: cases.filter((c) => c.status === 'Completed').length,
-    completionRate: calculateCompletionRate(cases),
+    total,
+    pending,
+    inProgress,
+    awaitingValuation,
+    completed,
+    completionRate,
+    linkedCount,
   };
 }
 
