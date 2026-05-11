@@ -189,7 +189,7 @@ export function AddCaseTab({
               <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
               <div className="mb-8 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-accent">
-                  <Plus size={16} /> Item {idx + 1}
+                  <Plus size={16} /> รายการที่ {idx + 1}
                 </h3>
                 {formItems.length > 1 && (
                   <motion.button
@@ -233,47 +233,29 @@ export function AddCaseTab({
               </div>
 
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-4">
-                <div className="space-y-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                    ชื่อรายการ (Item Name) *
-                  </label>
-                  <input
-                    value={item.itemName}
-                    onChange={(e) => updateFormItem(item.id, 'itemName', e.target.value)}
-                    placeholder="เช่น Bottle Plastic 250ml"
-                    disabled={isSaving}
-                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
-                  />
-                  <AnimatePresence>
-                    {autoFillTriggeredItem === item.id && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -6, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -6, scale: 0.95 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="flex items-center gap-1 text-xs font-medium text-emerald-600"
-                      >
-                        ชื่อรายการถูกเติมอัตโนมัติจากฐานข้อมูล
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
                 <InputField
-                  label="รหัสรายการ (Item Code)"
+                  label="ชื่อรายการ (Item Name) *"
+                  value={item.itemName}
+                  onChange={(v) => updateFormItem(item.id, 'itemName', v)}
+                  placeholder="เช่น Bottle Plastic 250ml"
+                  disabled={isSaving}
+                />
+                <InputField
+                  label="รหัสสินค้า (Item Code)"
                   value={item.itemCode}
                   onChange={(v) => updateFormItem(item.id, 'itemCode', v)}
                   placeholder="เช่น 40001234"
                   disabled={isSaving}
                 />
                 <InputField
-                  label="จำนวน (Box) *"
+                  label="จำนวน (กล่อง) *"
                   type="number"
                   value={item.amount}
                   onChange={(v) => updateFormItem(item.id, 'amount', v)}
                   disabled={isSaving}
                 />
                 <InputField
-                  label="Batch no. (Number only) *"
+                  label="หมายเลขล็อต (Batch No.) *"
                   value={item.batchNo || ''}
                   onChange={(v) => updateFormItem(item.id, 'batchNo', v)}
                   placeholder="เช่น 240510"

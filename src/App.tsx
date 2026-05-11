@@ -203,13 +203,13 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
 
   const updateFormItem = (id: string, field: string, value: string | number) => {
     if (field === 'itemNumber') {
-      const alphanumeric = String(value).replace(/[^a-zA-Z0-9]/g, '').slice(0, 50);
-      setFormItems(prev => prev.map(item => item.id === id ? { ...item, itemNumber: alphanumeric } : item));
+      const sanitized = String(value).replace(/[<>]/g, '').slice(0, 50);
+      setFormItems(prev => prev.map(item => item.id === id ? { ...item, itemNumber: sanitized } : item));
       return;
     }
     setFormItems(prev => prev.map(item => {
       if (item.id !== id) return item;
-      const normalizedValue = (field === 'itemCode' || field === 'batchNo') ? enforceNumeric(String(value)).slice(0, 50) :
+      const normalizedValue = (field === 'itemCode') ? enforceNumeric(String(value)).slice(0, 50) :
         field === 'amount' ? Math.max(0, parseInt(String(value)) || 0) : value;
       return { ...item, [field]: normalizedValue };
     }));
@@ -285,7 +285,12 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         setCases(cases.filter(c => c.id !== caseId));
         setIsModalOpen(false);
         setSelectedCase(null);
+        alert('ลบรายการเรียบร้อยแล้ว');
+      } else {
+        alert(`ไม่สามารถลบรายการได้: ${result.error || 'Unknown error'}`);
       }
+    } catch (error) {
+      alert(`เกิดข้อผิดพลาดในการลบ: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsModalLoading(false);
     }

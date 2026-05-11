@@ -20,22 +20,40 @@ async function loadExportLibraries() {
   return { html2canvas, jsPDF };
 }
 
+const IMAGE_TIMEOUT_MS = 5000; // 5 seconds per image
+
 async function fetchImageAsBase64(url: string): Promise<string> {
   const decodedUrl = url.includes('corsproxy.io/?')
     ? decodeURIComponent(url.split('corsproxy.io/?')[1] || '')
     : url;
+
+  // Don't try to fetch local paths through remote proxy or GAS
+  if (decodedUrl.startsWith('/') || decodedUrl.startsWith('./') || !decodedUrl.startsWith('http')) {
+    return decodedUrl;
+  }
+
   const displayUrl = toDisplayImageUrl(decodedUrl, 1600);
   const urlsToTry = [displayUrl, toCorsProxyUrl(displayUrl)];
 
   try {
-    return await fetchImageDataUrl(decodedUrl);
-  } catch {
-    // Fall back to browser fetch for legacy URLs.
+    // Add a timeout to the GAS fetch
+    const fetchPromise = fetchImageDataUrl(decodedUrl);
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Image fetch timeout')), IMAGE_TIMEOUT_MS)
+    );
+    return await Promise.race([fetchPromise, timeoutPromise]);
+  } catch (err) {
+    console.warn(`GAS image fetch failed for ${decodedUrl}:`, err);
   }
 
   for (const candidateUrl of urlsToTry) {
     try {
-      const response = await fetch(candidateUrl);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
+      
+      const response = await fetch(candidateUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         throw new Error(`Image fetch error: ${response.status}`);
       }
@@ -47,34 +65,50 @@ async function fetchImageAsBase64(url: string): Promise<string> {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
-    } catch {
-      // Try the next strategy.
+    } catch (err) {
+      console.warn(`Candidate fetch failed for ${candidateUrl}:`, err);
     }
   }
 
   return displayUrl;
 }
 
-async function waitForImages(container: HTMLElement): Promise<void> {
+async function waitForImages(container: HTMLElement, onProgress?: (msg: string) => void): Promise<void> {
   const images = Array.from(container.querySelectorAll('img'));
+  const total = images.length;
+  let loaded = 0;
+
+  const updateProgress = () => {
+    if (onProgress) {
+      onProgress(`Loading images... (${loaded}/${total})`);
+    }
+  };
+
+  updateProgress();
 
   for (const img of images) {
-    if (img.src.startsWith('http') && !img.src.startsWith('data:')) {
+    if (img.src && !img.src.startsWith('data:')) {
       const originalSrc = img.getAttribute('data-original-src') || img.src;
-      const base64 = await fetchImageAsBase64(originalSrc);
-      img.src = base64;
+      try {
+        const base64 = await fetchImageAsBase64(originalSrc);
+        img.src = base64;
+      } catch (err) {
+        console.warn('Failed to convert image to base64:', originalSrc, err);
+      }
     }
+    loaded++;
+    updateProgress();
   }
 
+  // Final wait for browser to decode all set srcs
   await Promise.all(
     images.map((img) => {
-      if (img.complete) {
-        return Promise.resolve();
-      }
-
+      if (img.complete) return Promise.resolve();
       return new Promise<void>((resolve) => {
         img.onload = () => resolve();
         img.onerror = () => resolve();
+        // Safety timeout for individual image load
+        setTimeout(resolve, 2000);
       });
     }),
   );
@@ -85,7 +119,7 @@ function prepareExportElement(el: HTMLDivElement) {
   el.style.position = 'absolute';
   el.style.left = '-9999px';
   el.style.top = '0';
-  el.style.width = '800px';
+  el.style.width = '1000px';
   el.style.overflow = 'visible';
 }
 
@@ -111,7 +145,7 @@ export function useExportReport() {
 
       prepareExportElement(el);
       setExportProgress('Loading images...');
-      await waitForImages(el);
+      await waitForImages(el, setExportProgress);
 
       setExportProgress('Loading fonts...');
       await document.fonts.ready;
@@ -123,22 +157,29 @@ export function useExportReport() {
         allowTaint: false,
         backgroundColor: '#ffffff',
         logging: false,
-        // @ts-ignore legacy option kept for compatibility
+        // @ts-ignore legacy option
         letterRendering: true,
         onclone: (clonedDoc) => {
           const clonedEl = clonedDoc.querySelector('[data-export-template="true"]') as HTMLElement | null;
           if (clonedEl) {
             clonedEl.style.display = 'block';
-            clonedEl.style.width = '800px';
+            clonedEl.style.width = '1000px';
           }
         },
       });
 
       setExportProgress('Downloading PNG...');
+      const sanitizedId = caseId.replace(/[/\\?%*:|"<>]/g, '-');
+      const filename = `Rework_Report_${sanitizedId}.png`;
+
+      // Use toDataURL synchronously to maintain user activation for the 'download' attribute
+      const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
-      link.download = `Rework_Report_${caseId}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = dataUrl;
+      link.download = filename;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error('PNG export failed:', error);
       alert('ไม่สามารถ Export PNG ได้ กรุณาลองใหม่อีกครั้ง');
@@ -161,7 +202,7 @@ export function useExportReport() {
 
       prepareExportElement(el);
       setExportProgress('Loading images...');
-      await waitForImages(el);
+      await waitForImages(el, setExportProgress);
 
       setExportProgress('Loading fonts...');
       await document.fonts.ready;
@@ -179,7 +220,7 @@ export function useExportReport() {
           const clonedEl = clonedDoc.querySelector('[data-export-template="true"]') as HTMLElement | null;
           if (clonedEl) {
             clonedEl.style.display = 'block';
-            clonedEl.style.width = '800px';
+            clonedEl.style.width = '1000px';
           }
         },
       });
@@ -230,7 +271,8 @@ export function useExportReport() {
       }
 
       setExportProgress('Downloading PDF...');
-      pdf.save(`Rework_Report_${caseId}.pdf`);
+      const sanitizedId = caseId.replace(/[/\\?%*:|"<>]/g, '-');
+      pdf.save(`Rework_Report_${sanitizedId}.pdf`);
     } catch (error) {
       console.error('PDF export failed:', error);
       alert('ไม่สามารถ Export PDF ได้ กรุณาลองใหม่อีกครั้ง');

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "RBAC001",
+    "title": "Authorization: QSMS Role Access",
+    "description": "Verify that QSMS role can access Overall, Add Case, and Dashboard tabs.",
+    "category": "RBAC Validation",
+    "steps": [
+      { "type": "action", "description": "Navigate to /" },
+      { "type": "action", "description": "Login with username 'QSMS' and password 'QSMS'" },
+      { "type": "assertion", "description": "Verify 'ภาพรวม (Overall)' tab is visible" },
+      { "type": "assertion", "description": "Verify 'เพิ่มงานใหม่ (Add Case)' tab is visible" },
+      { "type": "assertion", "description": "Verify 'แดชบอร์ด (Dashboard)' tab is visible" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "RBAC002",
+    "title": "Authorization: WFG Role Access",
+    "description": "Verify that WFG role can access Overall and Add Case tabs, but NOT Dashboard.",
+    "category": "RBAC Validation",
+    "steps": [
+      { "type": "action", "description": "Navigate to /" },
+      { "type": "action", "description": "Login with username 'WFG' and password 'WFG'" },
+      { "type": "assertion", "description": "Verify 'ภาพรวม (Overall)' tab is visible" },
+      { "type": "assertion", "description": "Verify 'เพิ่มงานใหม่ (Add Case)' tab is visible" },
+      { "type": "assertion", "description": "Verify 'แดชบอร์ด (Dashboard)' tab is NOT visible" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "RBAC003",
+    "title": "Authorization: Finance Role Access",
+    "description": "Verify that Finance role can access Overall tab only.",
+    "category": "RBAC Validation",
+    "steps": [
+      { "type": "action", "description": "Navigate to /" },
+      { "type": "action", "description": "Login with username 'FINANCE' and password 'FINANCE'" },
+      { "type": "assertion", "description": "Verify 'ภาพรวม (Overall)' tab is visible" },
+      { "type": "assertion", "description": "Verify 'เพิ่มงานใหม่ (Add Case)' tab is NOT visible" },
+      { "type": "assertion", "description": "Verify 'แดชบอร์ด (Dashboard)' tab is NOT visible" }
+    ],
+    "priority": "High"
+  }
+]

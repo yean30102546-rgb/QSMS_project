@@ -1,63 +1,388 @@
 [
   {
     "id": "TC001",
-    "title": "Login with valid credentials",
-    "description": "Verify that a user can log in with a valid username/PIN and reach the main dashboard.",
-    "category": "functional",
-    "priority": "High",
+    "title": "QSMS user creates a Rework case with multiple items",
+    "description": "This verifies that a QSMS user can complete the Add Case workflow, add multiple product lines in one case, submit it, and see the new Rework case in Overall.",
+    "category": "Case Management",
     "steps": [
-      "Open the app at /",
-      "Enter a valid username such as QSMS or WFG",
-      "Enter a valid PIN/password",
-      "Click the login button",
-      "Confirm the main app dashboard or tabs are displayed"
-    ]
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the QSMS user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the Add Case tab"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the case details for the first item"
+      },
+      {
+        "type": "action",
+        "description": "Add another item to the same case"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the case details for the second item"
+      },
+      {
+        "type": "action",
+        "description": "Submit the case form"
+      },
+      {
+        "type": "action",
+        "description": "Open the Overall tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new Rework case is listed in Overall"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the submitted case details are available for review"
+      }
+    ],
+    "priority": "High"
   },
   {
     "id": "TC002",
-    "title": "Create a new rework case",
-    "description": "Verify that a user can add a new rework case with item details and submit it successfully.",
-    "category": "functional",
-    "priority": "High",
+    "title": "QSMS user logs in and sees all permitted areas",
+    "description": "This verifies that a QSMS user can sign in with a PIN and reach the main app with access to all QSMS-permitted navigation areas.",
+    "category": "Role-Based Login",
     "steps": [
-      "Log in successfully",
-      "Navigate to the Add Case tab",
-      "Select the case source",
-      "Enter item number and check master data",
-      "Enter item name, code, amount, reason, and responsible party",
-      "Upload one or more images for the item",
-      "Submit the case",
-      "Verify a success message or updated case list"
-    ]
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the QSMS user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the main application page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all QSMS-permitted tabs are visible"
+      }
+    ],
+    "priority": "High"
   },
   {
     "id": "TC003",
-    "title": "View and manage existing rework cases",
-    "description": "Verify that rework cases load correctly and can be updated or deleted from the dashboard.",
-    "category": "functional",
-    "priority": "Medium",
+    "title": "WFG user logs in and sees allowed navigation",
+    "description": "This verifies that a WFG user can sign in with a PIN and reach the main app with only the WFG-allowed areas available.",
+    "category": "Role-Based Login",
     "steps": [
-      "Log in successfully",
-      "Confirm the list of existing cases is displayed",
-      "Open a case details or update modal",
-      "Make an edit and save the case",
-      "Delete a case if allowed",
-      "Verify the case list refreshes"
-    ]
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the WFG user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the main application page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the WFG-allowed tabs are visible"
+      }
+    ],
+    "priority": "High"
   },
   {
     "id": "TC004",
-    "title": "Auto-fill item name from item master",
-    "description": "Verify item number lookup and optional new item confirmation when item master data is missing.",
-    "category": "functional",
-    "priority": "Medium",
+    "title": "Finance user logs in and sees only Overall",
+    "description": "This verifies that a Finance user can sign in with a PIN and reach the main app with only Overall navigation available.",
+    "category": "Role-Based Login",
     "steps": [
-      "Log in successfully",
-      "Go to Add Case tab",
-      "Enter an item number",
-      "Click the check button",
-      "If item exists, confirm the item name is auto-filled",
-      "If item does not exist, confirm the new item modal appears"
-    ]
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the Finance user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the main application page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only the Overall tab is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "WFG user creates and reviews a Rework case",
+    "description": "This verifies that a WFG user can create a Rework case from Add Case and then review the saved case in Overall.",
+    "category": "Case Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the WFG user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the Add Case tab"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the case details for a valid Rework case"
+      },
+      {
+        "type": "action",
+        "description": "Submit the case form"
+      },
+      {
+        "type": "action",
+        "description": "Open the Overall tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the submitted Rework case is listed in Overall"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the case details can be reviewed from the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "User reviews existing Rework cases in Overall",
+    "description": "This verifies that an authenticated user can open Overall and review existing Rework case list data.",
+    "category": "Case Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the QSMS user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the Overall tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify existing Rework cases are listed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify case summary data is available for review"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Finance user cannot access restricted tabs",
+    "description": "This verifies that a Finance user can only navigate to Overall and cannot reach restricted tabs from the main app.",
+    "category": "RBAC Tab Navigation",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the Finance user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only the Overall tab is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify restricted tabs are not available"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "User is blocked by an incorrect PIN",
+    "description": "This verifies that entering the wrong PIN prevents access and shows a login failure message.",
+    "category": "Role-Based Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select a valid user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with an incorrect 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a login failure message is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the main application page is not displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC009",
+    "title": "User sees validation when Batch No. is invalid",
+    "description": "This verifies that an Add Case form with a non-numeric Batch No. shows validation feedback and keeps the user on the form.",
+    "category": "Case Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select the QSMS user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the Add Case tab"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the case details with a non-numeric Batch No."
+      },
+      {
+        "type": "action",
+        "description": "Submit the case form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation error for Batch No. is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user remains on the Add Case form"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC010",
+    "title": "User is blocked by an invalid profile selection",
+    "description": "This verifies that choosing an invalid profile prevents access and shows a login failure message.",
+    "category": "Role-Based Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select an invalid user profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the PIN field with a valid 6-digit PIN"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a login failure message is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the main application page is not displayed"
+      }
+    ],
+    "priority": "Medium"
   }
 ]

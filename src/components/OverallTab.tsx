@@ -26,6 +26,8 @@ interface OverallTabProps {
   loadCases: () => void;
   openUpdateModal: (caseItem: ReworkCase) => void;
   stats: OverallStats;
+  userRole?: string;
+  userName?: string;
 }
 
 export function OverallTab({
@@ -37,6 +39,8 @@ export function OverallTab({
   loadCases,
   openUpdateModal,
   stats,
+  userRole = 'Admin',
+  userName = 'User',
 }: OverallTabProps) {
   const {
     activeFilterCount,
@@ -83,7 +87,9 @@ export function OverallTab({
                   day: 'numeric',
                 })}
               </p>
-              <h1 className="text-2xl font-bold tracking-normal text-foreground md:text-3xl">สวัสดี Admin</h1>
+              <h1 className="text-2xl font-bold tracking-normal text-foreground md:text-3xl">
+                สวัสดี {userRole.toUpperCase()}
+              </h1>
             </div>
             <div className="flex items-center gap-2">
               <Tooltip text="รีเฟรชข้อมูล">
@@ -108,11 +114,7 @@ export function OverallTab({
             <StatCard label="กำลังดำเนินการ" value={stats.inProgress.toString()} />
             <StatCard label="รอประเมินราคา" value={stats.awaitingValuation.toString()} />
             <StatCard label="เสร็จสิ้น" value={stats.completed.toString()} />
-            <StatCard 
-              label="เปื้อนจากการรั่ว" 
-              value={cases.reduce((acc, c) => acc + (c.items?.filter(i => String(i.reason || '').includes('เปื้อน') && i.linkedSourceId).length || 0), 0).toString()} 
-              trend="Correlation"
-            />
+
           </div>
         </div>
       </div>

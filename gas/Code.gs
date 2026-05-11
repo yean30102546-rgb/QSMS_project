@@ -153,8 +153,8 @@ function validateItemNumber(itemNumber) {
   
   const str = String(itemNumber).trim();
   
-  if (!/^[a-zA-Z0-9]+$/.test(str)) {
-    return { valid: false, error: 'Item Number must contain only letters and digits. Got: ' + str };
+  if (!/^[a-zA-Z0-9.\-_/ ]+$/.test(str)) {
+    return { valid: false, error: 'Item Number contains invalid characters. Got: ' + str };
   }
 
   if (str.length > 50) {
@@ -173,8 +173,8 @@ function validateBatchNo(batchNo) {
   }
   
   const str = String(batchNo).trim();
-  if (!/^\d+$/.test(str)) {
-    return { valid: false, error: 'Batch No. must contain only digits. Got: ' + str };
+  if (!/^[a-zA-Z0-9.\-_/ ]+$/.test(str)) {
+    return { valid: false, error: 'Batch No. contains invalid characters. Got: ' + str };
   }
   
   return { valid: true };

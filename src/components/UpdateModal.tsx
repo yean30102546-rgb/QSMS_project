@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2 } from 'lucide-react';
 import { ReworkCase } from '../services/api';
 import { formatThaiDate } from '../utils/helpers';
 import { useExportReport } from '../hooks/useExportReport';
@@ -39,6 +39,9 @@ export function UpdateModal({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedSource, setEditedSource] = useState('');
   const [editedItems, setEditedItems] = useState<ReworkCase['items']>([]);
+
+  // Delete Confirmation State
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const userRole = getCurrentUserRole();
   const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.QSMS;
@@ -118,10 +121,33 @@ export function UpdateModal({
     setIsEditMode(false);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
     if (!caseData || !onDelete) return;
-    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+    setIsActionLoading(true);
+    try {
       await onDelete(caseData.id);
+      setIsDeleteConfirmOpen(false);
+      onClose(); // Close the main modal after deletion
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('ไม่สามารถลบรายการได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleRemoveItem = (index: number) => {
+    if (editedItems.length <= 1) {
+      alert('ต้องมีอย่างน้อย 1 รายการในงานนี้');
+      return;
+    }
+    if (window.confirm('คุณต้องการลบรายการย่อยนี้ใช่หรือไม่?')) {
+      const newItems = editedItems.filter((_, i) => i !== index);
+      setEditedItems(newItems);
     }
   };
 
@@ -244,30 +270,70 @@ export function UpdateModal({
                           return (
                             <div key={item.id || index} className="bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4">
                               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                                <div className="flex items-center gap-3">
-                                  <span className="w-7 h-7 rounded-lg bg-accent text-white text-xs font-black flex items-center justify-center shadow-sm">
-                                    {index + 1}
-                                  </span>
-                                  <div>
-                                    {isEditMode ? (
-                                      <input 
-                                        value={item.itemName} 
-                                        onChange={(e) => {
-                                          const newItems = [...editedItems];
-                                          newItems[index] = { ...newItems[index], itemName: e.target.value };
-                                          setEditedItems(newItems);
-                                        }}
-                                        className="text-sm font-bold px-2 py-0.5 border rounded bg-white"
-                                      />
-                                    ) : (
-                                      <p className="text-sm font-bold text-foreground">{item.itemName || item.itemNumber}</p>
-                                    )}
-                                    <p className="text-[10px] text-muted font-bold">{item.itemCode}</p>
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <span className="w-7 h-7 rounded-lg bg-accent text-white text-xs font-black flex items-center justify-center shadow-sm shrink-0">
+                                      {index + 1}
+                                    </span>
+                                    <div className="flex-1">
+                                      {isEditMode ? (
+                                        <div className="flex flex-col gap-2">
+                                          <input 
+                                            value={item.itemName} 
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], itemName: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            placeholder="ชื่อรายการ"
+                                            className="w-full text-sm font-bold px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                          />
+                                          <input 
+                                            value={item.itemNumber} 
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], itemNumber: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            placeholder="Item Number / Batch"
+                                            className="w-full text-[10px] font-mono font-bold px-3 py-1 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <p className="text-sm font-bold text-foreground">{item.itemName || item.itemNumber}</p>
+                                          <p className="text-[10px] text-muted font-bold">{item.itemCode}</p>
+                                        </>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                      {isEditMode ? (
+                                        <div className="flex items-center gap-2">
+                                          <input 
+                                            type="number"
+                                            value={item.amount}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], amount: Number(e.target.value) };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="w-16 px-2 py-1 text-center text-[10px] font-bold border border-slate-200 rounded-lg bg-white"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveItem(index)}
+                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="ลบรายการย่อย"
+                                          >
+                                            <Trash2 size={16} />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-600">
+                                          {item.amount} ชิ้น
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                  <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-600">
-                                    {item.amount} ชิ้น
-                                  </span>
-                                </div>
                                 {item.linkedSourceId && (
                                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-lg">
                                     <HelpCircle size={14} className="text-amber-600" />
@@ -575,7 +641,78 @@ export function UpdateModal({
         )}
       </AnimatePresence>
 
-      <ExportTemplate ref={exportRef} caseData={caseData} />
+      <ExportTemplate 
+        ref={exportRef} 
+        caseData={caseData ? {
+          ...caseData,
+          source: editedSource,
+          status: caseStatus,
+          resolutionMethod: resolutionMethod,
+          reworkCost: Number(reworkCost),
+          items: editedItems
+        } : null} 
+      />
+
+      {/* ===== Delete Confirmation Modal ===== */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] will-change-opacity"
+            />
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="pointer-events-auto w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-red-100 flex flex-col"
+              >
+                <div className="p-8 text-center space-y-4">
+                  <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <AlertCircle size={32} />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-slate-900">ยืนยันการลบรายการ</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      คุณต้องการลบรายการ <span className="font-bold text-slate-700">{caseData?.id}</span> ใช่หรือไม่? 
+                      การลบข้อมูลนี้จะไม่สามารถกู้คืนได้
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-4 grid grid-cols-2 gap-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteConfirmOpen(false)}
+                    className="px-4 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition-colors"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDelete}
+                    disabled={isActionLoading}
+                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-200 disabled:opacity-50"
+                  >
+                    {isActionLoading ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        กำลังลบ...
+                      </>
+                    ) : (
+                      'ลบรายการจริง'
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }

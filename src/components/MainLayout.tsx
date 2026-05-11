@@ -264,6 +264,8 @@ export function MainLayout({
                   loadCases={loadCases}
                   openUpdateModal={openUpdateModal}
                   stats={stats}
+                  userRole={userRole}
+                  userName={userName}
                 />
               </motion.div>
             )}

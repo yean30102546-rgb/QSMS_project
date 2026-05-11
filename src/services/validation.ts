@@ -32,8 +32,8 @@ export function validateItemNumber(value: string | number): ValidationError | nu
   if (!itemNumber) {
     return { field: 'itemNumber', message: 'Item Number is required' };
   }
-  if (!/^[a-zA-Z0-9]+$/.test(itemNumber)) {
-    return { field: 'itemNumber', message: 'Item Number must contain only letters and digits' };
+  if (!/^[a-zA-Z0-9.\-_/ ]+$/.test(itemNumber)) {
+    return { field: 'itemNumber', message: 'Item Number contains invalid characters' };
   }
   if (itemNumber.length > 50) {
     return { field: 'itemNumber', message: 'Item Number must not exceed 50 characters' };
@@ -112,8 +112,8 @@ export function validateBatchNo(value: string | undefined): ValidationError | nu
   if (!batchNo) {
     return { field: 'batchNo', message: 'Batch no. is required' };
   }
-  if (!/^\d+$/.test(batchNo)) {
-    return { field: 'batchNo', message: 'Batch no. must contain only digits' };
+  if (!/^[a-zA-Z0-9.\-_/ ]+$/.test(batchNo)) {
+    return { field: 'batchNo', message: 'Batch no. contains invalid characters' };
   }
   return null;
 }
