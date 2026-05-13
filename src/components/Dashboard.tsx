@@ -8,7 +8,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingDown, TrendingUp, CheckCircle2, Clock, AlertCircle,
-  Package, SlidersHorizontal, X, Calendar, Layers, Link2, ChevronLeft, ArrowRight
+  Package, SlidersHorizontal, X, Calendar, Layers, Link2, ChevronLeft, ArrowRight, Banknote
 } from 'lucide-react';
 import { ReworkCase, ReworkItem } from '../services/api';
 
@@ -24,6 +24,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<CaseStatus[]>([]);
   const [reasonFilter, setReasonFilter] = useState<string[]>([]);
+  const [customerFilter, setCustomerFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   
@@ -41,6 +42,15 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
     return Array.from(reasons).sort();
   }, [cases]);
 
+  const uniqueCustomers = useMemo(() => {
+    const customers = new Set<string>();
+    cases.forEach(c => c.items?.forEach(item => {
+      const trimmedCustomer = String(item.customerName || '').trim();
+      if (trimmedCustomer) customers.add(trimmedCustomer);
+    }));
+    return Array.from(customers).sort();
+  }, [cases]);
+
   // ===== APPLY FILTERS =====
   const filteredCases = useMemo(() => {
     return cases.filter(c => {
@@ -50,6 +60,11 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       if (reasonFilter.length > 0) {
         const hasReason = c.items?.some(item => reasonFilter.includes(item.reason));
         if (!hasReason) return false;
+      }
+      // Customer filter
+      if (customerFilter.length > 0) {
+        const hasCustomer = c.items?.some(item => customerFilter.includes(String(item.customerName || '').trim()));
+        if (!hasCustomer) return false;
       }
       // Date filter
       if (dateFrom || dateTo) {
@@ -63,14 +78,15 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       }
       return true;
     });
-  }, [cases, statusFilter, reasonFilter, dateFrom, dateTo]);
+  }, [cases, statusFilter, reasonFilter, customerFilter, dateFrom, dateTo]);
 
-  const hasActiveFilters = statusFilter.length > 0 || reasonFilter.length > 0 || dateFrom || dateTo;
-  const activeFilterCount = (statusFilter.length > 0 ? 1 : 0) + (reasonFilter.length > 0 ? 1 : 0) + (dateFrom || dateTo ? 1 : 0);
+  const hasActiveFilters = statusFilter.length > 0 || reasonFilter.length > 0 || customerFilter.length > 0 || dateFrom || dateTo;
+  const activeFilterCount = (statusFilter.length > 0 ? 1 : 0) + (reasonFilter.length > 0 ? 1 : 0) + (customerFilter.length > 0 ? 1 : 0) + (dateFrom || dateTo ? 1 : 0);
 
   const clearAllFilters = () => {
     setStatusFilter([]);
     setReasonFilter([]);
+    setCustomerFilter([]);
     setDateFrom('');
     setDateTo('');
   };
@@ -89,6 +105,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       completed: 0,
       completionRate: 0,
       linkedCount: 0, // Correlation KPI
+      totalCost: 0,
       unitsByReason: {} as Record<string, number>,
       frequencyByReason: {} as Record<string, number>,
       subtypesByMainReason: {} as Record<string, Record<string, { units: number; frequency: number }>>,
@@ -103,12 +120,18 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       else if (caseItem.status === 'Awaiting Valuation') initialStats.awaitingValuation++;
       else if (caseItem.status === 'Completed') initialStats.completed++;
 
+      initialStats.totalCost += caseItem.reworkCost || 0;
+
       const source = String(caseItem.source || '').trim();
       if (source) {
         initialStats.sources[source] = (initialStats.sources[source] || 0) + 1;
       }
 
       caseItem.items?.forEach(item => {
+        // Item-level filtering for stats accuracy
+        if (reasonFilter.length > 0 && !reasonFilter.includes(item.reason)) return;
+        if (customerFilter.length > 0 && !customerFilter.includes(String(item.customerName || '').trim())) return;
+
         const amount = item.amount || 0;
         const mainReason = String(item.reason || 'ไม่ระบุ').trim();
         
@@ -265,6 +288,20 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   </div>
                 </div>
 
+                {/* Customer Filter */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">🏢 ลูกค้า (Customer)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueCustomers.map(customer => (
+                      <motion.button key={customer} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => toggleArrayFilter(customerFilter, customer, setCustomerFilter)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-normal transition-all ${customerFilter.includes(customer) ? 'bg-indigo-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >{customer}</motion.button>
+                    ))}
+                    {uniqueCustomers.length === 0 && <span className="text-xs text-muted italic">ไม่มีข้อมูล</span>}
+                  </div>
+                </div>
+
                 {/* Status Filter */}
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">📊 สถานะ (Status)</label>
@@ -336,6 +373,12 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   <button onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)} className="hover:text-orange-900"><X size={10} /></button>
                 </span>
               ))}
+              {customerFilter.map(c => (
+                <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">
+                  {c}
+                  <button onClick={() => toggleArrayFilter(customerFilter, c, setCustomerFilter)} className="hover:text-indigo-900"><X size={10} /></button>
+                </span>
+              ))}
               {(dateFrom || dateTo) && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
                   📅 {dateFrom || '...'} → {dateTo || '...'}
@@ -349,7 +392,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       </div>
 
       {/* ===== KEY METRICS ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <MetricCard label="งานทั้งหมด" value={stats.total.toString()} icon={<Package size={24} className="text-blue-500" />} bgColor="bg-blue-50" trend={`บันทึกแล้ว ${filteredCases.length} เคส`} />
         <MetricCard label="เสร็จสิ้นแล้ว" value={stats.completed.toString()} icon={<CheckCircle2 size={24} className="text-emerald-500" />} bgColor="bg-emerald-50" trend={`${stats.completionRate}% ความสำเร็จ`} />
         {/* Correlation KPI Card */}
@@ -361,6 +404,8 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
           trend="Correlation Detection"
           tooltip="จำนวนรายการที่เปื้อนเนื่องมาจากการรั่วไหลของไอเทมอื่น"
         />
+        {/* Cost KPI Card */}
+        <MetricCard label="ค่าใช้จ่าย Rework" value={`฿${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`} icon={<Banknote size={24} className="text-rose-500" />} bgColor="bg-rose-50" trend="Total Cost" />
         <MetricCard label="อัตราเสร็จสิ้น" value={`${stats.completionRate}%`} icon={<TrendingUp size={24} className="text-indigo-500" />} bgColor="bg-indigo-50" trend="Overall Progress" />
       </div>
 

@@ -58,16 +58,29 @@ export interface ReworkItem {
   status?: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
   batchNo?: string;
   linkedSourceId?: string;
+  customerName?: string;
 }
+
+export const CUSTOMER_OPTIONS = [
+  'Eneos',
+  'Valvaline',
+  'BCP',
+  'OR',
+  'Petronas',
+  'Others',
+];
 
 export interface ReworkCase {
   id: string;
   date: string;
   source: string;
+  customerName?: string;
   status: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
   items: ReworkItem[];
   resolutionMethod?: string;
   reworkCost?: number;
+  orFilesUrls?: string[];
+  orFolderUrl?: string;
 }
 
 export interface DashboardStats {
@@ -177,7 +190,8 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
 export async function insertCase(
   source: string,
   items: ReworkItem[],
-  imageData?: Record<string, File[]>
+  imageData?: Record<string, File[]>,
+  orFiles?: File[]
 ): Promise<ApiResponse<{ caseId: string; itemIds: string[] }>> {
   try {
     // แปลงไฟล์รูปภาพทั้งหมดเป็น Base64 ก่อนส่ง (เพื่อให้ GAS.txt รับได้)
@@ -206,6 +220,7 @@ export async function insertCase(
         details: item.details || '',
         batchNo: item.batchNo || '',
         linkedSourceId: item.linkedSourceId || '',
+        customerName: item.customerName || '',
         images: base64Images // ส่งเป็น Array ของ string (base64)
       };
     }));
@@ -213,13 +228,20 @@ export async function insertCase(
     console.log('📦 Sending case to GAS:', {
       source,
       itemCount: processedItems.length,
-      totalImages: processedItems.reduce((sum, item) => sum + item.images.length, 0)
+      totalImages: processedItems.reduce((sum, item) => sum + item.images.length, 0),
+      orFilesCount: orFiles?.length || 0
     });
+
+    // Convert OR files to base64 if any
+    const processedOrFiles = orFiles 
+      ? await Promise.all(orFiles.map(fileToBase64))
+      : [];
 
     const result = await postToGas<{ caseId: string; itemIds: string[] }>({
       action: 'insert',
       source,
       items: processedItems,
+      orFiles: processedOrFiles
     });
 
     if (result.success) {
@@ -303,6 +325,7 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
       imageFolderUrl: normalizeString(item.imageFolderUrl),
       batchNo: normalizeString(item.batchNo || item.batch_no),
       linkedSourceId: normalizeString(item.linkedSourceId || item.linked_source_id),
+      customerName: normalizeString(item.customerName),
     };
   });
 }
@@ -312,10 +335,13 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
     id: normalizeString(caseItem.id),
     date: normalizeString(caseItem.date),
     source: normalizeString(caseItem.source),
+    customerName: normalizeString(caseItem.customerName),
     status: caseItem.status || 'Pending',
     items: normalizeCaseItems(caseItem),
     resolutionMethod: normalizeString(caseItem.resolutionMethod),
     reworkCost: normalizeAmount(caseItem.reworkCost),
+    orFilesUrls: Array.isArray(caseItem.orFilesUrls) ? caseItem.orFilesUrls : [],
+    orFolderUrl: normalizeString(caseItem.orFolderUrl),
   }));
 }
 
@@ -350,13 +376,23 @@ export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
  */
 export async function updateCase(
   caseId: string,
-  updates: Partial<ReworkCase>
+  updates: Partial<ReworkCase> & { newOrFiles?: File[] }
 ): Promise<ApiResponse> {
   try {
+    // Process OR files if they exist in updates
+    let processedOrFiles: string[] = [];
+    if (updates.newOrFiles && updates.newOrFiles.length > 0) {
+      processedOrFiles = await Promise.all(updates.newOrFiles.map(fileToBase64));
+    }
+
+    // Prepare the payload, excluding the raw File objects
+    const { newOrFiles, ...restUpdates } = updates;
+
     const result = await postToGas({
       action: 'update',
       caseId,
-      updates,
+      updates: restUpdates,
+      orFiles: processedOrFiles.length > 0 ? processedOrFiles : undefined
     });
 
     return {

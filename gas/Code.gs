@@ -20,6 +20,39 @@ const ITEM_MASTER_SHEET_NAME = 'ItemMaster';
 const BACKUP_SHEET_NAME = 'Backup';
 const DRIVE_FOLDER_ID = getRequiredScriptProperty('DRIVE_FOLDER_ID'); // Google Drive folder for images
 
+// ===== COLUMN DEFINITIONS (0-indexed) =====
+const COL_TIMESTAMP = 0;
+const COL_STATUS = 1;
+const COL_SOURCE = 2;
+const COL_CUSTOMER = 3;
+const COL_CASE_ID = 4;
+const COL_ITEM_ID = 5;
+const COL_ITEM_NUMBER = 6;
+const COL_ITEM_NAME = 7;
+const COL_ITEM_CODE = 8;
+const COL_BATCH_NO = 9;
+const COL_AMOUNT = 10;
+const COL_REASON = 11;
+const COL_REASON_SUBTYPE = 12;
+const COL_LINKED_ID = 13;
+const COL_RESPONSIBLE = 14;
+const COL_RESP_SUBTYPE = 15;
+const COL_DETAILS = 16;
+const COL_RESOLUTION = 17;
+const COL_COST = 18;
+const COL_IMAGE_URLS = 19;
+const COL_CASE_FOLDER = 20;
+const COL_OR_FILES = 21;
+const COL_OR_FOLDER = 22;
+
+const MAIN_HEADERS = [
+  'Timestamp', 'Status', 'Source', 'Customer Name', 'Case ID', 'Item ID', 
+  'Item Number', 'Item Name', 'Item Code', 'Batch No', 'Amount', 
+  'Reason', 'Reason Subtype', 'Linked Source ID', 'Responsible', 
+  'Responsible Subtype', 'Details', 'Resolution Method', 'Rework Cost', 
+  'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL'
+];
+
 // ===== AUTHENTICATION SETTINGS =====
 const REQUIRE_TOKEN_VALIDATION = true;
 
@@ -95,11 +128,7 @@ function getOrCreateSheet(sheetName, headers) {
 
   if (!sheet) {
     sheet = spreadsheet.insertSheet(sheetName);
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sheet.getRange(1, 1, 1, headers.length)
-      .setFontWeight('bold')
-      .setBackground('#000000')
-      .setFontColor('#FFFFFF');
+    applyHeaderFormatting(sheet, headers);
     Logger.log('Created new sheet: ' + sheetName);
     return sheet;
   }
@@ -110,11 +139,28 @@ function getOrCreateSheet(sheetName, headers) {
   });
 
   if (headerMismatch) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    Logger.log('Updated headers for sheet: ' + sheetName);
+    applyHeaderFormatting(sheet, headers);
+    Logger.log('Updated headers and formatting for sheet: ' + sheetName);
   }
 
   return sheet;
+}
+
+/**
+ * Helper to write headers and apply consistent premium formatting
+ */
+function applyHeaderFormatting(sheet, headers) {
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange
+    .setFontWeight('bold')
+    .setBackground('#000000')
+    .setFontColor('#FFFFFF')
+    .setVerticalAlignment('middle')
+    .setHorizontalAlignment('center');
+  
+  // Freeze the header row
+  sheet.setFrozenRows(1);
 }
 
 function createImgUrlLogRows(caseId, itemId, itemIndex, itemImageUrls, caseFolderUrl) {
@@ -661,7 +707,7 @@ function handleInsert(payload) {
     lock = LockService.getScriptLock();
     lock.waitLock(30000);
 
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    const sheet = getOrCreateSheet(SHEET_NAME, MAIN_HEADERS);
     const existingCaseIds = new Set();
     const lastRow = sheet.getLastRow();
     if (lastRow > 1) {
@@ -693,6 +739,13 @@ function handleInsert(payload) {
 
     var tempIdToNewId = {};
 
+    // ===== อัพโหลดไฟล์ OR (เฉพาะกรณีที่มี item ทุกตัวเป็น OR) ===== ทำครั้งเดียวต่อเคส
+    let orFilesData = { urls: [], folderUrl: '' };
+    const isAllOR = payload.items.length > 0 && payload.items.every(function(item) { return item.customerName === 'OR'; });
+    if (isAllOR && payload.orFiles && payload.orFiles.length > 0) {
+      orFilesData = uploadORFilesToDrive(payload.orFiles, caseId, caseFolder.id);
+    }
+
     payload.items.forEach(function(item, index) {
       var itemId = caseId + '-' + String(index + 1).padStart(3, '0');
       itemIds.push(itemId);
@@ -723,37 +776,40 @@ function handleInsert(payload) {
       }
 
       // ===== สร้าง row สำหรับเขียนลง Sheet =====
-      // คอลัมที่ 15: เก็บ URL ของรูปแต่ละภาพ คั่นด้วย | (pipe)
-      // คอลัมที่ 16: เก็บ folder URL
-      rowsToInsert.push([
-        itemId,
-        caseId,
-        timestamp,
-        sanitizeString(payload.source),
-        sanitizeString(item.itemNumber),
-        sanitizeString(item.itemName),
-        sanitizeString(item.itemCode),
-        sanitizeString(item.batchNo || ''),
-        item.amount,
-        sanitizeString(item.reason),
-        sanitizeString(item.reasonSubtype || ''),
-        sanitizeString(item.linkedSourceId || ''),
-        sanitizeString(item.responsible),
-        sanitizeString(item.responsibleSubtype || ''),
-        sanitizeString(item.details || ''),
-        '', // Resolution Method
-        '', // Rework Cost
-        'Pending',
-        itemImageUrls.length > 0 ? itemImageUrls.join('|') : '', // คอลัม 19: URL แต่ละรูป คั่นด้วย |
-        caseFolderUrl, // คอลัม 20: folder URL
-      ]);
+      // ใช้ลำดับตาม COL_ constants
+      var row = [];
+      row[COL_TIMESTAMP] = timestamp;
+      row[COL_STATUS] = 'Pending';
+      row[COL_SOURCE] = sanitizeString(payload.source);
+      row[COL_CUSTOMER] = sanitizeString(item.customerName || payload.customerName || '');
+      row[COL_CASE_ID] = caseId;
+      row[COL_ITEM_ID] = itemId;
+      row[COL_ITEM_NUMBER] = sanitizeString(item.itemNumber);
+      row[COL_ITEM_NAME] = sanitizeString(item.itemName);
+      row[COL_ITEM_CODE] = sanitizeString(item.itemCode);
+      row[COL_BATCH_NO] = sanitizeString(item.batchNo || '');
+      row[COL_AMOUNT] = item.amount;
+      row[COL_REASON] = sanitizeString(item.reason);
+      row[COL_REASON_SUBTYPE] = sanitizeString(item.reasonSubtype || '');
+      row[COL_LINKED_ID] = sanitizeString(item.linkedSourceId || '');
+      row[COL_RESPONSIBLE] = sanitizeString(item.responsible);
+      row[COL_RESP_SUBTYPE] = sanitizeString(item.responsibleSubtype || '');
+      row[COL_DETAILS] = sanitizeString(item.details || '');
+      row[COL_RESOLUTION] = '';
+      row[COL_COST] = '';
+      row[COL_IMAGE_URLS] = itemImageUrls.length > 0 ? itemImageUrls.join('|') : '';
+      row[COL_CASE_FOLDER] = caseFolderUrl;
+      row[COL_OR_FILES] = orFilesData.urls.join('|');
+      row[COL_OR_FOLDER] = orFilesData.folderUrl;
+      
+      rowsToInsert.push(row);
     });
 
     // ===== Second pass: Resolve temporary linkedSourceId to real itemId =====
     rowsToInsert.forEach(function(row, index) {
       var originalLinkedId = payload.items[index].linkedSourceId;
       if (originalLinkedId && tempIdToNewId[originalLinkedId]) {
-        row[11] = tempIdToNewId[originalLinkedId]; // Update column 11 (Linked Source ID)
+        row[COL_LINKED_ID] = tempIdToNewId[originalLinkedId];
       }
     });
 
@@ -836,20 +892,20 @@ function handleReadAll(payload) {
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const caseId = normalizeSheetText(row[1]);
+      const caseId = normalizeSheetText(row[COL_CASE_ID]);
       if (!caseId) continue;
 
-      const rawItemId = normalizeSheetText(row[0]);
-      const itemNumber = normalizeSheetText(row[4]);
-      const reason = normalizeSheetText(row[9]);
+      const rawItemId = normalizeSheetText(row[COL_ITEM_ID]);
+      const itemNumber = normalizeSheetText(row[COL_ITEM_NUMBER]);
+      const reason = normalizeSheetText(row[COL_REASON]);
       
       if (!seenItemIdsByCase[caseId]) {
         seenItemIdsByCase[caseId] = {};
       }
-
+ 
       const itemId = createStableReadItemId(caseId, rawItemId, itemNumber, reason, i, seenItemIdsByCase[caseId]);
 
-      const rawImageUrls = normalizeSheetText(row[18]);
+      const rawImageUrls = normalizeSheetText(row[COL_IMAGE_URLS]);
       let imageUrlsArray = rawImageUrls ? rawImageUrls.split('|').filter(function(u) { return u.trim() !== ''; }) : [];
       const imageKey = caseId + '|' + rawItemId;
       if (imgUrlMap.has(imageKey)) {
@@ -862,29 +918,36 @@ function handleReadAll(payload) {
       const item = {
         id: itemId,
         itemNumber: itemNumber,
-        itemName: normalizeSheetText(row[5]),
-        itemCode: normalizeSheetText(row[6]),
-        batchNo: normalizeSheetText(row[7]),
-        amount: normalizeSheetAmount(row[8]),
+        itemName: normalizeSheetText(row[COL_ITEM_NAME]),
+        itemCode: normalizeSheetText(row[COL_ITEM_CODE]),
+        batchNo: normalizeSheetText(row[COL_BATCH_NO]),
+        amount: normalizeSheetAmount(row[COL_AMOUNT]),
         reason: reason,
-        reasonSubtype: normalizeSheetText(row[10]),
-        linkedSourceId: normalizeSheetText(row[11]),
-        responsible: normalizeSheetText(row[12]),
-        responsibleSubtype: normalizeSheetText(row[13]),
-        details: normalizeSheetText(row[14]),
-        status: normalizeSheetText(row[17]) || 'Pending',
+        reasonSubtype: normalizeSheetText(row[COL_REASON_SUBTYPE]),
+        linkedSourceId: normalizeSheetText(row[COL_LINKED_ID]),
+        responsible: normalizeSheetText(row[COL_RESPONSIBLE]),
+        responsibleSubtype: normalizeSheetText(row[COL_RESP_SUBTYPE]),
+        details: normalizeSheetText(row[COL_DETAILS]),
+        customerName: normalizeSheetText(row[COL_CUSTOMER]),
+        status: normalizeSheetText(row[COL_STATUS]) || 'Pending',
         imageUrls: imageUrlsArray,
-        imageFolderUrl: normalizeSheetText(row[19] || row[18]),
+        imageFolderUrl: normalizeSheetText(row[COL_CASE_FOLDER]),
       };
+
+      const orFilesUrlsRaw = normalizeSheetText(row[COL_OR_FILES]);
+      const orFilesUrls = orFilesUrlsRaw ? orFilesUrlsRaw.split('|') : [];
 
       if (!caseMap.has(caseId)) {
         caseMap.set(caseId, {
           id: caseId,
-          date: normalizeSheetText(row[2]),
-          source: normalizeSheetText(row[3]),
-          resolutionMethod: normalizeSheetText(row[15]),
-          reworkCost: normalizeSheetAmount(row[16]),
-          status: normalizeSheetText(row[17]) || 'Pending',
+          date: normalizeSheetText(row[COL_TIMESTAMP]),
+          source: normalizeSheetText(row[COL_SOURCE]),
+          customerName: normalizeSheetText(row[COL_CUSTOMER]),
+          orFilesUrls: orFilesUrls,
+          orFolderUrl: normalizeSheetText(row[COL_OR_FOLDER]),
+          resolutionMethod: normalizeSheetText(row[COL_RESOLUTION]),
+          reworkCost: normalizeSheetAmount(row[COL_COST]),
+          status: normalizeSheetText(row[COL_STATUS]) || 'Pending',
           items: [item]
         });
       } else {
@@ -922,7 +985,7 @@ function handleUpdate(payload) {
     const data = sheet.getDataRange().getValues();
     const caseId = payload.caseId;
     const updates = payload.updates || {};
-    const userRole = (payload.userRole || '').toUpperCase();
+    const userRole = (payload.userRole || payload.authProfile || '').toUpperCase();
 
     if (!caseId) {
       return { success: false, error: 'Case ID is required' };
@@ -936,20 +999,35 @@ function handleUpdate(payload) {
     const isFinance = (userRole === 'FINANCE');
     const isWFG = (userRole === 'WFG');
 
-    // Indices (0-indexed)
-    const COL_DETAILS = 14;
-    const COL_RESOLUTION = 15;
-    const COL_COST = 16;
-    const COL_STATUS = 17;
+    const seenItemIdsByCase = {};
 
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === caseId) { 
+    const updatedItemIds = new Set((updates.items || []).map(function(u) { return u.id; }));
+    let deletedCount = 0;
+
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][COL_CASE_ID] === caseId) { 
         matchedRows++;
-        const currentItemId = data[i][0];
+        
+        const rawItemId = normalizeSheetText(data[i][COL_ITEM_ID]);
+        const itemNumber = normalizeSheetText(data[i][COL_ITEM_NUMBER]);
+        const reason = normalizeSheetText(data[i][COL_REASON]);
+        
+        if (!seenItemIdsByCase[caseId]) {
+          seenItemIdsByCase[caseId] = {};
+        }
+        
+        const currentItemId = createStableReadItemId(caseId, rawItemId, itemNumber, reason, i, seenItemIdsByCase[caseId]);
+        
+        // Handle Item Deletion: if item is missing from payload, delete it
+        if (isAdminOrQSMS && updates.items && !updatedItemIds.has(currentItemId)) {
+          sheet.deleteRow(i + 1);
+          deletedCount++;
+          continue; 
+        }
         
         // 0. Administrative Source Edit
         if (isAdminOrQSMS && updates.source) {
-          sheet.getRange(i + 1, 4).setValue(updates.source);
+          sheet.getRange(i + 1, COL_SOURCE + 1).setValue(updates.source);
         }
 
         // 1. Update Resolution Method (WFG or Admin/QSMS)
@@ -957,7 +1035,12 @@ function handleUpdate(payload) {
           if (isAdminOrQSMS || isWFG) {
             sheet.getRange(i + 1, COL_RESOLUTION + 1).setValue(updates.resolutionMethod);
             // Auto-update status to 'Awaiting Valuation' if method is set
-            if (updates.resolutionMethod.trim() !== '') {
+            // BUG FIX: Only auto-transition if NOT already 'Completed' or 'Awaiting Valuation'
+            const currentStatus = String(data[i][COL_STATUS] || '').trim();
+            if (updates.resolutionMethod.trim() !== '' && 
+                (!updates.status || !isAdminOrQSMS) && 
+                currentStatus !== 'Completed' && 
+                currentStatus !== 'Awaiting Valuation') {
               sheet.getRange(i + 1, COL_STATUS + 1).setValue('Awaiting Valuation');
             }
             updatedCount++;
@@ -971,7 +1054,7 @@ function handleUpdate(payload) {
           if (isAdminOrQSMS || isFinance) {
             sheet.getRange(i + 1, COL_COST + 1).setValue(updates.reworkCost);
             // Auto-update status to 'Completed' if cost is set
-            if (updates.reworkCost > 0) {
+            if (updates.reworkCost > 0 && (!updates.status || !isAdminOrQSMS)) {
               sheet.getRange(i + 1, COL_STATUS + 1).setValue('Completed');
             }
             updatedCount++;
@@ -980,15 +1063,26 @@ function handleUpdate(payload) {
           }
         }
 
-        // 3. Update Status (Admin/QSMS can override)
-        if (updates.status && isAdminOrQSMS) {
-          sheet.getRange(i + 1, COL_STATUS + 1).setValue(updates.status);
-          updatedCount++;
+        // 3. Update Status (Explicit or Flow-based)
+        if (updates.status) {
+          const currentStatus = String(data[i][COL_STATUS] || '').trim();
+          if (isAdminOrQSMS) {
+            sheet.getRange(i + 1, COL_STATUS + 1).setValue(updates.status);
+            updatedCount++;
+          } else if (isWFG) {
+            // WFG can move to In-Progress or Awaiting Valuation (if resolution added)
+            if (updates.status === 'In-Progress' || updates.status === 'Awaiting Valuation') {
+              sheet.getRange(i + 1, COL_STATUS + 1).setValue(updates.status);
+              updatedCount++;
+            }
+          } else if (isFinance && updates.status === 'Completed') {
+             sheet.getRange(i + 1, COL_STATUS + 1).setValue('Completed');
+             updatedCount++;
+          }
         }
 
         // 4. Update Item-specific fields
         if (updates.items && Array.isArray(updates.items)) {
-          // Find the update for this specific item ID
           const itemUpdate = updates.items.find(function(u) { return u.id === currentItemId; });
           
           if (itemUpdate) {
@@ -997,18 +1091,54 @@ function handleUpdate(payload) {
               updatedCount++;
             }
             
-            // Administrative Edit (Admin/QSMS can edit core fields)
+            // Administrative Edit
             if (isAdminOrQSMS) {
-              if (itemUpdate.itemNumber) sheet.getRange(i + 1, 5).setValue(itemUpdate.itemNumber);
-              if (itemUpdate.itemName) sheet.getRange(i + 1, 6).setValue(itemUpdate.itemName);
-              if (itemUpdate.itemCode) sheet.getRange(i + 1, 7).setValue(itemUpdate.itemCode);
-              if (itemUpdate.batchNo) sheet.getRange(i + 1, 8).setValue(itemUpdate.batchNo);
-              if (itemUpdate.amount !== undefined) sheet.getRange(i + 1, 9).setValue(itemUpdate.amount);
-              if (itemUpdate.reason) sheet.getRange(i + 1, 10).setValue(itemUpdate.reason);
-              if (itemUpdate.reasonSubtype !== undefined) sheet.getRange(i + 1, 11).setValue(itemUpdate.reasonSubtype);
-              if (itemUpdate.responsible) sheet.getRange(i + 1, 13).setValue(itemUpdate.responsible);
+              if (itemUpdate.customerName) sheet.getRange(i + 1, COL_CUSTOMER + 1).setValue(itemUpdate.customerName);
+              if (itemUpdate.itemNumber) sheet.getRange(i + 1, COL_ITEM_NUMBER + 1).setValue(itemUpdate.itemNumber);
+              if (itemUpdate.itemName) sheet.getRange(i + 1, COL_ITEM_NAME + 1).setValue(itemUpdate.itemName);
+              if (itemUpdate.itemCode) sheet.getRange(i + 1, COL_ITEM_CODE + 1).setValue(itemUpdate.itemCode);
+              if (itemUpdate.batchNo) sheet.getRange(i + 1, COL_BATCH_NO + 1).setValue(itemUpdate.batchNo);
+              if (itemUpdate.amount !== undefined) sheet.getRange(i + 1, COL_AMOUNT + 1).setValue(itemUpdate.amount);
+              if (itemUpdate.reason) sheet.getRange(i + 1, COL_REASON + 1).setValue(itemUpdate.reason);
+              if (itemUpdate.reasonSubtype !== undefined) sheet.getRange(i + 1, COL_REASON_SUBTYPE + 1).setValue(itemUpdate.reasonSubtype);
+              if (itemUpdate.responsible) sheet.getRange(i + 1, COL_RESPONSIBLE + 1).setValue(itemUpdate.responsible);
+              if (itemUpdate.responsibleSubtype !== undefined) sheet.getRange(i + 1, COL_RESP_SUBTYPE + 1).setValue(itemUpdate.responsibleSubtype);
+              if (itemUpdate.linkedSourceId !== undefined) sheet.getRange(i + 1, COL_LINKED_ID + 1).setValue(itemUpdate.linkedSourceId);
             }
           }
+        }
+
+        // 5. Update Customer Name
+        if (isAdminOrQSMS && updates.customerName !== undefined) {
+           sheet.getRange(i + 1, COL_CUSTOMER + 1).setValue(updates.customerName);
+           updatedCount++;
+        }
+      }
+    }
+
+    // 6. Upload OR Files ONCE outside the per-row loop
+    if (payload.orFiles && Array.isArray(payload.orFiles) && payload.orFiles.length > 0 && matchedRows > 0) {
+      var caseFolderIdForOr = null;
+      for (let j = 1; j < data.length; j++) {
+        if (data[j][COL_CASE_ID] === caseId && data[j][COL_CASE_FOLDER]) {
+          caseFolderIdForOr = extractDriveFileId(data[j][COL_CASE_FOLDER]);
+          break;
+        }
+      }
+      if (caseFolderIdForOr) {
+        var orFilesData = uploadORFilesToDrive(payload.orFiles, caseId, caseFolderIdForOr);
+        if (orFilesData.urls.length > 0) {
+          for (let j = 1; j < data.length; j++) {
+            if (data[j][COL_CASE_ID] === caseId) { 
+              var existingOrUrls = normalizeSheetText(data[j][COL_OR_FILES]);
+              var allUrls = existingOrUrls
+                ? existingOrUrls + '|' + orFilesData.urls.join('|')
+                : orFilesData.urls.join('|');
+              sheet.getRange(j + 1, COL_OR_FILES + 1).setValue(allUrls);
+              sheet.getRange(j + 1, COL_OR_FOLDER + 1).setValue(orFilesData.folderUrl);
+            }
+          }
+          updatedCount++;
         }
       }
     }
@@ -1020,7 +1150,7 @@ function handleUpdate(payload) {
 
     createBackup(sheet);
     if (lock) { lock.releaseLock(); lock = null; }
-    return { success: true, message: `Updated case ${caseId} successfully`, data: { updatedCount } };
+    return { success: true, message: `Updated case ${caseId} successfully. ${deletedCount > 0 ? 'Deleted ' + deletedCount + ' items.' : ''}`, data: { updatedCount, deletedCount } };
   } catch (error) {
     if (lock) lock.releaseLock();
     return { success: false, error: `Update failed: ${error.toString()}` };
@@ -1034,7 +1164,7 @@ function handleDelete(payload) {
   var lock;
   try {
     const caseId = payload.caseId;
-    const userRole = (payload.userRole || '').toUpperCase();
+    const userRole = (payload.userRole || payload.authProfile || '').toUpperCase();
 
     if (!(userRole === 'ADMIN' || userRole === 'QSMS')) {
       return { success: false, error: 'Permission denied: Only Admin or QSMS can delete cases' };
@@ -1048,8 +1178,13 @@ function handleDelete(payload) {
     
     // Iterate backwards to delete rows without affecting indices
     let deletedRows = 0;
+    let folderIdToDelete = null;
+    
     for (let i = data.length - 1; i >= 1; i--) {
-      if (data[i][1] === caseId) {
+      if (data[i][COL_CASE_ID] === caseId) {
+        if (!folderIdToDelete && data[i][COL_CASE_FOLDER]) {
+          folderIdToDelete = extractDriveFileId(data[i][COL_CASE_FOLDER]);
+        }
         sheet.deleteRow(i + 1);
         deletedRows++;
       }
@@ -1058,6 +1193,30 @@ function handleDelete(payload) {
     if (deletedRows === 0) {
       if (lock) lock.releaseLock();
       return { success: false, error: `Case ID not found: ${caseId}` };
+    }
+
+    // Clean up Img_Url sheet
+    try {
+      const imgUrlSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(IMG_URL_SHEET_NAME);
+      if (imgUrlSheet) {
+        const imgData = imgUrlSheet.getDataRange().getValues();
+        for (let i = imgData.length - 1; i >= 1; i--) {
+          if (imgData[i][0] === caseId) {
+            imgUrlSheet.deleteRow(i + 1);
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log('Error cleaning Img_Url sheet: ' + e);
+    }
+
+    // Clean up Drive folder
+    if (folderIdToDelete) {
+      try {
+        DriveApp.getFolderById(folderIdToDelete).setTrashed(true);
+      } catch (e) {
+        Logger.log('Error trashing Drive folder: ' + e);
+      }
     }
 
     createBackup(sheet);
@@ -1092,11 +1251,11 @@ function handleDashboardStats(payload) {
     const caseStats = new Map();
 
     for (let i = 1; i < data.length; i++) {
-      const caseId = String(data[i][1] || '').trim();
-      const status = String(data[i][17] || 'Pending').trim(); // New status index
-      const reason = String(data[i][9] || '').trim(); // New reason index
-      const linkedSourceId = String(data[i][11] || '').trim(); // New linkedSourceId index
-      const source = String(data[i][3] || '').trim();
+      const caseId = String(data[i][COL_CASE_ID] || '').trim();
+      const status = String(data[i][COL_STATUS] || 'Pending').trim();
+      const reason = String(data[i][COL_REASON] || '').trim();
+      const linkedSourceId = String(data[i][COL_LINKED_ID] || '').trim();
+      const source = String(data[i][COL_SOURCE] || '').trim();
 
       if (!caseId) continue;
 
@@ -1198,6 +1357,22 @@ function generateCaseId(existingCaseIds) {
 }
 
 /**
+ * Creates a stable item ID during read if one is missing or for consistency.
+ */
+function createStableReadItemId(caseId, rawItemId, itemNumber, reason, rowIdx, seenMap) {
+  let id = rawItemId || "";
+  
+  // If no ID or duplicate ID found in this case, generate a virtual one
+  if (!id || seenMap[id]) {
+    const suffix = (rowIdx + 1).toString().padStart(3, '0');
+    id = caseId + "-" + suffix;
+  }
+  
+  seenMap[id] = true;
+  return id;
+}
+
+/**
  * Create a backup of the current sheet data
  */
 function createBackup(sourceSheet) {
@@ -1230,49 +1405,32 @@ function createBackup(sourceSheet) {
 function initializeSheet() {
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-    const headers = [
-      'Item ID',
-      'Case ID',
-      'Date',
-      'Source',
-      'Item Number',
-      'Item Name',
-      'Item Code',
-      'Batch no.',
-      'Amount (Box)',
-      'Reason',
-      'Reason Subtype',
-      'Linked Source ID',
-      'Responsible',
-      'Responsible Subtype',
-      'Details',
-      'Resolution Method',
-      'Rework Cost',
-      'Status',
-      'Image URLs',
-      'Image Folder URL'
-    ];
-    const firstRow = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
-    const headerMismatch = headers.some(function(header, index) {
-      return String(firstRow[index] || '').trim() !== header;
-    });
+    if (!sheet) {
+      getOrCreateSheet(SHEET_NAME, MAIN_HEADERS);
+    } else {
+      const firstRow = sheet.getRange(1, 1, 1, MAIN_HEADERS.length).getValues()[0];
+      const headerMismatch = MAIN_HEADERS.some(function(header, index) {
+        return String(firstRow[index] || '').trim() !== header;
+      });
 
-    if (headerMismatch) {
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      const headerRange = sheet.getRange(1, 1, 1, headers.length);
-      headerRange.setFontWeight('bold');
-      headerRange.setBackground('#000000');
-      headerRange.setFontColor('#FFFFFF');
-      Logger.log('Rework Cases sheet header synced');
+      if (headerMismatch) {
+        applyHeaderFormatting(sheet, MAIN_HEADERS);
+        Logger.log('Rework Cases sheet header synced via initializeSheet');
+      }
     }
 
     getOrCreateSheet(IMG_URL_SHEET_NAME, ['Case ID', 'Item ID', 'Item Index', 'Image Index', 'Image URL', 'Case Folder URL']);
+    getOrCreateSheet(ITEM_MASTER_SHEET_NAME, ['Item Number', 'Item Name']);
   } catch (error) {
     Logger.log('Initialization error: ' + error);
   }
 }
 
 /**
+ * ⚠️ DEPRECATED — DO NOT RUN on data created after Customer Name migration (2026-05-13).
+ * ฟังก์ชันนี้ออกแบบมาสำหรับ schema เก่า (ก่อนย้าย Customer Name ไปที่ column 5)
+ * การรันกับ data ใหม่จะทำให้ข้อมูล shift ผิด column และเสียหายทั้ง sheet
+ *
  * ฟังก์ชันสำหรับแก้ไขข้อมูลที่เลื่อนคอลัมน์ (Data Shift)
  * หากคุณมีข้อมูลเก่าและเพิ่มคอลัมน์ "Batch no." เข้าไปใหม่ ข้อมูลเดิมจะเบี้ยว
  * ให้รันฟังก์ชันนี้หนึ่งครั้งเพื่อดันข้อมูลให้ตรงล็อก
@@ -1655,4 +1813,134 @@ function uploadImageToDrive(base64Data, itemId, folderId) {
     Logger.log('❌ Upload failed for ' + itemId + ': ' + error.toString());
     return null;
   }
+}
+
+/**
+ * อัพโหลดไฟล์ OR (Excel, PDF, PNG)
+ */
+function uploadORFilesToDrive(orFilesBase64, caseId, caseFolderId) {
+  if (!orFilesBase64 || !Array.isArray(orFilesBase64) || orFilesBase64.length === 0) return { urls: [], folderUrl: '' };
+  
+  try {
+    const parentFolder = DriveApp.getFolderById(caseFolderId);
+    let orFolder;
+    const existingFolders = parentFolder.getFoldersByName('OR_Files');
+    if (existingFolders.hasNext()) {
+      orFolder = existingFolders.next();
+    } else {
+      orFolder = parentFolder.createFolder('OR_Files');
+    }
+
+    const fileUrls = [];
+    orFilesBase64.forEach((base64Data, index) => {
+      let mimeType = 'application/octet-stream';
+      let extension = '';
+      
+      if (base64Data.includes('image/png')) { mimeType = 'image/png'; extension = '.png'; }
+      else if (base64Data.includes('application/pdf')) { mimeType = 'application/pdf'; extension = '.pdf'; }
+      else if (base64Data.includes('spreadsheet') || base64Data.includes('excel')) { mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; extension = '.xlsx'; }
+
+      let base64Content = base64Data;
+      if (base64Data.includes(',')) {
+        base64Content = base64Data.split(',')[1];
+      }
+
+      const decodedBytes = Utilities.base64Decode(base64Content);
+      const blob = Utilities.newBlob(decodedBytes, mimeType);
+      const filename = 'OR_File_' + caseId + '_' + (index + 1) + '_' + new Date().getTime() + extension;
+      blob.setName(filename);
+      
+      const file = orFolder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      fileUrls.push(file.getUrl());
+    });
+
+    return {
+      urls: fileUrls,
+      folderUrl: orFolder.getUrl()
+    };
+  } catch (error) {
+    Logger.log('❌ OR Upload error: ' + error.toString());
+    return { urls: [], folderUrl: '' };
+  }
+}
+
+/**
+ * Migration helper to reorder existing data to the new column structure
+ * Run this ONCE if you have existing data and want to update to the new structure.
+ */
+function standardizeSheetStructure() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return "Sheet not found";
+  
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) {
+    // Just update headers
+    sheet.getRange(1, 1, 1, MAIN_HEADERS.length).setValues([MAIN_HEADERS]);
+    return "Updated headers for empty sheet";
+  }
+  
+  const oldHeaders = data[0];
+  const oldData = data.slice(1);
+  const newData = [];
+  
+  // Mapping of old column names to old indices
+  const colMap = {};
+  oldHeaders.forEach((header, index) => {
+    colMap[String(header).trim()] = index;
+  });
+  
+  // Create new data based on COL_ constants mapping
+  oldData.forEach(oldRow => {
+    const newRow = new Array(MAIN_HEADERS.length).fill('');
+    
+    // Manual mapping for safety
+    const mapping = {
+      'Timestamp': COL_TIMESTAMP,
+      'Status': COL_STATUS,
+      'Source': COL_SOURCE,
+      'Customer Name': COL_CUSTOMER,
+      'Case ID': COL_CASE_ID,
+      'Item ID': COL_ITEM_ID,
+      'Item Number': COL_ITEM_NUMBER,
+      'Item Name': COL_ITEM_NAME,
+      'Item Code': COL_ITEM_CODE,
+      'Batch No': COL_BATCH_NO,
+      'Amount': COL_AMOUNT,
+      'Reason': COL_REASON,
+      'Reason Subtype': COL_REASON_SUBTYPE,
+      'Linked Source ID': COL_LINKED_ID,
+      'Responsible': COL_RESPONSIBLE,
+      'Responsible Subtype': COL_RESP_SUBTYPE,
+      'Details': COL_DETAILS,
+      'Resolution Method': COL_RESOLUTION,
+      'Rework Cost': COL_COST,
+      'Image URLs': COL_IMAGE_URLS,
+      'Case Folder URL': COL_CASE_FOLDER,
+      'OR Files': COL_OR_FILES,
+      'OR Folder URL': COL_OR_FOLDER
+    };
+    
+    Object.keys(mapping).forEach(header => {
+      const oldIndex = colMap[header];
+      if (oldIndex !== undefined) {
+        newRow[mapping[header]] = oldRow[oldIndex];
+      }
+    });
+    
+    newData.push(newRow);
+  });
+  
+  // Clear and rewrite
+  sheet.clear();
+  sheet.getRange(1, 1, 1, MAIN_HEADERS.length).setValues([MAIN_HEADERS]);
+  sheet.getRange(2, 1, newData.length, MAIN_HEADERS.length).setValues(newData);
+  
+  // Format headers
+  sheet.getRange(1, 1, 1, MAIN_HEADERS.length)
+    .setFontWeight('bold')
+    .setBackground('#000000')
+    .setFontColor('#FFFFFF');
+    
+  return "Migration completed successfully";
 }

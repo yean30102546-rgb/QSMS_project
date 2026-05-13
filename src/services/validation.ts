@@ -25,6 +25,7 @@ export interface ReworkItemValidationInput {
   reasonSubtype?: string;
   responsibleSubtype?: string;
   linkedSourceId?: string;
+  customerName?: string;
 }
 
 export function validateItemNumber(value: string | number): ValidationError | null {
@@ -133,6 +134,8 @@ export function validateReworkItem(item: ReworkItemValidationInput): ValidationR
       ? { field: 'reasonSubtype', message: `กรุณาระบุรูปแบบการ${item.reason}` } : null,
     (item.responsible === 'SFC' || item.responsible === 'Supplier') && !String(item.responsibleSubtype || '').trim()
       ? { field: 'responsibleSubtype', message: 'กรุณาระบุหน่วยงานที่รับผิดชอบ' } : null,
+    !String(item.customerName || '').trim()
+      ? { field: 'customerName', message: 'Customer Name is required' } : null,
   ].filter((error): error is ValidationError => Boolean(error));
 
   return {

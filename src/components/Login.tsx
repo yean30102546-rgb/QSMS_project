@@ -172,14 +172,13 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
           </form>
 
           <div className="mt-8 text-center text-sm text-slate-500 space-y-2">
-            <p>ชื่อผู้ใช้งานตัวอย่าง: QSMS หรือ WFG</p>
+            <p>ชื่อผู้ใช้งานตัวอย่าง: QSMS หรือ WFG หรือ FINANCE</p>
             <p>หากต้องการแก้ไขบัญชี ให้ปรับค่าใน Google Apps Script Properties</p>
           </div>
 
           <div className="mt-16 pt-8 border-t border-slate-100 flex flex-col items-center gap-6">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-              SFC Excellence System V4.2.0
-            </p>
+              SFC Excellence System V4.2.0           </p>
           </div>
         </motion.div>
       </div>

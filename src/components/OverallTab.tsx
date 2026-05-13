@@ -3,19 +3,11 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Calendar, Filter, Plus, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { useOverallFilters } from '../hooks/useOverallFilters';
+import { CaseStatistics } from '../utils/helpers';
 import type { ReworkCase } from '../services/api';
 import { CaseListTable } from './CaseListTable';
 import { Pagination } from './Pagination';
 import { Tooltip } from './Tooltip';
-
-interface OverallStats {
-  total: number;
-  pending: number;
-  inProgress: number;
-  awaitingValuation: number;
-  completed: number;
-  completionRate: number;
-}
 
 interface OverallTabProps {
   cases: ReworkCase[];
@@ -25,7 +17,7 @@ interface OverallTabProps {
   setSearchQuery: (query: string) => void;
   loadCases: () => void;
   openUpdateModal: (caseItem: ReworkCase) => void;
-  stats: OverallStats;
+  stats: CaseStatistics;
   userRole?: string;
   userName?: string;
 }
@@ -88,7 +80,14 @@ export function OverallTab({
                 })}
               </p>
               <h1 className="text-2xl font-bold tracking-normal text-foreground md:text-3xl">
-                สวัสดี {userRole.toUpperCase()}
+                สวัสดี {
+                  userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
+                  userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
+                  userRole.toLowerCase() === 'wfg' ? 'แผนก WFG' :
+                  userRole.toLowerCase() === 'finance' ? 'แผนกการเงิน' :
+                  userRole.toLowerCase() === 'management' ? 'ฝ่ายบริหาร' :
+                  userRole.toUpperCase()
+                }
               </h1>
             </div>
             <div className="flex items-center gap-2">

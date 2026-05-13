@@ -139,79 +139,6 @@ export async function loginWithGoogle(credentialResponse: GoogleCredentialRespon
     success: false,
     error: 'Google login is disabled until tokens are verified by the GAS backend.',
   };
-
-  try {
-    // Extract JWT from Google's credential response
-    const googleToken = credentialResponse.credential;
-
-    if (!googleToken) {
-      return {
-        success: false,
-        error: 'No Google token received',
-      };
-    }
-
-    // Decode the JWT (in production: verify with backend)
-    // Google JWT structure: header.payload.signature
-    const parts = googleToken.split('.');
-    if (parts.length !== 3) {
-      return {
-        success: false,
-        error: 'Invalid Google token format',
-      };
-    }
-
-    // Decode payload (add padding if needed)
-    const payload = parts[1];
-    const decodedPayload = JSON.parse(
-      atob(payload + '='.repeat((4 - (payload.length % 4)) % 4))
-    );
-
-    const { email, name, picture } = decodedPayload;
-
-    if (!email) {
-      return {
-        success: false,
-        error: 'Email is required for authentication',
-      };
-    }
-
-    // TODO: Verify Google token with backend
-    // POST to /api/auth/verify-google-token
-
-    // For now, accept any Google user and assign role
-    // In production: validate against company domain & fetch user role from backend
-    const user: User = {
-      email,
-      name: name || 'Google User',
-      role: UserRole.WFG, // Default role - fetch from backend in production
-      avatar: picture,
-    };
-
-    // Generate token (in production: receive from backend)
-    const token = generateSecureToken(email, 'GOOGLE');
-    const expiresIn = AUTH_CONFIG.tokenExpiryHours * 3600; // Convert to seconds
-
-    // Store securely
-    storeAuthData(token, user, expiresIn);
-
-    console.log('✅ Google login successful:', email);
-
-    return {
-      success: true,
-      data: {
-        token,
-        user,
-        expiresIn,
-      },
-    };
-  } catch (error) {
-    console.error('❌ Google authentication error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Google authentication failed',
-    };
-  }
 }
 
 /**
@@ -399,42 +326,6 @@ export async function refreshToken(): Promise<AuthResponse> {
     success: false,
     error: 'Token refresh is not available. Please login again.',
   };
-
-  try {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      return {
-        success: false,
-        error: 'No user session found',
-      };
-    }
-
-    // In production: call backend refresh endpoint
-    // const response = await fetch('/api/auth/refresh', {
-    //   method: 'POST',
-    //   headers: { 'Authorization': `Bearer ${getToken()}` },
-    // });
-
-    const user = currentUser;
-    const token = generateSecureToken(user.email, user.name);
-    const expiresIn = AUTH_CONFIG.tokenExpiryHours * 3600;
-
-    storeAuthData(token, user, expiresIn);
-
-    return {
-      success: true,
-      data: {
-        token,
-        user,
-        expiresIn,
-      },
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Token refresh failed',
-    };
-  }
 }
 
 /**

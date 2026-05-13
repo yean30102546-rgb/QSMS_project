@@ -18,7 +18,7 @@ interface CaseListTableProps {
 }
 
 function getDeadlineStatus(caseDate: string, status: ReworkCase['status']): 'warning' | 'danger' | null {
-  if (status === 'Completed') return null;
+  if (status === 'Completed' || status === 'Awaiting Valuation') return null;
   const daysSince = Math.floor((Date.now() - new Date(caseDate).getTime()) / (1000 * 60 * 60 * 24));
   if (daysSince > 30) return 'danger';
   if (daysSince > 7) return 'warning';
@@ -27,13 +27,14 @@ function getDeadlineStatus(caseDate: string, status: ReworkCase['status']): 'war
 
 function formatTimestamp(dateString: string): string {
   const date = new Date(dateString);
-  const bkk = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-  const diffMs = now.getTime() - bkk.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const now = new Date();
+  
+  const todayDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const targetDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const diffDays = Math.floor((todayDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) {
-    return bkk.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   }
   if (diffDays === 1) {
     return 'เมื่อวาน';
@@ -42,7 +43,7 @@ function formatTimestamp(dateString: string): string {
     return `${diffDays} วันที่แล้ว`;
   }
 
-  return bkk.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('th-TH', { month: 'short', day: 'numeric', timeZone: 'Asia/Bangkok' });
 }
 
 export function CaseListTable({
@@ -157,6 +158,11 @@ interface CaseRowProps {
 function CaseRow({ caseItem, onClick }: CaseRowProps) {
   const deadlineStatus = getDeadlineStatus(caseItem.date, caseItem.status);
   const firstItem = caseItem.items[0];
+  const totalAmount = caseItem.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const multipleItems = caseItem.items.length > 1;
+  const itemNameDisplay = multipleItems 
+    ? `${firstItem?.itemName || 'N/A'} (+${caseItem.items.length - 1} รายการ)` 
+    : firstItem?.itemName || 'N/A';
 
   return (
     <div
@@ -171,7 +177,7 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
     >
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-medium text-foreground">{firstItem?.itemName || 'N/A'}</div>
+          <div className="text-sm font-medium text-foreground">{itemNameDisplay}</div>
           {deadlineStatus === 'warning' && (
             <div className="flex items-center gap-1 text-xs text-orange-600" title="งานค้างเกิน 7 วัน">
               <Clock size={12} />
@@ -185,14 +191,33 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
             </div>
           )}
         </div>
-        <div className="mt-1 text-[12px] text-muted">
-          {formatTimestamp(caseItem.date)} &bull; แหล่งที่มา: <span className="font-bold">{caseItem.source}</span> &bull;{' '}
+        <div className="mt-1 flex items-center gap-2 text-[12px] text-muted">
+          <span>{formatTimestamp(caseItem.date)}</span>
+          <span>&bull;</span>
+          <span>แหล่งที่มา: <span className="font-bold">{caseItem.source}</span></span>
+          {caseItem.items.length > 0 && (
+            <>
+              <span>&bull;</span>
+              <span className="font-bold text-slate-600">
+                {caseItem.items[0].customerName || '-'}
+                {new Set(caseItem.items.map(i => i.customerName)).size > 1 ? ' (หลายลูกค้า)' : ''}
+              </span>
+            </>
+          )}
+          <span>&bull;</span>
           <span className="font-mono text-accent">{caseItem.id}</span>
+          
+          {caseItem.items.every(i => i.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-black text-red-600 border border-red-200">
+              <AlertCircle size={10} />
+              ขาดไฟล์ OR
+            </span>
+          )}
         </div>
       </div>
 
       <div className="mr-8 text-right">
-        <p className="text-xs font-bold text-foreground">{firstItem?.amount || 0} กล่อง</p>
+        <p className="text-xs font-bold text-foreground">{totalAmount} กล่อง</p>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">{firstItem?.reason || 'ไม่ระบุ'}</p>
       </div>
 

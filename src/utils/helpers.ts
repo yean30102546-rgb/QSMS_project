@@ -169,7 +169,8 @@ export function filterCasesByQuery(cases: ReworkCase[], query: string): ReworkCa
         String(item.itemCode || '').toLowerCase().includes(lowerQuery) ||
         String(item.reason || '').toLowerCase().includes(lowerQuery) ||
         String(item.responsible || '').toLowerCase().includes(lowerQuery) ||
-        String(item.details || '').toLowerCase().includes(lowerQuery)
+        String(item.details || '').toLowerCase().includes(lowerQuery) ||
+        String(item.customerName || '').toLowerCase().includes(lowerQuery)
       )
   );
 }

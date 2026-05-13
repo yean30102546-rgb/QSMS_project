@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X } from 'lucide-react';
 
 import type { ReworkItem } from '../services/api';
+import { CUSTOMER_OPTIONS } from '../services/api';
 import { ImageUpload } from './ImageUpload';
 
 type SaveMessage = {
@@ -26,6 +27,8 @@ interface AddCaseTabProps {
   updateFormItem: (id: string, field: string, value: string | number) => void;
   handleImagesSelected: (itemId: string, files: File[]) => void;
   uploadedImages: Record<string, File[]>;
+  orFiles: File[];
+  setOrFiles: (files: File[]) => void;
   handleCheckItemNumber: (id: string) => void;
   handleItemNumberBlur: (id: string) => void;
   handleSubmit: () => void;
@@ -54,6 +57,8 @@ const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };
+ 
+// CUSTOMER_OPTIONS moved to api.ts
 
 export function AddCaseTab({
   caseSource,
@@ -64,6 +69,8 @@ export function AddCaseTab({
   updateFormItem,
   handleImagesSelected,
   uploadedImages,
+  orFiles,
+  setOrFiles,
   handleCheckItemNumber,
   handleItemNumberBlur,
   handleSubmit,
@@ -77,6 +84,14 @@ export function AddCaseTab({
 }: AddCaseTabProps) {
   const [expandedReasonSelection, setExpandedReasonSelection] = useState<string | null>(null);
   const [expandedResponsibleSelection, setExpandedResponsibleSelection] = useState<string | null>(null);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (orFiles.length === 0 && fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [orFiles]);
 
   const handleSelectionModalChoose = (value: string) => {
     if (!selectionModal) return;
@@ -125,6 +140,7 @@ export function AddCaseTab({
 
   const handleResponsibleChange = (itemId: string, responsible: string) => {
     updateFormItem(itemId, 'responsible', responsible);
+    updateFormItem(itemId, 'responsibleSubtype', '');
     if (responsible !== 'SFC' && responsible !== 'Supplier') {
       setExpandedResponsibleSelection((prev) => (prev === itemId ? null : prev));
     }
@@ -175,7 +191,61 @@ export function AddCaseTab({
                 <option>Customer</option>
               </select>
             </div>
+
           </div>
+
+          {formItems.length > 0 && formItems.every(item => item.customerName === 'OR') && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-6 border-t border-slate-100 pt-6"
+            >
+              <div className="rounded-2xl bg-amber-50 p-6 border border-amber-100">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                    <HelpCircle size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-amber-900">เอกสารสำหรับ OR (Optional)</h4>
+                    <p className="text-[11px] text-amber-700/80">แนบไฟล์ Excel, PDF หรือ PNG (สูงสุด 2 ไฟล์)</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-4">
+                    <div className="flex-1 min-w-[240px]">
+                      <input 
+                        ref={fileInputRef}
+                        type="file" 
+                        multiple 
+                        accept=".xlsx,.xls,.pdf,.png"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setOrFiles(files.slice(0, 2));
+                        }}
+                        className="block w-full text-sm text-slate-500
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-full file:border-0
+                          file:text-sm file:font-semibold
+                          file:bg-amber-100 file:text-amber-700
+                          hover:file:bg-amber-200"
+                      />
+                   </div>
+                   {orFiles.length > 0 && (
+                     <div className="flex gap-2 items-center">
+                        {orFiles.map((file, i) => (
+                          <div key={i} className="px-3 py-1 bg-white border border-amber-200 rounded-lg text-xs font-medium text-amber-800 flex items-center gap-2">
+                            {file.name}
+                            <button onClick={() => setOrFiles(orFiles.filter((_, idx) => idx !== i))} className="text-amber-400 hover:text-amber-600">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+                     </div>
+                   )}
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -261,6 +331,23 @@ export function AddCaseTab({
                   placeholder="เช่น 240510"
                   disabled={isSaving}
                 />
+              </div>
+
+              <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">ชื่อลูกค้า (Customer Name) *</label>
+                  <select
+                    value={item.customerName || ''}
+                    onChange={(e) => updateFormItem(item.id, 'customerName', e.target.value)}
+                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                    disabled={isSaving}
+                  >
+                    <option value="">กรุณาเลือก</option>
+                    {CUSTOMER_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">

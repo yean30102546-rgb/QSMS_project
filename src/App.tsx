@@ -100,6 +100,7 @@ const initialFormItem: ReworkItem = {
   details: '',
   imageUrls: [],
   linkedSourceId: '',
+  customerName: '',
 };
 
 /**
@@ -115,6 +116,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
   const [itemMaster, setItemMaster] = useState<Map<string, string>>(new Map());
   const [isLoadingMaster, setIsLoadingMaster] = useState(true);
   const [caseSource, setCaseSource] = useState('SFC');
+  const [orFiles, setOrFiles] = useState<File[]>([]);
   const [formItems, setFormItems] = useState<ReworkItem[]>([
     { ...initialFormItem }
   ]);
@@ -237,11 +239,12 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
       for (const item of newItemsToSave) {
         await saveItemToMaster(item.itemNumber.trim(), item.itemName);
       }
-      const result = await insertCase(caseSource, formItems, uploadedImages);
+      const result = await insertCase(caseSource, formItems, uploadedImages, orFiles);
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
         setFormItems([{ ...initialFormItem }]);
         setUploadedImages({});
+        setOrFiles([]);
         await loadCases();
         setTimeout(() => setSaveMessage(null), 4000);
       } else {
@@ -320,6 +323,8 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         updateFormItem={updateFormItem}
         handleImagesSelected={(id, files) => setUploadedImages(prev => ({ ...prev, [id]: files }))}
         uploadedImages={uploadedImages}
+        orFiles={orFiles}
+        setOrFiles={setOrFiles}
         handleCheckItemNumber={handleCheckItemNumber}
         handleItemNumberBlur={(id) => handleCheckItemNumber(id, false)}
         handleSubmit={handleSubmit}

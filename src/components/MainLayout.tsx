@@ -54,6 +54,7 @@ interface MainLayoutProps {
     awaitingValuation: number;
     completed: number;
     completionRate: number;
+    linkedCount: number;
   };
   caseSource: string;
   setCaseSource: (source: string) => void;
@@ -66,6 +67,8 @@ interface MainLayoutProps {
   handleCheckItemNumber: (id: string) => void;
   handleItemNumberBlur: (id: string) => void;
   handleSubmit: () => void;
+  orFiles: File[];
+  setOrFiles: (files: File[]) => void;
   isSaving: boolean;
   saveMessage: SaveMessage;
   isSaveDisabled: (items: ReworkItem[]) => boolean;
@@ -110,6 +113,8 @@ export function MainLayout({
   updateFormItem,
   handleImagesSelected,
   uploadedImages,
+  orFiles,
+  setOrFiles,
   handleCheckItemNumber,
   handleItemNumberBlur,
   handleSubmit,
@@ -289,6 +294,8 @@ export function MainLayout({
                     updateFormItem={updateFormItem}
                     handleImagesSelected={handleImagesSelected}
                     uploadedImages={uploadedImages}
+                    orFiles={orFiles}
+                    setOrFiles={setOrFiles}
                     handleCheckItemNumber={handleCheckItemNumber}
                     handleItemNumberBlur={handleItemNumberBlur}
                     handleSubmit={handleSubmit}

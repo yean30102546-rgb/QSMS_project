@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2 } from 'lucide-react';
-import { ReworkCase } from '../services/api';
+import { ReworkCase, CUSTOMER_OPTIONS } from '../services/api';
 import { formatThaiDate } from '../utils/helpers';
 import { useExportReport } from '../hooks/useExportReport';
 import { ExportTemplate } from './ExportTemplate';
@@ -42,6 +42,10 @@ export function UpdateModal({
 
   // Delete Confirmation State
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // New Fields
+  const [newOrFiles, setNewOrFiles] = useState<File[]>([]);
 
   const userRole = getCurrentUserRole();
   const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.QSMS;
@@ -73,48 +77,57 @@ export function UpdateModal({
       setReworkCost(caseData.reworkCost || '');
       setEditedSource(caseData.source);
       setEditedItems([...caseData.items]);
+      setNewOrFiles([]);
     }
   }, [caseData]);
 
   const handleUpdate = async () => {
     if (!caseData) return;
 
-    const updates: Partial<ReworkCase> = {
-      status: caseStatus,
-    };
+    const updates: Partial<ReworkCase> & { newOrFiles?: File[] } = {};
 
     // Auto-transition logic based on role and current state
-    if (caseData.status === 'Pending' || caseData.status === 'In-Progress') {
-      // If resolution is provided, move to Awaiting Valuation
-      if (resolutionMethod.trim() !== '') {
-        updates.status = 'Awaiting Valuation';
-        updates.resolutionMethod = resolutionMethod;
-      } else if (caseStatus === 'In-Progress') {
-        // If they manually picked In-Progress
-        updates.status = 'In-Progress';
-      } else if (caseData.status === 'Pending' && !isEditMode) {
-        // Default to In-Progress if Admin/WFG opens and saves a Pending case
-        updates.status = 'In-Progress';
-      }
-    } else if (caseData.status === 'Awaiting Valuation') {
-      // Finance logic
-      if (isFinance && reworkCost !== '' && Number(reworkCost) > 0) {
-        updates.status = 'Completed';
-        updates.reworkCost = Number(reworkCost);
-      }
-    }
-
-    // Always send items if they've been edited (even by WFG)
-    if (isAdmin || isWFG) {
-      updates.items = editedItems;
-    }
-
-    // Administrative Overrides (persisting source)
-    if (isEditMode && isAdmin) {
+    if (isAdmin) {
+      // Admin can manually override status via the selector
+      updates.status = caseStatus;
       updates.source = editedSource;
       if (resolutionMethod.trim() !== '') updates.resolutionMethod = resolutionMethod;
       if (reworkCost !== '') updates.reworkCost = Number(reworkCost);
-      updates.status = caseStatus; // Admin can manually override status
+      updates.items = editedItems;
+    } else {
+      // Flow-based transitions for WFG and Finance
+      if (caseData.status === 'Pending') {
+        if (resolutionMethod.trim() !== '') {
+          updates.status = 'Awaiting Valuation';
+        } else {
+          updates.status = 'In-Progress';
+        }
+      } else if (caseData.status === 'In-Progress') {
+        if (resolutionMethod.trim() !== '') {
+          updates.status = 'Awaiting Valuation';
+        }
+      } else if (caseData.status === 'Awaiting Valuation') {
+        if (reworkCost !== '' && Number(reworkCost) > 0) {
+          updates.status = 'Completed';
+        }
+      }
+
+      if (resolutionMethod.trim() !== '') {
+        updates.resolutionMethod = resolutionMethod;
+      }
+      
+      if (reworkCost !== '' && (isFinance || isAdmin)) {
+        updates.reworkCost = Number(reworkCost);
+      }
+
+      if (isWFG || isAdmin) {
+        updates.items = editedItems;
+      }
+    }
+
+    // Handle OR Files in updates
+    if (newOrFiles.length > 0) {
+      updates.newOrFiles = newOrFiles;
     }
 
     await onUpdate(caseData.id, updates);
@@ -252,6 +265,50 @@ export function UpdateModal({
                             <StatusBadge status={caseData.status} />
                           </div>
                         </div>
+
+                        {/* Customer Row */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-200/50">
+                           <div className="col-span-1">
+                              <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">ลูกค้า</p>
+                              <p className="text-sm font-bold text-slate-400 italic">แยกตามรายการ</p>
+                           </div>
+                           {(editedItems.every(i => i.customerName === 'OR')) && (
+                             <div className="col-span-3">
+                                <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">เอกสาร OR</p>
+                                <div className="flex flex-wrap gap-2">
+                                   {caseData.orFilesUrls && caseData.orFilesUrls.map((url, i) => (
+                                     <a 
+                                       key={i} 
+                                       href={url} 
+                                       target="_blank" 
+                                       rel="noopener noreferrer"
+                                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200 hover:bg-amber-100 transition-colors"
+                                     >
+                                       <ExternalLink size={12} />
+                                       ไฟล์ OR {i + 1}
+                                     </a>
+                                   ))}
+                                   {(!caseData.orFilesUrls || caseData.orFilesUrls.length === 0) && !isEditMode && (
+                                     <span className="text-xs text-red-500 font-bold italic">ยังไม่มีการแนบไฟล์</span>
+                                   )}
+                                   {isEditMode && (
+                                     <div className="flex items-center gap-3">
+                                        <input 
+                                          type="file" 
+                                          multiple 
+                                          accept=".xlsx,.xls,.pdf,.png"
+                                          onChange={(e) => setNewOrFiles(Array.from(e.target.files || []).slice(0, 2))}
+                                          className="text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-accent file:text-white"
+                                        />
+                                        {newOrFiles.length > 0 && (
+                                          <span className="text-[10px] text-accent font-bold">เลือก {newOrFiles.length} ไฟล์ใหม่</span>
+                                        )}
+                                     </div>
+                                   )}
+                                </div>
+                             </div>
+                           )}
+                        </div>
                       </div>
                     )}
 
@@ -287,20 +344,41 @@ export function UpdateModal({
                                             placeholder="ชื่อรายการ"
                                             className="w-full text-sm font-bold px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
                                           />
-                                          <input 
-                                            value={item.itemNumber} 
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], itemNumber: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            placeholder="Item Number / Batch"
-                                            className="w-full text-[10px] font-mono font-bold px-3 py-1 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                          />
+                                          <div className="flex gap-2">
+                                            <input 
+                                              value={item.itemNumber} 
+                                              onChange={(e) => {
+                                                const newItems = [...editedItems];
+                                                newItems[index] = { ...newItems[index], itemNumber: e.target.value };
+                                                setEditedItems(newItems);
+                                              }}
+                                              placeholder="Item Number / Batch"
+                                              className="flex-1 text-[10px] font-mono font-bold px-3 py-1 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                            />
+                                            <select
+                                              value={item.customerName || ''}
+                                              onChange={(e) => {
+                                                const newItems = [...editedItems];
+                                                newItems[index] = { ...newItems[index], customerName: e.target.value };
+                                                setEditedItems(newItems);
+                                              }}
+                                              className="w-24 text-[10px] font-bold border border-slate-200 rounded-lg bg-white px-2 py-1"
+                                            >
+                                              <option value="">ลูกค้า</option>
+                                              {CUSTOMER_OPTIONS.map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                              ))}
+                                            </select>
+                                          </div>
                                         </div>
                                       ) : (
                                         <>
-                                          <p className="text-sm font-bold text-foreground">{item.itemName || item.itemNumber}</p>
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-foreground">{item.itemName || item.itemNumber}</p>
+                                            <span className="px-1.5 py-0.5 rounded bg-slate-200 text-[8px] font-black uppercase text-slate-600">
+                                              {item.customerName || 'N/A'}
+                                            </span>
+                                          </div>
                                           <p className="text-[10px] text-muted font-bold">{item.itemCode}</p>
                                         </>
                                       )}
@@ -310,10 +388,11 @@ export function UpdateModal({
                                         <div className="flex items-center gap-2">
                                           <input 
                                             type="number"
-                                            value={item.amount}
+                                            value={item.amount === undefined || item.amount === null || item.amount.toString() === 'NaN' ? '' : item.amount}
                                             onChange={(e) => {
                                               const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], amount: Number(e.target.value) };
+                                              const val = e.target.value;
+                                              newItems[index] = { ...newItems[index], amount: val === '' ? '' as any : Number(val) };
                                               setEditedItems(newItems);
                                             }}
                                             className="w-16 px-2 py-1 text-center text-[10px] font-bold border border-slate-200 rounded-lg bg-white"
@@ -554,12 +633,13 @@ export function UpdateModal({
                       <motion.button
                         type="button"
                         onClick={handleUpdate}
-                        disabled={
-                          isLoading || 
-                          !caseData || 
-                          (caseData.status === 'Awaiting Valuation' && !isFinance) ||
-                          ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isWFG)
-                        }
+                        disabled={(() => {
+                          if (isLoading || !caseData) return true;
+                          if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
+                          if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isWFG) return true;
+                          if (caseData.status === 'Completed' && !isAdmin) return true;
+                          return false;
+                        })()}
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
                         className="px-8 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:bg-slate-900 active:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
