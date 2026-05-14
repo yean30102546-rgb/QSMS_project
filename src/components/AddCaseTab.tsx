@@ -274,42 +274,61 @@ export function AddCaseTab({
                 )}
               </div>
 
-              <div className="mb-6 space-y-2">
-                <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                  หมายเลขรายการ (Item Number) *
-                </label>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={item.itemNumber}
-                    onChange={(e) => updateFormItem(item.id, 'itemNumber', e.target.value)}
-                    onBlur={() => handleItemNumberBlur(item.id)}
-                    placeholder="เช่น 60001234A"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="space-y-2">
+                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">ชื่อลูกค้า (Customer Name) *</label>
+                  <select
+                    value={item.customerName || ''}
+                    onChange={(e) => updateFormItem(item.id, 'customerName', e.target.value)}
+                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
                     disabled={isSaving}
-                    className="flex-1 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
-                  />
-                  <motion.button
-                    type="button"
-                    onClick={() => handleCheckItemNumber(item.id)}
-                    disabled={isSaving || !item.itemNumber.trim()}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.15 }}
-                    className="will-change-transform whitespace-nowrap rounded-xl border-2 border-amber-600 bg-amber-50 px-6 py-3 text-xs font-bold text-amber-700 shadow-sm hover:bg-amber-100 active:bg-amber-200 disabled:cursor-not-allowed disabled:border-opacity-50 disabled:opacity-50"
                   >
-                    ตรวจสอบ
-                  </motion.button>
+                    <option value="">กรุณาเลือก</option>
+                    {CUSTOMER_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                    หมายเลขรายการ (Item Number) *
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={item.itemNumber}
+                      onChange={(e) => updateFormItem(item.id, 'itemNumber', e.target.value)}
+                      onBlur={() => handleItemNumberBlur(item.id)}
+                      placeholder="เช่น 60001234A"
+                      disabled={isSaving}
+                      className="flex-1 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
+                    />
+                    <motion.button
+                      type="button"
+                      onClick={() => handleCheckItemNumber(item.id)}
+                      disabled={isSaving || !item.itemNumber.trim()}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.15 }}
+                      className="will-change-transform whitespace-nowrap rounded-xl border-2 border-amber-600 bg-amber-50 px-6 py-3 text-xs font-bold text-amber-700 shadow-sm hover:bg-amber-100 active:bg-amber-200 disabled:cursor-not-allowed disabled:border-opacity-50 disabled:opacity-50"
+                    >
+                      ตรวจสอบ
+                    </motion.button>
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-4">
-                <InputField
-                  label="ชื่อรายการ (Item Name) *"
-                  value={item.itemName}
-                  onChange={(v) => updateFormItem(item.id, 'itemName', v)}
-                  placeholder="เช่น Bottle Plastic 250ml"
-                  disabled={isSaving}
-                />
+              <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-5">
+                <div className="md:col-span-2">
+                  <InputField
+                    label="ชื่อรายการ (Item Name) *"
+                    value={item.itemName}
+                    onChange={(v) => updateFormItem(item.id, 'itemName', v)}
+                    placeholder="เช่น Bottle Plastic 250ml"
+                    disabled={isSaving}
+                  />
+                </div>
                 <InputField
                   label="รหัสสินค้า (Item Code)"
                   value={item.itemCode}
@@ -331,23 +350,6 @@ export function AddCaseTab({
                   placeholder="เช่น 240510"
                   disabled={isSaving}
                 />
-              </div>
-
-              <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">ชื่อลูกค้า (Customer Name) *</label>
-                  <select
-                    value={item.customerName || ''}
-                    onChange={(e) => updateFormItem(item.id, 'customerName', e.target.value)}
-                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-                    disabled={isSaving}
-                  >
-                    <option value="">กรุณาเลือก</option>
-                    {CUSTOMER_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">

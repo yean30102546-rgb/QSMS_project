@@ -268,9 +268,15 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
       setIsModalLoading(true);
       const result = await updateCase(caseId, updates);
       if (result.success) {
-        // Always refetch from source of truth to avoid 'ghost' updates
-        await loadCases();
+        // Optimistic local state update for fast UI
+        setCases(prevCases => prevCases.map(c => 
+          c.id === caseId ? { ...c, ...updates as any } : c
+        ));
+        
         setIsModalOpen(false);
+        
+        // Background refresh to ensure sync with backend (folders, etc.)
+        loadCases();
       } else {
         console.error('Update failed:', result.error);
         alert(`บันทึกไม่สำเร็จ: ${result.error}`);

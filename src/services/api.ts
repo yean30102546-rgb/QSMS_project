@@ -4,6 +4,7 @@
  */
 
 import { getCurrentUser, getToken } from './auth';
+import { compressImage } from '../utils/imageCompressionUtils';
 
 // ⚠️ GAS URL ต้องถูกตั้งค่าจาก App.tsx หรือ environment
 const envGasUrl = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
@@ -59,6 +60,7 @@ export interface ReworkItem {
   batchNo?: string;
   linkedSourceId?: string;
   customerName?: string;
+  uid?: string; // Stable unique ID from backend
 }
 
 export const CUSTOMER_OPTIONS = [
@@ -196,13 +198,17 @@ export async function insertCase(
   try {
     // แปลงไฟล์รูปภาพทั้งหมดเป็น Base64 ก่อนส่ง (เพื่อให้ GAS.txt รับได้)
     const processedItems = await Promise.all(items.map(async (item) => {
-      const base64Images = imageData && imageData[item.id]
-        ? await Promise.all(imageData[item.id].map(fileToBase64))
-        : [];
+      const files = imageData && imageData[item.id] ? imageData[item.id] : [];
+      
+      const base64Images = await Promise.all(files.map(async (file) => {
+        const compression = await compressImage(file, { maxSizeMB: 0.3 }); // Target 300KB
+        const fileToConvert = compression.success ? compression.compressedFile! : file;
+        return await fileToBase64(fileToConvert);
+      }));
 
       console.log(`📸 Processing images for ${item.itemNumber}:`, {
         itemId: item.id,
-        fileCount: imageData?.[item.id]?.length || 0,
+        fileCount: files.length,
         base64Count: base64Images.length,
         sampleBase64: base64Images[0]?.substring(0, 50) || 'none'
       });
@@ -326,6 +332,7 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
       batchNo: normalizeString(item.batchNo || item.batch_no),
       linkedSourceId: normalizeString(item.linkedSourceId || item.linked_source_id),
       customerName: normalizeString(item.customerName),
+      uid: normalizeString(item.uid),
     };
   });
 }
@@ -376,13 +383,17 @@ export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
  */
 export async function updateCase(
   caseId: string,
-  updates: Partial<ReworkCase> & { newOrFiles?: File[] }
+  updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[] }
 ): Promise<ApiResponse> {
   try {
     // Process OR files if they exist in updates
     let processedOrFiles: string[] = [];
     if (updates.newOrFiles && updates.newOrFiles.length > 0) {
-      processedOrFiles = await Promise.all(updates.newOrFiles.map(fileToBase64));
+      processedOrFiles = await Promise.all(updates.newOrFiles.map(async (file) => {
+        const compression = await compressImage(file, { maxSizeMB: 0.3 });
+        const fileToConvert = compression.success ? compression.compressedFile! : file;
+        return await fileToBase64(fileToConvert);
+      }));
     }
 
     // Prepare the payload, excluding the raw File objects

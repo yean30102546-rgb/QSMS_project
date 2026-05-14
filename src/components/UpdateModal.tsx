@@ -39,6 +39,7 @@ export function UpdateModal({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedSource, setEditedSource] = useState('');
   const [editedItems, setEditedItems] = useState<ReworkCase['items']>([]);
+  const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
 
   // Delete Confirmation State
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -77,6 +78,7 @@ export function UpdateModal({
       setReworkCost(caseData.reworkCost || '');
       setEditedSource(caseData.source);
       setEditedItems([...caseData.items]);
+      setDeletedItemIds([]);
       setNewOrFiles([]);
     }
   }, [caseData]);
@@ -84,50 +86,52 @@ export function UpdateModal({
   const handleUpdate = async () => {
     if (!caseData) return;
 
-    const updates: Partial<ReworkCase> & { newOrFiles?: File[] } = {};
+    const updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[] } = {};
 
-    // Auto-transition logic based on role and current state
-    if (isAdmin) {
-      // Admin can manually override status via the selector
-      updates.status = caseStatus;
-      updates.source = editedSource;
-      if (resolutionMethod.trim() !== '') updates.resolutionMethod = resolutionMethod;
-      if (reworkCost !== '') updates.reworkCost = Number(reworkCost);
-      updates.items = editedItems;
-    } else {
-      // Flow-based transitions for WFG and Finance
+    // Unified status transition logic
+    let targetStatus = isAdmin ? caseStatus : caseData.status;
+
+    // Auto-transition rules (apply if not explicitly overridden by admin to a NEW status)
+    const isExplicitAdminOverride = isAdmin && caseStatus !== caseData.status;
+
+    if (!isExplicitAdminOverride) {
       if (caseData.status === 'Pending') {
         if (resolutionMethod.trim() !== '') {
-          updates.status = 'Awaiting Valuation';
-        } else {
-          updates.status = 'In-Progress';
+          targetStatus = 'Awaiting Valuation';
+        } else if (!isAdmin) {
+          // Non-admins move to In-Progress just by opening/viewing/saving notes
+          targetStatus = 'In-Progress';
         }
       } else if (caseData.status === 'In-Progress') {
         if (resolutionMethod.trim() !== '') {
-          updates.status = 'Awaiting Valuation';
+          targetStatus = 'Awaiting Valuation';
         }
       } else if (caseData.status === 'Awaiting Valuation') {
         if (reworkCost !== '' && Number(reworkCost) > 0) {
-          updates.status = 'Completed';
+          targetStatus = 'Completed';
         }
       }
+    }
 
-      if (resolutionMethod.trim() !== '') {
-        updates.resolutionMethod = resolutionMethod;
-      }
-      
-      if (reworkCost !== '' && (isFinance || isAdmin)) {
-        updates.reworkCost = Number(reworkCost);
-      }
+    updates.status = targetStatus;
+    updates.resolutionMethod = resolutionMethod;
+    updates.source = editedSource;
+    
+    if (reworkCost !== '') {
+      updates.reworkCost = Number(reworkCost);
+    }
 
-      if (isWFG || isAdmin) {
-        updates.items = editedItems;
-      }
+    if (isWFG || isAdmin) {
+      updates.items = editedItems;
     }
 
     // Handle OR Files in updates
     if (newOrFiles.length > 0) {
       updates.newOrFiles = newOrFiles;
+    }
+
+    if (deletedItemIds.length > 0) {
+      updates.deleteItemIds = deletedItemIds;
     }
 
     await onUpdate(caseData.id, updates);
@@ -159,6 +163,13 @@ export function UpdateModal({
       return;
     }
     if (window.confirm('คุณต้องการลบรายการย่อยนี้ใช่หรือไม่?')) {
+      const itemToDelete = editedItems[index];
+      const idToDelete = itemToDelete.uid || itemToDelete.id;
+      
+      if (idToDelete) {
+        setDeletedItemIds(prev => [...prev, idToDelete]);
+      }
+      
       const newItems = editedItems.filter((_, i) => i !== index);
       setEditedItems(newItems);
     }
@@ -333,81 +344,114 @@ export function UpdateModal({
                                     </span>
                                     <div className="flex-1">
                                       {isEditMode ? (
-                                        <div className="flex flex-col gap-2">
-                                          <input 
-                                            value={item.itemName} 
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], itemName: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            placeholder="ชื่อรายการ"
-                                            className="w-full text-sm font-bold px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                          />
-                                          <div className="flex gap-2">
-                                            <input 
-                                              value={item.itemNumber} 
-                                              onChange={(e) => {
-                                                const newItems = [...editedItems];
-                                                newItems[index] = { ...newItems[index], itemNumber: e.target.value };
-                                                setEditedItems(newItems);
-                                              }}
-                                              placeholder="Item Number / Batch"
-                                              className="flex-1 text-[10px] font-mono font-bold px-3 py-1 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                            />
-                                            <select
-                                              value={item.customerName || ''}
-                                              onChange={(e) => {
-                                                const newItems = [...editedItems];
-                                                newItems[index] = { ...newItems[index], customerName: e.target.value };
-                                                setEditedItems(newItems);
-                                              }}
-                                              className="w-24 text-[10px] font-bold border border-slate-200 rounded-lg bg-white px-2 py-1"
-                                            >
-                                              <option value="">ลูกค้า</option>
-                                              {CUSTOMER_OPTIONS.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                              ))}
-                                            </select>
+                                        <div className="flex flex-col gap-3">
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">ชื่อรายการ (Item Name)</label>
+                                              <input 
+                                                value={item.itemName} 
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], itemName: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="ชื่อรายการ"
+                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                              />
+                                            </div>
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">ลูกค้า (Customer)</label>
+                                              <select
+                                                value={item.customerName || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], customerName: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                className="w-full text-sm font-bold border border-slate-200 rounded-lg bg-white px-3 py-2 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                              >
+                                                <option value="">เลือกสีลูกค้า</option>
+                                                {CUSTOMER_OPTIONS.map(opt => (
+                                                  <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Item Number / Batch</label>
+                                              <input 
+                                                value={item.itemNumber} 
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], itemNumber: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="6000..."
+                                                className="w-full text-sm font-mono font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                              />
+                                            </div>
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Item Code</label>
+                                              <input 
+                                                value={item.itemCode || ''} 
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], itemCode: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="4000..."
+                                                className="w-full text-sm font-mono font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                              />
+                                            </div>
                                           </div>
                                         </div>
                                       ) : (
-                                        <>
+                                        <div className="space-y-1">
                                           <div className="flex items-center gap-2">
-                                            <p className="text-sm font-bold text-foreground">{item.itemName || item.itemNumber}</p>
+                                            <p className="text-sm font-bold text-foreground">{item.itemName}</p>
                                             <span className="px-1.5 py-0.5 rounded bg-slate-200 text-[8px] font-black uppercase text-slate-600">
                                               {item.customerName || 'N/A'}
                                             </span>
                                           </div>
-                                          <p className="text-[10px] text-muted font-bold">{item.itemCode}</p>
-                                        </>
+                                          <div className="flex items-center gap-3">
+                                            <p className="text-[10px] text-muted font-bold">SN: <span className="text-foreground">{item.itemNumber}</span></p>
+                                            <p className="text-[10px] text-muted font-bold">Code: <span className="text-foreground">{item.itemCode}</span></p>
+                                          </div>
+                                        </div>
                                       )}
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
                                       {isEditMode ? (
-                                        <div className="flex items-center gap-2">
-                                          <input 
-                                            type="number"
-                                            value={item.amount === undefined || item.amount === null || item.amount.toString() === 'NaN' ? '' : item.amount}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              const val = e.target.value;
-                                              newItems[index] = { ...newItems[index], amount: val === '' ? '' as any : Number(val) };
-                                              setEditedItems(newItems);
-                                            }}
-                                            className="w-16 px-2 py-1 text-center text-[10px] font-bold border border-slate-200 rounded-lg bg-white"
-                                          />
-                                          <button
-                                            type="button"
-                                            onClick={() => handleRemoveItem(index)}
-                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="ลบรายการย่อย"
-                                          >
-                                            <Trash2 size={16} />
-                                          </button>
+                                        <div className="flex flex-col items-end gap-2">
+                                          <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-muted uppercase tracking-wider block text-right">จำนวน</label>
+                                            <div className="flex items-center gap-2">
+                                              <input 
+                                                type="number"
+                                                value={item.amount === undefined || item.amount === null || item.amount.toString() === 'NaN' ? '' : item.amount}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  const val = e.target.value;
+                                                  newItems[index] = { ...newItems[index], amount: val === '' ? '' as any : Number(val) };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                className="w-20 px-2 py-1.5 text-center text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => handleRemoveItem(index)}
+                                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                title="ลบรายการย่อย"
+                                              >
+                                                <Trash2 size={18} />
+                                              </button>
+                                            </div>
+                                          </div>
                                         </div>
                                       ) : (
-                                        <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-600">
+                                        <span className="px-3 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-700 shadow-sm">
                                           {item.amount} ชิ้น
                                         </span>
                                       )}

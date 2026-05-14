@@ -44,13 +44,14 @@ const COL_IMAGE_URLS = 19;
 const COL_CASE_FOLDER = 20;
 const COL_OR_FILES = 21;
 const COL_OR_FOLDER = 22;
+const COL_UID = 23;
 
 const MAIN_HEADERS = [
   'Timestamp', 'Status', 'Source', 'Customer Name', 'Case ID', 'Item ID', 
   'Item Number', 'Item Name', 'Item Code', 'Batch No', 'Amount', 
   'Reason', 'Reason Subtype', 'Linked Source ID', 'Responsible', 
   'Responsible Subtype', 'Details', 'Resolution Method', 'Rework Cost', 
-  'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL'
+  'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL', 'UID'
 ];
 
 // ===== AUTHENTICATION SETTINGS =====
@@ -324,6 +325,22 @@ function validateResponsible(responsible) {
 }
 
 /**
+ * Validate CustomerName (required)
+ */
+function validateCustomerName(customerName) {
+  if (!customerName) {
+    return { valid: false, error: 'Customer Name is required' };
+  }
+  
+  const str = String(customerName).trim();
+  if (str.length === 0) {
+    return { valid: false, error: 'Customer Name cannot be empty' };
+  }
+  
+  return { valid: true };
+}
+
+/**
  * Sanitize string input
  */
 function sanitizeString(input) {
@@ -361,6 +378,9 @@ function validateItem(item) {
   
   const responsibleCheck = validateResponsible(item.responsible);
   if (!responsibleCheck.valid) errors.push(responsibleCheck.error);
+
+  const customerCheck = validateCustomerName(item.customerName);
+  if (!customerCheck.valid) errors.push(customerCheck.error);
   
   return {
     valid: errors.length === 0,
@@ -711,7 +731,7 @@ function handleInsert(payload) {
     const existingCaseIds = new Set();
     const lastRow = sheet.getLastRow();
     if (lastRow > 1) {
-      const existingRows = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+      const existingRows = sheet.getRange(2, COL_CASE_ID + 1, lastRow - 1, 1).getValues();
       existingRows.forEach(function(row) {
         const id = String(row[0] || '').trim();
         if (id) {
@@ -801,6 +821,8 @@ function handleInsert(payload) {
       row[COL_CASE_FOLDER] = caseFolderUrl;
       row[COL_OR_FILES] = orFilesData.urls.join('|');
       row[COL_OR_FOLDER] = orFilesData.folderUrl;
+      // Use item.uid if provided (e.g. from a clone or retry), otherwise generate a fresh UUID
+      row[COL_UID] = item.uid || Utilities.getUuid();
       
       rowsToInsert.push(row);
     });
@@ -932,6 +954,7 @@ function handleReadAll(payload) {
         status: normalizeSheetText(row[COL_STATUS]) || 'Pending',
         imageUrls: imageUrlsArray,
         imageFolderUrl: normalizeSheetText(row[COL_CASE_FOLDER]),
+        uid: normalizeSheetText(row[COL_UID] || itemId)
       };
 
       const orFilesUrlsRaw = normalizeSheetText(row[COL_OR_FILES]);
@@ -1018,8 +1041,9 @@ function handleUpdate(payload) {
         
         const currentItemId = createStableReadItemId(caseId, rawItemId, itemNumber, reason, i, seenItemIdsByCase[caseId]);
         
-        // Handle Item Deletion: if item is missing from payload, delete it
-        if (isAdminOrQSMS && updates.items && !updatedItemIds.has(currentItemId)) {
+        // Handle Item Deletion: ONLY delete if explicitly requested in deleteItemIds array
+        const deleteIds = updates.deleteItemIds || [];
+        if (isAdminOrQSMS && deleteIds.length > 0 && (deleteIds.includes(currentItemId) || (data[i][COL_UID] && deleteIds.includes(data[i][COL_UID])))) {
           sheet.deleteRow(i + 1);
           deletedCount++;
           continue; 
@@ -1083,7 +1107,10 @@ function handleUpdate(payload) {
 
         // 4. Update Item-specific fields
         if (updates.items && Array.isArray(updates.items)) {
-          const itemUpdate = updates.items.find(function(u) { return u.id === currentItemId; });
+          const itemUpdate = updates.items.find(function(u) { 
+            // Match by UID (New stable method) or fallback to generated currentItemId
+            return (u.uid && u.uid === normalizeSheetText(data[i][COL_UID])) || (u.id === currentItemId); 
+          });
           
           if (itemUpdate) {
             if (itemUpdate.details !== undefined) {
@@ -1096,7 +1123,7 @@ function handleUpdate(payload) {
               if (itemUpdate.customerName) sheet.getRange(i + 1, COL_CUSTOMER + 1).setValue(itemUpdate.customerName);
               if (itemUpdate.itemNumber) sheet.getRange(i + 1, COL_ITEM_NUMBER + 1).setValue(itemUpdate.itemNumber);
               if (itemUpdate.itemName) sheet.getRange(i + 1, COL_ITEM_NAME + 1).setValue(itemUpdate.itemName);
-              if (itemUpdate.itemCode) sheet.getRange(i + 1, COL_ITEM_CODE + 1).setValue(itemUpdate.itemCode);
+              if (itemUpdate.itemCode !== undefined) sheet.getRange(i + 1, COL_ITEM_CODE + 1).setValue(itemUpdate.itemCode);
               if (itemUpdate.batchNo) sheet.getRange(i + 1, COL_BATCH_NO + 1).setValue(itemUpdate.batchNo);
               if (itemUpdate.amount !== undefined) sheet.getRange(i + 1, COL_AMOUNT + 1).setValue(itemUpdate.amount);
               if (itemUpdate.reason) sheet.getRange(i + 1, COL_REASON + 1).setValue(itemUpdate.reason);
@@ -1104,6 +1131,11 @@ function handleUpdate(payload) {
               if (itemUpdate.responsible) sheet.getRange(i + 1, COL_RESPONSIBLE + 1).setValue(itemUpdate.responsible);
               if (itemUpdate.responsibleSubtype !== undefined) sheet.getRange(i + 1, COL_RESP_SUBTYPE + 1).setValue(itemUpdate.responsibleSubtype);
               if (itemUpdate.linkedSourceId !== undefined) sheet.getRange(i + 1, COL_LINKED_ID + 1).setValue(itemUpdate.linkedSourceId);
+              
+              // Ensure UID is persisted if missing
+              if (!data[i][COL_UID]) {
+                sheet.getRange(i + 1, COL_UID + 1).setValue(itemUpdate.uid || Utilities.getUuid());
+              }
             }
           }
         }
@@ -1943,4 +1975,81 @@ function standardizeSheetStructure() {
     .setFontColor('#FFFFFF');
     
   return "Migration completed successfully";
+}
+
+/**
+ * Migrate data written by the OLD GAS_IMPROVED.gs (13-column schema)
+ * to the current 23-column schema.
+ * 
+ * Old schema (GAS_IMPROVED.gs):
+ *   [0] Item ID  [1] Case ID  [2] Date  [3] Source  [4] Item Number
+ *   [5] Item Name  [6] Item Code  [7] Amount  [8] Reason
+ *   [9] Responsible  [10] Details  [11] Status  [12] Image URLs
+ * 
+ * Detection: If row[0] starts with "RW" (Item ID format) instead of
+ *   being a timestamp, and row[1] also starts with "RW" (Case ID),
+ *   it's old schema data.
+ * 
+ * Run this ONCE from GAS editor to fix existing old-format rows.
+ */
+function migrateFromOldSchema() {
+  var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return 'Sheet not found';
+  
+  var data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return 'No data rows to migrate';
+  
+  var migratedCount = 0;
+  var skippedCount = 0;
+  
+  // Start from row index 1 (skip header)
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var col0 = String(row[0] || '').trim();
+    var col1 = String(row[1] || '').trim();
+    
+    // Detect old schema: col[0] = ItemID (starts with 'RW'), col[1] = CaseID (starts with 'RW')
+    // New schema: col[0] = Timestamp (date string), col[1] = Status (Pending/In-Progress/etc.)
+    var isOldSchema = col0.indexOf('RW') === 0 && col1.indexOf('RW') === 0;
+    
+    if (!isOldSchema) {
+      skippedCount++;
+      continue;
+    }
+    
+    // Map old schema values to new schema positions
+    var newRow = new Array(MAIN_HEADERS.length);
+    for (var k = 0; k < newRow.length; k++) newRow[k] = '';
+    
+    newRow[COL_TIMESTAMP]      = row[2] || '';               // Old[2] Date -> Timestamp
+    newRow[COL_STATUS]         = row[11] || 'Pending';       // Old[11] Status -> Status
+    newRow[COL_SOURCE]         = String(row[3] || '').trim(); // Old[3] Source -> Source
+    newRow[COL_CUSTOMER]       = '';                          // Not in old schema
+    newRow[COL_CASE_ID]        = col1;                        // Old[1] Case ID -> Case ID
+    newRow[COL_ITEM_ID]        = col0;                        // Old[0] Item ID -> Item ID
+    newRow[COL_ITEM_NUMBER]    = String(row[4] || '').trim(); // Old[4] Item Number
+    newRow[COL_ITEM_NAME]      = String(row[5] || '').trim(); // Old[5] Item Name
+    newRow[COL_ITEM_CODE]      = String(row[6] || '').trim(); // Old[6] Item Code
+    newRow[COL_BATCH_NO]       = '';                          // Not in old schema
+    newRow[COL_AMOUNT]         = row[7] !== undefined ? row[7] : 0; // Old[7] Amount
+    newRow[COL_REASON]         = String(row[8] || '').trim(); // Old[8] Reason
+    newRow[COL_REASON_SUBTYPE] = '';                          // Not in old schema
+    newRow[COL_LINKED_ID]      = '';                          // Not in old schema
+    newRow[COL_RESPONSIBLE]    = String(row[9] || '').trim(); // Old[9] Responsible
+    newRow[COL_RESP_SUBTYPE]   = '';                          // Not in old schema
+    newRow[COL_DETAILS]        = String(row[10] || '').trim();// Old[10] Details
+    newRow[COL_RESOLUTION]     = '';
+    newRow[COL_COST]           = '';
+    newRow[COL_IMAGE_URLS]     = String(row[12] || '').trim();// Old[12] Image URLs
+    newRow[COL_CASE_FOLDER]    = '';
+    newRow[COL_OR_FILES]       = '';
+    newRow[COL_OR_FOLDER]      = '';
+    
+    // Write the migrated row back (1-indexed: i+1 for row, 1 for column A)
+    sheet.getRange(i + 1, 1, 1, newRow.length).setValues([newRow]);
+    migratedCount++;
+  }
+  
+  Logger.log('Migration complete: ' + migratedCount + ' rows migrated, ' + skippedCount + ' rows skipped (already new schema)');
+  return 'Migrated ' + migratedCount + ' rows, skipped ' + skippedCount + ' rows';
 }

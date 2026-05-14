@@ -561,25 +561,27 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { label: 'รอดำเนินการ', count: stats.pending, color: 'amber', icon: <AlertCircle size={20} /> },
             { label: 'กำลังดำเนินการ', count: stats.inProgress, color: 'blue', icon: <Clock size={20} /> },
+            { label: 'รอประเมินราคา', count: stats.awaitingValuation, color: 'purple', icon: <Banknote size={20} /> },
             { label: 'เสร็จสิ้น', count: stats.completed, color: 'emerald', icon: <CheckCircle2 size={20} /> },
           ].map(({ label, count, color, icon }) => {
             const percentage = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
             const colorClasses: Record<string, string> = {
               amber: 'bg-amber-50 text-amber-600 border-amber-100',
               blue: 'bg-blue-50 text-blue-600 border-blue-100',
+              purple: 'bg-purple-50 text-purple-600 border-purple-100',
               emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
             };
             return (
               <div key={label} className={`flex items-center gap-4 p-4 rounded-2xl border ${colorClasses[color]}`}>
-                <div className={`p-3 rounded-xl bg-white shadow-sm`}>
+                <div className={`p-3 rounded-xl bg-white shadow-sm shrink-0`}>
                   {icon}
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-muted mb-0.5">{label}</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-muted mb-0.5 truncate">{label}</p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-black text-slate-900">{count}</span>
                     <span className="text-xs font-bold text-slate-500">{percentage}%</span>
