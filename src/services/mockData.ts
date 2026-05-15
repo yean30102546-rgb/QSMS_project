@@ -19,7 +19,7 @@ export const MOCK_CASES = [
         reason: 'รั่ว',
         reasonSubtype: 'รั่วซึม',
         responsible: 'SFC',
-        responsibleSubtype: 'WFG',
+        responsibleSubtype: 'PDB',
         details: 'Leak detected in cap assembly',
       },
     ],

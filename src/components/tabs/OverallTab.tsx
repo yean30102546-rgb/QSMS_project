@@ -2,12 +2,12 @@ import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Calendar, Filter, Plus, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
 
-import { useOverallFilters } from '../hooks/useOverallFilters';
-import { CaseStatistics } from '../utils/helpers';
-import type { ReworkCase } from '../services/api';
-import { CaseListTable } from './CaseListTable';
-import { Pagination } from './Pagination';
-import { Tooltip } from './Tooltip';
+import { useOverallFilters } from '../../hooks/useOverallFilters';
+import { CaseStatistics } from '../../utils/helpers';
+import type { ReworkCase } from '../../services/api';
+import { CaseListTable } from '../ui/CaseListTable';
+import { Pagination } from '../ui/Pagination';
+import { Tooltip } from '../ui/Tooltip';
 
 interface OverallTabProps {
   cases: ReworkCase[];
@@ -83,7 +83,7 @@ export function OverallTab({
                 สวัสดี {
                   userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
                   userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
-                  userRole.toLowerCase() === 'wfg' ? 'แผนก WFG' :
+                  userRole.toLowerCase() === 'pdb' ? 'แผนก PDB' :
                   userRole.toLowerCase() === 'finance' ? 'แผนกการเงิน' :
                   userRole.toLowerCase() === 'management' ? 'ฝ่ายบริหาร' :
                   userRole.toUpperCase()

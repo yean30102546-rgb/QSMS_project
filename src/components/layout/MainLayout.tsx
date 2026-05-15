@@ -2,21 +2,21 @@ import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu } from 'lucide-react';
 
-import type { ReworkCase, ReworkItem } from '../services/api';
-import type { User } from '../services/auth';
+import type { ReworkCase, ReworkItem } from '../../services/api';
+import type { User } from '../../services/auth';
 
 const OverallTab = React.lazy(async () => {
-  const mod = await import('./OverallTab');
+  const mod = await import('../tabs/OverallTab');
   return { default: mod.OverallTab };
 });
 
 const AddCaseTab = React.lazy(async () => {
-  const mod = await import('./AddCaseTab');
+  const mod = await import('../tabs/AddCaseTab');
   return { default: mod.AddCaseTab };
 });
 
 const DashboardTab = React.lazy(async () => {
-  const mod = await import('./DashboardTab');
+  const mod = await import('../tabs/DashboardTab');
   return { default: mod.DashboardTab };
 });
 
@@ -65,7 +65,7 @@ interface MainLayoutProps {
   handleImagesSelected: (itemId: string, files: File[]) => void;
   uploadedImages: Record<string, File[]>;
   handleCheckItemNumber: (id: string) => void;
-  handleItemNumberBlur: (id: string) => void;
+  handleAutoFillBlur: (id: string) => void;
   handleSubmit: () => void;
   orFiles: File[];
   setOrFiles: (files: File[]) => void;
@@ -116,7 +116,7 @@ export function MainLayout({
   orFiles,
   setOrFiles,
   handleCheckItemNumber,
-  handleItemNumberBlur,
+  handleAutoFillBlur,
   handleSubmit,
   isSaving,
   saveMessage,
@@ -297,7 +297,7 @@ export function MainLayout({
                     orFiles={orFiles}
                     setOrFiles={setOrFiles}
                     handleCheckItemNumber={handleCheckItemNumber}
-                    handleItemNumberBlur={handleItemNumberBlur}
+                    handleAutoFillBlur={handleAutoFillBlur}
                     handleSubmit={handleSubmit}
                     isSaving={isSaving}
                     saveMessage={saveMessage}

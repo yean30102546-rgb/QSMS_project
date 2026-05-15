@@ -58,6 +58,9 @@ export interface ReworkItem {
   imageFolderUrl?: string; // URL ของ folder ใน Google Drive ที่เก็บรูปทั้งหมดของ case นี้
   status?: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
   batchNo?: string;
+  packagingDate?: string;
+  mold?: string;
+  line?: string;
   linkedSourceId?: string;
   customerName?: string;
   uid?: string; // Stable unique ID from backend
@@ -138,7 +141,7 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
   try {
     const currentUser = getCurrentUser();
     const tokenPayload = parseTokenPayload(token);
-    // CRITICAL: Must use ROLE (ADMIN, WFG, etc.) not Name for authProfile
+    // CRITICAL: Must use ROLE (ADMIN, PDB, etc.) not Name for authProfile
     const authProfile = String(tokenPayload?.profile || currentUser?.role || '').trim().toUpperCase();
     const authEmail = currentUser?.email
       ? String(currentUser.email).trim()
@@ -225,6 +228,9 @@ export async function insertCase(
         responsibleSubtype: item.responsibleSubtype || '',
         details: item.details || '',
         batchNo: item.batchNo || '',
+        packagingDate: item.packagingDate || '',
+        mold: item.mold || '',
+        line: item.line || '',
         linkedSourceId: item.linkedSourceId || '',
         customerName: item.customerName || '',
         images: base64Images // ส่งเป็น Array ของ string (base64)
@@ -330,6 +336,9 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
       imageUrls,
       imageFolderUrl: normalizeString(item.imageFolderUrl),
       batchNo: normalizeString(item.batchNo || item.batch_no),
+      packagingDate: normalizeString(item.packagingDate),
+      mold: normalizeString(item.mold),
+      line: normalizeString(item.line),
       linkedSourceId: normalizeString(item.linkedSourceId || item.linked_source_id),
       customerName: normalizeString(item.customerName),
       uid: normalizeString(item.uid),
@@ -437,19 +446,16 @@ export async function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>
 /**
  * 5. Fetch item master data
  */
-export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: string, itemName: string }[]>> {
+export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: string, itemCode: string, itemName: string }[]>> {
   try {
-    const result = await postToGas<{ itemNumber: string, itemName: string }[]>({ action: 'getItemMaster' });
+    const result = await postToGas<{ itemNumber: string, itemCode: string, itemName: string }[]>({ action: 'getItemMaster' });
     const normalized = (result.data || [])
-      .map((item) => {
-        const itemNumber = String(item?.itemNumber || '').trim();
-        const rawName = String(item?.itemName || '').trim();
-        return {
-          itemNumber,
-          itemName: rawName || itemNumber,
-        };
-      })
-      .filter((item) => item.itemNumber);
+      .map((item) => ({
+        itemNumber: String(item?.itemNumber || '').trim(),
+        itemCode: String(item?.itemCode || '').trim(),
+        itemName: String(item?.itemName || '').trim(),
+      }))
+      .filter((item) => item.itemNumber || item.itemCode);
 
     return { success: result.success, data: normalized, error: result.error };
   } catch (error) {
@@ -460,15 +466,13 @@ export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: strin
 /**
  * 6. Save new item to itemMaster sheet if not exists
  */
-export async function saveItemToMaster(itemNumber: string, itemName: string): Promise<ApiResponse> {
+export async function saveItemToMaster(itemNumber: string, itemCode: string, itemName: string): Promise<ApiResponse> {
   try {
-    const normalizedItemNumber = String(itemNumber || '').trim();
-    const normalizedItemName = String(itemName || '').trim();
-
     const result = await postToGas({
       action: 'saveItemMaster',
-      itemNumber: normalizedItemNumber,
-      itemName: normalizedItemName,
+      itemNumber: String(itemNumber || '').trim(),
+      itemCode: String(itemCode || '').trim(),
+      itemName: String(itemName || '').trim(),
     });
     return { success: result.success, message: result.message, error: result.error };
   } catch (error) {

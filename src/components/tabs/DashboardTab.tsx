@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 
-import type { ReworkCase } from '../services/api';
+import type { ReworkCase } from '../../services/api';
 import { Dashboard } from './Dashboard';
 
 interface DashboardTabProps {

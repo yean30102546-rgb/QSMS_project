@@ -174,7 +174,7 @@ export async function loginWithPassword(userId: string, password: string): Promi
 
     const user: User = {
       ...result.data.user,
-      role: result.data.user.role || UserRole.WFG,
+      role: result.data.user.role || UserRole.PDB,
     };
 
     storeAuthData(result.data.token, user, result.data.expiresIn);

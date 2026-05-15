@@ -21,37 +21,42 @@ const BACKUP_SHEET_NAME = 'Backup';
 const DRIVE_FOLDER_ID = getRequiredScriptProperty('DRIVE_FOLDER_ID'); // Google Drive folder for images
 
 // ===== COLUMN DEFINITIONS (0-indexed) =====
-const COL_TIMESTAMP = 0;
-const COL_STATUS = 1;
-const COL_SOURCE = 2;
-const COL_CUSTOMER = 3;
-const COL_CASE_ID = 4;
-const COL_ITEM_ID = 5;
-const COL_ITEM_NUMBER = 6;
+const COL_CASE_ID = 0;
+const COL_TIMESTAMP = 1;
+const COL_STATUS = 2;
+const COL_SOURCE = 3;
+const COL_CUSTOMER = 4;
+const COL_ITEM_NUMBER = 5;
+const COL_ITEM_CODE = 6;
 const COL_ITEM_NAME = 7;
-const COL_ITEM_CODE = 8;
-const COL_BATCH_NO = 9;
-const COL_AMOUNT = 10;
-const COL_REASON = 11;
-const COL_REASON_SUBTYPE = 12;
-const COL_LINKED_ID = 13;
-const COL_RESPONSIBLE = 14;
-const COL_RESP_SUBTYPE = 15;
-const COL_DETAILS = 16;
-const COL_RESOLUTION = 17;
-const COL_COST = 18;
-const COL_IMAGE_URLS = 19;
-const COL_CASE_FOLDER = 20;
-const COL_OR_FILES = 21;
-const COL_OR_FOLDER = 22;
-const COL_UID = 23;
+const COL_BATCH_NO = 8;
+const COL_PACKAGING_DATE = 9;
+const COL_MOLD = 10;
+const COL_LINE = 11;
+const COL_AMOUNT = 12;
+const COL_REASON = 13;
+const COL_REASON_SUBTYPE = 14;
+const COL_LINKED_ID = 15;
+const COL_RESPONSIBLE = 16;
+const COL_RESP_SUBTYPE = 17;
+const COL_DETAILS = 18;
+const COL_RESOLUTION = 19;
+const COL_COST = 20;
+const COL_IMAGE_URLS = 21;
+const COL_CASE_FOLDER = 22;
+const COL_OR_FILES = 23;
+const COL_OR_FOLDER = 24;
+const COL_UID = 25;
+const COL_ITEM_ID = 26;
 
 const MAIN_HEADERS = [
-  'Timestamp', 'Status', 'Source', 'Customer Name', 'Case ID', 'Item ID', 
-  'Item Number', 'Item Name', 'Item Code', 'Batch No', 'Amount', 
-  'Reason', 'Reason Subtype', 'Linked Source ID', 'Responsible', 
-  'Responsible Subtype', 'Details', 'Resolution Method', 'Rework Cost', 
-  'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL', 'UID'
+  'Case ID', 'Timestamp', 'Status', 'Source', 'Customer Name', 
+  'Item Number', 'Item Code', 'Item Name', 
+  'Batch No', 'Packing Date', 'Mold', 'Line', 
+  'Amount', 'Reason', 'Reason Subtype', 'Linked Source ID',
+  'Responsible', 'Responsible Subtype', 'Details',
+  'Resolution Method', 'Rework Cost', 
+  'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL', 'UID', 'Item ID'
 ];
 
 // ===== AUTHENTICATION SETTINGS =====
@@ -59,6 +64,33 @@ const REQUIRE_TOKEN_VALIDATION = true;
 
 function getScriptProperty(key) {
   return String(PropertiesService.getScriptProperties().getProperty(key) || '').trim();
+}
+
+/**
+ * Send notification to LINE group via LINE Notify
+ */
+function sendLineNotification(message) {
+  const token = getScriptProperty('LINE_NOTIFY_TOKEN');
+  if (!token) {
+    Logger.log('⚠️ LINE_NOTIFY_TOKEN not configured. Skipping notification.');
+    return;
+  }
+
+  try {
+    const options = {
+      method: 'post',
+      payload: {
+        'message': message
+      },
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    };
+    UrlFetchApp.fetch('https://notify-api.line.me/api/notify', options);
+    Logger.log('✓ LINE Notification sent.');
+  } catch (error) {
+    Logger.log('❌ LINE Notification failed: ' + error.toString());
+  }
 }
 
 function getRequiredScriptProperty(key) {
@@ -808,6 +840,9 @@ function handleInsert(payload) {
       row[COL_ITEM_NAME] = sanitizeString(item.itemName);
       row[COL_ITEM_CODE] = sanitizeString(item.itemCode);
       row[COL_BATCH_NO] = sanitizeString(item.batchNo || '');
+      row[COL_PACKAGING_DATE] = sanitizeString(item.packagingDate || '');
+      row[COL_MOLD] = sanitizeString(item.mold || '');
+      row[COL_LINE] = sanitizeString(item.line || '');
       row[COL_AMOUNT] = item.amount;
       row[COL_REASON] = sanitizeString(item.reason);
       row[COL_REASON_SUBTYPE] = sanitizeString(item.reasonSubtype || '');
@@ -850,6 +885,24 @@ function handleInsert(payload) {
 
     // Create backup
     createBackup(sheet);
+
+    // ===== SEND NOTIFICATION =====
+    // Notify drivers immediately after saving
+    try {
+      const itemCount = payload.items.length;
+      const firstItem = payload.items[0];
+      const notificationMessage = 
+        `📢 มีเคส Rework ใหม่!\n` +
+        `📦 Case ID: ${caseId}\n` +
+        `🏭 Source: ${payload.source}\n` +
+        `🔢 จำนวน: ${itemCount} รายการ\n` +
+        `🛠️ สาเหตุ: ${firstItem.reason}${firstItem.reasonSubtype ? ' (' + firstItem.reasonSubtype + ')' : ''}\n` +
+        `🚚 ผู้ขับ (Forklift) โปรดดำเนินการรับของ`;
+      
+      sendLineNotification(notificationMessage);
+    } catch (notifyError) {
+      Logger.log('⚠️ Notification error: ' + notifyError.toString());
+    }
 
     if (lock) {
       lock.releaseLock();
@@ -943,6 +996,9 @@ function handleReadAll(payload) {
         itemName: normalizeSheetText(row[COL_ITEM_NAME]),
         itemCode: normalizeSheetText(row[COL_ITEM_CODE]),
         batchNo: normalizeSheetText(row[COL_BATCH_NO]),
+        packagingDate: normalizeSheetText(row[COL_PACKAGING_DATE]),
+        mold: normalizeSheetText(row[COL_MOLD]),
+        line: normalizeSheetText(row[COL_LINE]),
         amount: normalizeSheetAmount(row[COL_AMOUNT]),
         reason: reason,
         reasonSubtype: normalizeSheetText(row[COL_REASON_SUBTYPE]),
@@ -1125,6 +1181,9 @@ function handleUpdate(payload) {
               if (itemUpdate.itemName) sheet.getRange(i + 1, COL_ITEM_NAME + 1).setValue(itemUpdate.itemName);
               if (itemUpdate.itemCode !== undefined) sheet.getRange(i + 1, COL_ITEM_CODE + 1).setValue(itemUpdate.itemCode);
               if (itemUpdate.batchNo) sheet.getRange(i + 1, COL_BATCH_NO + 1).setValue(itemUpdate.batchNo);
+              if (itemUpdate.packagingDate !== undefined) sheet.getRange(i + 1, COL_PACKAGING_DATE + 1).setValue(itemUpdate.packagingDate);
+              if (itemUpdate.mold !== undefined) sheet.getRange(i + 1, COL_MOLD + 1).setValue(itemUpdate.mold);
+              if (itemUpdate.line !== undefined) sheet.getRange(i + 1, COL_LINE + 1).setValue(itemUpdate.line);
               if (itemUpdate.amount !== undefined) sheet.getRange(i + 1, COL_AMOUNT + 1).setValue(itemUpdate.amount);
               if (itemUpdate.reason) sheet.getRange(i + 1, COL_REASON + 1).setValue(itemUpdate.reason);
               if (itemUpdate.reasonSubtype !== undefined) sheet.getRange(i + 1, COL_REASON_SUBTYPE + 1).setValue(itemUpdate.reasonSubtype);
@@ -1388,21 +1447,6 @@ function generateCaseId(existingCaseIds) {
   return `RW${new Date().getTime()}${Math.floor(Math.random() * 10000)}`;
 }
 
-/**
- * Creates a stable item ID during read if one is missing or for consistency.
- */
-function createStableReadItemId(caseId, rawItemId, itemNumber, reason, rowIdx, seenMap) {
-  let id = rawItemId || "";
-  
-  // If no ID or duplicate ID found in this case, generate a virtual one
-  if (!id || seenMap[id]) {
-    const suffix = (rowIdx + 1).toString().padStart(3, '0');
-    id = caseId + "-" + suffix;
-  }
-  
-  seenMap[id] = true;
-  return id;
-}
 
 /**
  * Create a backup of the current sheet data
@@ -1446,13 +1490,21 @@ function initializeSheet() {
       });
 
       if (headerMismatch) {
-        applyHeaderFormatting(sheet, MAIN_HEADERS);
-        Logger.log('Rework Cases sheet header synced via initializeSheet');
+        const lastRow = sheet.getLastRow();
+        if (lastRow <= 1) {
+          applyHeaderFormatting(sheet, MAIN_HEADERS);
+          Logger.log('Rework Cases sheet header synced via initializeSheet (Empty sheet)');
+        } else {
+          Logger.log('⚠️ Header mismatch detected but sheet has data. Auto-sync skipped to prevent data corruption.');
+          Logger.log('Current headers: ' + firstRow.join('|'));
+          Logger.log('Expected headers: ' + MAIN_HEADERS.join('|'));
+          Logger.log('Please run standardizeSheetStructure() manually from the GAS editor to update.');
+        }
       }
     }
 
     getOrCreateSheet(IMG_URL_SHEET_NAME, ['Case ID', 'Item ID', 'Item Index', 'Image Index', 'Image URL', 'Case Folder URL']);
-    getOrCreateSheet(ITEM_MASTER_SHEET_NAME, ['Item Number', 'Item Name']);
+    getOrCreateSheet(ITEM_MASTER_SHEET_NAME, ['Item Number', 'Item Code', 'Item Name']);
   } catch (error) {
     Logger.log('Initialization error: ' + error);
   }
@@ -1551,8 +1603,8 @@ function getItemMaster() {
     if (!sheet) {
       Logger.log('ItemMaster sheet not found. Creating new sheet...');
       sheet = spreadsheet.insertSheet(ITEM_MASTER_SHEET_NAME);
-      sheet.getRange(1, 1, 1, 2).setValues([['Item Number', 'Item Name']]);
-      sheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#4285F4').setFontColor('#FFFFFF');
+      sheet.getRange(1, 1, 1, 3).setValues([['Item Number', 'Item Code', 'Item Name']]);
+      sheet.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#4285F4').setFontColor('#FFFFFF');
       Logger.log('ItemMaster sheet created with headers');
       
       return {
@@ -1565,48 +1617,30 @@ function getItemMaster() {
     const data = sheet.getDataRange().getValues();
     const itemMaster = [];
 
-    Logger.log('📋 Reading ItemMaster sheet:', {
-      totalRows: data.length,
-      headers: data[0],
-      firstDataRow: data[1]
-    });
-
     // Skip header row (row 0)
     for (let i = 1; i < data.length; i++) {
-      const rawItemNumber = data[i][0];
-      const rawItemName = data[i][1];
+      const itemNumber = String(data[i][0] || '').trim();
+      const itemCode = String(data[i][1] || '').trim();
+      const itemName = String(data[i][2] || '').trim();
       
-      const itemNumber = String(rawItemNumber || '').trim();
-      const itemName = String(rawItemName || '').trim();
-      
-      Logger.log(`  Row ${i + 1}: Raw=[${rawItemNumber}|${rawItemName}] Trimmed=[${itemNumber}|${itemName}]`);
-      
-      if (itemNumber) {
+      if (itemNumber || itemCode) {
         itemMaster.push({
           itemNumber,
+          itemCode,
           itemName: itemName || itemNumber
         });
-        Logger.log(`    ✓ Added: "${itemNumber}" → "${itemName}"`);
-      } else {
-        Logger.log(`    ✗ Skipped (empty itemNumber or itemName)`);
       }
     }
-
-    Logger.log(`✓ ItemMaster loaded: ${itemMaster.length} items`);
     
     return {
       success: true,
-      data: itemMaster,
-      message: `Retrieved ${itemMaster.length} items from master data`
+      data: itemMaster
     };
   } catch (error) {
-    return {
-      success: false,
-      error: `Failed to fetch item master: ${error.toString()}`,
-      data: []
-    };
+    return { success: false, error: error.message };
   }
 }
+
 
 /**
  * Save a new item to ItemMaster sheet if it doesn't already exist
@@ -1616,67 +1650,37 @@ function getItemMaster() {
 function saveItemMaster(payload) {
   try {
     const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-    const sheet = spreadsheet.getSheetByName(ITEM_MASTER_SHEET_NAME);
+    let sheet = spreadsheet.getSheetByName(ITEM_MASTER_SHEET_NAME);
     
     if (!sheet) {
-      // Create ItemMaster sheet if it doesn't exist
-      const newSheet = spreadsheet.insertSheet(ITEM_MASTER_SHEET_NAME);
-      newSheet.getRange(1, 1, 1, 2).setValues([['Item Number', 'Item Name']]);
-      newSheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#4285F4').setFontColor('#FFFFFF');
+      sheet = spreadsheet.insertSheet(ITEM_MASTER_SHEET_NAME);
+      sheet.getRange(1, 1, 1, 3).setValues([['Item Number', 'Item Code', 'Item Name']]);
+      sheet.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#4285F4').setFontColor('#FFFFFF');
     }
 
-    const sheet_final = spreadsheet.getSheetByName(ITEM_MASTER_SHEET_NAME);
-    const data = sheet_final.getDataRange().getValues();
-    
+    const data = sheet.getDataRange().getValues();
     const itemNumber = String(payload.itemNumber || '').trim();
+    const itemCode = String(payload.itemCode || '').trim();
     const itemName = String(payload.itemName || '').trim();
 
-    if (!itemNumber) {
-      return {
-        success: false,
-        error: 'Item Number is required',
-        message: null
-      };
+    if (!itemNumber && !itemCode) {
+      return { success: false, error: 'Item Number or Item Code is required' };
     }
 
-    if (!itemName) {
-      return {
-        success: false,
-        error: 'Item Name is required',
-        message: null
-      };
-    }
-
-    // Check if item already exists
+    // Check if itemNumber already exists
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0] || '').trim() === itemNumber) {
-        return {
-          success: true,
-          message: `Item "${itemNumber}" already exists in master data`,
-          data: { isNew: false, itemNumber }
-        };
+      if (itemNumber && String(data[i][0] || '').trim() === itemNumber) {
+        return { success: true, message: 'Item already exists in master data' };
       }
     }
 
-    // Add new item to the sheet
-    const lastRow = sheet_final.getLastRow();
-    sheet_final.getRange(lastRow + 1, 1, 1, 2).setValues([
-      [itemNumber, itemName]
-    ]);
-
-    return {
-      success: true,
-      message: `Item "${itemNumber}" added to master data successfully`,
-      data: { isNew: true, itemNumber, itemName: itemName }
-    };
+    sheet.appendRow([itemNumber, itemCode, itemName]);
+    return { success: true, message: 'Item saved to master' };
   } catch (error) {
-    return {
-      success: false,
-      error: `Failed to save item master: ${error.toString()}`,
-      message: null
-    };
+    return { success: false, error: error.message };
   }
 }
+
 
 
 function extractDriveFileId(url) {
@@ -1928,16 +1932,18 @@ function standardizeSheetStructure() {
     
     // Manual mapping for safety
     const mapping = {
+      'Case ID': COL_CASE_ID,
       'Timestamp': COL_TIMESTAMP,
       'Status': COL_STATUS,
       'Source': COL_SOURCE,
       'Customer Name': COL_CUSTOMER,
-      'Case ID': COL_CASE_ID,
-      'Item ID': COL_ITEM_ID,
       'Item Number': COL_ITEM_NUMBER,
       'Item Name': COL_ITEM_NAME,
       'Item Code': COL_ITEM_CODE,
       'Batch No': COL_BATCH_NO,
+      'Packing Date': COL_PACKAGING_DATE,
+      'Mold': COL_MOLD,
+      'Line': COL_LINE,
       'Amount': COL_AMOUNT,
       'Reason': COL_REASON,
       'Reason Subtype': COL_REASON_SUBTYPE,
@@ -1950,7 +1956,9 @@ function standardizeSheetStructure() {
       'Image URLs': COL_IMAGE_URLS,
       'Case Folder URL': COL_CASE_FOLDER,
       'OR Files': COL_OR_FILES,
-      'OR Folder URL': COL_OR_FOLDER
+      'OR Folder URL': COL_OR_FOLDER,
+      'UID': COL_UID,
+      'Item ID': COL_ITEM_ID
     };
     
     Object.keys(mapping).forEach(header => {
@@ -2009,7 +2017,7 @@ function migrateFromOldSchema() {
     var col1 = String(row[1] || '').trim();
     
     // Detect old schema: col[0] = ItemID (starts with 'RW'), col[1] = CaseID (starts with 'RW')
-    // New schema: col[0] = Timestamp (date string), col[1] = Status (Pending/In-Progress/etc.)
+    // New schema: col[0] = Case ID (starts with 'RW'), col[1] = Timestamp (date string)
     var isOldSchema = col0.indexOf('RW') === 0 && col1.indexOf('RW') === 0;
     
     if (!isOldSchema) {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertCircle, Clock, Package, Search } from 'lucide-react';
 
-import type { ReworkCase } from '../services/api';
+import type { ReworkCase } from '../../services/api';
 
 interface CaseListTableProps {
   cases: ReworkCase[];

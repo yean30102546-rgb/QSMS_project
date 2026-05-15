@@ -240,8 +240,8 @@ export function getAvailableRoles(): Array<{ value: UserRole; label: string; des
       description: 'Full system access, delete, and advanced editing',
     },
     {
-      value: UserRole.WFG,
-      label: 'WFG',
+      value: UserRole.PDB,
+      label: 'PDB',
       description: 'Can create cases and update resolution methods',
     },
     {

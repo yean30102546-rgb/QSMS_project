@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X } from 'lucide-react';
 
-import type { ReworkItem } from '../services/api';
-import { CUSTOMER_OPTIONS } from '../services/api';
-import { ImageUpload } from './ImageUpload';
+import type { ReworkItem } from '../../services/api';
+import { CUSTOMER_OPTIONS } from '../../services/api';
+import { ImageUpload } from '../ui/ImageUpload';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -30,7 +30,7 @@ interface AddCaseTabProps {
   orFiles: File[];
   setOrFiles: (files: File[]) => void;
   handleCheckItemNumber: (id: string) => void;
-  handleItemNumberBlur: (id: string) => void;
+  handleAutoFillBlur: (id: string) => void;
   handleSubmit: () => void;
   isSaving: boolean;
   saveMessage: SaveMessage;
@@ -53,7 +53,7 @@ const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
 
 const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
-  SFC: ['PDF', 'WFG', 'WPK', 'อื่นๆ'],
+  SFC: ['PDB', 'WPK', 'อื่นๆ'],
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };
@@ -72,7 +72,7 @@ export function AddCaseTab({
   orFiles,
   setOrFiles,
   handleCheckItemNumber,
-  handleItemNumberBlur,
+  handleAutoFillBlur,
   handleSubmit,
   isSaving,
   saveMessage,
@@ -299,7 +299,7 @@ export function AddCaseTab({
                       type="text"
                       value={item.itemNumber}
                       onChange={(e) => updateFormItem(item.id, 'itemNumber', e.target.value)}
-                      onBlur={() => handleItemNumberBlur(item.id)}
+                      onBlur={() => handleAutoFillBlur(item.id)}
                       placeholder="เช่น 60001234A"
                       disabled={isSaving}
                       className="flex-1 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
@@ -307,7 +307,7 @@ export function AddCaseTab({
                     <motion.button
                       type="button"
                       onClick={() => handleCheckItemNumber(item.id)}
-                      disabled={isSaving || !item.itemNumber.trim()}
+                      disabled={isSaving || (!item.itemNumber.trim() && !item.itemCode.trim())}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.15 }}
@@ -320,7 +320,7 @@ export function AddCaseTab({
               </div>
 
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-5">
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
                   <InputField
                     label="ชื่อรายการ (Item Name) *"
                     value={item.itemName}
@@ -329,27 +329,83 @@ export function AddCaseTab({
                     disabled={isSaving}
                   />
                 </div>
-                <InputField
-                  label="รหัสสินค้า (Item Code)"
-                  value={item.itemCode}
-                  onChange={(v) => updateFormItem(item.id, 'itemCode', v)}
-                  placeholder="เช่น 40001234"
-                  disabled={isSaving}
-                />
-                <InputField
-                  label="จำนวน (กล่อง) *"
-                  type="number"
-                  value={item.amount}
-                  onChange={(v) => updateFormItem(item.id, 'amount', v)}
-                  disabled={isSaving}
-                />
-                <InputField
-                  label="หมายเลขล็อต (Batch No.) *"
-                  value={item.batchNo || ''}
-                  onChange={(v) => updateFormItem(item.id, 'batchNo', v)}
-                  placeholder="เช่น 240510"
-                  disabled={isSaving}
-                />
+                <div className="md:col-span-2">
+                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                    รหัสสินค้า (Item Code)
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={item.itemCode}
+                      onChange={(v) => updateFormItem(item.id, 'itemCode', v.target.value)}
+                      onBlur={() => handleAutoFillBlur(item.id)}
+                      placeholder="เช่น 40001234"
+                      disabled={isSaving}
+                      className="flex-1 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
+                    />
+                    <motion.button
+                      type="button"
+                      onClick={() => handleCheckItemNumber(item.id)}
+                      disabled={isSaving || !item.itemCode.trim()}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.15 }}
+                      className="will-change-transform whitespace-nowrap rounded-xl border-2 border-amber-600 bg-amber-50 px-6 py-3 text-xs font-bold text-amber-700 shadow-sm hover:bg-amber-100 active:bg-amber-200 disabled:cursor-not-allowed disabled:border-opacity-50 disabled:opacity-50"
+                    >
+                      ตรวจสอบ
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <div className="col-span-1">
+                  <InputField
+                    label="หมายเลขล็อต (Batch no.) *"
+                    value={item.batchNo || ''}
+                    onChange={(v) => updateFormItem(item.id, 'batchNo', v)}
+                    placeholder="เช่น 240510"
+                    disabled={isSaving}
+                  />
+                </div>
+                <div className="col-span-1">
+                  <InputField
+                    label="วันบรรจุ (Packaging Date) *"
+                    type="date"
+                    value={item.packagingDate || ''}
+                    onChange={(v) => updateFormItem(item.id, 'packagingDate', v)}
+                    disabled={isSaving}
+                  />
+                </div>
+                <div className="col-span-1">
+                  <InputField
+                    label="Mold"
+                    type="text"
+                    value={item.mold || ''}
+                    onChange={(v) => updateFormItem(item.id, 'mold', v)}
+                    placeholder="เลข Mold"
+                    disabled={isSaving}
+                  />
+                </div>
+                <div className="col-span-1">
+                  <InputField
+                    label="Line"
+                    type="text"
+                    value={item.line || ''}
+                    onChange={(v) => updateFormItem(item.id, 'line', v)}
+                    placeholder="เลข Line"
+                    disabled={isSaving}
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <InputField
+                    label="จำนวน (Amount) *"
+                    type="number"
+                    value={item.amount}
+                    onChange={(v) => updateFormItem(item.id, 'amount', v)}
+                    disabled={isSaving}
+                  />
+                </div>
               </div>
 
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -687,12 +743,13 @@ interface InputFieldProps {
   label: string;
   value: string | number;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   placeholder?: string;
   type?: string;
   disabled?: boolean;
 }
 
-function InputField({ label, value, onChange, placeholder, type = 'text', disabled = false }: InputFieldProps) {
+function InputField({ label, value, onChange, onBlur, placeholder, type = 'text', disabled = false }: InputFieldProps) {
   return (
     <div className="space-y-2">
       <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">{label}</label>
@@ -700,6 +757,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text', disabl
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         disabled={disabled}
         className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-all placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"

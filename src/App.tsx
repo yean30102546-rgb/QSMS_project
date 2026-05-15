@@ -35,11 +35,11 @@ import {
 } from './utils/helpers';
 
 // Components
-import { UpdateModal } from './components/UpdateModal';
-import { MainLayout } from './components/MainLayout';
+import { UpdateModal } from './components/modals/UpdateModal';
+import { MainLayout } from './components/layout/MainLayout';
 import { Login } from './components/Login';
-import { ConfirmNewItemModal } from './components/ConfirmNewItemModal';
-import { TutorialModal } from './components/TutorialModal';
+import { ConfirmNewItemModal } from './components/modals/ConfirmNewItemModal';
+import { TutorialModal } from './components/modals/TutorialModal';
 
 type Tab = 'overall' | 'add' | 'dashboard';
 
@@ -92,6 +92,9 @@ const initialFormItem: ReworkItem = {
   itemName: '',
   itemCode: '',
   batchNo: '',
+  packagingDate: '',
+  mold: '',
+  line: '',
   amount: 1,
   reason: '',
   reasonSubtype: '',
@@ -113,7 +116,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
   const [cases, setCases] = useState<ReworkCase[]>([]);
   const [isLoadingCases, setIsLoadingCases] = useState(true);
   const [caseError, setCaseError] = useState<string | null>(null);
-  const [itemMaster, setItemMaster] = useState<Map<string, string>>(new Map());
+  const [itemMaster, setItemMaster] = useState<{ itemNumber: string; itemCode: string; itemName: string }[]>([]);
   const [isLoadingMaster, setIsLoadingMaster] = useState(true);
   const [caseSource, setCaseSource] = useState('SFC');
   const [orFiles, setOrFiles] = useState<File[]>([]);
@@ -153,10 +156,8 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
     try {
       setIsLoadingMaster(true);
       const result = await fetchItemMaster();
-      const data = result.data || [];
-      if (data && Array.isArray(data) && data.length > 0) {
-        const masterMap = new Map(data.map(item => [String(item.itemNumber || '').trim(), String(item.itemName || '').trim()]));
-        setItemMaster(masterMap);
+      if (result.success && result.data) {
+        setItemMaster(result.data);
       }
     } catch (error) {
       console.error('Error loading master data:', error);
@@ -211,7 +212,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
     }
     setFormItems(prev => prev.map(item => {
       if (item.id !== id) return item;
-      const normalizedValue = (field === 'itemCode') ? enforceNumeric(String(value)).slice(0, 50) :
+      const normalizedValue = (field === 'itemCode' || field === 'mold' || field === 'line') ? enforceNumeric(String(value)).slice(0, 50) :
         field === 'amount' ? Math.max(0, parseInt(String(value)) || 0) : value;
       return { ...item, [field]: normalizedValue };
     }));
@@ -221,23 +222,47 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
 
   const handleCheckItemNumber = (id: string, showModal: boolean = true) => {
     const item = formItems.find(i => i.id === id);
-    if (!item || !item.itemNumber.trim()) return;
-    const itemName = itemMaster.get(item.itemNumber.trim());
-    if (itemName) {
-      setFormItems(prev => prev.map(i => i.id === id ? { ...i, itemName } : i));
+    if (!item) return;
+
+    const trimmedNumber = item.itemNumber.trim();
+    const trimmedCode = item.itemCode.trim();
+
+    if (!trimmedNumber && !trimmedCode) return;
+
+    // Find in master by either itemNumber or itemCode
+    const masterInfo = itemMaster.find(m => 
+      (trimmedNumber && m.itemNumber === trimmedNumber) || 
+      (trimmedCode && m.itemCode === trimmedCode)
+    );
+
+    if (masterInfo) {
+      setFormItems(prev => prev.map(i => i.id === id ? { 
+        ...i, 
+        itemNumber: masterInfo.itemNumber || i.itemNumber,
+        itemCode: masterInfo.itemCode || i.itemCode,
+        itemName: masterInfo.itemName || i.itemName
+      } : i));
       setAutoFillTriggeredItem(id);
       setTimeout(() => setAutoFillTriggeredItem(null), 1500);
-    } else if (showModal) {
-      setConfirmNewItemModal({ isOpen: true, itemNumber: item.itemNumber.trim(), itemId: id });
+    } else if (showModal && trimmedNumber) {
+      setConfirmNewItemModal({ isOpen: true, itemNumber: trimmedNumber, itemId: id });
     }
   };
 
   const handleSubmit = async () => {
     try {
       setIsSaving(true);
-      const newItemsToSave = formItems.filter(item => !itemMaster.has(item.itemNumber.trim()));
+      const newItemsToSave = formItems.filter(item => {
+        const trimmedNum = item.itemNumber.trim();
+        const trimmedCode = item.itemCode.trim();
+        if (!trimmedNum && !trimmedCode) return false;
+        return !itemMaster.some(m => 
+          (trimmedNum && m.itemNumber === trimmedNum) || 
+          (trimmedCode && m.itemCode === trimmedCode)
+        );
+      });
       for (const item of newItemsToSave) {
-        await saveItemToMaster(item.itemNumber.trim(), item.itemName);
+        await saveItemToMaster(item.itemNumber.trim(), item.itemCode, item.itemName);
       }
       const result = await insertCase(caseSource, formItems, uploadedImages, orFiles);
       if (result.success) {
@@ -248,15 +273,15 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         await loadCases();
         setTimeout(() => setSaveMessage(null), 4000);
       } else {
-        setSaveMessage({ 
-          type: 'error', 
-          text: result.error || 'ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง' 
+        setSaveMessage({
+          type: 'error',
+          text: result.error || 'ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง'
         });
       }
     } catch (error) {
-      setSaveMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึก' 
+      setSaveMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึก'
       });
     } finally {
       setIsSaving(false);
@@ -269,12 +294,25 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
       const result = await updateCase(caseId, updates);
       if (result.success) {
         // Optimistic local state update for fast UI
-        setCases(prevCases => prevCases.map(c => 
-          c.id === caseId ? { ...c, ...updates as any } : c
-        ));
-        
+        setCases(prevCases => prevCases.map(c => {
+          if (c.id === caseId) {
+            const { newOrFiles, deleteItemIds, ...cleanUpdates } = updates as any;
+            const updatedCase = { ...c, ...cleanUpdates };
+            
+            if (cleanUpdates.items || deleteItemIds) {
+              let updatedItems = cleanUpdates.items ? [...cleanUpdates.items] : [...c.items];
+              if (deleteItemIds && deleteItemIds.length > 0) {
+                updatedItems = updatedItems.filter((item: any) => !deleteItemIds.includes(item.uid || item.id));
+              }
+              updatedCase.items = updatedItems;
+            }
+            return updatedCase;
+          }
+          return c;
+        }));
+
         setIsModalOpen(false);
-        
+
         // Background refresh to ensure sync with backend (folders, etc.)
         loadCases();
       } else {
@@ -332,7 +370,7 @@ function MainAppContent({ user, onLogout }: { user: User | null; onLogout: () =>
         orFiles={orFiles}
         setOrFiles={setOrFiles}
         handleCheckItemNumber={handleCheckItemNumber}
-        handleItemNumberBlur={(id) => handleCheckItemNumber(id, false)}
+        handleAutoFillBlur={(id) => handleCheckItemNumber(id, false)}
         handleSubmit={handleSubmit}
         isSaving={isSaving}
         saveMessage={saveMessage}

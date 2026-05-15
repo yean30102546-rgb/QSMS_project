@@ -10,7 +10,7 @@ import {
   TrendingDown, TrendingUp, CheckCircle2, Clock, AlertCircle,
   Package, SlidersHorizontal, X, Calendar, Layers, Link2, ChevronLeft, ArrowRight, Banknote
 } from 'lucide-react';
-import { ReworkCase, ReworkItem } from '../services/api';
+import { ReworkCase, ReworkItem } from '../../services/api';
 
 type CaseStatus = ReworkCase['status'];
 type ViewMode = 'units' | 'defects';

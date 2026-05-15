@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2 } from 'lucide-react';
-import { ReworkCase, CUSTOMER_OPTIONS } from '../services/api';
-import { formatThaiDate } from '../utils/helpers';
-import { useExportReport } from '../hooks/useExportReport';
-import { ExportTemplate } from './ExportTemplate';
-import { DriveImage } from './DriveImage';
-import { getCurrentUserRole } from '../services/auth';
-import { UserRole } from '../config/auth.config';
+import { ReworkCase, CUSTOMER_OPTIONS } from '../../services/api';
+import { formatThaiDate, formatThaiDateShort, enforceNumeric } from '../../utils/helpers';
+import { useExportReport } from '../../hooks/useExportReport';
+import { ExportTemplate } from '../ui/ExportTemplate';
+import { DriveImage } from '../ui/DriveImage';
+import { getCurrentUserRole } from '../../services/auth';
+import { UserRole } from '../../config/auth.config';
 
 interface UpdateModalProps {
   isOpen: boolean;
@@ -51,7 +51,7 @@ export function UpdateModal({
   const userRole = getCurrentUserRole();
   const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.QSMS;
   const isFinance = userRole === UserRole.FINANCE || isAdmin;
-  const isWFG = userRole === UserRole.WFG || isAdmin;
+  const isPDB = userRole === UserRole.PDB || isAdmin;
 
   // ===== Export Hook =====
   const { exportRef, isExporting, exportProgress, exportPNG, exportPDF } = useExportReport();
@@ -121,7 +121,7 @@ export function UpdateModal({
       updates.reworkCost = Number(reworkCost);
     }
 
-    if (isWFG || isAdmin) {
+    if (isPDB || isAdmin) {
       updates.items = editedItems;
     }
 
@@ -378,31 +378,57 @@ export function UpdateModal({
                                             </div>
                                           </div>
                                           
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                             <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Item Number / Batch</label>
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Batch no.</label>
                                               <input 
-                                                value={item.itemNumber} 
+                                                value={item.batchNo || ''} 
                                                 onChange={(e) => {
                                                   const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], itemNumber: e.target.value };
+                                                  newItems[index] = { ...newItems[index], batchNo: e.target.value };
                                                   setEditedItems(newItems);
                                                 }}
-                                                placeholder="6000..."
-                                                className="w-full text-sm font-mono font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                                placeholder="240..."
+                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
                                               />
                                             </div>
                                             <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Item Code</label>
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">วันบรรจุ (Packaging Date)</label>
                                               <input 
-                                                value={item.itemCode || ''} 
+                                                type="date"
+                                                value={item.packagingDate || ''} 
                                                 onChange={(e) => {
                                                   const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], itemCode: e.target.value };
+                                                  newItems[index] = { ...newItems[index], packagingDate: e.target.value };
                                                   setEditedItems(newItems);
                                                 }}
-                                                placeholder="4000..."
-                                                className="w-full text-sm font-mono font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                              />
+                                            </div>
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Mold</label>
+                                              <input 
+                                                value={item.mold || ''} 
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], mold: enforceNumeric(e.target.value) };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="Mold"
+                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                              />
+                                            </div>
+                                            <div className="space-y-1">
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Line</label>
+                                              <input 
+                                                value={item.line || ''} 
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], line: enforceNumeric(e.target.value) };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="Line"
+                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
                                               />
                                             </div>
                                           </div>
@@ -415,9 +441,13 @@ export function UpdateModal({
                                               {item.customerName || 'N/A'}
                                             </span>
                                           </div>
-                                          <div className="flex items-center gap-3">
+                                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                             <p className="text-[10px] text-muted font-bold">SN: <span className="text-foreground">{item.itemNumber}</span></p>
-                                            <p className="text-[10px] text-muted font-bold">Code: <span className="text-foreground">{item.itemCode}</span></p>
+                                            <p className="text-[10px] text-muted font-bold">Code: <span className="text-foreground">{item.itemCode || 'N/A'}</span></p>
+                                            <p className="text-[10px] text-muted font-bold">Batch: <span className="text-foreground">{item.batchNo || 'N/A'}</span></p>
+                                            <p className="text-[10px] text-muted font-bold">Date: <span className="text-foreground">{formatThaiDateShort(item.packagingDate || '')}</span></p>
+                                            <p className="text-[10px] text-muted font-bold">Mold: <span className="text-foreground">{item.mold || 'N/A'}</span></p>
+                                            <p className="text-[10px] text-muted font-bold">Line: <span className="text-foreground">{item.line || 'N/A'}</span></p>
                                           </div>
                                         </div>
                                       )}
@@ -468,7 +498,7 @@ export function UpdateModal({
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                   <p className="text-[10px] font-bold text-muted uppercase tracking-widest">อาการเสีย/รายละเอียด:</p>
-                                  {isEditMode || isWFG ? (
+                                  {isEditMode || isPDB ? (
                                     <textarea 
                                       value={item.details || ''} 
                                       onChange={(e) => {
@@ -551,7 +581,7 @@ export function UpdateModal({
 
                       {/* Input fields based on status */}
                       <AnimatePresence mode="wait">
-                        {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isWFG && (
+                        {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isPDB && (
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -680,7 +710,7 @@ export function UpdateModal({
                         disabled={(() => {
                           if (isLoading || !caseData) return true;
                           if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
-                          if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isWFG) return true;
+                          if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB) return true;
                           if (caseData.status === 'Completed' && !isAdmin) return true;
                           return false;
                         })()}

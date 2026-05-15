@@ -37,7 +37,7 @@ export const AUTH_CONFIG = {
 export enum UserRole {
   ADMIN = 'admin',           // Full access
   QSMS = 'qsms',             // Full access, Delete, Edit
-  WFG = 'wfg',               // Add Case, Overall, Update Status, Resolution, Export
+  PDB = 'pdb',               // Add Case, Overall, Update Status, Resolution, Export
   FINANCE = 'finance',       // Overall (Valuation only)
 }
 
@@ -64,7 +64,7 @@ export const ROLE_PERMISSIONS = {
     'fill_valuation',
     'export_data',
   ],
-  [UserRole.WFG]: [
+  [UserRole.PDB]: [
     'view_overall',
     'create_case',
     'update_status',

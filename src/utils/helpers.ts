@@ -352,6 +352,28 @@ export function formatThaiDate(isoDate: string): string {
   }
 }
 
+/**
+ * Format ISO date string (YYYY-MM-DD) to Thai date format (Date only)
+ * Input: "2026-05-15"
+ * Output: "15 พฤษภาคม 2569"
+ * ✅ ใช้สำหรับการแสดงผลวันที่บรรจุ
+ */
+export function formatThaiDateShort(dateString: string): string {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  } catch {
+    return dateString;
+  }
+}
+
 // ===== ADVANCED VALIDATION FUNCTIONS =====
 
 /**

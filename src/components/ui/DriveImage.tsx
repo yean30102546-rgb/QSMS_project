@@ -1,8 +1,8 @@
 import React from 'react';
 import { ImageOff } from 'lucide-react';
 
-import { useImageDataUrl } from '../hooks/useImageDataUrl';
-import { toDisplayImageUrl } from '../utils/imageUrls';
+import { useImageDataUrl } from '../../hooks/useImageDataUrl';
+import { toDisplayImageUrl } from '../../utils/imageUrls';
 
 interface DriveImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src: string;

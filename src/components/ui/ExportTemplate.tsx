@@ -9,9 +9,9 @@
  */
 
 import React from 'react';
-import { ReworkCase } from '../services/api';
-import { formatThaiDate } from '../utils/helpers';
-import { toDisplayImageUrl } from '../utils/imageUrls';
+import { ReworkCase } from '../../services/api';
+import { formatThaiDate, formatThaiDateShort } from '../../utils/helpers';
+import { toDisplayImageUrl } from '../../utils/imageUrls';
 
 interface ExportTemplateProps {
   caseData: ReworkCase | null;
@@ -162,24 +162,35 @@ export const ExportTemplate = React.forwardRef<HTMLDivElement, ExportTemplatePro
                 <thead>
                   <tr style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
                     <th style={{ ...thStyle, width: '40px', textAlign: 'center' }}>#</th>
-                    <th style={thStyle}>หมายเลขชิ้นส่วน / Batch</th>
-                    <th style={thStyle}>รายละเอียดสินค้า</th>
+                    <th style={thStyle}>ชิ้นส่วน / Code</th>
+                    <th style={thStyle}>Batch / วันบรรจุ</th>
+                    <th style={thStyle}>Mold / Line</th>
+                    <th style={thStyle}>สินค้า</th>
                     <th style={{ ...thStyle, textAlign: 'center' }}>จำนวน</th>
-                    <th style={thStyle}>สาเหตุที่เสีย</th>
-                    <th style={thStyle}>ผู้รับผิดชอบ</th>
+                    <th style={thStyle}>สาเหตุ/ผู้รับผิดชอบ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {caseData.items.map((item, idx) => (
                     <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ ...tdStyle, textAlign: 'center', color: '#94a3b8', fontWeight: 800 }}>{idx + 1}</td>
-                      <td style={{ ...tdStyle, fontWeight: 900, fontFamily: 'monospace', color: '#0ea5e9' }}>{item.itemNumber}</td>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 900, fontFamily: 'monospace', color: '#0ea5e9' }}>{item.itemNumber}</div>
+                        <div style={{ fontSize: '10px', color: '#64748b' }}>{item.itemCode || '-'}</div>
+                      </td>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 800 }}>{item.batchNo || '-'}</div>
+                        <div style={{ fontSize: '10px', color: '#64748b' }}>{formatThaiDateShort(item.packagingDate || '')}</div>
+                      </td>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 800 }}>M: {item.mold || '-'}</div>
+                        <div style={{ fontSize: '10px', color: '#64748b' }}>L: {item.line || '-'}</div>
+                      </td>
                       <td style={{ ...tdStyle, fontWeight: 700 }}>{item.itemName}</td>
                       <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 900, fontSize: '14px' }}>{item.amount}</td>
-                      <td style={{ ...tdStyle, fontWeight: 700, color: '#ef4444' }}>{item.reason}</td>
                       <td style={tdStyle}>
-                        <div style={{ fontWeight: 800, fontSize: '11px' }}>{item.responsible}</div>
-                        <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>{item.responsible === 'Supplier' ? (item.responsibleSubtype || 'ไม่ระบุชื่อ Supplier') : 'ภายในหน่วยงาน'}</div>
+                        <div style={{ fontWeight: 700, color: '#ef4444', fontSize: '11px' }}>{item.reason}</div>
+                        <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>{item.responsible} {item.responsibleSubtype ? `(${item.responsibleSubtype})` : ''}</div>
                       </td>
                     </tr>
                   ))}

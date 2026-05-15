@@ -10,7 +10,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle, AlertCircle, Info, Loader } from 'lucide-react';
-import type { Toast, ToastType } from '../hooks/useToast';
+import type { Toast, ToastType } from '../../hooks/useToast';
 
 interface ToastContainerProps {
   toasts: Toast[];

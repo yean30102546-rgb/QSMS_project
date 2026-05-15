@@ -18,7 +18,7 @@ import {
   compressImage,
   formatFileSize,
   calculateCompressionRatio,
-} from '../utils/imageCompressionUtils';
+} from '../../utils/imageCompressionUtils';
 
 interface ImageUploadProps {
   itemIndex: number;
@@ -54,6 +54,7 @@ export function ImageUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const onImagesSelectedRef = useRef(onImagesSelected);
   const onImagesCompressedRef = useRef(onImagesCompressed);
 
@@ -99,11 +100,11 @@ export function ImageUpload({
           prev.map((item, i) =>
             i === index
               ? {
-                ...item,
-                status: 'error',
-                error: validation.error,
-                progress: 0,
-              }
+                  ...item,
+                  status: 'error',
+                  error: validation.error,
+                  progress: 0,
+                }
               : item
           )
         );
@@ -114,10 +115,10 @@ export function ImageUpload({
         prev.map((item, i) =>
           i === index
             ? {
-              ...item,
-              status: 'compressing',
-              progress: 10,
-            }
+                ...item,
+                status: 'compressing',
+                progress: 10,
+              }
             : item
         )
       );
@@ -133,9 +134,9 @@ export function ImageUpload({
             prev.map((item, i) =>
               i === index
                 ? {
-                  ...item,
-                  progress,
-                }
+                    ...item,
+                    progress,
+                  }
                 : item
             )
           );
@@ -147,12 +148,12 @@ export function ImageUpload({
           prev.map((item, i) =>
             i === index
               ? {
-                ...item,
-                status: 'complete',
-                progress: 100,
-                compressedFile: result.compressedFile,
-                compressedSize: result.compressedSize,
-              }
+                  ...item,
+                  status: 'complete',
+                  progress: 100,
+                  compressedFile: result.compressedFile,
+                  compressedSize: result.compressedSize,
+                }
               : item
           )
         );
@@ -161,11 +162,11 @@ export function ImageUpload({
           prev.map((item, i) =>
             i === index
               ? {
-                ...item,
-                status: 'error',
-                error: result.error || 'Compression failed',
-                progress: 0,
-              }
+                  ...item,
+                  status: 'error',
+                  error: result.error || 'Compression failed',
+                  progress: 0,
+                }
               : item
           )
         );
@@ -215,9 +216,9 @@ export function ImageUpload({
             prev.map((item, i) =>
               i === imageIndex
                 ? {
-                  ...item,
-                  preview: e.target?.result as string,
-                }
+                    ...item,
+                    preview: e.target?.result as string,
+                  }
                 : item
             )
           );
@@ -269,7 +270,42 @@ export function ImageUpload({
       const items = e.clipboardData.items;
       let hasImages = false;
       const files: File[] = [];
+      
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            files.push(file);
+            hasImages = true;
+          }
+        }
+      }
+      
+      if (hasImages) {
+        e.preventDefault();
+        const available = maxImages - imageItems.length;
+        if (available <= 0) return;
+        
+        const filesToAdd = files.slice(0, available);
+        const dataTransfer = new DataTransfer();
+        filesToAdd.forEach(file => dataTransfer.items.add(file));
+        handleFiles(dataTransfer.files);
+      }
+    },
+    [handleFiles, imageItems.length, maxImages]
+  );
 
+  // Global paste handler for the item card
+  useEffect(() => {
+    const card = containerRef.current?.closest('.glass-card') as HTMLElement;
+    if (!card) return;
+
+    const handleCardPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      let hasImages = false;
+      const files: File[] = [];
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
@@ -281,6 +317,7 @@ export function ImageUpload({
       }
 
       if (hasImages) {
+        // Only prevent default if we're actually pasting images
         e.preventDefault();
         const available = maxImages - imageItems.length;
         if (available <= 0) return;
@@ -290,9 +327,11 @@ export function ImageUpload({
         filesToAdd.forEach(file => dataTransfer.items.add(file));
         handleFiles(dataTransfer.files);
       }
-    },
-    [handleFiles, imageItems.length, maxImages]
-  );
+    };
+
+    card.addEventListener('paste', handleCardPaste);
+    return () => card.removeEventListener('paste', handleCardPaste);
+  }, [handleFiles, imageItems.length, maxImages]);
 
   const removeImage = (index: number) => {
     const newItems = imageItems.filter((_, i) => i !== index);
@@ -318,7 +357,7 @@ export function ImageUpload({
       : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={containerRef}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
@@ -338,10 +377,11 @@ export function ImageUpload({
           onPaste={handlePaste}
           onClick={() => fileInputRef.current?.click()}
           tabIndex={0}
-          className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center transition-all cursor-pointer group outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent ${isDragging
+          className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center transition-all cursor-pointer group outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent ${
+            isDragging
               ? 'border-accent bg-accent/5'
               : 'border-border hover:bg-slate-100 bg-slate-50'
-            }`}
+          }`}
         >
           <input
             ref={fileInputRef}
