@@ -6,17 +6,11 @@
 import { getCurrentUser, getToken } from './auth';
 import { compressImage } from '../utils/imageCompressionUtils';
 
-// ⚠️ GAS URL ต้องถูกตั้งค่าจาก App.tsx หรือ environment
-const envGasUrl = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
-let GAS_WEB_APP_URL = envGasUrl;
+// GAS URL is managed securely server-side, local wrapper handles backward-compatibility
+let GAS_WEB_APP_URL = '';
 
 export function setGasWebAppUrl(url: string): void {
-  const normalizedUrl = String(url || '').trim();
-  if (isValidGasUrl(normalizedUrl)) {
-    GAS_WEB_APP_URL = normalizedUrl;
-  } else {
-    console.warn('Invalid GAS Web App URL set:', url);
-  }
+  GAS_WEB_APP_URL = url;
 }
 
 export function getGasWebAppUrl(): string {
@@ -24,13 +18,7 @@ export function getGasWebAppUrl(): string {
 }
 
 function isValidGasUrl(url: string): boolean {
-  return url.includes('script.google.com/macros/s') && url.endsWith('/exec');
-}
-
-function ensureGasWebAppUrl() {
-  if (!isValidGasUrl(GAS_WEB_APP_URL)) {
-    throw new Error('REACT_APP_GAS_WEB_APP_URL is not configured with a valid Google Apps Script /exec URL.');
-  }
+  return !url || (url.includes('script.google.com/macros/s') && url.endsWith('/exec'));
 }
 
 export interface ApiResponse<T = unknown> {
@@ -75,6 +63,15 @@ export const CUSTOMER_OPTIONS = [
   'Others',
 ];
 
+export interface MaterialUsage {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  unitPrice?: number;
+  totalPrice?: number;
+}
+
 export interface ReworkCase {
   id: string;
   date: string;
@@ -86,6 +83,10 @@ export interface ReworkCase {
   reworkCost?: number;
   orFilesUrls?: string[];
   orFolderUrl?: string;
+  materials?: MaterialUsage[];
+  laborCount?: number;
+  laborHours?: number;
+  laborRate?: number;
 }
 
 export interface DashboardStats {
@@ -130,8 +131,6 @@ function parseTokenPayload(token: string): Record<string, unknown> | null {
 }
 
 async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiResponse<T>> {
-  ensureGasWebAppUrl();
-
   // Verify user is authenticated
   const token = getToken();
   if (!token) {
@@ -147,12 +146,10 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
       ? String(currentUser.email).trim()
       : String(tokenPayload?.sub || '').trim();
 
-    // Send request WITHOUT extra auth headers to avoid preflight OPTIONS
-    // GAS doesn't support preflight properly, so keep it simple
-    const response = await fetch(GAS_WEB_APP_URL, {
+    // Call our server-side Next.js secure API Proxy
+    const response = await fetch('/api/rework', {
       method: 'POST',
-      mode: 'cors',
-      headers: DEFAULT_HEADERS,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         ...payload, 
         token, 
@@ -178,13 +175,7 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
 
     return result;
   } catch (error) {
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      // This is likely a CORS error
-      console.error('❌ CORS Error - GAS endpoint may not be configured for cross-origin requests');
-      console.error('📝 Make sure the GAS deployment allows CORS from this origin');
-      console.error('🔗 GAS URL:', GAS_WEB_APP_URL);
-      throw new Error('Cannot connect to GAS backend. Please verify the deployment URL is correct and CORS is enabled.');
-    }
+    console.error('API Call Failure:', error);
     throw error;
   }
 }
@@ -358,6 +349,17 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
     reworkCost: normalizeAmount(caseItem.reworkCost),
     orFilesUrls: Array.isArray(caseItem.orFilesUrls) ? caseItem.orFilesUrls : [],
     orFolderUrl: normalizeString(caseItem.orFolderUrl),
+    materials: Array.isArray(caseItem.materials) ? caseItem.materials.map(m => ({
+      id: normalizeString(m.id),
+      name: normalizeString(m.name),
+      quantity: normalizeAmount(m.quantity),
+      unit: normalizeString(m.unit),
+      unitPrice: m.unitPrice !== undefined ? normalizeAmount(m.unitPrice) : undefined,
+      totalPrice: m.totalPrice !== undefined ? normalizeAmount(m.totalPrice) : undefined,
+    })) : [],
+    laborCount: caseItem.laborCount !== undefined ? normalizeAmount(caseItem.laborCount) : undefined,
+    laborHours: caseItem.laborHours !== undefined ? normalizeAmount(caseItem.laborHours) : undefined,
+    laborRate: caseItem.laborRate !== undefined ? normalizeAmount(caseItem.laborRate) : undefined,
   }));
 }
 

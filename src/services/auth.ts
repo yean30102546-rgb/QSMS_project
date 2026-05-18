@@ -14,14 +14,7 @@ const USER_KEY = 'qsms_user';
 const ROLE_KEY = 'qsms_role';
 const TOKEN_EXPIRY_KEY = 'qsms_token_expiry';
 const REFRESH_TOKEN_KEY = 'qsms_refresh_token';
-const GAS_AUTH_URL = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
-
-function ensureGasAuthUrl(): string {
-  if (!GAS_AUTH_URL.includes('script.google.com/macros/s') || !GAS_AUTH_URL.endsWith('/exec')) {
-    throw new Error('REACT_APP_GAS_WEB_APP_URL is not configured with a valid Google Apps Script /exec URL.');
-  }
-  return GAS_AUTH_URL;
-}
+const GAS_AUTH_URL = '';
 
 export interface User {
   email: string;
@@ -146,10 +139,9 @@ export async function loginWithGoogle(credentialResponse: GoogleCredentialRespon
  */
 export async function loginWithPassword(userId: string, password: string): Promise<AuthResponse> {
   try {
-    const response = await fetch(ensureGasAuthUrl(), {
+    const response = await fetch('/api/rework', {
       method: 'POST',
-      mode: 'cors',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'loginWithPassword',
         profile: userId,

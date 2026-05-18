@@ -17,6 +17,7 @@ const SHEET_ID = getRequiredScriptProperty('GOOGLE_SHEET_ID');
 const SHEET_NAME = 'Rework Cases';
 const IMG_URL_SHEET_NAME = 'Img_Url';
 const ITEM_MASTER_SHEET_NAME = 'ItemMaster';
+const MATERIALS_SHEET_NAME = 'Materials';
 const BACKUP_SHEET_NAME = 'Backup';
 const DRIVE_FOLDER_ID = getRequiredScriptProperty('DRIVE_FOLDER_ID'); // Google Drive folder for images
 
@@ -48,6 +49,9 @@ const COL_OR_FILES = 23;
 const COL_OR_FOLDER = 24;
 const COL_UID = 25;
 const COL_ITEM_ID = 26;
+const COL_LABOR_COUNT = 27;
+const COL_LABOR_HOURS = 28;
+const COL_LABOR_RATE = 29;
 
 const MAIN_HEADERS = [
   'Case ID', 'Timestamp', 'Status', 'Source', 'Customer Name', 
@@ -56,13 +60,26 @@ const MAIN_HEADERS = [
   'Amount', 'Reason', 'Reason Subtype', 'Linked Source ID',
   'Responsible', 'Responsible Subtype', 'Details',
   'Resolution Method', 'Rework Cost', 
-  'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL', 'UID', 'Item ID'
+  'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL', 'UID', 'Item ID',
+  'Labor Count', 'Labor Hours', 'Labor Rate'
 ];
 
 // ===== AUTHENTICATION SETTINGS =====
 const REQUIRE_TOKEN_VALIDATION = true;
 
 function getScriptProperty(key) {
+  try {
+    const allProps = PropertiesService.getScriptProperties().getProperties();
+    const normalizedTarget = String(key || '').trim().toUpperCase();
+    
+    for (var propKey in allProps) {
+      if (String(propKey).trim().toUpperCase() === normalizedTarget) {
+        return String(allProps[propKey] || '').trim();
+      }
+    }
+  } catch (error) {
+    Logger.log('Error reading script properties: ' + error.toString());
+  }
   return String(PropertiesService.getScriptProperties().getProperty(key) || '').trim();
 }
 
@@ -110,36 +127,41 @@ function getAuthSecret() {
 }
 
 function getAuthProfiles() {
-  return {
+  const profiles = {
     ADMIN: {
       password: getScriptProperty('ADMIN_PASSWORD'),
-      email: getScriptProperty('ADMIN_USER') || getScriptProperty('ADMIN_EMAIL'),
+      email: getScriptProperty('ADMIN_USER') || getScriptProperty('ADMIN_USERNAME') || getScriptProperty('ADMIN_EMAIL'),
       name: getScriptProperty('ADMIN_NAME') || 'Admin',
       role: 'admin',
       department: 'Management',
     },
     QSMS: {
       password: getScriptProperty('QSMS_PASSWORD'),
-      email: getScriptProperty('QSMS_USER') || getScriptProperty('QSMS_EMAIL'),
+      email: getScriptProperty('QSMS_USER') || getScriptProperty('QSMS_USERNAME') || getScriptProperty('QSMS_EMAIL'),
       name: getScriptProperty('QSMS_NAME') || 'QSMS',
       role: 'qsms',
       department: 'QSMS',
     },
-    WFG: {
-      password: getScriptProperty('WFG_PASSWORD'),
-      email: getScriptProperty('WFG_USER') || getScriptProperty('WFG_EMAIL'),
-      name: getScriptProperty('WFG_NAME') || 'WFG',
-      role: 'wfg',
-      department: 'WFG',
+    OPERATOR: {
+      password: getScriptProperty('OPERATOR_PASSWORD') || getScriptProperty('WFG_PASSWORD'),
+      email: getScriptProperty('OPERATOR_USER') || getScriptProperty('OPERATOR_USERNAME') || getScriptProperty('OPERATOR_EMAIL') || getScriptProperty('WFG_USER') || getScriptProperty('WFG_USERNAME') || getScriptProperty('WFG_EMAIL'),
+      name: getScriptProperty('OPERATOR_NAME') || getScriptProperty('WFG_NAME') || 'Operator',
+      role: 'operator',
+      department: 'Operator',
     },
     FINANCE: {
       password: getScriptProperty('FINANCE_PASSWORD'),
-      email: getScriptProperty('FINANCE_USER') || getScriptProperty('FINANCE_EMAIL'),
+      email: getScriptProperty('FINANCE_USER') || getScriptProperty('FINANCE_USERNAME') || getScriptProperty('FINANCE_EMAIL'),
       name: getScriptProperty('FINANCE_NAME') || 'Finance',
       role: 'finance',
       department: 'Finance',
     },
   };
+  
+  // Legacy alias support: map WFG to the OPERATOR credentials so legacy logins or tests still authenticate
+  profiles.WFG = profiles.OPERATOR;
+  
+  return profiles;
 }
 
 function getAuthProfileEmails() {
@@ -587,9 +609,24 @@ function validateToken(token, authProfile, authEmail) {
 }
 
 function handlePasswordLogin(payload) {
-  const profile = String(payload.profile || '').trim().toUpperCase();
+  var profileInput = String(payload.profile || '').trim().toUpperCase();
   const password = String(payload.password || '').trim();
-  const account = getAuthProfiles()[profile];
+  
+  const profiles = getAuthProfiles();
+  var account = profiles[profileInput];
+  var profileKey = profileInput;
+
+  // Fallback: If not found by direct profile key (e.g. 'OPERATOR'), search if they typed their actual configured email/username value instead!
+  if (!account) {
+    for (var key in profiles) {
+      const emailVal = String(profiles[key].email || '').trim().toUpperCase();
+      if (emailVal === profileInput) {
+        account = profiles[key];
+        profileKey = key;
+        break;
+      }
+    }
+  }
 
   if (!account || !account.password || !account.email) {
     return { success: false, error: 'Authentication profile is not configured.' };
@@ -599,7 +636,7 @@ function handlePasswordLogin(payload) {
     return { success: false, error: 'Invalid profile or password' };
   }
 
-  const tokenResult = createAuthToken(account.email, profile);
+  const tokenResult = createAuthToken(account.email, profileKey);
   return {
     success: true,
     data: {
@@ -858,6 +895,9 @@ function handleInsert(payload) {
       row[COL_OR_FOLDER] = orFilesData.folderUrl;
       // Use item.uid if provided (e.g. from a clone or retry), otherwise generate a fresh UUID
       row[COL_UID] = item.uid || Utilities.getUuid();
+      row[COL_LABOR_COUNT] = payload.laborCount || 0;
+      row[COL_LABOR_HOURS] = payload.laborHours || 0;
+      row[COL_LABOR_RATE] = payload.laborRate || 0;
       
       rowsToInsert.push(row);
     });
@@ -953,6 +993,28 @@ function handleReadAll(payload) {
       }
     }
 
+    // Load Materials mapping
+    const materialsSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(MATERIALS_SHEET_NAME);
+    const materialsMap = new Map();
+    if (materialsSheet) {
+      const matData = materialsSheet.getDataRange().getValues();
+      for (let i = 1; i < matData.length; i++) {
+        const cid = normalizeSheetText(matData[i][0]);
+        if (!cid) continue;
+        if (!materialsMap.has(cid)) {
+          materialsMap.set(cid, []);
+        }
+        materialsMap.get(cid).push({
+          id: normalizeSheetText(matData[i][1]),
+          name: normalizeSheetText(matData[i][2]),
+          quantity: normalizeSheetAmount(matData[i][3]),
+          unit: normalizeSheetText(matData[i][4]),
+          unitPrice: matData[i][5] !== "" && matData[i][5] !== undefined ? normalizeSheetAmount(matData[i][5]) : undefined,
+          totalPrice: matData[i][6] !== "" && matData[i][6] !== undefined ? normalizeSheetAmount(matData[i][6]) : undefined
+        });
+      }
+    }
+
     if (!data || data.length <= 1) {
       return {
         success: true,
@@ -1026,11 +1088,17 @@ function handleReadAll(payload) {
           orFolderUrl: normalizeSheetText(row[COL_OR_FOLDER]),
           resolutionMethod: normalizeSheetText(row[COL_RESOLUTION]),
           reworkCost: normalizeSheetAmount(row[COL_COST]),
+          laborCount: (COL_LABOR_COUNT < row.length && row[COL_LABOR_COUNT] !== undefined) ? normalizeSheetAmount(row[COL_LABOR_COUNT]) : 0,
+          laborHours: (COL_LABOR_HOURS < row.length && row[COL_LABOR_HOURS] !== undefined) ? normalizeSheetAmount(row[COL_LABOR_HOURS]) : 0,
+          laborRate: (COL_LABOR_RATE < row.length && row[COL_LABOR_RATE] !== undefined) ? normalizeSheetAmount(row[COL_LABOR_RATE]) : 0,
           status: normalizeSheetText(row[COL_STATUS]) || 'Pending',
-          items: [item]
+          items: [item],
+          materials: materialsMap.get(caseId) || []
         });
       } else {
         caseMap.get(caseId).items.push(item);
+        // Ensure materials is set/kept up to date
+        caseMap.get(caseId).materials = materialsMap.get(caseId) || [];
       }
     }
 
@@ -1076,7 +1144,7 @@ function handleUpdate(payload) {
     // Check permissions for specific updates
     const isAdminOrQSMS = (userRole === 'ADMIN' || userRole === 'QSMS');
     const isFinance = (userRole === 'FINANCE');
-    const isWFG = (userRole === 'WFG');
+    const isOperator = (userRole === 'OPERATOR' || userRole === 'WFG');
 
     const seenItemIdsByCase = {};
 
@@ -1110,9 +1178,9 @@ function handleUpdate(payload) {
           sheet.getRange(i + 1, COL_SOURCE + 1).setValue(updates.source);
         }
 
-        // 1. Update Resolution Method (WFG or Admin/QSMS)
+        // 1. Update Resolution Method (Operator or Admin/QSMS)
         if (updates.resolutionMethod !== undefined) {
-          if (isAdminOrQSMS || isWFG) {
+          if (isAdminOrQSMS || isOperator) {
             sheet.getRange(i + 1, COL_RESOLUTION + 1).setValue(updates.resolutionMethod);
             // Auto-update status to 'Awaiting Valuation' if method is set
             // BUG FIX: Only auto-transition if NOT already 'Completed' or 'Awaiting Valuation'
@@ -1125,7 +1193,7 @@ function handleUpdate(payload) {
             }
             updatedCount++;
           } else {
-            return { success: false, error: 'Permission denied: Only WFG or Admin can update resolution method' };
+            return { success: false, error: 'Permission denied: Only Operator or Admin can update resolution method' };
           }
         }
 
@@ -1149,8 +1217,8 @@ function handleUpdate(payload) {
           if (isAdminOrQSMS) {
             sheet.getRange(i + 1, COL_STATUS + 1).setValue(updates.status);
             updatedCount++;
-          } else if (isWFG) {
-            // WFG can move to In-Progress or Awaiting Valuation (if resolution added)
+          } else if (isOperator) {
+            // Operator can move to In-Progress or Awaiting Valuation (if resolution added)
             if (updates.status === 'In-Progress' || updates.status === 'Awaiting Valuation') {
               sheet.getRange(i + 1, COL_STATUS + 1).setValue(updates.status);
               updatedCount++;
@@ -1204,6 +1272,23 @@ function handleUpdate(payload) {
            sheet.getRange(i + 1, COL_CUSTOMER + 1).setValue(updates.customerName);
            updatedCount++;
         }
+
+        // 8. Update Labor Count, Labor Hours, Labor Rate (Operator, Finance, Admin/QSMS)
+        if (updates.laborCount !== undefined) {
+          if (isAdminOrQSMS || isOperator) {
+            sheet.getRange(i + 1, COL_LABOR_COUNT + 1).setValue(updates.laborCount);
+          }
+        }
+        if (updates.laborHours !== undefined) {
+          if (isAdminOrQSMS || isOperator) {
+            sheet.getRange(i + 1, COL_LABOR_HOURS + 1).setValue(updates.laborHours);
+          }
+        }
+        if (updates.laborRate !== undefined) {
+          if (isAdminOrQSMS || isFinance) {
+            sheet.getRange(i + 1, COL_LABOR_RATE + 1).setValue(updates.laborRate);
+          }
+        }
       }
     }
 
@@ -1232,6 +1317,42 @@ function handleUpdate(payload) {
           updatedCount++;
         }
       }
+    }
+
+    // 7. Update Materials (WFG, Finance, Admin/QSMS) ONCE outside the per-row loop
+    if (updates.materials !== undefined && Array.isArray(updates.materials) && matchedRows > 0) {
+      const matSheet = getOrCreateSheet(MATERIALS_SHEET_NAME, ['Case ID', 'Material ID', 'Material Name', 'Quantity', 'Unit', 'Unit Price', 'Total Price']);
+      const matData = matSheet.getDataRange().getValues();
+      
+      // Delete existing materials for this caseId (iterating backwards)
+      for (let j = matData.length - 1; j >= 1; j--) {
+        if (normalizeSheetText(matData[j][0]) === caseId) {
+          matSheet.deleteRow(j + 1);
+        }
+      }
+      
+      // Insert new materials
+      const matRows = [];
+      updates.materials.forEach(function(mat) {
+        const qty = Number(mat.quantity) || 0;
+        const price = mat.unitPrice !== undefined ? Number(mat.unitPrice) : 0;
+        const total = qty * price;
+        matRows.push([
+          caseId,
+          mat.id || ('mat_' + Utilities.getUuid()),
+          mat.name || '',
+          qty,
+          mat.unit || 'ชิ้น',
+          price,
+          total
+        ]);
+      });
+      
+      if (matRows.length > 0) {
+        matSheet.getRange(matSheet.getLastRow() + 1, 1, matRows.length, matRows[0].length)
+          .setValues(matRows);
+      }
+      updatedCount++;
     }
 
     if (matchedRows === 0) {
@@ -1299,6 +1420,21 @@ function handleDelete(payload) {
       }
     } catch (e) {
       Logger.log('Error cleaning Img_Url sheet: ' + e);
+    }
+
+    // Clean up Materials sheet
+    try {
+      const materialsSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(MATERIALS_SHEET_NAME);
+      if (materialsSheet) {
+        const matData = materialsSheet.getDataRange().getValues();
+        for (let i = matData.length - 1; i >= 1; i--) {
+          if (normalizeSheetText(matData[i][0]) === caseId) {
+            materialsSheet.deleteRow(i + 1);
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log('Error cleaning Materials sheet: ' + e);
     }
 
     // Clean up Drive folder
@@ -1958,7 +2094,10 @@ function standardizeSheetStructure() {
       'OR Files': COL_OR_FILES,
       'OR Folder URL': COL_OR_FOLDER,
       'UID': COL_UID,
-      'Item ID': COL_ITEM_ID
+      'Item ID': COL_ITEM_ID,
+      'Labor Count': COL_LABOR_COUNT,
+      'Labor Hours': COL_LABOR_HOURS,
+      'Labor Rate': COL_LABOR_RATE
     };
     
     Object.keys(mapping).forEach(header => {

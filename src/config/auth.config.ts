@@ -38,6 +38,7 @@ export enum UserRole {
   ADMIN = 'admin',           // Full access
   QSMS = 'qsms',             // Full access, Delete, Edit
   PDB = 'pdb',               // Add Case, Overall, Update Status, Resolution, Export
+  OPERATOR = 'operator',     // Operator Role / Production Rework
   FINANCE = 'finance',       // Overall (Valuation only)
 }
 
@@ -65,6 +66,13 @@ export const ROLE_PERMISSIONS = {
     'export_data',
   ],
   [UserRole.PDB]: [
+    'view_overall',
+    'create_case',
+    'update_status',
+    'fill_resolution',
+    'export_data',
+  ],
+  [UserRole.OPERATOR]: [
     'view_overall',
     'create_case',
     'update_status',

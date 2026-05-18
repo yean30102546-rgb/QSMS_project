@@ -339,8 +339,8 @@ export function ImageUpload({
           onClick={() => fileInputRef.current?.click()}
           tabIndex={0}
           className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center transition-all cursor-pointer group outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent ${isDragging
-              ? 'border-accent bg-accent/5'
-              : 'border-border hover:bg-slate-100 bg-slate-50'
+            ? 'border-accent bg-accent/5'
+            : 'border-border hover:bg-slate-100 bg-slate-50'
             }`}
         >
           <input

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2 } from 'lucide-react';
-import { ReworkCase, CUSTOMER_OPTIONS } from '../../services/api';
+import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2, Package } from 'lucide-react';
+import { ReworkCase, CUSTOMER_OPTIONS, MaterialUsage } from '../../services/api';
 import { formatThaiDate, formatThaiDateShort, enforceNumeric } from '../../utils/helpers';
 import { useExportReport } from '../../hooks/useExportReport';
 import { ExportTemplate } from '../ui/ExportTemplate';
@@ -17,6 +17,8 @@ interface UpdateModalProps {
   onUpdate: (caseId: string, updates: Partial<ReworkCase>) => Promise<void>;
   onDelete?: (caseId: string) => Promise<void>;
 }
+
+const STANDARD_MATERIALS = ['บรรจุภัณฑ์', 'แกลลอน', 'ฝา', 'สติ๊กเกอร์', 'ชริ้งค์ ลาเบล', 'ของแถม'];
 
 export function UpdateModal({
   isOpen,
@@ -48,10 +50,25 @@ export function UpdateModal({
   // New Fields
   const [newOrFiles, setNewOrFiles] = useState<File[]>([]);
 
+  // Materials Management
+  const [materials, setMaterials] = useState<MaterialUsage[]>([]);
+
+  // Labor Management State
+  const [laborCount, setLaborCount] = useState<number | string>('');
+  const [laborHours, setLaborHours] = useState<number | string>('');
+  const [laborRate, setLaborRate] = useState<number | string>('');
+
   const userRole = getCurrentUserRole();
   const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.QSMS;
   const isFinance = userRole === UserRole.FINANCE || isAdmin;
   const isPDB = userRole === UserRole.PDB || isAdmin;
+  const isOperator = userRole === UserRole.OPERATOR || isAdmin;
+
+  const isStrictOperator = userRole === UserRole.OPERATOR && !isAdmin;
+  const canManageRows = isOperator || isAdmin;
+  const canEditMaterialNameQty = isOperator || isAdmin;
+  const canEditUnitPrice = isFinance || isAdmin;
+  const canViewFinancialData = !isStrictOperator;
 
   // ===== Export Hook =====
   const { exportRef, isExporting, exportProgress, exportPNG, exportPDF } = useExportReport();
@@ -80,8 +97,63 @@ export function UpdateModal({
       setEditedItems([...caseData.items]);
       setDeletedItemIds([]);
       setNewOrFiles([]);
+      setMaterials(caseData.materials ? [...caseData.materials] : []);
+      setLaborCount(caseData.laborCount !== undefined && caseData.laborCount !== null ? caseData.laborCount : '');
+      setLaborHours(caseData.laborHours !== undefined && caseData.laborHours !== null ? caseData.laborHours : '');
+      setLaborRate(caseData.laborRate !== undefined && caseData.laborRate !== null ? caseData.laborRate : '');
     }
   }, [caseData]);
+
+  // Auto-calculate grand total of materials and labor to populate Rework Cost (Grand Total)
+  useEffect(() => {
+    const matTotal = materials.reduce((sum, mat) => {
+      const qty = Number(mat.quantity) || 0;
+      const price = Number(mat.unitPrice) || 0;
+      return sum + (qty * price);
+    }, 0);
+
+    const lCount = Number(laborCount) || 0;
+    const lHours = Number(laborHours) || 0;
+    const lRate = Number(laborRate) || 0;
+    const laborTotal = lCount * lHours * lRate;
+
+    const grandTotal = matTotal + laborTotal;
+    
+    if (materials.length > 0 || laborTotal > 0) {
+      setReworkCost(Number(grandTotal.toFixed(2)));
+    }
+  }, [materials, laborCount, laborHours, laborRate]);
+
+  const handleAddMaterial = () => {
+    const newMat: MaterialUsage = {
+      id: `mat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: STANDARD_MATERIALS[0],
+      quantity: 1,
+      unit: 'ชิ้น',
+      unitPrice: 0,
+      totalPrice: 0
+    };
+    setMaterials(prev => [...prev, newMat]);
+  };
+
+  const handleMaterialChange = (id: string, field: keyof MaterialUsage, value: any) => {
+    setMaterials(prev => prev.map(mat => {
+      if (mat.id !== id) return mat;
+      const updated = { ...mat, [field]: value };
+      
+      // Auto-calculate total price for the row
+      if (field === 'quantity' || field === 'unitPrice') {
+        const qty = Number(updated.quantity) || 0;
+        const price = Number(updated.unitPrice) || 0;
+        updated.totalPrice = qty * price;
+      }
+      return updated;
+    }));
+  };
+
+  const handleRemoveMaterial = (id: string) => {
+    setMaterials(prev => prev.filter(mat => mat.id !== id));
+  };
 
   const handleUpdate = async () => {
     if (!caseData) return;
@@ -89,40 +161,71 @@ export function UpdateModal({
     const updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[] } = {};
 
     // Unified status transition logic
-    let targetStatus = isAdmin ? caseStatus : caseData.status;
+    let targetStatus = (isAdmin || isOperator) ? caseStatus : caseData.status;
 
-    // Auto-transition rules (apply if not explicitly overridden by admin to a NEW status)
-    const isExplicitAdminOverride = isAdmin && caseStatus !== caseData.status;
+    // Auto-transition rules (apply if not explicitly overridden by admin or operator to a NEW status)
+    const isExplicitOverride = (isAdmin || isOperator) && caseStatus !== caseData.status;
 
-    if (!isExplicitAdminOverride) {
+    if (!isExplicitOverride) {
       if (caseData.status === 'Pending') {
-        if (resolutionMethod.trim() !== '') {
+        const hasMaterials = materials.length > 0;
+        const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
+        if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) {
           targetStatus = 'Awaiting Valuation';
         } else if (!isAdmin) {
           // Non-admins move to In-Progress just by opening/viewing/saving notes
           targetStatus = 'In-Progress';
         }
       } else if (caseData.status === 'In-Progress') {
-        if (resolutionMethod.trim() !== '') {
+        const hasMaterials = materials.length > 0;
+        const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
+        if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) {
           targetStatus = 'Awaiting Valuation';
         }
       } else if (caseData.status === 'Awaiting Valuation') {
-        if (reworkCost !== '' && Number(reworkCost) > 0) {
-          targetStatus = 'Completed';
-        }
+        targetStatus = 'Completed';
       }
     }
 
     updates.status = targetStatus;
-    updates.resolutionMethod = resolutionMethod;
-    updates.source = editedSource;
+    if (isOperator || isAdmin) {
+      updates.resolutionMethod = resolutionMethod;
+    }
+    if (isAdmin) {
+      updates.source = editedSource;
+    }
     
-    if (reworkCost !== '') {
+    if (reworkCost !== '' && (isFinance || isAdmin)) {
       updates.reworkCost = Number(reworkCost);
     }
 
     if (isPDB || isAdmin) {
       updates.items = editedItems;
+    }
+
+    if (canManageRows || canEditUnitPrice || isAdmin) {
+      updates.materials = materials;
+    }
+
+    if (isOperator || isAdmin) {
+      if (laborCount !== '') {
+        updates.laborCount = Number(laborCount);
+      } else {
+        updates.laborCount = 0;
+      }
+      if (laborHours !== '') {
+        updates.laborHours = Number(laborHours);
+      } else {
+        updates.laborHours = 0;
+      }
+    }
+
+    if (isFinance || isAdmin) {
+      if (laborRate !== '') {
+        updates.laborRate = Number(laborRate);
+      } else {
+        updates.laborRate = 0;
+      }
     }
 
     // Handle OR Files in updates
@@ -545,6 +648,250 @@ export function UpdateModal({
                       </div>
                     )}
 
+                    {/* ===== LABOR RESOURCE MANAGEMENT SECTION ===== */}
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <Clock size={18} className="text-accent" />
+                        <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                          จัดการเวลาทำงาน (Labor / Man-hour Management)
+                        </label>
+                      </div>
+
+                      <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4">
+                        <div className={`grid grid-cols-1 ${canViewFinancialData ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
+                          {/* 1. Labor Count Dropdown */}
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">
+                              จำนวนพนักงาน (คน)
+                            </label>
+                            <select
+                              value={laborCount}
+                              onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
+                              disabled={!canEditMaterialNameQty}
+                              className="w-full text-sm font-bold border border-slate-200 rounded-lg bg-white px-2.5 py-1.5 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none disabled:bg-slate-100 disabled:text-slate-500 transition-all"
+                            >
+                              <option value="">-- เลือกจำนวนพนักงาน --</option>
+                              <option value="1">1 คน</option>
+                              <option value="2">2 คน</option>
+                              <option value="3">3 คน</option>
+                              <option value="4">4 คน</option>
+                              <option value="5">5 คน</option>
+                            </select>
+                          </div>
+
+                          {/* 2. Labor Hours Input */}
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">
+                              ชั่วโมงที่ใช้ (ชม.)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              placeholder="ระบุจำนวนชั่วโมง"
+                              value={laborHours === undefined || laborHours === null || laborHours.toString() === 'NaN' ? '' : laborHours}
+                              onChange={(e) => setLaborHours(e.target.value === '' ? '' : Number(e.target.value))}
+                              disabled={!canEditMaterialNameQty}
+                              className="w-full px-2.5 py-1.5 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none disabled:bg-slate-100 disabled:text-slate-500 transition-all"
+                            />
+                          </div>
+
+                          {/* 3. Labor Rate Input (Only shown to Finance or Admin/QSMS) */}
+                          {canViewFinancialData && (
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">
+                                อัตราค่าแรง (บาท/ชม.)
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  placeholder="ระบุอัตราค่าแรง"
+                                  value={laborRate === undefined || laborRate === null || laborRate.toString() === 'NaN' ? '' : laborRate}
+                                  onChange={(e) => setLaborRate(e.target.value === '' ? '' : Number(e.target.value))}
+                                  disabled={!canEditUnitPrice}
+                                  className="w-full pl-6 pr-2.5 py-1.5 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none disabled:bg-slate-100 disabled:text-slate-500 transition-all"
+                                />
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">฿</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Labor and Grand Total Cost Summary (Only shown if canViewFinancialData) */}
+                        {canViewFinancialData && (
+                          <div className="bg-slate-100/50 rounded-xl border border-slate-200/50 p-4 space-y-2 text-sm font-bold text-slate-700">
+                            <div className="flex items-center justify-between text-xs text-slate-500">
+                              <span>ค่าแรงผู้ปฏิบัติงาน (Labor Cost)</span>
+                              <span className="font-mono">
+                                ฿{((Number(laborCount) || 0) * (Number(laborHours) || 0) * (Number(laborRate) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-slate-500">
+                              <span>ค่าวัสดุทั้งหมด (Material Cost)</span>
+                              <span className="font-mono">
+                                ฿{materials.reduce((sum, mat) => sum + ((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)), 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-slate-900">
+                              <span className="flex items-center gap-1">
+                                <Calculator size={15} className="text-accent" />
+                                <span>ราคารวมทั้งสิ้น (Grand Total)</span>
+                              </span>
+                              <span className="text-base font-black text-accent font-mono">
+                                ฿{((Number(laborCount) || 0) * (Number(laborHours) || 0) * (Number(laborRate) || 0) + materials.reduce((sum, mat) => sum + ((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)), 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ===== MATERIAL RESOURCE MANAGEMENT SECTION ===== */}
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Package size={18} className="text-accent" />
+                          <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                            จัดการวัสดุ Rework (Material Resource Management)
+                          </label>
+                        </div>
+                        {canManageRows && (
+                          <button
+                            type="button"
+                            onClick={handleAddMaterial}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-accent text-white hover:bg-accent-dark shadow-sm hover:shadow active:scale-95 transition-all"
+                          >
+                            + เพิ่มวัสดุ
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-50/50 rounded-2xl border border-slate-100 overflow-hidden">
+                        {materials.length > 0 ? (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="border-b border-slate-200/60 bg-slate-100/50 text-[10px] font-black text-muted uppercase tracking-wider">
+                                  <th className="px-4 py-3">ชื่อวัสดุ (Material Name)</th>
+                                  <th className="px-4 py-3 text-center w-24">จำนวน</th>
+                                  <th className="px-4 py-3 text-center w-16">หน่วย</th>
+                                  {canViewFinancialData && (
+                                    <>
+                                      <th className="px-4 py-3 text-right w-28">ราคาต่อหน่วย</th>
+                                      <th className="px-4 py-3 text-right w-28">ราคารวม</th>
+                                    </>
+                                  )}
+                                  {canManageRows && <th className="px-4 py-3 text-center w-12"></th>}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 text-sm font-bold text-slate-700">
+                                {materials.map((mat) => (
+                                  <tr key={mat.id} className="hover:bg-white/40 transition-colors">
+                                    <td className="px-4 py-2.5">
+                                      {canEditMaterialNameQty ? (
+                                        <select
+                                          value={mat.name}
+                                          onChange={(e) => handleMaterialChange(mat.id, 'name', e.target.value)}
+                                          className="w-full text-sm font-bold border border-slate-200 rounded-lg bg-white px-2.5 py-1.5 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                        >
+                                          {STANDARD_MATERIALS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <span className="px-2.5 py-1.5 block font-bold text-slate-800 bg-slate-100/50 rounded-lg border border-slate-200/40">
+                                          {mat.name}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-center">
+                                      {canEditMaterialNameQty ? (
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          value={mat.quantity === undefined || mat.quantity === null || mat.quantity.toString() === 'NaN' ? '' : mat.quantity}
+                                          onChange={(e) => handleMaterialChange(mat.id, 'quantity', e.target.value === '' ? '' as any : Number(e.target.value))}
+                                          className="w-20 px-2 py-1.5 text-center text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                        />
+                                      ) : (
+                                        <span className="font-mono text-slate-800">{mat.quantity}</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-center">
+                                      <span className="text-xs text-slate-500 font-bold">{mat.unit || 'ชิ้น'}</span>
+                                    </td>
+                                    {canViewFinancialData && (
+                                      <>
+                                        <td className="px-4 py-2.5 text-right">
+                                          {canEditUnitPrice ? (
+                                            <div className="relative inline-block w-full">
+                                              <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={mat.unitPrice === undefined || mat.unitPrice === null || mat.unitPrice.toString() === 'NaN' ? '' : mat.unitPrice}
+                                                onChange={(e) => handleMaterialChange(mat.id, 'unitPrice', e.target.value === '' ? '' as any : Number(e.target.value))}
+                                                className="w-full pl-6 pr-2 py-1.5 text-right text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                              />
+                                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">฿</span>
+                                            </div>
+                                          ) : (
+                                            <span className="font-mono text-slate-800">฿{(Number(mat.unitPrice) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-2.5 text-right font-mono text-slate-900 bg-slate-100/10">
+                                          ฿{((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                      </>
+                                    )}
+                                    {canManageRows && (
+                                      <td className="px-4 py-2.5 text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveMaterial(mat.id)}
+                                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                          title="ลบแถววัสดุ"
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+
+                            {/* Materials Cost Summary Card */}
+                            {canViewFinancialData && (
+                              <div className="bg-slate-100/60 border-t border-slate-200/80 px-6 py-4 flex items-center justify-between text-slate-800">
+                                <span className="text-[10px] font-black uppercase text-muted tracking-wider">
+                                  สรุปยอดวัสดุ Rework ทั้งหมด
+                                </span>
+                                <div className="flex items-center gap-1 font-black text-base text-accent">
+                                  <span className="text-xs">ราคารวมทั้งสิ้น:</span>
+                                  <span className="font-mono">
+                                    ฿{materials.reduce((sum, mat) => sum + ((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)), 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="py-8 px-4 flex flex-col items-center justify-center text-center text-slate-400">
+                            <Package size={28} className="mb-2 opacity-25" />
+                            <p className="text-xs font-bold">ยังไม่มีข้อมูลรายการวัสดุสำหรับเคส Rework นี้</p>
+                            {canManageRows && (
+                              <p className="text-[10px] text-slate-400/80 mt-1">
+                                กรุณากดปุ่ม "+ เพิ่มวัสดุ" ด้านบนขวาเพื่อบันทึกรายการวัสดุมาตรฐาน
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* ===== UPDATE WORKFLOW SECTION ===== */}
                     <div className="space-y-6 pt-4">
                       <div className="flex items-center gap-2">
@@ -554,11 +901,15 @@ export function UpdateModal({
                         </label>
                       </div>
 
-                      {/* Status Selector (Disabled for flow control, but showing for visibility) */}
+                      {/* Status Selector */}
                       <div className="grid grid-cols-4 gap-4">
                         {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
                           const isActive = caseStatus === status;
-                          const isAllowed = isAdmin; // Only admin can manually jump statuses
+                          const isAllowed = isAdmin || (
+                            isOperator && 
+                            (caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && 
+                            (status === 'Pending' || status === 'In-Progress')
+                          );
                           return (
                             <button
                               key={status}
@@ -581,7 +932,7 @@ export function UpdateModal({
 
                       {/* Input fields based on status */}
                       <AnimatePresence mode="wait">
-                        {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isPDB && (
+                        {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isOperator && (
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -710,7 +1061,7 @@ export function UpdateModal({
                         disabled={(() => {
                           if (isLoading || !caseData) return true;
                           if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
-                          if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB) return true;
+                          if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB && !isOperator) return true;
                           if (caseData.status === 'Completed' && !isAdmin) return true;
                           return false;
                         })()}

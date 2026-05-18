@@ -172,7 +172,7 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
           </form>
 
           <div className="mt-8 text-center text-sm text-slate-500 space-y-2">
-            <p>ชื่อผู้ใช้งานตัวอย่าง: QSMS หรือ PDB หรือ FINANCE</p>
+            <p>ชื่อผู้ใช้งานตัวอย่าง: QSMS หรือ PDB หรือ OPERATOR หรือ FINANCE</p>
             <p>หากต้องการแก้ไขบัญชี ให้ปรับค่าใน Google Apps Script Properties</p>
           </div>
 

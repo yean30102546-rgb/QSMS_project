@@ -6,18 +6,14 @@
   "loginUser": "QSMS",
   "loginPassword": "Qsms123",
   "executionArgs": {
-    "projectName": "QSMS_project",
+    "projectName": "QSMS Rework Web app",
     "projectPath": "c:\\Workplace\\QSMS Rework Web app",
-    "testIds": [
-      "RBAC001",
-      "RBAC002",
-      "RBAC003"
-    ],
-    "additionalInstruction": "Please use port 3000 for all tests. The application is running on http://localhost:3000. Focus on the RBAC tests (RBAC001, RBAC002, RBAC003) and use the provided credentials.",
+    "testIds": [],
+    "additionalInstruction": "ทดสอบฟังก์ชันจัดการวัสดุ Rework (Material Resource Management) ในหน้าจอ Update Modal: สิทธิ์ WFG (เพิ่ม/ลบ แถว, เลือกชื่อวัสดุมาตรฐาน, กำหนดจำนวน), สิทธิ์ Finance (ใส่ราคาต่อหน่วย), การคํานวณยอดรวม (quantity * unitPrice) และ Grand Total และตรวจสอบว่าไม่มี Error ใดๆ ในแอปพลิเคชัน QSMS Rework",
     "serverMode": "development",
     "envs": {
       "API_KEY": "sk-user-F7qN0Jha_vUyBitRT7ksOSeNmK1-2iFNFyFGpL5YTfr8_P2hMBu4MBaKjDZLBcrBYWk-TEfpQYCgwkcthKZ4v2kih3JljnfygCiswoAbO5Ty7kXJv1ymCC13k2Fx_JrLo3c"
     }
   },
-  "serverPort": 49292
+  "serverPort": 51843
 }
