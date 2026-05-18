@@ -101,3 +101,11 @@
 - **Cause**: In Vite, Tailwind v4 is compiled via the `@tailwindcss/vite` plugin. In Next.js, standard styling files importing `@import "tailwindcss";` are not processed unless the PostCSS preprocessor is configured.
 - **Solution**: Installed `@tailwindcss/postcss` and `postcss`, then created a `postcss.config.mjs` registering `'@tailwindcss/postcss': {}`. This registers the Tailwind v4 compiler into Next.js's style loading system.
 - **Learning**: Always configure PostCSS when using Tailwind CSS v4 in Next.js migrations to guarantee stylesheets are parsed and compiled correctly. If a dev server was already running, it must be terminated and restarted (`npm run dev`) so that Next.js registers the new configuration file on startup.
+
+### 19. Hydration Mismatch in Client-Only React 19 Trees (2026-05-18)
+- **Problem**: When migrating a client-side Vite single-page application (SPA) to Next.js, importing the root app directly on the entry page (`src/app/page.tsx`) can trigger hydration mismatch warnings or client-side crashes (e.g. `window is not defined` or `localStorage is not defined`) during server-side static rendering phases.
+- **Solution**: Used Next.js's dynamic import with `ssr: false` to force client-only execution:
+  ```typescript
+  const App = dynamic(() => import('../App'), { ssr: false, loading: () => <FallbackSpinner /> });
+  ```
+- **Learning**: Always leverage dynamic client-side imports (`ssr: false`) when hosting legacy SPA applications inside Next.js pages. This isolates browser-only global contexts safely from server compilation pipelines and yields a clean, resilient, compile-safe production build.
