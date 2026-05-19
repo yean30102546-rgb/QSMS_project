@@ -19,7 +19,7 @@
 
 @layer base {
   html, body {
-    @apply h-full overflow-hidden;
+    @apply min-h-screen;
     scroll-behavior: auto !important;
   }
   
@@ -32,7 +32,7 @@
   }
   
   #root {
-    @apply h-full;
+    @apply min-h-screen;
   }
 }
 

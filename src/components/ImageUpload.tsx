@@ -396,11 +396,17 @@ export function ImageUpload({
                   className="relative group"
                 >
                   <div className="aspect-square rounded-lg overflow-hidden bg-slate-100 border border-border relative">
-                    <img
-                      src={item.preview}
-                      alt={`Preview ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                    {item.preview ? (
+                      <img
+                        src={item.preview}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
 
                     {/* Status Overlay */}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

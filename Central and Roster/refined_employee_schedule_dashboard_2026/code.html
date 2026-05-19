@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Shift Management Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#f9f9fb",
+                        "tertiary-fixed": "#d3e7dc",
+                        "tertiary-fixed-dim": "#b7cbc1",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f4f3f5",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#c2c7cd",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#0e1f18",
+                        "secondary-fixed-dim": "#dcc39f",
+                        "on-secondary-container": "#736042",
+                        "inverse-on-surface": "#f1f0f3",
+                        "surface-dim": "#dadadc",
+                        "on-tertiary-fixed-variant": "#394b43",
+                        "secondary": "#6f5b3e",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#50625a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#42544b",
+                        "on-error": "#ffffff",
+                        "primary-container": "#a2c7e5",
+                        "on-primary-container": "#2e546d",
+                        "surface-tint": "#3e627c",
+                        "surface-container-high": "#e8e8ea",
+                        "outline": "#72787d",
+                        "primary-fixed-dim": "#a6cbe9",
+                        "surface-container-highest": "#e2e2e4",
+                        "on-surface": "#1a1c1e",
+                        "surface": "#f9f9fb",
+                        "on-secondary-fixed": "#261903",
+                        "on-secondary-fixed-variant": "#554429",
+                        "surface-variant": "#e2e2e4",
+                        "tertiary-container": "#b3c7bd",
+                        "surface-bright": "#f9f9fb",
+                        "inverse-primary": "#a6cbe9",
+                        "secondary-container": "#f6dcb7",
+                        "inverse-surface": "#2f3032",
+                        "primary-fixed": "#c9e6ff",
+                        "on-primary-fixed-variant": "#244a64",
+                        "surface-container": "#eeedf0",
+                        "on-surface-variant": "#42474d",
+                        "primary": "#3e627c",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1c1e",
+                        "on-primary-fixed": "#001e2f",
+                        "secondary-fixed": "#f9dfba"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "card-gap": "16px",
+                        "section-padding": "32px",
+                        "grid-gutter": "1px",
+                        "sidebar-width": "260px",
+                        "container-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "display": ["Inter", "sans-serif"],
+                        "label-md": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "headline-lg": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar for timeline */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Subtle diffuse shadow */
+        .shadow-diffuse { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); }
+        .shadow-modal { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08); }
+
+        /* Animations */
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .animate-slide-in-left {
+                animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            }
+            .animate-slide-up-fade {
+                animation: slideUpFade 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                opacity: 0;
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                opacity: 0;
+            }
+            
+            /* Stagger delays */
+            .delay-100 { animation-delay: 100ms; }
+            .delay-200 { animation-delay: 200ms; }
+            .delay-300 { animation-delay: 300ms; }
+            .delay-400 { animation-delay: 400ms; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-4 z-40 bg-surface-container-lowest dark:bg-inverse-surface shadow-md docked h-screen w-sidebar-width hidden md:flex">
+<div class="mb-8 px-2 flex items-center gap-3 animate-slide-in-left">
+<img alt="Company Logo" class="w-10 h-10 rounded-full object-contain bg-surface-container-lowest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnQ_YLo8qayLT79d3gGdFNdueBTsJQjhuwyD7NS3awf-3LKrnekZlBWv_3vs-Y9DL-3vYqtxQUVZQl85tCxk3KyxQqEoV-01_sd6PsP8fA5BIfiSVh7rdSWMHJCsbLXtc37voK1WR7Rj9ttRYwJ2I8I8KtQ-DXEDF7aPdw7FRDs8j-rSrI_zww_5lYfLOgPI1pq3pBeO_5H6JBjBzI_orWUqxm-C9gP2U85SNjlkZc_iLB9z0SCKPGKX7w43f8ND59HY92Rof3zyQ"/>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">ShiftHub Admin</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">HR Department</p>
+</div>
+</div>
+<button class="mb-8 w-full py-2.5 px-4 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-sm hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 animate-slide-in-left delay-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+            New Request
+        </button>
+<nav class="flex-1 space-y-2">
+<!-- Dashboard -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant hover:scale-[1.02] transition-all duration-200 animate-slide-in-left delay-100" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<!-- Schedule (Active) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-semibold bg-primary-container/20 translate-x-1 hover:scale-[1.02] transition-all duration-200 animate-slide-in-left delay-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span class="font-label-md text-label-md">Schedule</span>
+</a>
+<!-- Team -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant hover:scale-[1.02] transition-all duration-200 animate-slide-in-left delay-300" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant hover:scale-[1.02] transition-all duration-200 animate-slide-in-left delay-400" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<!-- Approvals -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant hover:scale-[1.02] transition-all duration-200 animate-slide-in-left delay-400" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label-md text-label-md">Approvals</span>
+</a>
+</nav>
+<div class="mt-auto space-y-2 border-t border-surface-container pt-4 animate-slide-in-left delay-400">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant hover:scale-[1.02] transition-all duration-200" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Help Center</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant hover:scale-[1.02] transition-all duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col md:ml-sidebar-width h-full bg-background relative">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 flex items-center justify-between px-section-padding w-full h-16 bg-surface dark:bg-surface-dim shadow-sm docked full-width transition-colors duration-300">
+<div class="flex items-center gap-6">
+<h2 class="font-headline-md text-headline-md font-semibold text-on-surface dark:text-inverse-on-surface transition-colors duration-300">Employee Schedule</h2>
+<div class="hidden lg:flex gap-4 h-full pt-1">
+<button class="text-on-surface-variant dark:text-outline font-label-md text-label-md hover:bg-surface-container-high transition-colors duration-200 px-2 flex items-center rounded">Apr 2026</button>
+<button class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md text-label-md flex items-center transition-colors duration-200">May 2026</button>
+<button class="text-on-surface-variant dark:text-outline font-label-md text-label-md hover:bg-surface-container-high transition-colors duration-200 px-2 flex items-center rounded">Jun 2026</button>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm group-focus-within:text-primary transition-colors duration-200">search</span>
+<input class="pl-9 pr-4 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-full text-body-md font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-300 w-48 focus:w-64" placeholder="Search" type="text"/>
+</div>
+<button class="px-4 py-1.5 bg-surface-container-highest text-on-surface rounded-lg font-label-md text-label-md hover:bg-surface-container-high hover:scale-[1.02] active:scale-95 transition-all duration-200">Export</button>
+<button class="px-4 py-1.5 bg-primary-container text-on-primary-container rounded-lg font-label-md text-label-md font-semibold hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all duration-200">Add Employee</button>
+<div class="flex items-center gap-2 ml-2 border-l border-outline-variant pl-4">
+<button class="text-on-surface-variant hover:bg-surface-container-high hover:scale-110 p-2 rounded-full transition-all duration-200 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2.5 h-2.5 bg-error-container border border-surface rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high hover:scale-110 hover:rotate-45 p-2 rounded-full transition-all duration-300">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-section-padding space-y-8">
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-card-gap">
+<div class="bg-surface-container-lowest border border-surface-container-highest rounded-xl p-5 shadow-diffuse flex flex-col justify-between animate-slide-up-fade hover:-translate-y-1 hover:shadow-modal transition-all duration-300">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total Staff</h3>
+<span class="material-symbols-outlined text-primary">groups</span>
+</div>
+<p class="font-display text-display text-on-surface">124</p>
+</div>
+<div class="bg-surface-container-lowest border border-surface-container-highest rounded-xl p-5 shadow-diffuse flex flex-col justify-between animate-slide-up-fade delay-100 hover:-translate-y-1 hover:shadow-modal transition-all duration-300">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Pending Requests</h3>
+<span class="material-symbols-outlined text-secondary">assignment_late</span>
+</div>
+<p class="font-display text-display text-on-surface">8</p>
+</div>
+<div class="bg-surface-container-lowest border border-surface-container-highest rounded-xl p-5 shadow-diffuse flex flex-col justify-between animate-slide-up-fade delay-200 hover:-translate-y-1 hover:shadow-modal transition-all duration-300">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">OT Today</h3>
+<span class="material-symbols-outlined text-tertiary">schedule</span>
+</div>
+<p class="font-display text-display text-on-surface">12h</p>
+</div>
+<div class="bg-surface-container-lowest border border-surface-container-highest rounded-xl p-5 shadow-diffuse flex flex-col justify-between relative overflow-hidden animate-slide-up-fade delay-300 hover:-translate-y-1 hover:shadow-modal transition-all duration-300 group">
+<div class="absolute right-0 top-0 w-16 h-16 bg-error-container/30 rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-300"></div>
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Upcoming Holidays</h3>
+<span class="material-symbols-outlined text-error">celebration</span>
+</div>
+<p class="font-display text-display text-on-surface">2</p>
+</div>
+</div>
+<!-- Resource Timeline Grid -->
+<div class="bg-surface-container-lowest border border-surface-container-highest rounded-xl shadow-diffuse overflow-hidden flex flex-col animate-fade-in delay-400">
+<div class="overflow-x-auto scrollbar-hide w-full relative">
+<div class="min-w-[1920px] flex">
+<!-- Sticky Employee Column -->
+<div class="sticky left-0 bg-surface-container-lowest border-r border-surface-container-highest w-64 flex-shrink-0 z-30 shadow-[2px_0_10px_rgba(0,0,0,0.05)]">
+<div class="h-12 border-b border-surface-container-highest flex items-center px-4 bg-surface-container-low/50">
+<span class="font-label-md text-label-md text-on-surface-variant">Resource</span>
+</div>
+<!-- Employee Rows -->
+<div class="flex flex-col">
+<div class="h-16 border-b border-surface-container-highest flex flex-col justify-center px-4 bg-surface-container-lowest hover:bg-surface-bright transition-colors duration-200 cursor-pointer group">
+<div class="flex items-center gap-2 group-hover:translate-x-1 transition-transform duration-200">
+<span class="font-body-md text-body-md font-medium text-on-surface">Sarah J.</span>
+<span class="px-1.5 py-0.5 bg-primary-container text-on-primary-container text-[10px] rounded font-medium uppercase tracking-wider">Sales</span>
+</div>
+<div class="flex items-center gap-1 mt-0.5 group-hover:translate-x-1 transition-transform duration-200">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant">Pattern A</span>
+</div>
+</div>
+<div class="h-16 border-b border-surface-container-highest flex flex-col justify-center px-4 bg-surface-container-lowest hover:bg-surface-bright transition-colors duration-200 cursor-pointer group">
+<div class="flex items-center gap-2 group-hover:translate-x-1 transition-transform duration-200">
+<span class="font-body-md text-body-md font-medium text-on-surface">Mark T.</span>
+<span class="px-1.5 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] rounded font-medium uppercase tracking-wider">IT</span>
+</div>
+<div class="flex items-center gap-1 mt-0.5 group-hover:translate-x-1 transition-transform duration-200">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant">Pattern B</span>
+</div>
+</div>
+<div class="h-16 border-b border-surface-container-highest flex flex-col justify-center px-4 bg-surface-container-lowest hover:bg-surface-bright transition-colors duration-200 cursor-pointer group">
+<div class="flex items-center gap-2 group-hover:translate-x-1 transition-transform duration-200">
+<span class="font-body-md text-body-md font-medium text-on-surface">Elena R.</span>
+<span class="px-1.5 py-0.5 bg-primary-container text-on-primary-container text-[10px] rounded font-medium uppercase tracking-wider">Sales</span>
+</div>
+<div class="flex items-center gap-1 mt-0.5 group-hover:translate-x-1 transition-transform duration-200">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant">Pattern A</span>
+</div>
+</div>
+<div class="h-16 border-b border-surface-container-highest flex flex-col justify-center px-4 bg-surface-container-lowest hover:bg-surface-bright transition-colors duration-200 cursor-pointer group">
+<div class="flex items-center gap-2 group-hover:translate-x-1 transition-transform duration-200">
+<span class="font-body-md text-body-md font-medium text-on-surface">David L.</span>
+<span class="px-1.5 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] rounded font-medium uppercase tracking-wider">Support</span>
+</div>
+<div class="flex items-center gap-1 mt-0.5 group-hover:translate-x-1 transition-transform duration-200">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant">Pattern A</span>
+</div>
+</div>
+<div class="h-16 flex flex-col justify-center px-4 bg-surface-container-lowest hover:bg-surface-bright transition-colors duration-200 cursor-pointer group">
+<div class="flex items-center gap-2 group-hover:translate-x-1 transition-transform duration-200">
+<span class="font-body-md text-body-md font-medium text-on-surface">Chloe M.</span>
+<span class="px-1.5 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] rounded font-medium uppercase tracking-wider">IT</span>
+</div>
+<div class="flex items-center gap-1 mt-0.5 group-hover:translate-x-1 transition-transform duration-200">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant">Pattern B</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Days Grid -->
+<div class="flex-1 flex flex-col">
+<!-- Header Row (Days) -->
+<div class="h-12 border-b border-surface-container-highest flex relative bg-surface-container-low/50">
+<!-- May 2026 Days (Starts on Friday) -->
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center bg-error-container/20 hover:bg-error-container/30 transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Fri</span>
+<span class="font-body-md text-body-md font-semibold text-error">1</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center bg-surface-container hover:bg-surface-container-high transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Sat</span>
+<span class="font-body-md text-body-md font-medium text-on-surface-variant">2</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center bg-surface-container-highest/50 hover:bg-surface-container-highest transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Sun</span>
+<span class="font-body-md text-body-md font-medium text-on-surface-variant">3</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center hover:bg-surface-container transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Mon</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">4</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center hover:bg-surface-container transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Tue</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">5</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center hover:bg-surface-container transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Wed</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">6</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center relative hover:bg-surface-container transition-colors duration-200 cursor-default">
+<!-- Current day indicator -->
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+<span class="font-label-md text-[10px] text-primary">Thu</span>
+<span class="font-body-md text-body-md font-bold text-primary">7</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center hover:bg-surface-container transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Fri</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">8</span>
+</div>
+<div class="w-16 flex-shrink-0 border-r border-surface-container-highest flex flex-col items-center justify-center bg-surface-container hover:bg-surface-container-high transition-colors duration-200 cursor-default">
+<span class="font-label-md text-[10px] text-on-surface-variant">Sat</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">9</span>
+</div>
+<div class="flex-1"></div> <!-- Filler for rest of month -->
+</div>
+<!-- Grid Rows -->
+<div class="flex flex-col relative z-10">
+<!-- Current Time Line (Vertical) -->
+<div class="absolute top-0 bottom-0 left-[416px] w-[2px] bg-primary-container/40 z-20 pointer-events-none"></div>
+<!-- Row 1: Sarah J. -->
+<div class="h-16 border-b border-surface-container-highest flex relative hover:bg-surface-bright/50 transition-colors duration-200">
+<!-- May 1st Holiday Block -->
+<div class="w-16 border-r border-surface-container-highest bg-error-container/10"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container-highest/50"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<!-- Shift Block -->
+<div class="absolute top-2 left-[80px] w-[96px] h-12 bg-primary-container/20 border-l-[4px] border-primary-container rounded-r-md flex flex-col justify-center px-2 cursor-pointer hover:shadow-diffuse hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-container/30 z-10 transition-all duration-200">
+<span class="font-body-md text-[11px] font-semibold text-on-primary-container leading-tight">09:00 - 17:00</span>
+<span class="font-label-md text-[9px] text-on-primary-container/80">Standard</span>
+</div>
+<!-- OT Block (Now on Sun 3) -->
+<div class="absolute top-2 left-[144px] w-[64px] h-12 bg-purple-100 border-l-[4px] border-purple-400 rounded-r-md flex flex-col justify-center px-2 cursor-pointer hover:shadow-diffuse hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-purple-200 z-10 transition-all duration-200">
+<span class="font-body-md text-[11px] font-semibold text-purple-900 leading-tight">18:00 - 22:00</span>
+<span class="font-label-md text-[9px] text-purple-800">OT x2</span>
+</div>
+</div>
+<!-- Row 2: Mark T. -->
+<div class="h-16 border-b border-surface-container-highest flex relative hover:bg-surface-bright/50 transition-colors duration-200">
+<div class="w-16 border-r border-surface-container-highest bg-error-container/10"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container-highest/50"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<div class="absolute top-2 left-[336px] w-[96px] h-12 bg-primary-container/20 border-l-[4px] border-primary-container rounded-r-md flex flex-col justify-center px-2 cursor-pointer hover:shadow-diffuse hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-container/30 z-10 transition-all duration-200">
+<span class="font-body-md text-[11px] font-semibold text-on-primary-container leading-tight">10:00 - 18:00</span>
+<span class="font-label-md text-[9px] text-on-primary-container/80">Standard</span>
+</div>
+</div>
+<!-- Row 3: Elena R. -->
+<div class="h-16 border-b border-surface-container-highest flex relative hover:bg-surface-bright/50 transition-colors duration-200">
+<div class="w-16 border-r border-surface-container-highest bg-error-container/10"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container-highest/50"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<!-- Swapped Work Block (Buttercream) -->
+<div class="absolute top-2 left-[144px] w-[96px] h-12 bg-secondary-fixed/40 border-l-[4px] border-secondary-fixed-dim rounded-r-md flex flex-col justify-center px-2 cursor-pointer hover:shadow-diffuse hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-secondary-fixed/50 z-10 transition-all duration-200">
+<span class="font-body-md text-[11px] font-semibold text-on-secondary-fixed-variant leading-tight">08:00 - 16:00</span>
+<span class="font-label-md text-[9px] text-on-secondary-fixed-variant/80">Swapped (Work)</span>
+</div>
+</div>
+<!-- Row 4: David L. -->
+<div class="h-16 border-b border-surface-container-highest flex relative hover:bg-surface-bright/50 transition-colors duration-200">
+<div class="w-16 border-r border-surface-container-highest bg-error-container/10"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container-highest/50"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+</div>
+<!-- Row 5: Chloe M. -->
+<div class="h-16 flex relative hover:bg-surface-bright/50 transition-colors duration-200">
+<div class="w-16 border-r border-surface-container-highest bg-error-container/10"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container"></div>
+<div class="w-16 border-r border-surface-container-highest bg-surface-container-highest/50"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<div class="w-16 border-r border-surface-container-highest"></div>
+<div class="absolute top-2 left-[208px] w-[112px] h-12 bg-primary-container/20 border-l-[4px] border-primary-container rounded-r-md flex flex-col justify-center px-2 cursor-pointer hover:shadow-diffuse hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-container/30 z-10 transition-all duration-200">
+<span class="font-body-md text-[11px] font-semibold text-on-primary-container leading-tight">12:00 - 20:00</span>
+<span class="font-label-md text-[9px] text-on-primary-container/80">Late Shift</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

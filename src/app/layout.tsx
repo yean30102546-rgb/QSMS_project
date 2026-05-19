@@ -19,12 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th" className="h-full">
+    <html lang="th" className="min-h-screen">
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className="h-full overflow-hidden bg-bg text-foreground font-sans antialiased">
-        <div id="root" className="h-full">
+      <body className="min-h-screen bg-bg text-foreground font-sans antialiased">
+        <div id="root" className="min-h-screen">
           {children}
         </div>
       </body>

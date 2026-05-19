@@ -1,17 +1,17 @@
 /**
- * Authentication Login Component - Modern SFC Excellence Design
- * Supports user-specific PIN credentials with beautiful UI
+ * Authentication Login Component
+ * Apple-inspired shared entry surface for modular portal flow
  */
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Lock, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Lock, UserCircle2 } from 'lucide-react';
 import { loginWithPassword } from '../services/auth';
 
 export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showpassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,8 +22,6 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
       setError('กรุณาระบุชื่อผู้ใช้งาน');
       return;
     }
-
-
 
     setIsLoading(true);
     setError(null);
@@ -47,141 +45,117 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#FDF8F6] font-sans overflow-hidden text-[#1C1917]" style={{ height: '100dvh' }}>
-      <div className="hidden lg:flex flex-[0.8] bg-gradient-to-br from-slate-50 to-slate-100 border-r border-slate-200 flex-col p-8 lg:p-12 relative overflow-hidden">
-        <motion.div
-          className="absolute -top-32 -right-32 w-80 h-80 rounded-full opacity-10"
-          animate={{ y: [0, 20, 0], x: [0, -20, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ background: 'radial-gradient(circle, rgba(14, 165, 233, 0.25), transparent 70%)' }}
-        />
-        <motion.div
-          className="absolute -bottom-32 -left-28 w-72 h-72 rounded-full opacity-10"
-          animate={{ y: [0, -20, 0], x: [0, 20, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-          style={{ background: 'radial-gradient(circle, rgba(14, 165, 233, 0.18), transparent 70%)' }}
-        />
-
-        <div className="mb-12">
-          <img src="/img/logo.png" alt="" className="h-20 object-contain drop-shadow-sm" />
-        </div>
-
-        <div className="mt-auto mb-auto max-w-md">
-          <h1 className="text-6xl font-black leading-tight mb-4 text-slate-900">
-            QSMS<br />
-            <span className="text-slate-400">Rework</span>
-          </h1>
-          <p className="text-base text-slate-600 font-medium leading-relaxed max-w-sm">
-            ระบบจัดการงาน rework พร้อมการเชื่อมต่อ Google Sheets แบบเรียบง่าย
-          </p>
-        </div>
-
-        <div className="mt-auto">
-          <div className="inline-flex items-center gap-3 px-5 py-3 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/40 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">System Status</span>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-bold text-slate-900">OPERATIONAL</span>
-            </div>
-          </div>
-        </div>
+    <div className="apple-shell flex min-h-screen items-center justify-center overflow-y-auto px-4 py-8 md:px-8">
+      <div className="pointer-events-none absolute inset-0 opacity-60">
+        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,102,204,0.2),transparent_70%)]" />
+        <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(61,89,124,0.18),transparent_70%)]" />
       </div>
 
-      <div className="flex-1 flex flex-col items-center relative px-4 sm:px-6 w-full overflow-y-auto">
-        <motion.div
-          className="w-full max-w-[520px] my-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-        >
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-black mb-3 tracking-tight text-slate-900">เข้าสู่ระบบ</h2>
-            <p className="text-slate-600 font-medium">กรอกชื่อผู้ใช้งานและ PIN เพื่อเริ่มงานได้ทันที</p>
+      <motion.section
+        initial={{ opacity: 0, y: 22 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: 'easeOut' }}
+        className="apple-card relative z-10 w-full max-w-[980px] overflow-hidden rounded-[36px]"
+      >
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="border-b border-white/60 bg-[#1d1d1f] px-7 py-10 text-white md:px-10 lg:border-b-0 lg:border-r lg:border-r-white/10">
+            <div className="mb-8 flex items-center gap-3">
+              <img src="/img/logo.png" alt="QSMS" className="h-10 object-contain" />
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">Central Workspace</div>
+            </div>
+            <h1 className="max-w-lg text-4xl font-semibold leading-[1.04] tracking-[-0.03em] md:text-5xl">
+              One login for Rework and upcoming Roster operations.
+            </h1>
+            <p className="mt-5 max-w-md text-[16px] leading-7 text-white/72">
+              เข้าสู่ระบบครั้งเดียว แล้วเลือกใช้งานแต่ละ webapp ผ่าน Central Control ได้ทันที
+              โดยรักษา workflow เดิมของ Rework ให้ทำงานต่อเนื่อง
+            </p>
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+              Platform session secured
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 ml-1">ชื่อผู้ใช้งาน</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  setError(null);
-                }}
-                placeholder="Enter Username"
-                className="w-full px-5 py-4 bg-slate-100/50 border border-transparent rounded-2xl focus:border-slate-300 focus:bg-white outline-none transition font-sans"
-              />
+          <div className="bg-[#fbfbfd] px-6 py-8 md:px-9 md:py-10">
+            <div className="mb-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6e6e73]">Sign in</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">เข้าสู่ Central Control</h2>
+              <p className="mt-2 text-sm leading-6 text-[#5d5d63]">
+                ใช้ profile และ password เดิมของระบบเพื่อเข้าสู่ Portal
+              </p>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 ml-1">Password</label>
-              <div className="relative group">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
-                  <Lock size={20} />
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative">
+                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80]" />
                 <input
-                  type={showpassword ? 'text' : 'password'}
+                  type="text"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="Username"
+                  className="apple-input w-full py-3.5 pl-11 pr-4 text-[15px]"
+                />
+              </div>
+
+              <div className="relative">
+                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80]" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setError(null);
                   }}
-                  placeholder="Enter Password"
-                  className="w-full pl-14 pr-14 py-4 bg-slate-100/50 border border-transparent focus:bg-white focus:border-slate-300 rounded-2xl outline-none transition-all font-sans text-lg placeholder:text-slate-300"
+                  placeholder="Password"
+                  className="apple-input w-full py-3.5 pl-11 pr-11 text-[15px]"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showpassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7a7a80] transition hover:text-[#1d1d1f]"
                 >
-                  {showpassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </div>
-            </div>
 
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            <motion.button
-              type="submit"
-              disabled={!username.trim() || !password.trim() || isLoading}
-              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800 shadow-xl shadow-slate-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  เข้าสู่ระบบ
-                  <ChevronRight size={20} />
-                </>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl border border-[#ffd4d4] bg-[#fff6f6] px-4 py-3 text-sm text-[#b42318]"
+                >
+                  {error}
+                </motion.div>
               )}
-            </motion.button>
-          </form>
 
-          <div className="mt-8 text-center text-sm text-slate-500 space-y-2">
-            <p>ชื่อผู้ใช้งานตัวอย่าง: QSMS หรือ PDB หรือ OPERATOR หรือ FINANCE</p>
-            <p>หากต้องการแก้ไขบัญชี ให้ปรับค่าใน Google Apps Script Properties</p>
-          </div>
+              <button
+                type="submit"
+                disabled={!username.trim() || !password.trim() || isLoading}
+                className="apple-btn-primary mt-1 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    เข้าสู่ระบบ
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </button>
+            </form>
 
-          <div className="mt-16 pt-8 border-t border-slate-100 flex flex-col items-center gap-6">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-              SFC Excellence System V4.2.0           </p>
+            <div className="mt-7 border-t border-[#e8e8ed] pt-5 text-xs leading-5 text-[#6e6e73]">
+              <p>ตัวอย่าง profile: `QSMS`, `PDB`, `OPERATOR`, `FINANCE`</p>
+              <p className="mt-1">หากต้องการแก้บัญชี ให้ปรับค่าใน Google Apps Script Properties</p>
+            </div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.section>
     </div>
   );
 }

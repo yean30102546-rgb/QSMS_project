@@ -108,3 +108,185 @@ The project has been reorganized for better maintainability:
       - **Backend Script (`gas/Code.gs`)**: Automatically initializes a `Materials` sheet via `getOrCreateSheet()` with correct headers `['Case ID', 'Material ID', 'Material Name', 'Quantity', 'Unit', 'Unit Price', 'Total Price']` if it doesn't exist.
       - **Database Alignment**: Confirmed 100% type alignment, auto-calculation compatibility (unitPrice * quantity = totalPrice), permission rules (Operator can edit name/qty, Finance/Admin can edit unit prices), and self-healing DB integrity.
       - **Action**: No changes needed; confirmed fully operational and perfectly optimized!
+  - **Design System Planning & Analysis (Completed 2026-05-19)**:
+    - **Goal**: Read the `Design` folder (`DESIGN.md`, `code.html`, `screen.png`) and formulate a clear plan to integrate the Luminous Professional design system into the Next.js App Router codebase.
+    - **Findings**:
+      - `Design/DESIGN.md` contains token metrics for the **Luminous Professional** design system, specifying Glassmorphism visuals (backdrop blur, transparent white borders/fills) and typography centered around the **Sarabun** font family.
+      - `Design/code.html` is a rich Tailwind CSS interactive mockup showing exactly how the Dashboard, Sidebars, Topbars, Stat Cards (Bento Grid), charts (defects and sources), and lists should behave and animate (fadeInUp, statusPulse, scale-in, etc.).
+    - **Action**: Created a comprehensive 5-phase integration guide. Mapped tokens and mockup styles to files like `src/index.css`, `MainLayout.tsx`, `OverallTab.tsx`, `DashboardTab.tsx`, `UpdateModal.tsx`, and `Login.tsx`. Documented this full plan in [design_implementation_plan.md](file:///C:/Users/tatsanai.bu/.gemini/antigravity/brain/fbd4460f-5dd1-4297-94a7-895d2bea83d1/artifacts/design_implementation_plan.md).
+
+- **Current State (2026-05-19)**:
+  - **Successful Next.js App Router Compilation**:
+    - Resolved a syntax failure due to Tailwind v4 style compilation limits (rewrote `@apply` helper mappings using modern `@utility` rules).
+    - Resolved a syntax crash (`Expression expected`) caused by a duplicate `return (` in `src/components/tabs/OverallTab.tsx`.
+    - Resolved a missing type identifier error by implementing a fully customized, responsive, and animated SVG Donut Chart `<StatusDistributionSection stats={stats} />` inside `src/components/tabs/Dashboard.tsx`.
+    - Restored structural HTML5 structures inside `MetricCard` in `Dashboard.tsx` to fix unterminated regexp literal syntax blocks.
+    - Verified all codebase pathways are fully compilable. Executed `npm run build` which successfully outputted static pages and API proxy endpoints under Next.js Turbopack with **0 errors and 0 compiler warnings**.
+  - **Dashboard Cards and SVG Donut Chart Optimization**:
+    - **Visual Cards Added**: Replaced transparent `glass-container` classes with standard visual `glass-panel` background cards in both the main defects cause analysis container and the bottom status details container. This achieves structural card rendering uniformity.
+    - **SVG Donut Dimension Expansion**: Increased SVG canvas size from `size = 160` to `size = 200`, expanded segment radius from `r = 50` to `r = 72`, and refined the stroke diameter to `10`. This nearly doubles the inner circular area width from `88px` to `134px`, providing plenty of breathing room.
+    - **No-Overlap Center Alignment**: Expanded the parent flex container from `w-44 h-44` (176px) to `w-56 h-56` (224px) to perfectly center-align the text elements without touching or overlapping the surrounding circle arcs, completely resolving the overlapping issue.
+    - **Full Compilation Stability Verified**: Ran production build checks confirming **100% type-safe compilation (0 errors, 0 warnings)**.
+  - **Image Upload Preview Empty Src Fix**:
+    - **Console Warning Resolved**: Fixed the Next.js runtime console warning `An empty string ("") was passed to the src attribute...` by wrapping the image preview component inside `src/components/ui/ImageUpload.tsx` and `src/components/ImageUpload.tsx` in a conditional check (`{item.preview ? <img src={item.preview} ... /> : <LoadingSpinner />}`).
+    - **User Experience Enhanced**: When an image is loading via `FileReader`, the placeholder block displays a high-end, responsive CSS rotating spinner instead of a blank container or triggering resource-reload requests.
+    - **No Regression Verified**: Re-compiled production assets successfully with **0 errors and 0 build alerts**.
+
+  - **SVG Donut Chart Missing Completed Segment Resolution (Completed 2026-05-19)**:
+    - **Problem**: When multiple management statuses (Pending, Awaiting Valuation, Completed) were active, the "เสร็จสมบูรณ์" (Completed) green segment in the donut chart on the Dashboard was completely missing due to phase drift.
+    - **Cause**: Calculated using `strokeDasharray="${L} ${circumference}"` (making the pattern period `L + circumference` unequal to `circumference`) and a positive subtraction offset `strokeDashoffset = circumference - Y`, which caused incorrect phase alignment and segment overlapping.
+    - **Solution**: Corrected the formula in `src/components/tabs/Dashboard.tsx` to use the standard negative accumulated offset:
+      `const strokeDashoffset = -((accumulatedPercent / 100) * circumference);`
+      This shifts each solid segment end-to-end clockwise, aligning them perfectly.
+    - **Verification**: Verified production build stability (`npm run build`) succeeding with zero warnings, zero TypeScript issues, and 100% stable static layout pages.
+
+  - **High-Contrast Status Badges for Legibility (Completed 2026-05-19)**:
+    - **Problem**: Badges indicating rework case statuses on the Overall tab table were hard to read and had poor contrast against translucent glass containers.
+    - **Solution**: Redesigned `<StatusPill>` inside `src/components/ui/CaseListTable.tsx`. Replaced old 10% opacity classes with solid, highly saturated premium glassmorphic badges (`amber-100/90` with `amber-900` text, `sky-100/90` with `sky-950` text, `violet-100/90` with `violet-950` text, and `emerald-100/90` with `emerald-950` text).
+    - **Details**: Expanded status text size from `text-[9px]` to `text-[10.5px]` and changed font-weight to `font-bold` for crystal-clear fast-scanning and superior visual accessibility. Updated the valuation beacon color to a vibrant violet (`bg-violet-600`) and enlarged its radius for better pacing.
+    - **Verification**: Completed `npm run build` validation, verifying perfect type safety and compiling static assets with 0 type errors.
+
+  - **Modular Portal Refactor Kickoff (Started 2026-05-19)**:
+    - **Task Goal**: Restructure the current single-app QSMS Rework system into a modular multi-app platform with a `Login -> Central Control -> App Entry` flow, where users can launch `Rework` and `Roster` from one shared portal.
+    - **Chosen Agent Guides**:
+      - `.Agent/Frontend-Design/SKILL.md` selected for the Apple-inspired portal and login experience.
+      - `.Agent/Fullstack Developer/FullStack-Skill.md` selected for safe full-stack refactor sequencing and contract-aware migration.
+    - **Phase 1 Scope**:
+      - Audit current app boundaries and isolate reusable platform concerns.
+      - Identify which parts belong to `auth`, `portal shell`, `shared UI`, and `rework feature module`.
+      - Prepare central registry/types for future modular routing without breaking current Rework behavior.
+    - **Audit Findings**:
+      - `src/App.tsx` is currently the single orchestration root for both authentication and the Rework application shell.
+      - `src/components/Login.tsx` is already isolated enough to become the dedicated login entry surface.
+      - `src/components/layout/MainLayout.tsx` is tightly coupled to the Rework tabs and should remain inside a future `rework` feature module.
+      - `src/services/auth.ts` and `src/app/api/rework/route.ts` are reusable platform-level authentication and transport layers.
+      - `src/components/tabs/*` and `src/components/ui/*` should be split into `shared` vs `rework-only` ownership during migration.
+    - **Implementation Note**:
+      - Start with low-risk scaffolding and shared types/config before rerouting the current app flow, so the existing Rework business logic remains stable during migration.
+    - **Progress Update - Phase 1 Routing Foundation**:
+      - Added `src/components/apps/portal/WorkspacePortal.tsx` as the new central control landing surface.
+      - Added `src/components/apps/roster/RosterDashboard.tsx` as a safe placeholder module entry for the future Roster workspace.
+      - Refactored `src/App.tsx` to use a state-based modular route flow: `login -> portal -> rework/roster`.
+      - Updated `src/components/layout/MainLayout.tsx` to expose a "Back To Portal" entry so Rework can return to the central launcher without breaking its existing tab structure.
+      - Verified the refactor with `npm run lint` (`tsc --noEmit`) and confirmed zero TypeScript errors.
+    - **Progress Update - Phase 2 Shared Design Start**:
+      - Added reusable Apple-inspired shared style primitives and tokens in `src/index.css` (`apple-shell`, `apple-card`, `apple-input`, `apple-btn-primary`).
+      - Rebuilt `src/components/Login.tsx` into a central-entry login surface aligned with the portal language (Action Blue CTAs, rounded pill controls, restrained premium layout).
+      - Preserved existing auth contract and session flow (`loginWithPassword` + existing `onSuccess` behavior) while upgrading UX.
+      - Verified with `npm run lint` (`tsc --noEmit`) and confirmed zero TypeScript errors after UI refactor.
+    - **Progress Update - Phase 2 Tokenization Pass**:
+      - Extended shared Apple utility classes in `src/index.css` with reusable primitives (`apple-btn-secondary`, `apple-heading`, `apple-subtle`, `apple-chip`, `apple-surface-dark`, `apple-surface-light`).
+      - Refactored `src/components/apps/portal/WorkspacePortal.tsx` to consume shared tokenized classes and reduce direct hard-coded color usage.
+      - Refactored `src/components/apps/roster/RosterDashboard.tsx` to the same shared class system for visual consistency and future module reuse.
+      - Verified via `npm run lint` (`tsc --noEmit`) with zero TypeScript errors.
+    - **Progress Update - Phase 3 Module Boundary Extraction**:
+      - Extracted full Rework application flow from `src/App.tsx` into dedicated module entry `src/modules/rework/ReworkApp.tsx`.
+      - Reduced `src/App.tsx` to root orchestration responsibilities only (auth state, central portal routing, per-module mounting).
+      - Preserved the existing Rework business behavior by moving logic without changing API contracts, modal wiring, or role-based tab flow.
+      - Verified by running `npm run lint` (`tsc --noEmit`) and confirmed zero TypeScript errors after modular extraction.
+    - **Progress Update - Roster Module (Functional v1)**:
+      - Implemented a real modular roster feature under `src/modules/roster/`:
+        - `RosterApp.tsx` for page-level orchestration and interactions.
+        - `calendar.ts` for Thai month/day generation, public holiday handling, and alternating-Saturday logic.
+        - `types.ts` for reusable roster domain types.
+      - Integrated the module entry into Central Control flow by wiring `App.tsx` route `roster` to `RosterApp`.
+      - Delivered functional behaviors requested:
+        - Monthly roster table using Thai calendar locale (`th-TH-u-ca-buddhist` month/year label and Thai date formatting).
+        - Saturday-off alternating pattern per employee (zig-zag), excluding Saturday public holidays from alternation counting.
+        - Sundays and configured public holidays treated as always-holiday status.
+        - Drag-and-drop Saturday status swap boxes per employee, with explicit swapped-state labeling.
+        - Add-employee capability with per-person phase assignment and editable pattern toggle (A/B).
+        - Optional off-Saturday override to work with OT x2 status marker.
+      - Verified module integration and type stability using `npm run lint` (`tsc --noEmit`) with zero errors.
+    - **Progress Update - Roster Backend Integration (Google Apps Script + Sheet)**:
+      - Added a dedicated Next.js proxy endpoint `src/app/api/roster/route.ts` to forward roster actions to Apps Script using `GAS_CALENDAR_WEB_APP_URL` (fallback to existing GAS env vars).
+      - Added frontend roster API service `src/services/rosterApi.ts` with authenticated actions:
+        - `rosterGetMonth`
+        - `rosterAddEmployee`
+        - `rosterUpdateEmployeePhase`
+        - `rosterUpsertOverride`
+        - `rosterSwapSaturday`
+        - `rosterClearMonthOverrides`
+      - Upgraded `src/modules/roster/RosterApp.tsx` from local-only state to backend-connected flow:
+        - loads employees, overrides, holidays, and leave records per month from GAS
+        - persists add-employee, phase toggle, Saturday swap, OT x2 override, and month-clear operations
+      - Added Apps Script backend file `gas/gas_calendar.gs` with sheet-backed roster logic and script-property based sheet ID resolution:
+        - `CALENDAR_SHEET_ID` (preferred) or `GOOGLE_SHEET_ID` (fallback)
+        - auto-managed sheets: `Roster_Employees`, `Roster_Overrides`, `Roster_Holidays`, `Roster_Leaves`
+      - Unblocked Central Control entry for Roster by switching `src/modules/platform/appRegistry.ts` roster status from `coming-soon` to `active`.
+      - Verified type safety after integration via `npm run lint` (`tsc --noEmit`) with zero errors.
+  - **Project Data & UI Flow Analysis (2026-05-19)**:
+    - Conducted a comprehensive analysis of the project's codebase, covering Next.js App Router orchestration, backend proxy routes (`/api/rework`, `/api/roster`), and Google Apps Script database handlers (`Code.gs`, `gas_calendar.gs`).
+    - Outlined the exact data flow and role transitions (Operator, Finance, Admin, PDB) for both QSMS Rework and ShiftHub Roster modules.
+    - Verified compliance with design and architectural principles.
+  - **Roster Add and Delete Employee Features (Completed 2026-05-19)**:
+    - **Frontend Refactoring**:
+      - Moved the add-employee input field and CTA button to the Sidebar of [RosterApp.tsx](file:///c:/Workplace/QSMS%20Rework%20Web%20app/src/modules/roster/RosterApp.tsx) to unify employee management interfaces.
+      - Integrated an inline delete button next to each employee in the Sidebar utilizing the `Trash2` icon from `lucide-react`.
+      - Setup confirmation prompts before deletes and handled dynamic state cleanups (re-routing selection if the deleted employee was currently active).
+    - **API Client Integration**:
+      - Created `deleteRosterEmployee` in [rosterApi.ts](file:///c:/Workplace/QSMS%20Rework%20Web%20app/src/services/rosterApi.ts) to interface with the Apps Script backend.
+    - **Backend (Apps Script)**:
+      - Added `rosterDeleteEmployee` inside [gas_calendar.gs](file:///c:/Workplace/QSMS%20Rework%20Web%20app/gas/gas_calendar.gs) which updates the `Active` column of the deleted employee row to `FALSE` in the `Roster_Employees` sheet, ensuring a safe soft-delete.
+      - Registered the new action in the backend's main `doPost` routing controller.
+    - **Verification**:
+      - Executed production builds (`npm run build`), confirming 100% type safety and compiling static/dynamic router pages with 0 warnings and 0 compiler errors.
+
+  - **Dev Server Port 3000 Conflict Resolution (Completed 2026-05-19)**:
+    - **Problem**: Running `npm run dev` failed because port 3000 was locked and occupied by a background Node.js process (PID 25908) that had been running for approximately 2 hours and 50 minutes.
+    - **Solution**: 
+      - Ran `netstat -ano | findstr :3000` to trace the active listening socket process ID.
+      - Successfully terminated the orphaned process using `Stop-Process -Id 25908 -Force` to release port 3000.
+    - **Status**: Port 3000 is now free and ready for the dev server to start cleanly.
+  - **Roster Mobile Responsive & Performance Optimization (Completed 2026-05-19)**:
+    - **Responsive & Scrollable Calendar**: Optimized [RosterApp.tsx](file:///c:/Workplace/QSMS%20Rework%20Web%20app/src/modules/roster/RosterApp.tsx) by wrapping the calendar table container with horizontal scroll utility (`overflow-x-auto rounded-[24px] border border-[#d8d8de] bg-[#f6f6f9] p-1 shadow-sm`) and setting a minimal width wrapper (`min-w-[750px] lg:min-w-0`), preventing layout breakage or squished cells on small mobile screens.
+    - **Optimistic UI Updates for Roster**: Integrated immediate local state updates with a safe rollback mechanism for core action buttons:
+      - **Set Saturday Holiday / Work Pattern**: Toggling phase settings updates employee properties in React state immediately.
+      - **Clear Month Overrides**: Resets all month-specific status variables instantly.
+      - **Saturday Swap Boxes & OT x2 Overrides**: Dropdown changes and swaps update calendar cells immediately in the UI.
+      - If the API fetch fails, the frontend automatically rolls back to the previous stable state and notifies the user with a clean visual alert.
+    - **Supabase Backend Migration Plan**: Authored a detailed migration plan detailing PostgreSQL schema mappings, data transfer scripts, and client SDK integration steps in [supabase_migration_plan.md](file:///C:/Users/tatsanai.bu/.gemini/antigravity/brain/6b3d8bd6-bc38-49fd-997f-57893f64f4ae/supabase_migration_plan.md).
+    - **Verification**: Executed standard Next.js production compilations (`npm run build`), verifying 100% type-safety and successful static file generation under Next.js Turbopack with **0 errors and 0 compiler warnings**.
+
+  - **Roster Calendar Thai Localization & Holiday Names & Page Layout Fixes (Completed 2026-05-19)**:
+    - **Roster Page Layout Scroll Fixes**:
+      - Removed the `overflow-hidden` constraints from `html` and `body` in both `src/app/layout.tsx` and `src/index.css`.
+      - Replaced `h-full` declarations with `min-h-screen` across the root layout containers (`html`, `body`, `#root` div).
+      - This allows natural browser-level document scrolling so the application viewport fits nicely on all devices and the user can scroll down when Roster content overflows.
+    - **Roster Thai Localization & Holiday Labels**:
+      - Localized calendar header labels to Thai (`['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.']`) in [RosterApp.tsx](file:///c:/Workplace/QSMS%20Rework%20Web%20app/src/modules/roster/RosterApp.tsx).
+      - Upgraded the public holidays mapping in [calendar.ts](file:///c:/Workplace/QSMS%20Rework%20Web%20app/src/modules/roster/calendar.ts) to map `dateKey` with Thai holiday names (e.g. 'วันขึ้นปีใหม่', 'วันจักรี', 'วันสงกรานต์').
+      - Updated `getMonthDays` to parse backend-supplied extra holidays and combine them with system-native public holidays, setting a unified `holidayName` inside `DayInfo`.
+      - Redesigned the calendar cell holiday badge to render a beautiful soft-red label with the actual Thai holiday name (truncated with a hover title tooltip) instead of a generic red 'H' badge.
+      - Translated calendar text labels from English ('Leave', 'Holiday', 'Workday') to Thai ('ลา', 'วันหยุด', 'ทำงาน') for full Thai localization.
+    - **Verification**:
+      - Successfully ran a full production build (`npm run build`) ensuring 100% compile-time type safety with **0 errors and 0 warnings**.
+  - **Roster Calendar Settings & Swap Rules & Quick Leave Buttons (Completed 2026-05-19)**:
+    - **Initial Saturday Setup Callout**: If an employee has no `startWorkingSaturday` set, block alternating formula calculations and fallback to `'OFF'` for Saturdays by default. Render an elegant warning card to prompt users to choose the initial Saturday.
+    - **Initial Saturday Click Handler**: Added a dynamic bouncing button "ตั้งเป็นเสาร์เริ่มงาน" (or "ย้ายจุดเริ่มงานมาเสาร์นี้") directly inside Saturday cells, allowing users to configure the starting day with a single click.
+    - **Strict Drag & Swap Rules**: Restricted dragging to working Saturdays (`WORK` or `WORK_SWAP`) only, preventing users from dragging off-Saturdays. Updated `handleSwapSaturdayStatus` to swap target off-Saturdays to `WORK_SWAP` and source Saturdays to `OFF_SWAP`.
+    - **Quick Calendar Leave Buttons**: Embedded fast-action "ลาป่วย 🤒" and "ลากิจ 💼" buttons directly inside workday and working Saturday cells. These buttons are elegantly revealed on mouse hover to prevent layout clutter.
+    - **Premium High-Contrast Calendar Colors**: Refined status pill colors using high-contrast, premium, and legibility-friendly palettes (Emerald for normal/swap workdays, Rose/Red for leaves, Amber for Saturday off-days, Sky Blue for OT x2, and Slate for standard holidays).
+    - **TypeScript Compilation Verification**: Added React states (`leaveType`, `leaveDate`) and handler functions (`handleCreateLeave`, `handleDeleteLeave`) to resolve all TypeScript compiler errors, achieving 100% compilation safety with **0 warnings and 0 errors**.
+  - **Apps Script Action Sync Fix & Out-of-Sync UI Alert Banner (Completed 2026-05-19)**:
+    - **Diagnosed Unknown Action Error**: Identified that the error `Unknown action: rosterUpdateEmployeeStartSaturday` occurs because the active Google Apps Script (Web App) deployment on the cloud runs older code that doesn't yet support this new API action.
+    - **Dynamic Error Resolution Banner**: Updated the error container in `RosterApp.tsx` to automatically detect `'Unknown action'` messages. When detected, the UI displays a step-by-step Thai guide explaining how to copy the latest code from `gas/gas_calendar.gs` and update the active deployment to a "New Version" in Google Apps Script Editor.
+    - **User Experience (UX) Improvement Analysis**: Prepared a comprehensive list of actionable UX and performance improvement areas for the Roster module while retaining all core business requirements.
+    - **Verification**: Verified Next.js compiler output (`npm run build`), ensuring 100% compilation success with **0 errors and 0 warnings**.
+  - **Roster Saturday Swap Drag Restrictions & Type Def Resolving (Completed 2026-05-19)**:
+    - **Drag Restrictions, Cursor, and Warnings**:
+      - Restricted drag operations on non-working Saturdays. Implemented a `not-allowed` cursor style on blocked days and displaying a non-blocking toast warning: *"เฉพาะวันเสาร์ที่ทำงานตามสูตรเท่านั้นที่สามารถลากสลับได้"* (Only scheduled work Saturdays can be swapped).
+    - **Main Layout Back to Portal & Prop Type Alignment**:
+      - Added `onBackToPortal` property to the `MainLayoutProps` interface and implemented parameter destructuring in `src/components/layout/MainLayout.tsx`.
+      - Added a navigation sidebar item "กลับหน้าพอร์ทัล" (Back to Portal) in `MainLayout.tsx` using `ArrowLeft` icon to allow smooth redirection back to the central hub.
+    - **Type Checking Optimization**:
+      - Fixed the TypeScript compiler type-check warning in `RosterApp.tsx` by casting `status as RosterCellStatus` inside `handleSaturdayStatusChange` array operations.
+      - Verified Next.js compiler output via `npm run build` showing **0 compilation warnings and 0 errors**.
+    - **Duplicate Calendar Year Option Resolved**:
+      - Fixed duplicate year label rendering in the Saturday select dropdown options (e.g. "เสาร์ที่ 4 เมษายน 2569 2569") by removing the redundant manual `+543` year calculation, since `getThaiMonthLabel()` natively provides it.
+    - **Add Employee Button & Dropdown Optimization (Completed 2026-05-19)**:
+      - Removed the redundant initial Saturday dropdown select element from the Add Employee form inside `RosterApp.tsx`.
+      - Updated the Add Employee button validation condition to depend only on the employee name input field, resolving the blocked button issue.
+      - Updated `addEmployee` function to send an empty string for the initial Saturday, since users can dynamically configure it on the calendar.
+      - Verified production build success (`npm run build`) with **0 errors and 0 warnings**.
+

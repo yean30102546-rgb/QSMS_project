@@ -206,30 +206,36 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
   // ===== LOADING STATE =====
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl p-6 border border-border animate-pulse">
-              <div className="h-4 bg-slate-200 rounded w-1/2 mb-4" />
-              <div className="h-8 bg-slate-200 rounded w-3/4" />
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 animate-pulse">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="glass-container p-5 rounded-2xl border border-white/5 h-28 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer" style={{ animationDuration: '1.5s' }} />
+              <div className="w-10 h-10 rounded-xl bg-white/5 mb-3" />
+              <div className="h-4 bg-white/10 rounded w-2/3 mb-2" />
+              <div className="h-6 bg-white/10 rounded w-1/3" />
             </div>
           ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 glass-container p-6 rounded-2xl border border-white/5 h-96 animate-pulse" />
+          <div className="glass-container p-6 rounded-2xl border border-white/5 h-96 animate-pulse" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
 
       {/* ===== FILTER TOOLBAR ===== */}
       <div className="flex flex-col gap-4">
         {/* Quick Status Pills + Filter Toggle */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-muted mr-1">สถานะ:</span>
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mr-1">สถานะ:</span>
             {([
-              { key: 'all', label: 'ทั้งหมด', color: 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' },
+              { key: 'all', label: 'ทั้งหมด', color: 'bg-primary text-white shadow-lg shadow-primary/20' },
               { key: 'Pending', label: 'รอดำเนินการ', color: 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' },
               { key: 'In-Progress', label: 'กำลังดำเนินการ', color: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
               { key: 'Completed', label: 'เสร็จสิ้น', color: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' },
@@ -238,9 +244,9 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               const isActive = isAll ? statusFilter.length === 0 : statusFilter.includes(key);
               const count = isAll ? cases.length : cases.filter(c => c.status === key).length;
               return (
-                <motion.button key={key} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                <motion.button key={key} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                   onClick={() => isAll ? setStatusFilter([]) : toggleArrayFilter(statusFilter, key, setStatusFilter)}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 ${isActive ? color : 'bg-white border border-border text-muted hover:bg-slate-50'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 border border-white/5 ${isActive ? color : 'bg-white/5 text-on-surface-variant hover:bg-white/10 hover:text-foreground'}`}
                 >
                   {label} <span className={`text-[10px] font-black ${isActive ? 'opacity-80' : 'opacity-50'}`}>{count}</span>
                 </motion.button>
@@ -249,10 +255,10 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
           </div>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all sm:w-auto ${showFilters || hasActiveFilters ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-white border border-border text-foreground hover:bg-slate-50'}`}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all sm:w-auto border ${showFilters || hasActiveFilters ? 'bg-primary text-white border-primary/20 shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-on-surface-variant hover:bg-white/10 hover:text-foreground'}`}
           >
             <SlidersHorizontal size={14} /> ตัวกรอง
-            {activeFilterCount > 0 && <span className="bg-white/90 text-accent text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">{activeFilterCount}</span>}
+            {activeFilterCount > 0 && <span className="bg-white/95 text-primary text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full ml-1">{activeFilterCount}</span>}
           </motion.button>
         </div>
 
@@ -260,52 +266,52 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
         <AnimatePresence>
           {showFilters && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
-              className="rounded-2xl p-6 bg-white/80 backdrop-blur-xl border border-slate-200/60 shadow-xl shadow-slate-200/20"
+              className="glass-container p-6 rounded-2xl border border-white/10 shadow-glass"
             >
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center"><SlidersHorizontal size={16} className="text-accent" /></div>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><SlidersHorizontal size={15} className="text-primary" /></div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">ตัวกรองแดชบอร์ด</h4>
-                    <p className="text-[10px] text-muted">เลือกเงื่อนไขเพื่อกรองข้อมูลในกราฟ</p>
+                    <p className="text-[10px] text-on-surface-variant">เลือกเงื่อนไขเพื่อกรองข้อมูลในกราฟ</p>
                   </div>
                 </div>
-                <button onClick={() => setShowFilters(false)} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-muted hover:text-foreground transition-colors"><X size={16} /></button>
+                <button onClick={() => setShowFilters(false)} className="w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center text-on-surface-variant hover:text-foreground transition-colors"><X size={15} /></button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Reason Filter */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">⚠️ ประเภทข้อบกพร่อง (Reason)</label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">⚠️ ประเภทข้อบกพร่อง (Reason)</label>
+                  <div className="flex flex-wrap gap-1.5">
                     {uniqueReasons.map(reason => (
-                      <motion.button key={reason} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                      <motion.button key={reason} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                         onClick={() => toggleArrayFilter(reasonFilter, reason, setReasonFilter)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-normal transition-all ${reasonFilter.includes(reason) ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${reasonFilter.includes(reason) ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-white/5 border-white/5 text-on-surface-variant hover:bg-white/10'}`}
                       >{reason}</motion.button>
                     ))}
-                    {uniqueReasons.length === 0 && <span className="text-xs text-muted italic">ไม่มีข้อมูล</span>}
+                    {uniqueReasons.length === 0 && <span className="text-xs text-on-surface-variant italic">ไม่มีข้อมูล</span>}
                   </div>
                 </div>
 
                 {/* Customer Filter */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">🏢 ลูกค้า (Customer)</label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">🏢 ลูกค้า (Customer)</label>
+                  <div className="flex flex-wrap gap-1.5">
                     {uniqueCustomers.map(customer => (
-                      <motion.button key={customer} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                      <motion.button key={customer} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                         onClick={() => toggleArrayFilter(customerFilter, customer, setCustomerFilter)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-normal transition-all ${customerFilter.includes(customer) ? 'bg-indigo-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${customerFilter.includes(customer) ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-white/5 border-white/5 text-on-surface-variant hover:bg-white/10'}`}
                       >{customer}</motion.button>
                     ))}
-                    {uniqueCustomers.length === 0 && <span className="text-xs text-muted italic">ไม่มีข้อมูล</span>}
+                    {uniqueCustomers.length === 0 && <span className="text-xs text-on-surface-variant italic">ไม่มีข้อมูล</span>}
                   </div>
                 </div>
 
                 {/* Status Filter */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em]">📊 สถานะ (Status)</label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">📊 สถานะ (Status)</label>
+                  <div className="flex flex-wrap gap-1.5">
                     {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map(status => {
                       const isActive = statusFilter.includes(status);
                       const labels = {
@@ -315,9 +321,9 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                         Completed: 'เสร็จสิ้น'
                       };
                       return (
-                        <motion.button key={status} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        <motion.button key={status} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                           onClick={() => toggleArrayFilter(statusFilter, status, setStatusFilter)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-normal transition-all ${isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${isActive ? 'bg-primary/20 text-primary border-primary/30' : 'bg-white/5 border-white/5 text-on-surface-variant hover:bg-white/10'}`}
                         >{labels[status]}</motion.button>
                       );
                     })}
@@ -325,30 +331,30 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                 </div>
 
                 {/* Date Range */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-[0.15em] flex items-center gap-1.5"><Calendar size={12} /> ช่วงเวลา (วันที่)</label>
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5"><Calendar size={12} /> ช่วงเวลา (วันที่)</label>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 relative">
                       <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all" />
-                      <span className="absolute -top-2 left-3 bg-white px-1 text-[9px] text-muted font-bold">เริ่มต้น</span>
+                        className="w-full px-4 py-2 border border-white/10 rounded-xl text-sm bg-white/5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" />
+                      <span className="absolute -top-1.5 left-3 bg-[#111116] px-1.5 text-[9px] text-on-surface-variant font-bold">เริ่มต้น</span>
                     </div>
-                    <span className="text-muted text-xs font-bold">→</span>
+                    <span className="text-on-surface-variant text-xs font-bold">→</span>
                     <div className="flex-1 relative">
                       <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all" />
-                      <span className="absolute -top-2 left-3 bg-white px-1 text-[9px] text-muted font-bold">สิ้นสุด</span>
+                        className="w-full px-4 py-2 border border-white/10 rounded-xl text-sm bg-white/5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" />
+                      <span className="absolute -top-1.5 left-3 bg-[#111116] px-1.5 text-[9px] text-on-surface-variant font-bold">สิ้นสุด</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {hasActiveFilters && (
-                <div className="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center">
-                  <p className="text-xs text-muted">พบ <span className="font-bold text-accent">{filteredCases.length}</span> รายการ จากทั้งหมด {cases.length} รายการ</p>
+                <div className="mt-5 pt-4 border-t border-white/5 flex justify-between items-center">
+                  <p className="text-xs text-on-surface-variant">พบ <span className="font-bold text-primary">{filteredCases.length}</span> รายการ จากทั้งหมด {cases.length} รายการ</p>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={clearAllFilters}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all text-xs font-bold">
-                    <X size={14} /> ล้างตัวกรองทั้งหมด
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all text-xs font-bold">
+                    <X size={13} /> ล้างตัวกรองทั้งหมด
                   </motion.button>
                 </div>
               )}
@@ -360,60 +366,58 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
         <AnimatePresence>
           {hasActiveFilters && !showFilters && (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold text-muted uppercase tracking-widest">กรอง:</span>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">กรอง:</span>
               {statusFilter.map(s => (
-                <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-bold">
+                <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 text-on-surface border border-white/10 text-[10px] font-bold">
                   {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : s === 'Awaiting Valuation' ? 'รอประเมินราคา' : 'เสร็จสิ้น'}
-                  <button onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-slate-900"><X size={10} /></button>
+                  <button onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-foreground text-on-surface-variant ml-0.5"><X size={10} /></button>
                 </span>
               ))}
               {reasonFilter.map(r => (
-                <span key={`t-r-${r}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-[10px] font-bold">
+                <span key={`t-r-${r}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold">
                   {r}
-                  <button onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)} className="hover:text-orange-900"><X size={10} /></button>
+                  <button onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)} className="hover:text-orange-300 text-orange-400 ml-0.5"><X size={10} /></button>
                 </span>
               ))}
               {customerFilter.map(c => (
-                <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">
+                <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold">
                   {c}
-                  <button onClick={() => toggleArrayFilter(customerFilter, c, setCustomerFilter)} className="hover:text-indigo-900"><X size={10} /></button>
+                  <button onClick={() => toggleArrayFilter(customerFilter, c, setCustomerFilter)} className="hover:text-indigo-300 text-indigo-400 ml-0.5"><X size={10} /></button>
                 </span>
               ))}
               {(dateFrom || dateTo) && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
                   📅 {dateFrom || '...'} → {dateTo || '...'}
-                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="hover:text-emerald-900"><X size={10} /></button>
+                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="hover:text-emerald-300 text-emerald-400 ml-0.5"><X size={10} /></button>
                 </span>
               )}
-              <button onClick={clearAllFilters} className="text-[10px] text-red-500 font-bold hover:text-red-700 ml-1 underline underline-offset-2">ล้างทั้งหมด</button>
+              <button onClick={clearAllFilters} className="text-[10px] text-rose-400 font-bold hover:text-rose-300 ml-1 underline underline-offset-2">ล้างทั้งหมด</button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* ===== KEY METRICS ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <MetricCard label="งานทั้งหมด" value={stats.total.toString()} icon={<Package size={24} className="text-blue-500" />} bgColor="bg-blue-50" trend={`บันทึกแล้ว ${filteredCases.length} เคส`} />
-        <MetricCard label="เสร็จสิ้นแล้ว" value={stats.completed.toString()} icon={<CheckCircle2 size={24} className="text-emerald-500" />} bgColor="bg-emerald-50" trend={`${stats.completionRate}% ความสำเร็จ`} />
-        {/* Correlation KPI Card */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+        <MetricCard label="งานทั้งหมด" value={stats.total.toString()} icon={<Package size={20} className="text-blue-400" />} bgColor="blue" trend={`บันทึกแล้ว ${filteredCases.length} เคส`} />
+        <MetricCard label="เสร็จสิ้นแล้ว" value={stats.completed.toString()} icon={<CheckCircle2 size={20} className="text-emerald-400" />} bgColor="emerald" trend={`${stats.completionRate}% ความสำเร็จ`} />
         <MetricCard 
           label="เปื้อนจากการรั่ว" 
           value={stats.linkedCount.toString()} 
-          icon={<Link2 size={24} className="text-amber-600" />} 
-          bgColor="bg-amber-50" 
+          icon={<Link2 size={20} className="text-amber-400" />} 
+          bgColor="amber" 
           trend="Correlation Detection"
           tooltip="จำนวนรายการที่เปื้อนเนื่องมาจากการรั่วไหลของไอเทมอื่น"
         />
-        {/* Cost KPI Card */}
-        <MetricCard label="ค่าใช้จ่าย Rework" value={`฿${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`} icon={<Banknote size={24} className="text-rose-500" />} bgColor="bg-rose-50" trend="Total Cost" />
-        <MetricCard label="อัตราเสร็จสิ้น" value={`${stats.completionRate}%`} icon={<TrendingUp size={24} className="text-indigo-500" />} bgColor="bg-indigo-50" trend="Overall Progress" />
+        <MetricCard label="ค่าใช้จ่าย Rework" value={`฿${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}`} icon={<Banknote size={20} className="text-rose-400" />} bgColor="rose" trend="Total Cost" />
+        <MetricCard label="อัตราเสร็จสิ้น" value={`${stats.completionRate}%`} icon={<TrendingUp size={20} className="text-indigo-400" />} bgColor="indigo" trend="Overall Progress" />
       </div>
 
       {/* ===== MAIN ANALYTICS VIEW ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Dual-View Analysis Chart (2/3 width) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 md:p-8 border border-border shadow-sm">
+        <div className="lg:col-span-2 glass-panel p-6 md:p-8 rounded-2xl border border-white/10 shadow-glass">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
               {selectedMainReason && (
@@ -421,40 +425,40 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   onClick={() => setSelectedMainReason(null)}
-                  className="p-2 rounded-lg hover:bg-slate-100 text-muted transition-colors"
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant hover:text-foreground transition-colors border border-white/5"
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft size={16} />
                 </motion.button>
               )}
               <div>
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Layers size={18} className="text-accent" />
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Layers size={16} className="text-primary" />
                   {selectedMainReason ? `รายละเอียด: ${selectedMainReason}` : 'วิเคราะห์สาเหตุข้อบกพร่อง'}
                 </h3>
-                <p className="text-xs text-muted">
-                  {selectedMainReason ? 'เจาะลึกรายละเอียดย่อย (Subtypes)' : 'ภาพรวมสาเหตุหลัก (Main Reasons)'}
+                <p className="text-[10px] text-on-surface-variant font-medium">
+                  {selectedMainReason ? 'เจาะลึกรายละเอียดย่อย (Subtypes)' : 'ภาพรวมสาเหตุหลัก (Main Reasons) - คลิกเพื่อเจาะลึก'}
                 </p>
               </div>
             </div>
 
             {/* Toggle View Mode */}
-            <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
+            <div className="flex bg-white/5 p-1 rounded-xl w-fit border border-white/5">
               <button
                 onClick={() => setViewMode('units')}
-                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'units' ? 'bg-white text-foreground shadow-sm' : 'text-muted hover:text-foreground'}`}
+                className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'units' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
               >
                 ปริมาณสินค้า (Units)
               </button>
               <button
                 onClick={() => setViewMode('defects')}
-                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'defects' ? 'bg-white text-foreground shadow-sm' : 'text-muted hover:text-foreground'}`}
+                className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'defects' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
               >
                 ความถี่ปัญหา (Defects)
               </button>
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             <AnimatePresence mode="wait">
               {chartData.length > 0 ? (
                 <motion.div
@@ -463,134 +467,110 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-5"
+                  className="space-y-4"
                 >
                   {chartData.map((item) => (
                     <div 
                       key={item.name} 
-                      className={`group relative ${!selectedMainReason ? 'cursor-pointer' : ''}`}
+                      className={`group relative ${!selectedMainReason ? 'cursor-pointer hover:bg-white/5' : ''} p-2 rounded-xl transition-all border border-transparent hover:border-white/5`}
                       onClick={() => !selectedMainReason && setSelectedMainReason(item.name)}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-slate-700">{item.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-on-surface">{item.name}</span>
                           {!selectedMainReason && (
-                            <ArrowRight size={12} className="text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ArrowRight size={11} className="text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1" />
                           )}
                         </div>
-                        <span className="text-sm font-black text-foreground">{item.value.toLocaleString()}</span>
+                        <span className="text-xs font-black text-foreground">{item.value.toLocaleString()}</span>
                       </div>
-                      <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-white/5 border border-white/5 rounded-full h-2.5 overflow-hidden">
                         <motion.div 
                           initial={{ width: 0 }} 
                           animate={{ width: `${(item.value / maxChartValue) * 100}%` }} 
                           transition={{ duration: 0.8, ease: 'circOut' }}
-                          className={`h-full rounded-full ${viewMode === 'units' ? 'bg-blue-500' : 'bg-orange-500'}`} 
+                          className={`h-full rounded-full ${viewMode === 'units' ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-orange-500 to-orange-400'}`} 
                         />
                       </div>
                     </div>
                   ))}
                 </motion.div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-muted">
-                  <Package size={48} className="opacity-20 mb-4" />
-                  <p className="text-sm font-medium">ไม่มีข้อมูลที่จะแสดงผล</p>
+                <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+                  <Package size={40} className="opacity-10 mb-3" />
+                  <p className="text-xs font-medium italic">ไม่มีข้อมูลที่จะแสดงผล</p>
                 </div>
               )}
             </AnimatePresence>
           </div>
           
           {/* Legend */}
-          <div className="mt-8 pt-6 border-t border-slate-50 flex items-center gap-6">
+          <div className="mt-6 pt-5 border-t border-white/5 flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
-              <span className="text-[10px] font-bold text-muted uppercase">ปริมาณชิ้นงาน</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider">ปริมาณชิ้นงาน (Units)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-500" />
-              <span className="text-[10px] font-bold text-muted uppercase">ความถี่ของปัญหา</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+              <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider">ความถี่ของปัญหา (Defects)</span>
             </div>
           </div>
         </div>
 
         {/* Workload by Source (1/3 width) */}
-        <div className="bg-white rounded-2xl p-6 md:p-8 border border-border shadow-sm">
-          <h3 className="text-lg font-bold text-foreground mb-6">แหล่งที่มาของงาน</h3>
-          <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 md:p-8 border border-border shadow-sm glass-container border-white/10 shadow-glass flex flex-col justify-between">
+          <div>
+            <h3 className="text-base font-bold text-foreground mb-1.5 flex items-center gap-2">
+              <Package size={16} className="text-primary" />
+              แหล่งที่มาของงาน
+            </h3>
+            <p className="text-[10px] text-on-surface-variant mb-6 font-medium">สถิติจำนวนเคสแยกตามฝ่ายที่แจ้ง rework</p>
+          </div>
+          <div className="space-y-5 my-auto">
             {sourceEntries.length > 0 ? (
               sourceEntries.map(([source, count]) => {
                 const percentage = Math.round((count / stats.total) * 100);
                 return (
                   <div key={source} className="flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-bold text-slate-700">{source}</span>
-                      <span className="text-xs font-black text-slate-900">{count} เคส ({percentage}%)</span>
+                      <span className="text-xs font-bold text-on-surface">{source}</span>
+                      <span className="text-xs font-black text-foreground">{count} เคส ({percentage}%)</span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-white/5 border border-white/5 rounded-full h-2 overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }} 
                         animate={{ width: `${percentage}%` }} 
                         transition={{ duration: 1, ease: 'easeOut' }}
-                        className="h-full bg-indigo-500 rounded-full shadow-sm" 
+                        className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full shadow-sm" 
                       />
                     </div>
                   </div>
                 );
               })
             ) : (
-              <p className="text-sm text-muted text-center py-8">ไม่มีข้อมูล</p>
+              <p className="text-xs text-on-surface-variant text-center py-8 italic">ไม่มีข้อมูล</p>
             )}
+          </div>
+          <div className="mt-6 pt-4 border-t border-white/5 text-[9px] text-on-surface-variant font-bold uppercase tracking-wider text-center">
+            Source Dispatch
           </div>
         </div>
 
       </div>
 
-      {/* Status Distribution Details */}
-      <div className="bg-white rounded-2xl p-6 md:p-8 border border-border shadow-sm">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-lg font-bold text-foreground">สัดส่วนสถานะการจัดการ</h3>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-amber-400" />
-            <span className="text-[10px] font-bold text-muted uppercase">Pending</span>
-            <span className="w-3 h-3 rounded-full bg-blue-400 ml-2" />
-            <span className="text-[10px] font-bold text-muted uppercase">In-Progress</span>
-            <span className="w-3 h-3 rounded-full bg-purple-400 ml-2" />
-            <span className="text-[10px] font-bold text-muted uppercase">Awaiting Valuation</span>
-            <span className="w-3 h-3 rounded-full bg-emerald-400 ml-2" />
-            <span className="text-[10px] font-bold text-muted uppercase">Completed</span>
+      {/* Status Distribution Details (Responsive Grid + Interactive SVG Donut) */}
+      <div className="glass-panel p-6 md:p-8 rounded-2xl border border-white/10 shadow-glass">
+        <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+          <div>
+            <h3 className="text-base font-bold text-primary flex items-center gap-2">
+              <TrendingUp size={16} />
+              สัดส่วนสถานะการจัดการ
+            </h3>
+            <p className="text-[10px] text-on-surface-variant font-medium">วิเคราะห์ความก้าวหน้าและการกระจายตัวของเคส</p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { label: 'รอดำเนินการ', count: stats.pending, color: 'amber', icon: <AlertCircle size={20} /> },
-            { label: 'กำลังดำเนินการ', count: stats.inProgress, color: 'blue', icon: <Clock size={20} /> },
-            { label: 'รอประเมินราคา', count: stats.awaitingValuation, color: 'purple', icon: <Banknote size={20} /> },
-            { label: 'เสร็จสิ้น', count: stats.completed, color: 'emerald', icon: <CheckCircle2 size={20} /> },
-          ].map(({ label, count, color, icon }) => {
-            const percentage = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
-            const colorClasses: Record<string, string> = {
-              amber: 'bg-amber-50 text-amber-600 border-amber-100',
-              blue: 'bg-blue-50 text-blue-600 border-blue-100',
-              purple: 'bg-purple-50 text-purple-600 border-purple-100',
-              emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-            };
-            return (
-              <div key={label} className={`flex items-center gap-4 p-4 rounded-2xl border ${colorClasses[color]}`}>
-                <div className={`p-3 rounded-xl bg-white shadow-sm shrink-0`}>
-                  {icon}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-muted mb-0.5 truncate">{label}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-900">{count}</span>
-                    <span className="text-xs font-bold text-slate-500">{percentage}%</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <StatusDistributionSection stats={stats} />
       </div>
     </div>
   );
@@ -607,27 +587,41 @@ interface MetricCardProps {
 }
 
 function MetricCard({ label, value, icon, bgColor, trend, tooltip }: MetricCardProps) {
+  let glowColor = 'from-primary/10 to-transparent';
+  if (bgColor.includes('blue')) glowColor = 'from-blue-500/10 to-transparent';
+  else if (bgColor.includes('emerald')) glowColor = 'from-emerald-500/10 to-transparent';
+  else if (bgColor.includes('amber')) glowColor = 'from-amber-500/10 to-transparent';
+  else if (bgColor.includes('rose')) glowColor = 'from-rose-500/10 to-transparent';
+  else if (bgColor.includes('indigo')) glowColor = 'from-indigo-500/10 to-transparent';
+
   return (
-    <div className="bg-white rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow relative group">
-      <div className={`w-12 h-12 rounded-2xl ${bgColor} flex items-center justify-center mb-5 shadow-inner`}>
+    <div className="glass-card p-5 rounded-2xl relative overflow-hidden group border border-white/10 shadow-glass transition-all duration-300 hover:-translate-y-1 hover:border-white/20">
+      <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-gradient-to-br ${glowColor} blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
+      
+      <div className={`w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 shadow-inner`}>
         {icon}
       </div>
-      <p className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] mb-2">{label}</p>
+      
+      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5">{label}</p>
+      
       <div className="flex items-baseline gap-2">
-        <h3 className="text-3xl font-black text-foreground leading-none">{value}</h3>
+        <h3 className="text-2xl font-black text-foreground leading-none tracking-tight">{value}</h3>
       </div>
-      {trend && <p className="text-[10px] font-bold text-slate-400 mt-3 flex items-center gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-        {trend}
-      </p>}
+      
+      {trend && (
+        <p className="text-[10px] font-bold text-on-surface-variant mt-3 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
+          {trend}
+        </p>
+      )}
       
       {tooltip && (
-        <div className="absolute top-4 right-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-4 right-4 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="relative group/tip">
-            <AlertCircle size={14} className="cursor-help" />
-            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-50">
+            <AlertCircle size={13} className="cursor-help text-on-surface-variant/60 hover:text-foreground" />
+            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-950/95 backdrop-blur-md border border-white/10 text-white text-[10px] rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
               {tooltip}
-              <div className="absolute top-full right-2 border-4 border-transparent border-t-slate-900" />
+              <div className="absolute top-full right-2 border-4 border-transparent border-t-slate-950" />
             </div>
           </div>
         </div>
@@ -635,3 +629,260 @@ function MetricCard({ label, value, icon, bgColor, trend, tooltip }: MetricCardP
     </div>
   );
 }
+
+// ===== StatusDistributionSection Sub-Component =====
+interface StatusDistributionSectionProps {
+  stats: {
+    total: number;
+    pending: number;
+    inProgress: number;
+    awaitingValuation: number;
+    completed: number;
+  };
+}
+
+function StatusDistributionSection({ stats }: StatusDistributionSectionProps) {
+  const { total, pending, inProgress, awaitingValuation, completed } = stats;
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+
+  const data = useMemo(() => {
+    return [
+      { 
+        name: 'รอดำเนินการ (Pending)', 
+        count: pending, 
+        color: '#f59e0b', // Amber 500
+        borderColor: 'border-amber-500/30',
+        textColor: 'text-amber-400',
+        bgColor: 'bg-amber-500/5',
+        hoverBg: 'hover:bg-amber-500/10',
+        key: 'pending' 
+      },
+      { 
+        name: 'กำลังดำเนินการ (In-Progress)', 
+        count: inProgress, 
+        color: '#6366f1', // Indigo 500
+        borderColor: 'border-indigo-500/30',
+        textColor: 'text-indigo-400',
+        bgColor: 'bg-indigo-500/5',
+        hoverBg: 'hover:bg-indigo-500/10',
+        key: 'inProgress' 
+      },
+      { 
+        name: 'รอประเมินราคา (Awaiting Valuation)', 
+        count: awaitingValuation, 
+        color: '#ec4899', // Pink 500
+        borderColor: 'border-pink-500/30',
+        textColor: 'text-pink-400',
+        bgColor: 'bg-pink-500/5',
+        hoverBg: 'hover:bg-pink-500/10',
+        key: 'awaitingValuation' 
+      },
+      { 
+        name: 'เสร็จสมบูรณ์ (Completed)', 
+        count: completed, 
+        color: '#10b981', // Emerald 500
+        borderColor: 'border-emerald-500/30',
+        textColor: 'text-emerald-400',
+        bgColor: 'bg-emerald-500/5',
+        hoverBg: 'hover:bg-emerald-500/10',
+        key: 'completed' 
+      },
+    ];
+  }, [pending, inProgress, awaitingValuation, completed]);
+
+  const activeSegments = useMemo(() => {
+    return data.filter(item => item.count > 0);
+  }, [data]);
+
+  const r = 72;
+  const strokeWidth = 10;
+  const size = 200;
+  const center = size / 2;
+  const circumference = 2 * Math.PI * r;
+
+  const segments = useMemo(() => {
+    let accumulatedPercent = 0;
+    return activeSegments.map((item) => {
+      const percentage = total > 0 ? (item.count / total) * 100 : 0;
+      const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
+      const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
+      accumulatedPercent += percentage;
+      return {
+        ...item,
+        percentage,
+        strokeDasharray,
+        strokeDashoffset,
+      };
+    });
+  }, [activeSegments, total, circumference]);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center py-4">
+      {/* Left side: Interactive SVG Donut Chart */}
+      <div className="md:col-span-5 flex flex-col items-center justify-center">
+        <div className="relative w-56 h-56 flex items-center justify-center">
+          {/* Inner Text Display */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none z-10">
+            <AnimatePresence mode="wait">
+              {hoveredKey ? (
+                <motion.div
+                  key={hoveredKey}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                  className="px-2"
+                >
+                  {(() => {
+                    const activeItem = data.find(d => d.key === hoveredKey);
+                    if (!activeItem) return null;
+                    const percent = total > 0 ? Math.round((activeItem.count / total) * 100) : 0;
+                    return (
+                      <>
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-0.5">
+                          {activeItem.key === 'pending' ? 'รอดำเนินการ' :
+                           activeItem.key === 'inProgress' ? 'กำลังทำ' :
+                           activeItem.key === 'awaitingValuation' ? 'รอประเมิน' : 'เสร็จสิ้น'}
+                        </span>
+                        <span className="text-2xl font-black text-foreground block leading-none mb-1">
+                          {activeItem.count}
+                        </span>
+                        <span className={`text-[10px] font-extrabold ${activeItem.textColor}`}>
+                          {percent}% ของทั้งหมด
+                        </span>
+                      </>
+                    );
+                  })()}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="default"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-0.5">
+                    เคสทั้งหมด
+                  </span>
+                  <span className="text-3xl font-black text-foreground block leading-none mb-1">
+                    {total}
+                  </span>
+                  <span className="text-[9px] font-bold text-primary/70 uppercase tracking-widest">
+                    QSMS REWORK
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* SVG Donut */}
+          <svg
+            width={size}
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+            className="transform -rotate-90 select-none cursor-pointer"
+          >
+            {/* Background Track Circle */}
+            <circle
+              cx={center}
+              cy={center}
+              r={r}
+              fill="transparent"
+              stroke="rgba(255, 255, 255, 0.05)"
+              strokeWidth={strokeWidth}
+            />
+
+            {/* Empty State Circle if no cases */}
+            {total === 0 && (
+              <circle
+                cx={center}
+                cy={center}
+                r={r}
+                fill="transparent"
+                stroke="rgba(255, 255, 255, 0.1)"
+                strokeWidth={strokeWidth}
+                strokeDasharray="4 4"
+              />
+            )}
+
+            {/* Dynamic Segments */}
+            {segments.map((segment) => {
+              const isHovered = hoveredKey === segment.key;
+              return (
+                <motion.circle
+                  key={segment.key}
+                  cx={center}
+                  cy={center}
+                  r={r}
+                  fill="transparent"
+                  stroke={segment.color}
+                  strokeWidth={isHovered ? strokeWidth + 3 : strokeWidth}
+                  strokeDasharray={segment.strokeDasharray}
+                  strokeDashoffset={segment.strokeDashoffset}
+                  strokeLinecap="round"
+                  onMouseEnter={() => setHoveredKey(segment.key)}
+                  onMouseLeave={() => setHoveredKey(null)}
+                  className="transition-all duration-300 origin-center"
+                  style={{
+                    filter: isHovered 
+                      ? `drop-shadow(0 0 6px ${segment.color})` 
+                      : 'none',
+                    opacity: hoveredKey && !isHovered ? 0.4 : 1,
+                  }}
+                />
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+
+      {/* Right side: Modern Interactive Legend Cards */}
+      <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {data.map((item) => {
+          const isHovered = hoveredKey === item.key;
+          const percentage = total > 0 ? Math.round((item.count / total) * 100) : 0;
+          return (
+            <div
+              key={item.key}
+              onMouseEnter={() => setHoveredKey(item.key)}
+              onMouseLeave={() => setHoveredKey(null)}
+              className={`flex flex-col justify-between p-4 rounded-xl border transition-all duration-300 select-none ${item.bgColor} ${item.borderColor} ${item.hoverBg} ${
+                isHovered ? 'scale-[1.02] shadow-glass border-white/20 -translate-y-0.5' : 'opacity-90'
+              }`}
+              style={{
+                boxShadow: isHovered ? `0 8px 24px -6px ${item.color}20` : 'none',
+                opacity: hoveredKey && !isHovered ? 0.5 : 1
+              }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider truncate">
+                  {item.key === 'pending' ? 'รอดำเนินการ' :
+                   item.key === 'inProgress' ? 'กำลังดำเนินการ' :
+                   item.key === 'awaitingValuation' ? 'รอประเมินราคา' : 'เสร็จสมบูรณ์'}
+                </span>
+              </div>
+
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-xl font-black text-foreground">{item.count} <span className="text-xs font-normal text-on-surface-variant">เคส</span></span>
+                <span className={`text-xs font-extrabold ${item.textColor}`}>{percentage}%</span>
+              </div>
+
+              <div className="w-full bg-white/5 border border-white/5 rounded-full h-1.5 overflow-hidden mt-3">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percentage}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+

@@ -109,3 +109,52 @@
   const App = dynamic(() => import('../App'), { ssr: false, loading: () => <FallbackSpinner /> });
   ```
 - **Learning**: Always leverage dynamic client-side imports (`ssr: false`) when hosting legacy SPA applications inside Next.js pages. This isolates browser-only global contexts safely from server compilation pipelines and yields a clean, resilient, compile-safe production build.
+
+### 20. CSS Line Reference Desynchronization during File Replacements (2026-05-19)
+- **Problem**: When replacing base CSS rules inside `src/index.css`, a target content block was specified based on stale line numbers, which caused the replacement tool to accidentally strip out key glassmorphism layout classes.
+- **Cause**: Relying on cached or previous summaries of file line ranges without verifying the current state of the file directly before executing a search-and-replace command.
+- **Solution**: Executed `git checkout -- src/index.css` to restore the file, re-read the active file context using `view_file` to determine the exact, up-to-date line bounds, and successfully executed a precise targeted replacement.
+- **Learning**: Never assume class names or structures remain at the same line positions across git branches or file versions. Always re-inspect the target file's current content layout with `view_file` immediately before applying replacement edits.
+
+### 21. Code Replacement Line Number Shifts and Whitespace Matches (2026-05-19)
+- **Problem**: When trying to replace larger code blocks (like Roster employee sidebar or forms) in `RosterApp.tsx`, the tool returned "chunk 0: target content not found in file".
+- **Cause**: The line numbers had shifted due to previous inserts of functions, and minor leading whitespace differences (e.g. 14 spaces vs 15 spaces) made the search content mismatch.
+- **Solution**: Re-viewed the target lines with `view_file` to find the exact line ranges and matching whitespace, then performed smaller, more precise replacements.
+- **Learning**: Keep target content strings exact (including spacing) and use smaller blocks when possible to prevent matching failures during file edits.
+
+### 22. Roster Calendar Initial Saturday Configuration Requirement (2026-05-19)
+- **Problem**: When a new employee is added to the roster or has no initial working Saturday configuration set, automatically running the alternating Saturday formula can lead to incorrect calendars and user confusion.
+- **Solution**: Set the initial Saturday status of all Saturdays to `'OFF'` by default if `startWorkingSaturday` is not configured. Render a prominent warning callout and a dynamic action button ("ตั้งเป็นเสาร์เริ่มงาน") directly inside Saturday calendar cells, enabling users to set it with a single click.
+- **Learning**: Always build explicit UI guardrails and configuration prompts for rule-based systems (like shift rosters) rather than silently calculating fallbacks that might be incorrect.
+
+### 23. Quick Calendar Action Buttons with Hover State (2026-05-19)
+- **Problem**: Adding too many quick-action buttons (like sick leave, personal leave) inside every calendar cell makes the UI cluttered, crowded, and reduces readability.
+- **Solution**: Use CSS hover states (`opacity-0 group-hover:opacity-100 transition-opacity`) to hide the buttons under normal viewing, but display them beautifully when the user hovers their mouse over a specific workday cell.
+- **Learning**: Leverage hover micro-interactions and transitions to provide advanced features without sacrificing clean, minimalist design aesthetics.
+
+### 24. Apps Script Web App Out-of-Sync Errors & Dynamic Guides (2026-05-19)
+- **Problem**: When the React frontend is updated with new server actions (e.g. `rosterUpdateEmployeeStartSaturday`), users may see "Unknown action" runtime errors if they haven't copied the latest code to their Google Drive Apps Script or haven't deployed it as a "New Version".
+- **Solution**: Implemented a dynamic error interceptor on the UI. When `Unknown action` is detected, the error banner automatically displays a friendly Thai step-by-step tutorial explaining how to open the Apps Script Editor, copy `gas/gas_calendar.gs`, and deploy it as a "New Version".
+- **Learning**: When building serverless or Google Apps Script backends, API version mismatches are common. Designing context-aware error banners that guide users step-by-step to deploy updates is critical for a smooth user experience, especially for non-technical administrators.
+
+### 25. TypeScript Compiler Error on Destructured Props in MainLayout (2026-05-19)
+- **Problem**: Next.js production build (`npm run build`) failed with `Property 'onBackToPortal' does not exist on type 'IntrinsicAttributes & MainLayoutProps'` because the Rework module attempted to pass the back-to-portal handler, but the `MainLayout` component interface was not updated to accept it.
+- **Solution**: Added `onBackToPortal: () => void;` to `MainLayoutProps` interface, destructured the parameter in `MainLayout`, and registered the `ArrowLeft` sidebar navigation item.
+- **Learning**: When refactoring shell layouts and portal page navigation pathways, ensure all interface specifications (props) are aligned across parent-child boundaries to avoid breaking compilation processes.
+
+### 26. TypeScript Compiler Strict Union Type Warning in Array Operations (2026-05-19)
+- **Problem**: Build error occurred in `RosterApp.tsx` because the status string variable `status` was being pushed into an array of `RosterOverride` which expects strict `RosterCellStatus` type values.
+- **Solution**: Performed typing assertion using `status: status as RosterCellStatus` inside the array push operation.
+- **Learning**: TypeScript's strict typing system requires union strings to be matched explicitly. Type casting with `as` is a lightweight, safe mechanism when interacting with values that are dynamically routed but verified.
+
+### 27. Duplicate Calendar Year Display in Dropdown Options (2026-05-19)
+- **Problem**: The Saturday start date select dropdown showed the Buddhist year twice (e.g. "เสาร์ที่ 4 เมษายน 2569 2569").
+- **Cause**: The custom helper function `getThaiMonthLabel(curr)` was built using `Intl.DateTimeFormat` with `{ year: 'numeric' }`, which already outputs the full month name and Buddhist year (e.g., "เมษายน 2569"). The template string in `RosterApp.tsx` manually appended `${curr.getFullYear() + 543}` on top of it, resulting in the duplication.
+- **Solution**: Removed the manual year addition from the formatted string, changing it to ``เสาร์ที่ ${curr.getDate()} ${getThaiMonthLabel(curr)}``.
+- **Learning**: Before manually formatting dates and years, verify the exact return format of localization helper functions to prevent duplication of year or month names in the UI.
+
+### 28. Blocked Add Employee Button and Redundant Dropdown (2026-05-19)
+- **Problem**: The "เพิ่มพนักงาน" (Add Employee) button was disabled/blocked, and the dropdown for selecting initial working Saturdays in the employee form was redundant.
+- **Cause**: The button validation required both the name input and the Saturday dropdown value (`newEmployeeStartSaturday`) to be filled. However, users were confused by the dropdown, or it failed to populate correctly, locking the button. Furthermore, we already implemented a click handler directly inside the calendar cells to let users dynamically set the initial Saturday with a single click, making the initial dropdown redundant.
+- **Solution**: Removed the redundant `newEmployeeStartSaturday` state and the dropdown select input from the JSX form, updated the disabled validation condition of the button to check only for the name input (`disabled={!newEmployeeName.trim()}`), and configured the `addEmployee` action to submit the initial Saturday as an empty string (`''`).
+- **Learning**: Design UI forms to be as lean as possible. If a configuration step (like setting the initial starting Saturday) can be done interactively on the calendar itself, remove it from the creation form to avoid validation blockers and improve UX.

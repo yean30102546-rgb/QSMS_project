@@ -67,19 +67,19 @@ export function OverallTab({
   } = useOverallFilters(cases, searchQuery);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-bg">
-      <div className="flex-shrink-0 border-b border-border bg-white px-0 py-6 md:py-8 lg:py-10">
+    <div className="flex h-full flex-col overflow-hidden bg-transparent">
+      <div className="flex-shrink-0 border-b border-white/20 bg-white/20 backdrop-blur-md px-0 py-6 md:py-8 lg:py-10 shadow-sm shadow-primary/5">
         <div className="px-4 md:px-10 lg:px-12">
           <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-1 text-xs font-medium text-muted">
+              <p className="mb-1 text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                 {new Date().toLocaleDateString('th-TH', {
                   weekday: 'long',
                   month: 'short',
                   day: 'numeric',
                 })}
               </p>
-              <h1 className="text-2xl font-bold tracking-normal text-foreground md:text-3xl">
+              <h1 className="text-2xl font-bold tracking-tight text-primary md:text-3xl">
                 สวัสดี {
                   userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
                   userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
@@ -95,7 +95,7 @@ export function OverallTab({
                 <button
                   onClick={loadCases}
                   disabled={isLoadingCases}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-foreground transition-all hover:bg-slate-50 disabled:opacity-50"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-white/40 text-primary transition-all hover:bg-white/80 disabled:opacity-50 active:scale-95 shadow-sm"
                 >
                   <RefreshCw size={18} className={isLoadingCases ? 'animate-spin' : ''} />
                 </button>
@@ -103,7 +103,7 @@ export function OverallTab({
             </div>
           </header>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-5">
             <StatCard label="จำนวนงานทั้งหมด" value={stats.total.toString()} />
             <StatCard
               label="รอดำเนินการ"
@@ -113,26 +113,26 @@ export function OverallTab({
             <StatCard label="กำลังดำเนินการ" value={stats.inProgress.toString()} />
             <StatCard label="รอประเมินราคา" value={stats.awaitingValuation.toString()} />
             <StatCard label="เสร็จสิ้น" value={stats.completed.toString()} />
-
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-hide bg-bg">
+
+      <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent">
         <div className="px-4 py-6 md:px-10 md:py-8 lg:px-12">
           <div className="space-y-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-1">
-                <h3 className="text-sm font-bold italic tracking-normal text-foreground underline decoration-accent/20 underline-offset-4 md:text-base">
+                <h3 className="text-sm font-bold tracking-tight text-primary md:text-base">
                   รายการงาน Rework ล่าสุด
                 </h3>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <div className="relative w-full sm:w-56">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/80" size={14} />
                     <input
                       type="text"
                       placeholder="ค้นหา..."
-                      className="w-full rounded-xl border border-border bg-white py-2.5 pl-9 pr-4 text-xs font-medium transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                      className="w-full rounded-xl border border-white/45 bg-white/45 backdrop-blur-sm py-2.5 pl-9 pr-4 text-xs font-semibold text-primary transition-all placeholder:text-on-surface-variant/60 focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -141,16 +141,16 @@ export function OverallTab({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all sm:h-auto ${
+                    className={`flex h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all sm:h-auto shadow-sm ${
                       showFilters || hasActiveFilters
-                        ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                        : 'border border-border bg-white text-foreground hover:border-slate-300 hover:bg-slate-50'
+                        ? 'bg-primary text-white shadow-md shadow-primary/25 border border-primary/20'
+                        : 'border border-white/45 bg-white/45 text-on-surface-variant hover:bg-white/60 hover:text-primary'
                     }`}
                   >
                     <SlidersHorizontal size={14} />
                     ตัวกรอง
                     {activeFilterCount > 0 && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-[10px] font-black text-accent">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-black text-primary">
                         {activeFilterCount}
                       </span>
                     )}
@@ -159,7 +159,7 @@ export function OverallTab({
               </div>
 
               <div className="flex items-center gap-2 px-1 overflow-x-auto pb-2 scrollbar-hide">
-                <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-muted">สถานะ:</span>
+                <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">สถานะ:</span>
                 {(['all', 'Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
                   const isAll = status === 'all';
                   const isActive = isAll ? statusFilter.length === 0 : statusFilter.includes(status);
@@ -176,14 +176,14 @@ export function OverallTab({
                             : 'เสร็จสิ้น';
 
                   const activeColors = isAll
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                    ? 'bg-primary text-white shadow-md shadow-primary/20'
                     : status === 'Pending'
-                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                      ? 'bg-tertiary text-white shadow-md shadow-tertiary/20'
                       : status === 'In-Progress'
-                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                        ? 'bg-[#7c98b3] text-white shadow-md shadow-[#7c98b3]/25'
                         : status === 'Awaiting Valuation'
-                          ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20'
-                          : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20';
+                          ? 'bg-secondary text-white shadow-md shadow-secondary/20'
+                          : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20';
 
                   return (
                     <motion.button
@@ -197,14 +197,14 @@ export function OverallTab({
                           toggleStatusFilter(status);
                         }
                       }}
-                      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all ${
+                      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all border border-transparent shadow-sm ${
                         isActive
                           ? activeColors
-                          : 'border border-border bg-white text-muted hover:bg-slate-50 hover:text-foreground'
+                          : 'border-white/45 bg-white/45 text-on-surface-variant hover:bg-white/60 hover:text-primary'
                       }`}
                     >
                       {thaiLabel}
-                      <span className={`text-[10px] font-black ${isActive ? 'opacity-80' : 'opacity-50'}`}>{count}</span>
+                      <span className={`text-[10px] font-black ${isActive ? 'opacity-90' : 'opacity-65'}`}>{count}</span>
                     </motion.button>
                   );
                 })}
@@ -218,21 +218,21 @@ export function OverallTab({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-xl shadow-slate-200/20 backdrop-blur-xl"
+                  className="rounded-2xl border border-white/50 bg-white/85 p-6 shadow-xl shadow-primary/5 backdrop-blur-2xl"
                 >
                   <div className="mb-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
-                        <Filter size={16} className="text-accent" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                        <Filter size={16} className="text-primary" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-foreground">ตัวกรองขั้นสูง</h4>
-                        <p className="text-[10px] text-muted">เลือกเงื่อนไขเพื่อกรองข้อมูล</p>
+                        <h4 className="text-sm font-bold text-primary">ตัวกรองขั้นสูง</h4>
+                        <p className="text-[10px] text-on-surface-variant/80">เลือกเงื่อนไขเพื่อคัดกรองข้อมูล</p>
                       </div>
                     </div>
                     <button
                       onClick={() => setShowFilters(false)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-slate-100 hover:text-foreground"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-white/60 hover:text-primary"
                     >
                       <X size={16} />
                     </button>
@@ -253,20 +253,22 @@ export function OverallTab({
                                 if (isSelected) setSourceFilter(sourceFilter.filter((s) => s !== source));
                                 else setSourceFilter([...sourceFilter, source]);
                               }}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                                isSelected ? 'bg-accent text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all border shadow-sm ${
+                                isSelected
+                                  ? 'bg-primary text-white border-primary/20 shadow-primary/20'
+                                  : 'border-white/50 bg-white/40 text-on-surface-variant hover:bg-white/60 hover:text-primary'
                               }`}
                             >
                               {source}
                             </motion.button>
                           );
                         })}
-                        {uniqueSources.length === 0 && <span className="text-xs italic text-muted">ไม่มีข้อมูล</span>}
+                        {uniqueSources.length === 0 && <span className="text-xs italic text-on-surface-variant/70">ไม่มีข้อมูล</span>}
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted">ประเภท Defect (Reason)</label>
+                      <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">ประเภท Defect (Reason)</label>
                       <div className="max-h-28 overflow-y-auto flex flex-wrap gap-2">
                         {uniqueReasons.map((reason) => {
                           const isSelected = reasonFilter.includes(reason);
@@ -279,20 +281,22 @@ export function OverallTab({
                                 if (isSelected) setReasonFilter(reasonFilter.filter((r) => r !== reason));
                                 else setReasonFilter([...reasonFilter, reason]);
                               }}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                                isSelected ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all border shadow-sm ${
+                                isSelected
+                                  ? 'bg-tertiary text-white border-tertiary/20 shadow-tertiary/20'
+                                  : 'border-white/50 bg-white/40 text-on-surface-variant hover:bg-white/60 hover:text-primary'
                               }`}
                             >
                               {reason}
                             </motion.button>
                           );
                         })}
-                        {uniqueReasons.length === 0 && <span className="text-xs italic text-muted">ไม่มีข้อมูล</span>}
+                        {uniqueReasons.length === 0 && <span className="text-xs italic text-on-surface-variant/70">ไม่มีข้อมูล</span>}
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted">ผู้รับผิดชอบ (Responsible)</label>
+                      <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">ผู้รับผิดชอบ (Responsible)</label>
                       <div className="max-h-28 overflow-y-auto flex flex-wrap gap-2">
                         {uniqueResponsible.map((responsible) => {
                           const isSelected = responsibleFilter.includes(responsible);
@@ -305,20 +309,22 @@ export function OverallTab({
                                 if (isSelected) setResponsibleFilter(responsibleFilter.filter((r) => r !== responsible));
                                 else setResponsibleFilter([...responsibleFilter, responsible]);
                               }}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                                isSelected ? 'bg-violet-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all border shadow-sm ${
+                                isSelected
+                                  ? 'bg-secondary text-white border-secondary/20 shadow-secondary/20'
+                                  : 'border-white/50 bg-white/40 text-on-surface-variant hover:bg-white/60 hover:text-primary'
                               }`}
                             >
                               {responsible}
                             </motion.button>
                           );
                         })}
-                        {uniqueResponsible.length === 0 && <span className="text-xs italic text-muted">ไม่มีข้อมูล</span>}
+                        {uniqueResponsible.length === 0 && <span className="text-xs italic text-on-surface-variant/70">ไม่มีข้อมูล</span>}
                       </div>
                     </div>
 
                     <div className="space-y-3 md:col-span-2 lg:col-span-3">
-                      <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-muted">
+                      <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">
                         <Calendar size={12} /> ช่วงเวลา (Date Range)
                       </label>
                       <div className="flex items-center gap-3">
@@ -327,34 +333,34 @@ export function OverallTab({
                             type="date"
                             value={dateFromFilter}
                             onChange={(e) => setDateFromFilter(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                            className="w-full rounded-xl border border-white/45 bg-white/45 px-4 py-2.5 text-sm font-semibold transition-all focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
                           />
-                          <span className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-bold text-muted">เริ่มต้น</span>
+                          <span className="absolute -top-2 left-3 bg-white/95 backdrop-blur-sm px-1 text-[9px] font-bold text-on-surface-variant">เริ่มต้น</span>
                         </div>
-                        <span className="text-xs font-bold text-muted">→</span>
+                        <span className="text-xs font-bold text-on-surface-variant">→</span>
                         <div className="relative flex-1">
                           <input
                             type="date"
                             value={dateToFilter}
                             onChange={(e) => setDateToFilter(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                            className="w-full rounded-xl border border-white/45 bg-white/45 px-4 py-2.5 text-sm font-semibold transition-all focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
                           />
-                          <span className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-bold text-muted">สิ้นสุด</span>
+                          <span className="absolute -top-2 left-3 bg-white/95 backdrop-blur-sm px-1 text-[9px] font-bold text-on-surface-variant">สิ้นสุด</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {hasActiveFilters && (
-                    <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                      <p className="text-xs text-muted">
-                        พบ <span className="font-bold text-accent">{filteredCases.length}</span> รายการ จากทั้งหมด {cases.length} รายการ
+                    <div className="mt-5 flex items-center justify-between border-t border-white/20 pt-4">
+                      <p className="text-xs text-on-surface-variant/80">
+                        พบ <span className="font-bold text-primary">{filteredCases.length}</span> รายการ จากทั้งหมด {cases.length} รายการ
                       </p>
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={clearAllFilters}
-                        className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-all hover:bg-red-100"
+                        className="flex items-center gap-1.5 rounded-xl border border-red-200/50 bg-red-50/50 backdrop-blur-sm px-4 py-2 text-xs font-bold text-red-600 transition-all hover:bg-red-100/60 shadow-sm"
                       >
                         <X size={14} /> ล้างตัวกรองทั้งหมด
                       </motion.button>
@@ -448,18 +454,21 @@ interface StatCardProps {
 
 function StatCard({ label, value, trend }: StatCardProps) {
   return (
-    <div className="stat-card rounded-2xl border border-border bg-white p-4 md:p-6">
-      <p className="mb-2 text-[9px] font-bold uppercase leading-none tracking-[0.1em] text-muted md:mb-3 md:text-[10px]">
+    <motion.div
+      whileHover={{ y: -2 }}
+      className="stat-card rounded-xl border border-white/45 bg-white/45 backdrop-blur-md p-4 md:p-6 shadow-sm shadow-primary/5 hover:bg-white/70 hover:shadow-md transition-all duration-300"
+    >
+      <p className="mb-2 text-[9px] font-bold uppercase leading-none tracking-[0.1em] text-on-surface-variant md:mb-3 md:text-[10px]">
         {label}
       </p>
       <div className="flex items-end justify-between gap-2">
-        <h3 className="text-xl font-bold leading-none tracking-tighter text-foreground md:text-[28px]">{value}</h3>
+        <h3 className="text-xl font-bold leading-none tracking-tighter text-primary md:text-[28px]">{value}</h3>
         {trend && (
-          <span className="shrink-0 rounded-full border border-border bg-slate-50 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-widest text-muted md:px-2 md:text-[9px]">
+          <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-widest text-primary md:px-2 md:text-[9px]">
             {trend}
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

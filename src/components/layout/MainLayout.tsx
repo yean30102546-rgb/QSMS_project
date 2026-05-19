@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu } from 'lucide-react';
+import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLeft } from 'lucide-react';
 
 import type { ReworkCase, ReworkItem } from '../../services/api';
 import type { User } from '../../services/auth';
@@ -77,6 +77,7 @@ interface MainLayoutProps {
   selectionModal: SelectionModalState;
   setSelectionModal: (modal: SelectionModalState) => void;
   onOpenTutorial: () => void;
+  onBackToPortal: () => void;
 }
 
 function TabFallback() {
@@ -126,6 +127,7 @@ export function MainLayout({
   selectionModal,
   setSelectionModal,
   onOpenTutorial,
+  onBackToPortal,
 }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
@@ -148,7 +150,7 @@ export function MainLayout({
   }, [activeTab, userRole, setActiveTab]);
 
   return (
-    <div className="flex h-full overflow-hidden bg-bg text-foreground font-sans">
+    <div className="flex h-full overflow-hidden bg-transparent text-on-surface font-sans">
       {/* Mobile Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -157,22 +159,26 @@ export function MainLayout({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeSidebar}
-            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm md:hidden"
           />
         )}
       </AnimatePresence>
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-border bg-surface px-5 py-8 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-white/20 bg-surface/40 backdrop-blur-2xl px-5 py-8 shadow-lg shadow-primary/5 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
         <motion.div
-          className="mb-14 flex cursor-pointer items-center gap-2"
+          className="mb-14 flex cursor-pointer items-center gap-3 px-2"
           onClick={() => handleTabChange('overall')}
           whileHover={{ scale: 1.02 }}
         >
-          <img src="/img/logo.png" alt="" className="h-12 object-contain drop-shadow-sm" />
-          <h1 className="text-[18px] font-semibold tracking-tight text-foreground">QSMS Rework</h1>
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-lg bg-white/60 border border-white/40 p-1 shadow-sm">
+            <img src="/img/logo.png" alt="Excellence Logo" className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <h1 className="text-[16px] font-bold tracking-wider text-primary uppercase leading-tight">QSMS REWORK</h1>
+          </div>
         </motion.div>
 
         <nav className="flex-1 space-y-1">
@@ -193,6 +199,15 @@ export function MainLayout({
           <SidebarItem
             active={false}
             onClick={() => {
+              onBackToPortal();
+              closeSidebar();
+            }}
+            label="กลับหน้าพอร์ทัล"
+            icon={<ArrowLeft size={16} />}
+          />
+          <SidebarItem
+            active={false}
+            onClick={() => {
               onOpenTutorial();
               closeSidebar();
             }}
@@ -202,7 +217,7 @@ export function MainLayout({
         </nav>
 
         {(userRole === 'admin' || userRole === 'qsms') && (
-          <div className="mt-auto border-t border-border pt-8">
+          <div className="mt-auto border-t border-white/20 pt-8">
             <SidebarItem
               active={activeTab === 'dashboard'}
               onClick={() => handleTabChange('dashboard')}
@@ -212,17 +227,17 @@ export function MainLayout({
           </div>
         )}
 
-        <div className="mt-8 border-t border-border pt-8">
-          <div className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm transition-all hover:bg-slate-50">
-            <span className="font-medium text-slate-700">{userName || 'User'}</span>
-            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold uppercase leading-none text-slate-500">
+        <div className="mt-8 border-t border-white/20 pt-8">
+          <div className="flex cursor-pointer items-center justify-between rounded-lg bg-white/40 border border-white/30 px-3 py-3 text-sm transition-all hover:bg-white/60">
+            <span className="font-semibold text-slate-800">{userName || 'User'}</span>
+            <span className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase leading-none text-primary">
               {String(userRole || 'Admin')}
             </span>
           </div>
           <button
             type="button"
             onClick={onLogout}
-            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-all hover:bg-red-50 hover:text-red-600"
+            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-on-surface-variant transition-all hover:bg-red-500/10 hover:text-red-600 active:scale-95"
           >
             <LogOut size={16} />
             Sign Out
@@ -230,9 +245,10 @@ export function MainLayout({
         </div>
       </aside>
 
-      <main className="relative flex flex-1 flex-col overflow-hidden bg-bg">
+      <main className="relative flex flex-1 flex-col overflow-hidden bg-transparent">
         {/* Mobile Header */}
-        <div className="flex h-14 items-center justify-between border-b border-border bg-white px-4 md:hidden">
+        <div className="flex h-14 items-center justify-between border-b border-white/20 bg-white/50 backdrop-blur-md px-4 md:hidden">
+
           <div className="flex items-center gap-2">
             <img src="/img/logo.png" alt="" className="h-8 object-contain" />
             <span className="text-sm font-bold">QSMS Rework</span>
@@ -353,12 +369,12 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
       }}
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.98 }}
-      className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${active
-          ? 'border border-border bg-[#f4f4f5] text-foreground shadow-sm'
-          : 'text-muted hover:bg-slate-50 hover:text-foreground'
+      className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200 ${active
+        ? 'border border-white/40 bg-primary/10 text-primary shadow-sm'
+        : 'text-on-surface-variant hover:bg-white/20 hover:text-primary'
         }`}
     >
-      {icon && <span className={`transition-colors ${active ? 'text-foreground' : 'text-muted'}`}>{icon}</span>}
+      {icon && <span className={`transition-colors ${active ? 'text-primary' : 'text-on-surface-variant'}`}>{icon}</span>}
       <span>{label}</span>
     </motion.button>
   );
