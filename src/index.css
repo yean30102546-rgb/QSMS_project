@@ -98,3 +98,192 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-200 rounded-full hover:bg-slate-300;
 }
+
+/* ========== Roster Design Tokens ========== */
+
+/* Tab switcher (Apple-style segmented control) */
+.roster-tab-bar {
+  display: inline-flex;
+  background: #f4f4f5;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.roster-tab {
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #71717a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+}
+
+.roster-tab.active {
+  background: #ffffff;
+  color: #18181b;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Calendar cell - minimal */
+.roster-cell {
+  position: relative;
+  min-height: 52px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid #f0f0f2;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.roster-cell:hover {
+  border-color: #d4d4d8;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.roster-cell.is-today {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Status dots */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot.work { background: #22c55e; }
+.status-dot.off { background: #f59e0b; }
+.status-dot.holiday { background: #94a3b8; }
+.status-dot.ot { background: #3b82f6; }
+.status-dot.leave-sick { background: #ef4444; }
+.status-dot.leave-business { background: #f97316; }
+.status-dot.swap { background: #8b5cf6; }
+
+/* Drag target highlight */
+.roster-cell.drag-over {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+}
+
+.roster-cell.drag-source {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+/* Popover (click-to-open action menu) */
+.roster-popover {
+  position: absolute;
+  z-index: 50;
+  min-width: 190px;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  padding: 0;
+  animation: roster-pop-in 0.15s ease-out;
+  overflow: hidden;
+}
+
+.roster-popover-header {
+  padding: 8px 12px;
+  background: #fafafa;
+  font-size: 10px;
+  font-weight: 700;
+  color: #71717a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.roster-popover-group {
+  padding: 4px;
+}
+
+.roster-popover-divider {
+  height: 1px;
+  background: #f4f4f5;
+  margin: 0;
+}
+
+.roster-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #3f3f46;
+  cursor: pointer;
+  transition: background 0.12s;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.roster-popover-item:hover {
+  background: #f4f4f5;
+}
+
+.roster-popover-item.danger {
+  color: #dc2626;
+}
+
+.roster-popover-item.danger:hover {
+  background: #fef2f2;
+}
+
+@keyframes roster-pop-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.95) translateY(-4px); }
+  to { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+
+/* Summary table */
+.roster-summary-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.roster-summary-table th {
+  background: #fafafa;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: #71717a;
+  text-align: center;
+  border-bottom: 1px solid #e4e4e7;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.roster-summary-table td {
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid #f4f4f5;
+  vertical-align: middle;
+}
+
+.roster-summary-table tr:hover td {
+  background: #fafafa;
+}
+
+.roster-summary-table th:first-child,
+.roster-summary-table td:first-child {
+  text-align: left;
+  padding-left: 16px;
+  position: sticky;
+  left: 0;
+  background: inherit;
+  z-index: 5;
+}

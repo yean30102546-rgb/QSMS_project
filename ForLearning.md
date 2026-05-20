@@ -158,3 +158,50 @@
 - **Cause**: The button validation required both the name input and the Saturday dropdown value (`newEmployeeStartSaturday`) to be filled. However, users were confused by the dropdown, or it failed to populate correctly, locking the button. Furthermore, we already implemented a click handler directly inside the calendar cells to let users dynamically set the initial Saturday with a single click, making the initial dropdown redundant.
 - **Solution**: Removed the redundant `newEmployeeStartSaturday` state and the dropdown select input from the JSX form, updated the disabled validation condition of the button to check only for the name input (`disabled={!newEmployeeName.trim()}`), and configured the `addEmployee` action to submit the initial Saturday as an empty string (`''`).
 - **Learning**: Design UI forms to be as lean as possible. If a configuration step (like setting the initial starting Saturday) can be done interactively on the calendar itself, remove it from the creation form to avoid validation blockers and improve UX.
+
+### 29. Next.js App Router Compilation Error Due to JSX Structural Misalignment (2026-05-20)
+- **Problem**: Next.js production compilation failed with syntax errors regarding unclosed tags and mismatched fragments (`</>` instead of `</div>` and `</section>` instead of `</motion.div>`).
+- **Cause**: During the transition to a state-driven 2-tab layout, we replaced section elements with `AnimatePresence` and `motion.div` grids but missed updating the corresponding closing tags at the bottom of the main conditional block, leading to parser errors.
+- **Solution**: Traced the opening tags carefully, replaced the incorrect `</section>` with `</motion.div>` and `</AnimatePresence>`, and changed the mismatched `</>` to `</div>`.
+- **Learning**: When refactoring large UI trees, verify that every opening tag (especially conditionals or wrapper blocks) is matched exactly by its closing counterpart at the same indentation level before running full checks.
+
+### 30. Missing React Event Modifier Typo (2026-05-20)
+- **Problem**: The drag-and-drop handler was configured using `dragEnd` instead of `onDragEnd` on the drag handle span.
+- **Cause**: Typo in drag-and-drop JSX attributes, leading to a silent bug where state was not reset after dropping an item.
+- **Solution**: Changed `dragEnd` to `onDragEnd` in the element attributes.
+- **Learning**: Always double-check React's native event mapping conventions (prefixed with `on`, e.g., `onDragStart`, `onDragEnd`, `onDragOver`).
+
+### 31. Cache Invalidation Misses in Optimistic UI (2026-05-20)
+- **Problem**: Changing employee phase, deleting employees, or swapping Saturdays updated the React state instantly but caused old data to flash briefly when navigating away or refreshing the browser.
+- **Cause**: The application uses `sessionStorage` for caching monthly API payloads. When data mutations occurred, the cache was not explicitly cleared (invalidated).
+- **Solution**: Added explicit calls to `clearSessionCache()` directly after executing successful local state updates inside `deleteEmployee`, `setSaturdayOffAnchor`, `handleSwapSaturdayStatus`, and `resetMonthOverrides`.
+- **Learning**: Whenever you implement Optimistic UI updates that commit to a backend database, always remember to invalidate or update the local cache storage (`localStorage`/`sessionStorage` or query caching layers) to prevent stale data from resuscitating.
+
+### 32. Popover Dismissal Trap with Generic Selectors (2026-05-20)
+- **Problem**: Clicking outside a Saturday popover menu properly closed it, but clicking on a Weekday calendar cell left the Saturday popover permanently stuck open.
+- **Cause**: The `mousedown` event listener checked `!target.closest('[data-popover-container]')` to determine if the click was "outside" the menu. However, the `data-popover-container` attribute was applied to *every* calendar cell, so clicking a Weekday cell falsely told the logic "the user clicked inside the container."
+- **Solution**: Replaced the generic `data-popover-container` with specific IDs: `data-popover-id={day.dateKey}`. Updated the listener to specifically verify the target is within the *currently active* popover: `!target.closest('[data-popover-id="${activePopover}"]')`.
+- **Learning**: Avoid using generic container selectors for "click-away" dismiss logic when multiple sibling components share the same class or attribute. Instead, bind the check explicitly to the actively open instance's unique ID.
+
+### 33. Apps Script Boolean Coercion Issue (2026-05-20)
+- **Problem**: Soft-deleted employees (with `Active = FALSE` in Google Sheets) or inactive holidays reappeared on the calendar when changing months.
+- **Cause**: The Google Apps Script code used `rows[i][3] || 'TRUE'` to parse the Active state. When the sheet cell contained the boolean value `false`, the logical OR (`||`) evaluated it as falsy and fell back to `'TRUE'`, bypassing the filter.
+- **Solution**: Checked if the cell was non-empty first: `rows[i][3] !== '' ? rows[i][3] : 'TRUE'`, ensuring the actual boolean `false` value is parsed correctly as `'FALSE'`.
+- **Learning**: Be careful with logical OR (`||`) defaults in Google Apps Script when reading boolean cells, as `false` is falsy and will trigger the default. Check for empty strings explicitly first.
+
+### 34. TypeScript Strict Union Type Conflict (2026-05-20)
+- **Problem**: Adding a temporary status `'CLEAR'` inside `handleSwapSaturdayStatus` caused TypeScript compilation errors (`Type '"CLEAR"' is not assignable to type 'RosterCellStatus'`).
+- **Cause**: The local variables `mappedSource` and `mappedTarget` were strictly typed as `RosterCellStatus`. Since `'CLEAR'` is not part of the union type `RosterCellStatus` (and we cannot modify `types.ts`), it triggered a type mismatch.
+- **Solution**: Updated the local variable type declarations to allow `'CLEAR'` as a temporary value: `let mappedSource: RosterCellStatus | 'CLEAR' = 'OFF_SWAP'`.
+- **Learning**: When using strict union types, if a variable needs to hold a temporary control or sentinel value (like `'CLEAR'`), declare the local variable type as a union of the base type and the sentinel value (`BaseType | 'SENTINEL'`) instead of modifying the global type definition.
+
+### 35. Google Apps Script Boolean Simplification (2026-05-20)
+- **Problem**: Ternary logic and type coercion checking (`String(val !== '' ? val : 'TRUE').toUpperCase() === 'FALSE'`) in Apps Script is complex and hard to maintain for beginners.
+- **Solution**: Replaced the ternary logic with a straightforward `sanitizeText(val, 20) || 'TRUE'` followed by a clean `.toUpperCase() === 'FALSE'`. This relies on our existing robust trimming function and is far more readable.
+- **Learning**: Strive for maximum readability in shared scripts, especially when target platforms like Google Sheets might contain mixed string and boolean values.
+
+### 36. Single-Transaction Batch Updates on Sheet Collections (2026-05-20)
+- **Problem**: Swapping Saturdays required calling `upsertOverrideRow` twice in succession, causing Google Apps Script to perform two independent read-write cycles on the spreadsheet, adding substantial network latency.
+- **Solution**: Developed `upsertOverrideRows(employeeId, overridesList, updatedBy)` which processes multiple cell modifications in a single read-write transaction by accumulating updates in-memory and writing to the spreadsheet once.
+- **Learning**: When modifying multiple cells or rows in Google Sheets backends, batch the modifications into a single write transaction to drastically improve execution speed and reduce the chances of concurrent write collisions.
+

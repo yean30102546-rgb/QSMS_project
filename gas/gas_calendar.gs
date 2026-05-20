@@ -100,7 +100,8 @@ function loadEmployees() {
   const rows = sheet.getDataRange().getValues();
   var result = [];
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][3] || 'TRUE').toUpperCase() === 'FALSE') continue;
+    const activeStr = sanitizeText(rows[i][3], 20) || 'TRUE';
+    if (activeStr.toUpperCase() === 'FALSE') continue;
     const id = sanitizeText(rows[i][0], 80);
     if (!id) continue;
     result.push({
@@ -136,8 +137,8 @@ function loadHolidays(monthKey) {
   const prefix = sanitizeText(monthKey, 7) + '-';
   var result = [];
   for (var i = 1; i < rows.length; i++) {
-    const active = String(rows[i][2] || 'TRUE').toUpperCase() !== 'FALSE';
-    if (!active) continue;
+    const activeStr = sanitizeText(rows[i][2], 20) || 'TRUE';
+    if (activeStr.toUpperCase() === 'FALSE') continue;
     const dateKey = sanitizeText(rows[i][0], 10);
     if (!dateKey || dateKey.indexOf(prefix) !== 0) continue;
     result.push({
@@ -209,36 +210,45 @@ function rosterUpdateEmployeePhase(payload) {
   return { success: false, error: 'Employee not found' };
 }
 
-function upsertOverrideRow(employeeId, dateKey, status, updatedBy) {
+function upsertOverrideRows(employeeId, overridesList, updatedBy) {
   const sheet = getOrCreateSheet(SHEET_OVERRIDES, OVR_HEADERS);
   const rows = sheet.getDataRange().getValues();
   
-  if (status === 'CLEAR') {
-    const keep = [OVR_HEADERS];
-    var found = false;
-    for (var i = 1; i < rows.length; i++) {
-      if (sanitizeText(rows[i][0], 80) === employeeId && sanitizeText(rows[i][1], 10) === dateKey) {
-        found = true;
-        continue;
-      }
-      keep.push(rows[i]);
-    }
-    if (found) {
-      sheet.clearContents();
-      sheet.getRange(1, 1, keep.length, OVR_HEADERS.length).setValues(keep);
-    }
-    return;
-  }
+  const updateMap = {};
+  overridesList.forEach(function(item) {
+    updateMap[item.dateKey] = item.status;
+  });
+  
+  const keep = [OVR_HEADERS];
+  const processedKeys = {};
   
   for (var i = 1; i < rows.length; i++) {
-    if (sanitizeText(rows[i][0], 80) === employeeId && sanitizeText(rows[i][1], 10) === dateKey) {
-      sheet.getRange(i + 1, 3).setValue(status);
-      sheet.getRange(i + 1, 4).setValue(nowIso());
-      sheet.getRange(i + 1, 5).setValue(updatedBy);
-      return;
+    const rowEmpId = sanitizeText(rows[i][0], 80);
+    const rowDateKey = sanitizeText(rows[i][1], 10);
+    
+    if (rowEmpId === employeeId && updateMap.hasOwnProperty(rowDateKey)) {
+      const newStatus = updateMap[rowDateKey];
+      processedKeys[rowDateKey] = true;
+      if (newStatus !== 'CLEAR') {
+        keep.push([employeeId, rowDateKey, newStatus, nowIso(), updatedBy]);
+      }
+    } else {
+      keep.push(rows[i]);
     }
   }
-  sheet.appendRow([employeeId, dateKey, status, nowIso(), updatedBy]);
+  
+  overridesList.forEach(function(item) {
+    if (!processedKeys.hasOwnProperty(item.dateKey) && item.status !== 'CLEAR') {
+      keep.push([employeeId, item.dateKey, item.status, nowIso(), updatedBy]);
+    }
+  });
+  
+  sheet.clearContents();
+  sheet.getRange(1, 1, keep.length, OVR_HEADERS.length).setValues(keep);
+}
+
+function upsertOverrideRow(employeeId, dateKey, status, updatedBy) {
+  upsertOverrideRows(employeeId, [{ dateKey: dateKey, status: status }], updatedBy);
 }
 
 function rosterUpsertOverride(payload) {
@@ -262,8 +272,10 @@ function rosterSwapSaturday(payload) {
     return { success: false, error: 'swap payload is incomplete' };
   }
   const updatedBy = sanitizeText(payload.authEmail, 120);
-  upsertOverrideRow(employeeId, sourceDateKey, sourceStatus, updatedBy);
-  upsertOverrideRow(employeeId, targetDateKey, targetStatus, updatedBy);
+  upsertOverrideRows(employeeId, [
+    { dateKey: sourceDateKey, status: sourceStatus },
+    { dateKey: targetDateKey, status: targetStatus }
+  ], updatedBy);
   return { success: true, data: { employeeId: employeeId } };
 }
 
