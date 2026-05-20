@@ -46,15 +46,21 @@ Knowledge สำคัญที่ได้:
 - `ITEMMASTER_DIAGNOSTIC_GUIDE.md` → append `lessons-learned/bugs-and-fixes.md` (4 สาเหตุ ItemMaster, debug console, Sheet ID)
 - อัปเดต `gas-backend/gas-api.md` — แก้ action names ให้ถูก (insert/readAll/update vs camelCase)
 
-### [Ingest] สังเคราะห์ข้อมูลจาก `1_raw/llm-wiki/` + `1_raw/tech stack/`
-ไฟล์ที่ ingest แล้ว:
-- `llm-wiki/llm-wiki.md` (Karpathy Gist) → สร้าง `architecture/llm-wiki-pattern.md`
-  - สรุป: Raw→Wiki→Schema architecture, Ingest/Query/Lint operations, index.md best practices
-- `tech stack/tech stack 2026.md` (NotebookLM 10 แหล่ง) → สร้าง `architecture/tech-stack-2026.md`
-  - สรุป: Next.js+React=default 2026, T3/MERN/PERN/AI-Native stacks, Vector DB สำคัญ
-  - เพิ่ม Relevance table: QSMS vs Trend 2026 (Next.js✅, GAS⚠️ limited, No Vector DB ℹ️)
+### [Feature] ติดตั้งและบูรณาการ shadcn/ui
+- ติดตั้งคอมโพเนนต์พื้นฐาน: `Tabs`, `Dialog`, `Select`, `Popover`, `Table`, `Button`, `Badge`, `Card`
+- กำหนดค่า `components.json` และ `src/lib/utils.ts` (cn helper)
+- ปรับแต่ง Theme ใน `src/index.css` ให้สอดคล้องกับ Apple-inspired design เดิม
 
-Knowledge สำคัญที่ได้:
-- **LLM Wiki Principle**: อย่าใช้ RAG ค้นทุกครั้ง — สังเคราะห์ไว้ใน wiki ล่วงหน้า
-- **Tech Stack 2026**: Next.js+React = standard, TypeScript = บังคับ, Vector DB = AI future
-- **QSMS Position**: อยู่บน Modern Web Stack แต่ใช้ GAS แทน conventional backend (trade-off ประหยัดค่าใช้จ่าย)
+### [Refactor] ปรับปรุงโครงสร้าง Roster Module (Monolith → Modular)
+- แยก `RosterApp.tsx` (1,100+ บรรทัด) ออกเป็นคอมโพเนนต์ย่อยใน `src/modules/roster/components/`:
+  - `RosterHeader`: ส่วนหัวและปุ่มกลับพอร์ทัล
+  - `RosterControls`: ส่วนควบคุมเดือนและ Tab Switcher (ใช้ shadcn Tabs)
+  - `RosterSidebar`: รายชื่อพนักงานและแบบฟอร์มเพิ่มพนักงาน
+  - `RosterSummary`: ตารางสรุปภาพรวมรายเดือน (ใช้ shadcn Table)
+  - `RosterEmployeeHeader`: ข้อมูลพนักงานที่เลือกและฟอร์มลา
+  - `RosterCalendar`: ปฏิทินแบบโต้ตอบ (ใช้ shadcn Popover)
+  - `RosterDialogs`: หน้าต่างยืนยันการลา (ใช้ shadcn Dialog)
+- **Logic Updates**: 
+  - เพิ่ม Auto-tab switching: เมื่อเลือกพนักงานใน Sidebar ระบบจะสลับไปหน้าปฏิทินทันที
+  - ปรับปรุง Swap Logic: การลากวันทำงานไปทับวันทำงานจะไม่มีผล (Silent Ignore) เพื่อลดความสับสน
+- **Git**: Commit และ Push การเปลี่ยนแปลงทั้งหมดไปยัง GitHub (origin main)

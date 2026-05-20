@@ -11,6 +11,7 @@ _ไม่มีปัญหาค้างคาในขณะนี้_
 ---
 
 ## 🏗️ Tech Stack & Architecture
+- [Knowledge Synthesis](architecture/knowledge-synthesis.md) - สรุปความเชื่อมโยงและแนวทางการพัฒนาองค์รวม
 - [Next.js Config](nextjs-frontend/nextjs.md) - App Router, API Routes proxy, port 3000
 - [GAS Backend](gas-backend/gas-api.md) - doPost actions, Auth Token, Sheet operations
 - [Google Sheets Schema](google-sheets/schema.md) - โครงสร้างชีตและคอลัมน์ทั้งหมด
@@ -25,6 +26,7 @@ _ไม่มีปัญหาค้างคาในขณะนี้_
 - [Rework Module](nextjs-frontend/rework-module.md) - ReworkApp.tsx, Overall, AddCase, Dashboard tabs
 - [Roster Module](nextjs-frontend/roster-module.md) - ระบบตารางเวร, GAS Calendar backend
 - [Role & Permissions](nextjs-frontend/roles.md) - UserRole enum, ROLE_PERMISSIONS map
+- [shadcn/ui System](nextjs-frontend/shadcn-ui.md) - UI Components และมาตรฐานการดีไซน์
 - [Refactoring History](nextjs-frontend/refactoring-history.md) - Component split, Case ID fix, Validation, Logger
 
 ## 📋 Lessons Learned & Fixes

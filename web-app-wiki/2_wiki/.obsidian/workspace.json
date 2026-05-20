@@ -11,14 +11,10 @@
             "id": "2b917f128e7cdbb3",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "log.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "log"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -94,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "log.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for log"
+              "title": "Backlinks"
             }
           },
           {
@@ -113,12 +108,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "log.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from log"
+              "title": "Outgoing links"
             }
           },
           {
@@ -156,13 +150,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "log.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of log"
+              "title": "Outline"
             }
           }
         ]
@@ -185,6 +178,10 @@
   },
   "active": "2b917f128e7cdbb3",
   "lastOpenFiles": [
+    "architecture/knowledge-synthesis.md",
+    "Untitled.canvas",
+    "nextjs-frontend/shadcn-ui.md",
+    "log.md",
     "lessons-learned/bugs-and-fixes.md",
     "architecture/tech-stack-2026.md",
     "architecture/llm-wiki-pattern.md",
