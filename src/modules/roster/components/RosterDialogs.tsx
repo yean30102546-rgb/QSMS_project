@@ -9,7 +9,7 @@ import {
 } from '@/src/components/ui/dialog';
 
 interface RosterDialogsProps {
-  activeLeaveDialog: { dateKey: string; leaveType: 'sick' | 'business' } | null;
+  activeLeaveDialog: { dateKey: string; leaveType: 'sick' | 'business' | 'vacation' } | null;
   onCloseLeaveDialog: () => void;
   leaveNoteInput: string;
   setLeaveNoteInput: (val: string) => void;
@@ -37,7 +37,11 @@ export function RosterDialogs({
         <DialogContent className="sm:max-w-[400px] rounded-[28px] border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-center text-xl font-bold">
-              {activeLeaveDialog?.leaveType === 'sick' ? '🤒 ระบุหมายเหตุลาป่วย' : '💼 ระบุหมายเหตุลากิจ'}
+              {activeLeaveDialog?.leaveType === 'sick'
+                ? '🤒 ระบุหมายเหตุลาป่วย'
+                : activeLeaveDialog?.leaveType === 'business'
+                  ? '💼 ระบุหมายเหตุลากิจ'
+                  : '🏖️ ระบุหมายเหตุลาพักร้อน'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -74,7 +78,9 @@ export function RosterDialogs({
               className={`flex-1 rounded-2xl py-3 text-sm font-bold text-white shadow-lg transition-all ${
                 activeLeaveDialog?.leaveType === 'sick'
                   ? 'bg-rose-600 shadow-rose-600/20 hover:bg-rose-700'
-                  : 'bg-amber-600 shadow-amber-600/20 hover:bg-amber-700'
+                  : activeLeaveDialog?.leaveType === 'business'
+                    ? 'bg-amber-600 shadow-amber-600/20 hover:bg-amber-700'
+                    : 'bg-violet-600 shadow-violet-600/20 hover:bg-violet-700'
               }`}
             >
               บันทึกการลา
@@ -85,7 +91,7 @@ export function RosterDialogs({
 
       {/* Professional Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirmation} onOpenChange={(open) => !open && onCloseDeleteDialog()}>
-        <DialogContent className="sm:max-w-[400px] rounded-[32px] border-none shadow-2xl p-8">
+        <DialogContent className="sm:max-w-[400px] rounded-[32px] border-none shadow-2xl p-8 bg-white/98 backdrop-blur-2xl">
           <div className="flex flex-col items-center text-center">
             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
