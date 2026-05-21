@@ -368,10 +368,10 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
  */
 export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
   try {
-    const result = await postToGas<ReworkCaseResponse[]>({ action: 'readAll' });
+    const result = await postToGas<ReworkCaseResponse[]>({ action: 'fetchAllCases' });
 
     if (result.success === false) {
-      console.error('GAS Logic Error:', result.error);
+      console.error('API Logic Error:', result.error);
       return { success: false, data: [], error: result.error };
     }
 
@@ -411,8 +411,12 @@ export async function updateCase(
     const { newOrFiles, ...restUpdates } = updates;
 
     const result = await postToGas({
-      action: 'update',
+      action: 'updateCaseStatus',
       caseId,
+      status: updates.status,
+      resolutionMethod: updates.resolutionMethod,
+      reworkCost: updates.reworkCost,
+      performedBy: getCurrentUser()?.name || 'User',
       updates: restUpdates,
       orFiles: processedOrFiles.length > 0 ? processedOrFiles : undefined
     });
@@ -435,6 +439,9 @@ export async function updateCase(
  */
 export async function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>> {
   try {
+    // We can either compute this client-side from the cases or add an API action
+    // For now, let's stick to the current action if GAS still handles it, 
+    // or we'll need to implement it in Supabase API later.
     const result = await postToGas<DashboardStats>({ action: 'dashboardStats' });
     return { success: result.success, data: result.data, error: result.error };
   } catch (error) {
@@ -450,8 +457,11 @@ export async function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>
  */
 export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: string, itemCode: string, itemName: string }[]>> {
   try {
-    const result = await postToGas<{ itemNumber: string, itemCode: string, itemName: string }[]>({ action: 'getItemMaster' });
-    const normalized = (result.data || [])
+    const result = await postToGas<{ items: { itemNumber: string, itemCode: string, itemName: string }[] }>({ 
+      action: 'loadMasterData' 
+    });
+    
+    const normalized = (result.data?.items || [])
       .map((item) => ({
         itemNumber: String(item?.itemNumber || '').trim(),
         itemCode: String(item?.itemCode || '').trim(),
@@ -471,7 +481,7 @@ export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: strin
 export async function saveItemToMaster(itemNumber: string, itemCode: string, itemName: string): Promise<ApiResponse> {
   try {
     const result = await postToGas({
-      action: 'saveItemMaster',
+      action: 'saveItemMaster', // This will still proxy to GAS for now unless we add it to Supabase API
       itemNumber: String(itemNumber || '').trim(),
       itemCode: String(itemCode || '').trim(),
       itemName: String(itemName || '').trim(),
@@ -512,7 +522,7 @@ export async function fetchImageDataUrl(imageUrl: string): Promise<string> {
 export async function deleteCase(caseId: string): Promise<ApiResponse> {
   try {
     const result = await postToGas({
-      action: 'delete',
+      action: 'deleteCase',
       caseId,
     });
 
