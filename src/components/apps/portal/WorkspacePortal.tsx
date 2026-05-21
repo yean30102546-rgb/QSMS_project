@@ -41,7 +41,14 @@ export function WorkspacePortal({
     completionRate: 0,
     hasData: false,
   });
-  const [rosterStats, setRosterStats] = useState({ employees: '--', todayActive: '12', status: 'ปกติ' });
+  const [rosterStats, setRosterStats] = useState({
+    totalEmployees: 0,
+    staffPresentCount: 0,
+    onLeaveCount: 0,
+    leaveSummary: { sick: 0, business: 0, vacation: 0 },
+    retentionRate: 0,
+    hasData: false,
+  });
 
   useEffect(() => {
     // Current Month Key for Roster (YYYY-MM)
@@ -81,10 +88,40 @@ export function WorkspacePortal({
       try {
         const response = await fetchRosterMonth(monthKey);
         if (response.success && response.data && response.data.employees) {
-          setRosterStats(prev => ({ 
-            ...prev, 
-            employees: response.data!.employees.length.toString() 
-          }));
+          const employees = response.data.employees;
+          const leaves = response.data.leaves || [];
+          
+          const today = new Date();
+          const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+          
+          const todayLeaves = leaves.filter(l => l.dateKey === todayKey);
+          
+          const leaveSummary = { sick: 0, business: 0, vacation: 0 };
+          todayLeaves.forEach(l => {
+            if (l.leaveType === 'sick') leaveSummary.sick++;
+            else if (l.leaveType === 'business') leaveSummary.business++;
+            else if (l.leaveType === 'vacation') leaveSummary.vacation++;
+          });
+
+          const totalEmployees = employees.length;
+          const onLeaveCount = todayLeaves.length;
+          const staffPresentCount = Math.max(0, totalEmployees - onLeaveCount);
+          
+          const daysPassed = today.getDate();
+          const totalLeaveDays = leaves.length;
+          const expectedWorkingDays = totalEmployees * daysPassed;
+          const retentionRate = expectedWorkingDays > 0 
+            ? Math.max(0, Math.round((1 - (totalLeaveDays / expectedWorkingDays)) * 100))
+            : 100;
+
+          setRosterStats({
+            totalEmployees,
+            staffPresentCount,
+            onLeaveCount,
+            leaveSummary,
+            retentionRate,
+            hasData: true,
+          });
         }
       } catch (err) {
         console.error('Failed to fetch roster preview:', err);
@@ -288,26 +325,81 @@ export function WorkspacePortal({
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-6 grid grid-cols-3 gap-3">
-                      <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">พนักงาน</p>
-                        <div className="mt-1 flex items-center gap-1">
-                          <Users2 size={14} className="text-black/60" />
-                          <p className="text-xl font-semibold text-slate-800">{rosterStats.employees}</p>
+                    <div className="mt-6 flex flex-col gap-4 rounded-[24px] bg-white/40 p-4 border border-white/30 backdrop-blur-md shadow-inner">
+                      {/* Top Stats: Present vs Leave */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col justify-center rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-3.5 border border-emerald-200/50 shadow-sm">
+                          <div className="flex items-center gap-1.5 text-emerald-700 mb-1">
+                            <Users2 size={14} className="text-emerald-600" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider">บุคลากรพร้อมปฏิบัติงาน</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-2xl font-bold text-emerald-800 leading-none">
+                              {rosterStats.hasData ? rosterStats.staffPresentCount : '--'}
+                            </span>
+                            {rosterStats.hasData && (
+                              <span className="text-xs font-medium text-emerald-600/80">
+                                / {rosterStats.totalEmployees}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col justify-center rounded-2xl bg-white/60 p-3.5 border border-white/40 shadow-sm">
+                          <div className="flex items-center gap-1.5 text-slate-500 mb-1.5">
+                            <CalendarDays size={14} />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider">ลาพักวันนี้</span>
+                          </div>
+                          
+                          {/* Leave Breakdown */}
+                          {!rosterStats.hasData ? (
+                            <div className="text-lg font-bold text-slate-400">--</div>
+                          ) : rosterStats.onLeaveCount === 0 ? (
+                            <div className="text-sm font-medium text-slate-400 mt-1">ไม่มีผู้ลาพัก</div>
+                          ) : (
+                            <div className="flex gap-2">
+                              {rosterStats.leaveSummary.sick > 0 && (
+                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 text-xs font-medium border border-rose-100">
+                                  <span>ป่วย:</span>
+                                  <span>{rosterStats.leaveSummary.sick}</span>
+                                </div>
+                              )}
+                              {rosterStats.leaveSummary.business > 0 && (
+                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 text-xs font-medium border border-amber-100">
+                                  <span>กิจ:</span>
+                                  <span>{rosterStats.leaveSummary.business}</span>
+                                </div>
+                              )}
+                              {rosterStats.leaveSummary.vacation > 0 && (
+                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 text-xs font-medium border border-violet-100">
+                                  <span>พักผ่อน:</span>
+                                  <span>{rosterStats.leaveSummary.vacation}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">เวรวันนี้</p>
-                        <div className="mt-1 flex items-center gap-1">
-                          <CalendarDays size={14} className="text-black/60" />
-                          <p className="text-xl font-semibold text-slate-800">{rosterStats.todayActive}</p>
+
+                      {/* Retention Rate Bar */}
+                      <div className="mt-1 flex flex-col gap-2 rounded-2xl bg-white/50 p-3.5 border border-white/40">
+                        <div className="flex justify-between items-center px-1">
+                          <div className="flex items-center gap-1.5">
+                            <Activity size={14} className="text-sky-600" />
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">อัตราการมาทำงาน (เดือนนี้)</span>
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">
+                            {rosterStats.hasData ? `${rosterStats.retentionRate}%` : '--%'}
+                          </span>
                         </div>
-                      </div>
-                      <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">สถานะกะ</p>
-                        <div className="mt-1 flex items-center gap-1">
-                          <Activity size={14} className="text-green-600" />
-                          <p className="text-xl font-semibold text-green-600">{rosterStats.status}</p>
+                        
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-200/60 shadow-inner">
+                          {rosterStats.hasData && (
+                            <div 
+                              className="h-full bg-gradient-to-r from-sky-400 to-sky-500 transition-all duration-1000 ease-out"
+                              style={{ width: `${rosterStats.retentionRate}%` }}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>

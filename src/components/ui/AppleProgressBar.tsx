@@ -34,7 +34,10 @@ export function AppleProgressBar({ progress, label = 'Saving Rework Case', statu
         ) : (
           <motion.div
             key="progress"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="space-y-3"
           >
             <div className="flex justify-between items-end px-1">
@@ -44,7 +47,7 @@ export function AppleProgressBar({ progress, label = 'Saving Rework Case', statu
               </div>
               <span className="text-[12px] font-mono font-bold text-slate-900">{Math.round(progress)}%</span>
             </div>
-            <div className="relative h-[6px] w-full overflow-hidden rounded-full bg-[#f2f2f7] shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+            <div className="relative h-[4px] w-full overflow-hidden rounded-full bg-black/5 backdrop-blur-sm">
               <motion.div
                 className="h-full rounded-full relative overflow-hidden"
                 style={{ background: 'linear-gradient(90deg, #1d1d1f, #434343)' }}
@@ -52,7 +55,7 @@ export function AppleProgressBar({ progress, label = 'Saving Rework Case', statu
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
               >
-                <div className="absolute top-0 left-0 w-[100px] h-full animate-sweep" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)' }} />
+                <div className="absolute top-0 left-0 w-[120px] h-full animate-sweep blur-md" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)' }} />
               </motion.div>
             </div>
           </motion.div>
