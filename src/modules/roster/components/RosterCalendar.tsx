@@ -208,7 +208,10 @@ export function RosterCalendar({
               </PopoverTrigger>
 
               {isSaturday && !day.isPublicHoliday && (
-                <PopoverContent className="w-56 p-0 overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
+                <PopoverContent 
+                  className="w-64 p-1.5 overflow-hidden rounded-[20px] bg-white/95 backdrop-blur-xl border border-black/5 shadow-2xl shadow-black/10" 
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {!selectedEmployee.startWorkingSaturday ? (
                     <button
                       type="button"
@@ -218,64 +221,55 @@ export function RosterCalendar({
                       ✨ ตั้งเป็นเสาร์เริ่มงาน
                     </button>
                   ) : (
-                    <>
-                      <div className="roster-popover-header">จัดการตั้งค่าสูตร</div>
-                      <div className="roster-popover-group">
-                        <button
-                          type="button"
-                          className="roster-popover-item"
-                          onClick={() => onSetStartSaturday(day.dateKey)}
-                        >
-                          🔄 ย้ายจุดเริ่มงานมาเสาร์นี้
-                        </button>
-                        <button
-                          type="button"
-                          className="roster-popover-item"
-                          onClick={() => onSaturdayStatusChange(day.dateKey, 'CLEAR')}
-                        >
-                          🧹 คืนค่าสูตรปกติ
-                        </button>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="px-3 py-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-black/40">การทำงาน</p>
                       </div>
-
-                      <div className="roster-popover-divider" />
-                      <div className="roster-popover-header">กำหนดสถานะการทำงาน</div>
-                      <div className="roster-popover-group">
+                      
+                      <div className="flex flex-col gap-0.5 px-1">
                         <button
                           type="button"
-                          className="roster-popover-item"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#1d1d1f] hover:bg-black/5 transition-all text-left"
                           onClick={() => onSaturdayStatusChange(day.dateKey, 'WORK')}
                         >
-                          ✅ ทำงาน (WORK)
+                          <div className="h-2 w-2 rounded-full bg-green-500" />
+                          ทำงาน (WORK)
                         </button>
                         <button
                           type="button"
-                          className="roster-popover-item"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#1d1d1f] hover:bg-black/5 transition-all text-left"
                           onClick={() => onSaturdayStatusChange(day.dateKey, 'OFF')}
                         >
-                          📴 วันหยุด (OFF)
+                          <div className="h-2 w-2 rounded-full bg-amber-500" />
+                          วันหยุด (OFF)
                         </button>
                         <button
                           type="button"
-                          className="roster-popover-item"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#1d1d1f] hover:bg-black/5 transition-all text-left"
                           onClick={() => onSaturdayStatusChange(day.dateKey, 'OT2X')}
                         >
-                          ⏰ OT x2
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
+                          ล่วงเวลา (OT x2)
                         </button>
                       </div>
 
-                      <div className="roster-popover-divider" />
-                      <div className="roster-popover-header">การลาหยุด</div>
-                      <div className="roster-popover-group">
+                      <div className="my-1.5 h-px bg-black/5 mx-2" />
+                      
+                      <div className="px-3 py-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-black/40">จัดการวันลา / สูตร</p>
+                      </div>
+
+                      <div className="flex flex-col gap-0.5 px-1 pb-1">
                         <button
                           type="button"
-                          className="roster-popover-item"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#1d1d1f] hover:bg-black/5 transition-all text-left"
                           onClick={() => onUpsertLeave(day.dateKey, 'sick')}
                         >
                           🤒 ลาป่วย
                         </button>
                         <button
                           type="button"
-                          className="roster-popover-item"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#1d1d1f] hover:bg-black/5 transition-all text-left"
                           onClick={() => onUpsertLeave(day.dateKey, 'business')}
                         >
                           💼 ลากิจ
@@ -283,14 +277,29 @@ export function RosterCalendar({
                         {leave && (
                           <button
                             type="button"
-                            className="roster-popover-item danger"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-all text-left"
                             onClick={() => onDeleteLeave(day.dateKey)}
                           >
                             🗑️ ลบวันลา
                           </button>
                         )}
+                        <div className="my-1.5 h-px bg-black/5 mx-2" />
+                        <button
+                          type="button"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#1d1d1f]/60 hover:bg-black/5 transition-all text-left"
+                          onClick={() => onSetStartSaturday(day.dateKey)}
+                        >
+                          🔄 ย้ายจุดเริ่มงานมาที่นี่
+                        </button>
+                        <button
+                          type="button"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#1d1d1f]/60 hover:bg-black/5 transition-all text-left"
+                          onClick={() => onSaturdayStatusChange(day.dateKey, 'CLEAR')}
+                        >
+                          🧹 คืนค่าระบบปกติ
+                        </button>
                       </div>
-                    </>
+                    </div>
                   )}
                 </PopoverContent>
               )}

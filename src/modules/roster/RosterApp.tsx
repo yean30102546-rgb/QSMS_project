@@ -64,6 +64,7 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
     dateKey: string;
     leaveType: 'sick' | 'business';
   } | null>(null);
+  const [deleteConfirmation, setDeleteEmployeeConfirm] = useState<{ id: string; name: string } | null>(null);
   const [leaveNoteInput, setLeaveNoteInput] = useState('');
 
   const monthKey = useMemo(
@@ -273,13 +274,23 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
     setLeaveDate('');
   };
 
-  const deleteEmployee = async (employeeId: string, name: string) => {
-    if (!window.confirm(`คุณต้องการลบพนักงาน "${name}" ใช่หรือไม่?`)) return;
+  const deleteEmployee = (employeeId: string, name: string) => {
+    setDeleteEmployeeConfirm({ id: employeeId, name });
+  };
+
+  const handleConfirmDeleteEmployee = async () => {
+    if (!deleteConfirmation) return;
+    const { id: employeeId } = deleteConfirmation;
+    
+    setIsLoading(true);
     const result = await deleteRosterEmployee(employeeId);
     if (!result.success) {
       setError(result.error || 'ลบพนักงานไม่สำเร็จ');
+      setIsLoading(false);
+      setDeleteEmployeeConfirm(null);
       return;
     }
+    
     setEmployees((prev) => {
       const remaining = prev.filter((e) => e.id !== employeeId);
       if (selectedEmployeeId === employeeId) {
@@ -287,7 +298,10 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
       }
       return remaining;
     });
+    
     clearSessionCache();
+    setIsLoading(false);
+    setDeleteEmployeeConfirm(null);
   };
 
   const resetMonthOverrides = async () => {
@@ -490,6 +504,9 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
         leaveNoteInput={leaveNoteInput}
         setLeaveNoteInput={setLeaveNoteInput}
         onConfirmLeave={executeUpsertLeave}
+        deleteConfirmation={deleteConfirmation}
+        onCloseDeleteDialog={() => setDeleteEmployeeConfirm(null)}
+        onConfirmDelete={handleConfirmDeleteEmployee}
       />
     </div>
   );
