@@ -54,7 +54,7 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newEmployeeName, setNewEmployeeName] = useState('');
-  const [leaveType, setLeaveType] = useState<'sick' | 'business'>('sick');
+  const [leaveType, setLeaveType] = useState<'sick' | 'business' | 'vacation'>('sick');
   const [leaveDate, setLeaveDate] = useState('');
   const [dragPayload, setDragPayload] = useState<DragPayload | null>(null);
   const [dragOverDateKey, setDragOverDateKey] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'calendar'>('summary');
   const [activeLeaveDialog, setActiveLeaveDialog] = useState<{
     dateKey: string;
-    leaveType: 'sick' | 'business';
+    leaveType: 'sick' | 'business' | 'vacation';
   } | null>(null);
   const [deleteConfirmation, setDeleteEmployeeConfirm] = useState<{ id: string; name: string } | null>(null);
   const [leaveNoteInput, setLeaveNoteInput] = useState('');
@@ -222,15 +222,19 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
     }
   };
 
-  const handleUpsertLeave = (dateKey: string, leaveType: 'sick' | 'business') => {
-    setLeaveNoteInput(leaveType === 'sick' ? 'ลาป่วย 🤒' : 'ลากิจ 💼');
+  const handleUpsertLeave = (dateKey: string, leaveType: 'sick' | 'business' | 'vacation') => {
+    setLeaveNoteInput(
+      leaveType === 'sick' ? 'ลาป่วย 🤒' : leaveType === 'business' ? 'ลากิจ 💼' : 'ลาพักร้อน 🏖️',
+    );
     setActiveLeaveDialog({ dateKey, leaveType });
   };
 
   const executeUpsertLeave = async () => {
     if (!selectedEmployee || !activeLeaveDialog) return;
     const { dateKey, leaveType: type } = activeLeaveDialog;
-    const note = leaveNoteInput.trim() || (type === 'sick' ? 'ลาป่วย 🤒' : 'ลากิจ 💼');
+    const note =
+      leaveNoteInput.trim() ||
+      (type === 'sick' ? 'ลาป่วย 🤒' : type === 'business' ? 'ลากิจ 💼' : 'ลาพักร้อน 🏖️');
     const previousLeaves = [...leaves];
     const newRecord: LeaveRecord = {
       id: `temp-${Date.now()}`,
