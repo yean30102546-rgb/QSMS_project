@@ -10,24 +10,24 @@ interface RosterHeaderProps {
 
 export function RosterHeader({ user, onBackToPortal }: RosterHeaderProps) {
   return (
-    <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#e4e4e7] pb-4">
+    <header className="glass-panel mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-5 py-4 shadow-xl shadow-blue-900/5 transition-all">
       <div className="flex items-center gap-3">
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.02, x: -2 }}
+          whileTap={{ scale: 0.98 }}
           type="button"
           onClick={onBackToPortal}
-          className="border border-[#e4e4e7] bg-white hover:bg-[#fafafa] rounded-lg px-4 py-2 text-sm font-medium text-[#3f3f46] transition-colors inline-flex items-center gap-2"
+          className="inline-flex items-center gap-2 rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-bold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
         >
           <ArrowLeft size={15} />
           กลับพอร์ทัล
         </motion.button>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a1a1aa]">ตารางเวร</p>
-          <h1 className="text-xl font-bold text-[#18181b]">ShiftHub Roster</h1>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600/70">ตารางเวร</p>
+          <h1 className="text-xl font-bold tracking-[-0.02em] text-[#1d1d1f]">ShiftHub Roster</h1>
         </div>
       </div>
-      <div className="text-sm text-[#71717a] font-medium">
+      <div className="rounded-full bg-blue-600/5 px-4 py-1.5 text-xs font-bold text-blue-700/80 backdrop-blur-sm">
         ลงชื่อเข้าใช้: {user?.name || 'User'}
       </div>
     </header>

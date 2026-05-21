@@ -8,3 +8,4 @@
 - [x] Clone repository.
 - [x] Explore project structure.
 - [x] Modernize Login UI/UX to Soft Glassmorphism theme (Apple-inspired design).
+- [x] Modernize Central Control (Portal) and Roster UI/UX with Thai localization.

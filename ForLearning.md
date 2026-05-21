@@ -12,3 +12,5 @@
 - Modern UX principles:
     - Apple-inspired "Soft Glassmorphism" provides a clean, premium feel.
     - Simplified layout with clear typography hierarchy improves user onboarding experience.
+    - Localization (Thai) in Central Control significantly improves accessibility for local operators.
+    - Cross-module visual consistency (Glass theme) reinforces brand identity and reduces cognitive load.

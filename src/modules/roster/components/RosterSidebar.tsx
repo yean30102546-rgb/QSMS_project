@@ -23,67 +23,72 @@ export function RosterSidebar({
   onAddEmployee,
 }: RosterSidebarProps) {
   return (
-    <aside className="bg-white border border-[#e4e4e7] rounded-2xl p-3 flex flex-col gap-4 shadow-sm h-fit">
+    <aside className="glass-panel h-fit rounded-[32px] p-4 shadow-xl shadow-blue-900/5">
       <div>
-        <h3 className="text-xs uppercase tracking-wide text-[#a1a1aa] font-semibold mb-3">พนักงาน</h3>
+        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600/70">รายชื่อพนักงาน</h3>
         
-        <div className="space-y-1 max-h-[360px] overflow-y-auto pr-1">
+        <div className="scrollbar-hide space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
           {employees.map((employee) => {
             const isSelected = selectedEmployeeId === employee.id;
             return (
-              <div
+              <motion.div
                 key={employee.id}
-                className={`group relative flex items-center justify-between rounded-lg py-2 px-2.5 transition-colors cursor-pointer ${
+                whileHover={{ x: 2 }}
+                className={`group relative flex items-center justify-between rounded-2xl py-2.5 px-3.5 transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#f4f4f5] text-[#18181b] font-semibold'
-                    : 'text-[#52525b] hover:bg-[#fafafa]'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-bold'
+                    : 'text-[#1d1d1f] hover:bg-white/60'
                 }`}
                 onClick={() => onSelectEmployee(employee.id)}
               >
-                <span className="text-sm truncate flex items-center gap-1 flex-1">
+                <span className="text-[14px] truncate flex items-center gap-2 flex-1">
                   {employee.name}
                   {!employee.startWorkingSaturday && (
                     <span className="text-amber-500 font-bold text-xs" title="ยังไม่ได้ตั้งเสาร์เริ่มงาน">⚠️</span>
                   )}
                 </span>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.15, rotate: 5 }}
                   whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteEmployee(employee.id, employee.name);
                   }}
-                  className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className={`rounded-xl p-1.5 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 ${
+                    isSelected ? 'text-white/80 hover:bg-white/20 hover:text-white' : 'text-slate-400 hover:bg-red-50 hover:text-red-500'
+                  }`}
                   title="ลบพนักงาน"
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </motion.button>
-              </div>
+              </motion.div>
             );
           })}
           {employees.length === 0 && (
-            <div className="text-xs text-[#a1a1aa] text-center py-4">ไม่มีพนักงาน</div>
+            <div className="py-8 text-center text-xs font-medium text-[#a1a1aa]">ไม่มีข้อมูลพนักงาน</div>
           )}
         </div>
 
-        <div className="mt-4 border-t border-[#f4f4f5] pt-4 space-y-2">
-          <input
-            type="text"
-            value={newEmployeeName}
-            onChange={(e) => setNewEmployeeName(e.target.value)}
-            placeholder="เพิ่มพนักงาน..."
-            className="border border-[#e4e4e7] rounded-lg bg-[#fafafa] px-3 py-1.5 text-xs outline-none focus:border-[#a1a1aa] focus:ring-1 focus:ring-[#a1a1aa] transition-all w-full"
-          />
+        <div className="mt-6 space-y-3 border-t border-black/5 pt-5">
+          <div className="relative group">
+            <input
+              type="text"
+              value={newEmployeeName}
+              onChange={(e) => setNewEmployeeName(e.target.value)}
+              placeholder="ชื่อพนักงานใหม่..."
+              className="glass-input w-full rounded-2xl py-3 px-4 text-xs font-medium"
+            />
+          </div>
           <motion.button
             whileHover={newEmployeeName.trim() ? { scale: 1.02 } : {}}
-            whileTap={newEmployeeName.trim() ? { scale: 0.97 } : {}}
+            whileTap={newEmployeeName.trim() ? { scale: 0.98 } : {}}
             type="button"
             onClick={onAddEmployee}
             disabled={!newEmployeeName.trim()}
-            className="bg-[#18181b] text-white rounded-lg text-xs py-1.5 font-semibold hover:bg-black transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus size={13} />
+            <Plus size={14} />
             เพิ่มพนักงาน
           </motion.button>
         </div>
