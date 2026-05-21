@@ -166,7 +166,7 @@ export async function POST(request: Request) {
         const { data, error } = await supabaseServer
           .from('rework_master_items')
           .select('*')
-          .eq('item_number', itemNumber)
+          .or(`item_number.eq.${itemNumber},item_code.eq.${itemNumber}`)
           .maybeSingle();
 
         if (error) throw error;
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(
-          { success: true, data: { found: true, itemName: data.item_name, itemCode: data.item_code } },
+          { success: true, data: { found: true, itemName: data.item_name, itemCode: data.item_code, itemNumber: data.item_number } },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
         );
       }

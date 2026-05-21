@@ -184,8 +184,9 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
             i.id === id
               ? {
                   ...i,
-                  itemName: result.data.itemName || i.itemName,
+                  itemNumber: result.data.itemNumber || i.itemNumber, // Ensure both are updated
                   itemCode: result.data.itemCode || i.itemCode,
+                  itemName: result.data.itemName || i.itemName,
                 }
               : i,
           ),

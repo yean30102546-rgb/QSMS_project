@@ -5,6 +5,7 @@ export const portalAppRegistry: PortalAppDefinition[] = [
     id: 'rework',
     title: 'QSMS Rework',
     subtitle: 'Quality control and case resolution',
+
     description: 'Manage rework cases, images, valuations, and role-based workflow from one operational workspace.',
     route: 'rework',
     status: 'active',
@@ -12,7 +13,7 @@ export const portalAppRegistry: PortalAppDefinition[] = [
   },
   {
     id: 'roster',
-    title: 'ShiftHub Roster',
+    title: 'QSMS Roster',
     subtitle: 'Workforce schedule and shift planning',
     description: 'Manage Saturday rotation plans, swaps, holidays, and overtime directly from the central portal.',
     route: 'roster',

@@ -180,7 +180,7 @@ export function WorkspacePortal({
                       {app.subtitle === 'Modular Platform' ? 'โมดูลเสริม' : 'แกนหลักระบบ'}
                     </p>
                     <h3 className="mt-3 text-[32px] font-bold leading-[1.06] text-[#1d1d1f]">
-                      {app.title === 'Rework Operations' ? 'ระบบจัดการงาน Rework' : 'ระบบตารางเวร ShiftHub'}
+                      {app.title === 'QSMS Rework' ? 'ระบบจัดการงาน Rework' : 'ระบบตารางเวร QSMS Roster'}
                     </h3>
                   </div>
                   <span
