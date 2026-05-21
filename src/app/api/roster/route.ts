@@ -162,9 +162,58 @@ export async function POST(request: Request) {
 
         if (error) throw error;
         return NextResponse.json({ success: true, data: { monthKey } });
-        }
+      }
 
-        default:
+      case 'rosterDeleteEmployee': {
+        const { employeeId } = body;
+        // Foreign key cascade delete handles overrides and leaves in Supabase
+        const { error } = await supabaseServer
+          .from('roster_employees')
+          .delete()
+          .eq('id', employeeId);
+        
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: { employeeId } });
+      }
+
+      case 'rosterUpsertLeave': {
+        const { employeeId, dateKey, leaveType, note } = body;
+        const { data, error } = await supabaseServer
+          .from('roster_leaves')
+          .upsert(
+            { employee_id: employeeId, date_key: dateKey, leave_type: leaveType, note },
+            { onConflict: 'employee_id,date_key' }
+          )
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        return NextResponse.json({ 
+          success: true, 
+          data: { 
+            id: data.id, 
+            employeeId: data.employee_id, 
+            dateKey: data.date_key, 
+            leaveType: data.leave_type, 
+            note: data.note 
+          } 
+        });
+      }
+
+      case 'rosterDeleteLeave': {
+        const { employeeId, dateKey } = body;
+        const { error } = await supabaseServer
+          .from('roster_leaves')
+          .delete()
+          .eq('employee_id', employeeId)
+          .eq('date_key', dateKey);
+        
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: { employeeId, dateKey, deleted: true } });
+      }
+
+      default:
 
         // Pass unknown actions to existing GAS proxy logic for backwards compatibility during migration
         return proxyToGAS(body);
