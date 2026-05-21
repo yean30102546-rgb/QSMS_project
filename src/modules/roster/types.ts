@@ -14,11 +14,13 @@ export interface RosterOverride {
   status: RosterCellStatus;
 }
 
+export type LeaveType = 'sick' | 'business' | 'vacation';
+
 export interface LeaveRecord {
   id: string;
   employeeId: string;
   dateKey: string;
-  leaveType: string;
+  leaveType: LeaveType;
   note?: string;
 }
 

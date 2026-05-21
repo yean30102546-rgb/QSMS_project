@@ -155,13 +155,32 @@
   flex-shrink: 0;
 }
 
-.status-dot.work { background: #22c55e; }
-.status-dot.off { background: #f59e0b; }
+.status-dot.work { background: #10b981; }
+.status-dot.off { background: #cbd5e1; }
 .status-dot.holiday { background: #94a3b8; }
 .status-dot.ot { background: #3b82f6; }
-.status-dot.leave-sick { background: #ef4444; }
-.status-dot.leave-business { background: #f97316; }
+.status-dot.leave-sick { background: #f43f5e; }
+.status-dot.leave-business { background: #f59e0b; }
+.status-dot.leave-vacation { background: #8b5cf6; }
 .status-dot.swap { background: #8b5cf6; }
+
+/* Status blocks for full-cell display */
+.status-block {
+  width: 100%;
+  height: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+}
+.status-block.work { background: #10b981; }
+.status-block.off { background: #f1f5f9; }
+.status-block.leave-sick { background: #f43f5e; }
+.status-block.leave-business { background: #f59e0b; }
+.status-block.leave-vacation { background: #8b5cf6; }
+.status-block.holiday { background: #e2e8f0; }
 
 /* Drag target highlight */
 .roster-cell.drag-over {
