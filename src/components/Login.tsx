@@ -45,10 +45,10 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
   };
 
   return (
-    <div className="apple-shell flex min-h-screen items-center justify-center overflow-y-auto bg-gradient-to-br from-[#F0F7FF] via-[#FFFFFF] to-[#F5F9FF] px-4 py-8 md:px-8">
-      <div className="pointer-events-none absolute inset-0 opacity-40">
-        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,102,204,0.1),transparent_70%)]" />
-        <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(61,89,124,0.1),transparent_70%)]" />
+    <div className="apple-shell flex min-h-screen items-center justify-center overflow-y-auto bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] px-4 py-8 md:px-8">
+      <div className="pointer-events-none absolute inset-0 opacity-30">
+        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.05),transparent_70%)]" />
+        <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.04),transparent_70%)]" />
       </div>
 
       <motion.section
@@ -58,10 +58,10 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
         className="relative z-10 w-full max-w-[980px] overflow-hidden rounded-[36px] bg-white/30 backdrop-blur-md shadow-2xl shadow-blue-900/5 border border-white/40"
       >
         <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="glass-panel px-7 py-10 text-[#1d1d1f] md:px-10 lg:border-0 lg:border-r lg:border-r-black/5">
+          <div className="border-b border-white/60 bg-white/40 backdrop-blur-xl px-7 py-10 text-[#1d1d1f] md:px-10 lg:border-b-0 lg:border-r lg:border-r-black/5">
             <div className="mb-8 flex items-center gap-3">
               <img src="/img/logo.png" alt="QSMS" className="h-10 object-contain" />
-              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600/80">Central Workspace</div>
+              <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#1d1d1f]/70">Central Workspace</div>
             </div>
             <h1 className="max-w-lg text-4xl font-semibold leading-[1.04] tracking-[-0.03em] md:text-5xl text-[#1d1d1f]">
               One login for Rework and upcoming Roster operations.
@@ -70,7 +70,7 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
               เข้าสู่ระบบครั้งเดียว แล้วเลือกใช้งานแต่ละ webapp ผ่าน Central Control ได้ทันที
               โดยรักษา workflow เดิมของ Rework ให้ทำงานต่อเนื่อง
             </p>
-            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-blue-600/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700/70">
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-black/60">
               Platform session secured
             </div>
           </div>

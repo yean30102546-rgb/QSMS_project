@@ -7,33 +7,15 @@
   
   --color-bg: #fdfdfd;
   --color-surface: #ffffff;
-  --color-foreground: #111111;
-  --color-muted: #71717a;
-  --color-border: #e4e4e7;
-  --color-accent: #18181b;
+  --color-foreground: #1d1d1f;
+  --color-muted: #86868b;
+  --color-border: #d2d2d7;
+  --color-accent: #1d1d1f;
   
-  /* Map existing primary aliases to the new accent color */
-  --color-primary: var(--color-accent);
+  /* Apple Pro Blue replacement with Black */
+  --color-apple-blue: #1d1d1f;
+  --color-primary: #1d1d1f;
   --color-primary-dark: #000000;
-}
-
-@layer base {
-  html, body {
-    @apply min-h-screen;
-    scroll-behavior: auto !important;
-  }
-  
-  * {
-    scroll-behavior: auto !important;
-  }
-  
-  body {
-    @apply bg-bg text-foreground font-sans antialiased;
-  }
-  
-  #root {
-    @apply min-h-screen;
-  }
 }
 
 @layer components {
@@ -42,7 +24,11 @@
   }
   
   .glass-input {
-    @apply bg-white/50 border border-black/5 focus:border-blue-400/50 focus:ring-4 focus:ring-blue-400/10 transition-all outline-none;
+    @apply bg-white/50 border border-black/5 focus:border-black/20 focus:ring-4 focus:ring-black/5 transition-all outline-none;
+  }
+
+  .apple-btn-primary {
+    @apply bg-[#1d1d1f] text-white hover:bg-black transition-all shadow-lg shadow-black/10;
   }
 }
 

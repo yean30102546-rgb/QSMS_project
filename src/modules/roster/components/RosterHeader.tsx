@@ -23,11 +23,11 @@ export function RosterHeader({ user, onBackToPortal }: RosterHeaderProps) {
           กลับพอร์ทัล
         </motion.button>
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600/70">ตารางเวร</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-black/40">ตารางเวร</p>
           <h1 className="text-xl font-bold tracking-[-0.02em] text-[#1d1d1f]">ShiftHub Roster</h1>
         </div>
       </div>
-      <div className="rounded-full bg-blue-600/5 px-4 py-1.5 text-xs font-bold text-blue-700/80 backdrop-blur-sm">
+      <div className="rounded-full bg-black/5 px-4 py-1.5 text-xs font-bold text-black/70 backdrop-blur-sm">
         ลงชื่อเข้าใช้: {user?.name || 'User'}
       </div>
     </header>

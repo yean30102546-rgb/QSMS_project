@@ -85,13 +85,13 @@ export function WorkspacePortal({
       </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col px-5 py-6 md:px-8 lg:px-12">
-        <header className="glass-panel mb-10 flex items-center justify-between rounded-[28px] px-5 py-4 shadow-xl shadow-blue-900/5 md:px-7">
+        <header className="glass-panel mb-10 flex items-center justify-between rounded-[28px] px-5 py-4 shadow-xl shadow-black/5 md:px-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600/10 text-blue-600">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-[#1d1d1f]">
               <LayoutGrid size={18} />
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600/70">Central Control</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-black/50">Central Control</p>
               <h1 className="text-lg font-bold tracking-[-0.02em] text-[#1d1d1f]">ศูนย์ควบคุมกลาง</h1>
             </div>
           </div>
@@ -101,7 +101,7 @@ export function WorkspacePortal({
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={onLogout}
-            className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-semibold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
+            className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-bold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
           >
             ออกจากระบบ
           </motion.button>
@@ -112,9 +112,9 @@ export function WorkspacePortal({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
-            className="glass-panel rounded-[36px] px-6 py-8 shadow-2xl shadow-blue-900/5 md:px-10 md:py-12"
+            className="glass-panel rounded-[36px] px-6 py-8 shadow-2xl shadow-black/5 md:px-10 md:py-12"
           >
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-600/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600/80">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-black/60">
               <Sparkles size={12} />
               Welcome to the Workspace
             </p>
@@ -131,23 +131,23 @@ export function WorkspacePortal({
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.08, ease: 'easeOut' }}
-            className="glass-panel flex flex-col gap-4 rounded-[36px] p-5 shadow-2xl shadow-blue-900/5"
+            className="glass-panel flex flex-col gap-4 rounded-[36px] p-5 shadow-2xl shadow-black/5"
           >
-            <div className="rounded-[28px] bg-blue-600/10 p-5 backdrop-blur-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-600/70">โปรไฟล์ของคุณ</p>
+            <div className="rounded-[28px] bg-black/5 p-5 backdrop-blur-sm">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-black/50">โปรไฟล์ของคุณ</p>
               <p className="mt-3 text-xl font-bold tracking-[-0.02em] text-[#1d1d1f]">{user?.role?.toUpperCase() || 'USER'}</p>
               <p className="mt-1 text-sm leading-6 text-[#515154]">{user?.email || 'เข้าสู่ระบบด้วยสิทธิ์ Platform'}</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
               <div className="rounded-[28px] bg-white/40 p-5 border border-white/40">
-                <div className="mb-2 flex items-center gap-2 text-blue-600">
+                <div className="mb-2 flex items-center gap-2 text-black/70">
                   <ShieldCheck size={16} />
                   <span className="text-sm font-bold">ความปลอดภัย</span>
                 </div>
                 <p className="text-sm leading-6 text-[#515154]">ระบบรักษาความปลอดภัยด้วย Token ชั่วคราว และการแยกสิทธิ์ตามบทบาท</p>
               </div>
               <div className="rounded-[28px] bg-white/40 p-5 border border-white/40">
-                <div className="mb-2 flex items-center gap-2 text-blue-600">
+                <div className="mb-2 flex items-center gap-2 text-black/70">
                   <Clock3 size={16} />
                   <span className="text-sm font-bold">สถานะระบบ</span>
                 </div>
@@ -162,8 +162,8 @@ export function WorkspacePortal({
             const isActive = app.status === 'active';
             const accentClasses =
               app.accent === 'blue'
-                ? 'bg-blue-50/50 border-blue-200/50 shadow-blue-900/5'
-                : 'bg-amber-50/50 border-amber-200/50 shadow-amber-900/5';
+                ? 'bg-white/40 border-black/5 shadow-black/5'
+                : 'bg-amber-50/40 border-amber-200/50 shadow-amber-900/5';
 
             return (
               <motion.article
@@ -176,7 +176,7 @@ export function WorkspacePortal({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${app.accent === 'blue' ? 'text-blue-600/70' : 'text-amber-600/70'}`}>
+                    <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${app.accent === 'blue' ? 'text-black/50' : 'text-amber-600/70'}`}>
                       {app.subtitle === 'Modular Platform' ? 'โมดูลเสริม' : 'แกนหลักระบบ'}
                     </p>
                     <h3 className="mt-3 text-[32px] font-bold leading-[1.06] text-[#1d1d1f]">
@@ -185,7 +185,7 @@ export function WorkspacePortal({
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
-                      isActive ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
+                      isActive ? 'bg-black/5 text-black' : 'bg-amber-100 text-amber-600'
                     }`}
                   >
                     {isActive ? 'พร้อมใช้งาน' : 'เร็วๆ นี้'}
@@ -197,36 +197,36 @@ export function WorkspacePortal({
                   <div className="mt-6 grid grid-cols-3 gap-3">
                     {app.id === 'rework' ? (
                       <>
-                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">รอประเมิน</p>
-                          <p className="mt-1 text-xl font-bold text-blue-600">{reworkStats.pending}</p>
+                          <p className="mt-1 text-xl font-bold text-[#1d1d1f]">{reworkStats.pending}</p>
                         </div>
-                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">กำลังซ่อม</p>
-                          <p className="mt-1 text-xl font-bold text-amber-600">{reworkStats.inProgress}</p>
+                          <p className="mt-1 text-xl font-bold text-[#1d1d1f]">{reworkStats.inProgress}</p>
                         </div>
-                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ประสิทธิภาพ</p>
                           <p className="mt-1 text-xl font-bold text-green-600">{reworkStats.efficiency}</p>
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">พนักงาน</p>
                           <div className="mt-1 flex items-center gap-1">
-                            <Users2 size={14} className="text-blue-600" />
+                            <Users2 size={14} className="text-black/60" />
                             <p className="text-xl font-bold text-slate-800">{rosterStats.employees}</p>
                           </div>
                         </div>
-                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">เวรวันนี้</p>
                           <div className="mt-1 flex items-center gap-1">
-                            <CalendarDays size={14} className="text-amber-600" />
+                            <CalendarDays size={14} className="text-black/60" />
                             <p className="text-xl font-bold text-slate-800">{rosterStats.todayActive}</p>
                           </div>
                         </div>
-                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">สถานะกะ</p>
                           <div className="mt-1 flex items-center gap-1">
                             <Activity size={14} className="text-green-600" />
@@ -256,7 +256,7 @@ export function WorkspacePortal({
                     onClick={() => onOpenApp(app.route)}
                     className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition shadow-lg ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow-blue-600/20 hover:bg-blue-700'
+                        ? 'bg-[#1d1d1f] text-white shadow-black/20 hover:bg-black'
                         : 'cursor-not-allowed bg-white/50 text-[#9d9da3] ring-1 ring-black/5'
                     }`}
                   >

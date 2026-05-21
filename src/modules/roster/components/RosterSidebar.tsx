@@ -25,7 +25,7 @@ export function RosterSidebar({
   return (
     <aside className="glass-panel h-fit rounded-[32px] p-4 shadow-xl shadow-blue-900/5">
       <div>
-        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600/70">รายชื่อพนักงาน</h3>
+        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-black/40">รายชื่อพนักงาน</h3>
         
         <div className="scrollbar-hide space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
           {employees.map((employee) => {
@@ -36,7 +36,7 @@ export function RosterSidebar({
                 whileHover={{ x: 2 }}
                 className={`group relative flex items-center justify-between rounded-2xl py-2.5 px-3.5 transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-bold'
+                    ? 'bg-[#1d1d1f] text-white shadow-lg shadow-black/20 font-bold'
                     : 'text-[#1d1d1f] hover:bg-white/60'
                 }`}
                 onClick={() => onSelectEmployee(employee.id)}
@@ -86,7 +86,7 @@ export function RosterSidebar({
             type="button"
             onClick={onAddEmployee}
             disabled={!newEmployeeName.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1d1d1f] py-3 text-xs font-bold text-white shadow-lg shadow-black/20 transition-all hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus size={14} />
             เพิ่มพนักงาน
