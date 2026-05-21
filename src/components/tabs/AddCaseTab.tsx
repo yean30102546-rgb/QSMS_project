@@ -291,9 +291,16 @@ export function AddCaseTab({
                 </div>
 
                 <div className="lg:col-span-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                    หมายเลขรายการ (Item Number) *
-                  </label>
+                  <div className="flex items-center justify-between ml-1 mb-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                      หมายเลขบาร์โค้ด (Item Number) *
+                    </label>
+                    {item.lastActiveField === 'itemNumber' && (
+                      <span className="text-[9px] font-bold text-black/40 bg-black/5 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                        ลำดับความสำคัญหลัก
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={item.itemNumber}
@@ -301,14 +308,25 @@ export function AddCaseTab({
                     onBlur={() => handleAutoFillBlur(item.id)}
                     placeholder="เช่น 60001234A"
                     disabled={isSaving}
-                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
+                    className={`w-full rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${
+                      item.lastActiveField === 'itemNumber'
+                        ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
+                        : 'border-border bg-slate-50 focus:border-accent'
+                    }`}
                   />
                 </div>
 
-                <div className="lg:col-span-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                    รหัสสินค้า (Item Code)
-                  </label>
+                <div className="lg:col-span-3">
+                  <div className="flex items-center justify-between ml-1 mb-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                      รหัสสินค้า (Item Code)
+                    </label>
+                    {item.lastActiveField === 'itemCode' && (
+                      <span className="text-[9px] font-bold text-black/40 bg-black/5 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                        ลำดับความสำคัญหลัก
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-3">
                     <input
                       type="text"
@@ -317,7 +335,11 @@ export function AddCaseTab({
                       onBlur={() => handleAutoFillBlur(item.id)}
                       placeholder="เช่น 40001234"
                       disabled={isSaving}
-                      className="flex-1 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
+                      className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${
+                        item.lastActiveField === 'itemCode'
+                          ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
+                          : 'border-border bg-slate-50 focus:border-accent'
+                      }`}
                     />
                     <motion.button
                       type="button"
@@ -328,7 +350,7 @@ export function AddCaseTab({
                       transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.15 }}
                       className="will-change-transform whitespace-nowrap rounded-xl border-2 border-[#1d1d1f] bg-[#1d1d1f] px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      ตรวจสอบข้อมูล
+                      ตรวจสอบข้อมูลสินค้า
                     </motion.button>
                   </div>
                 </div>

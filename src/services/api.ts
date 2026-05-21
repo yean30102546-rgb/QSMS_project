@@ -52,6 +52,7 @@ export interface ReworkItem {
   linkedSourceId?: string;
   customerName?: string;
   uid?: string; // Stable unique ID from backend
+  lastActiveField?: 'itemNumber' | 'itemCode'; // Tracks user priority
 }
 
 export const CUSTOMER_OPTIONS = [

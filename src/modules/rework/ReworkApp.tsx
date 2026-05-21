@@ -38,6 +38,7 @@ const initialFormItem: ReworkItem = {
   imageUrls: [],
   linkedSourceId: '',
   customerName: '',
+  lastActiveField: 'itemNumber', // Default priority
 };
 
 interface ReworkAppProps {
@@ -145,7 +146,11 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
   const updateFormItem = (id: string, field: string, value: string | number) => {
     if (field === 'itemNumber') {
       const sanitized = String(value).replace(/[<>]/g, '').slice(0, 50);
-      setFormItems((prev) => prev.map((item) => (item.id === id ? { ...item, itemNumber: sanitized } : item)));
+      setFormItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, itemNumber: sanitized, lastActiveField: 'itemNumber' } : item,
+        ),
+      );
       return;
     }
     setFormItems((prev) =>
@@ -157,7 +162,11 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
             : field === 'amount'
               ? Math.max(0, parseInt(String(value)) || 0)
               : value;
-        return { ...item, [field]: normalizedValue };
+
+        // Track lastActiveField for itemCode as well
+        const lastActiveField = field === 'itemCode' ? 'itemCode' : item.lastActiveField;
+
+        return { ...item, [field]: normalizedValue, lastActiveField };
       }),
     );
   };
@@ -166,15 +175,20 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     const item = formItems.find((i) => i.id === id);
     if (!item) return;
 
-    const trimmedNumber = item.itemNumber.trim();
-    if (!trimmedNumber) return;
+    // Smart Priority: Use the last edited field first
+    const primarySearchValue =
+      item.lastActiveField === 'itemCode'
+        ? item.itemCode.trim() || item.itemNumber.trim()
+        : item.itemNumber.trim() || item.itemCode.trim();
+
+    if (!primarySearchValue) return;
 
     try {
       // Use direct API lookup for higher reliability and speed
       const response = await fetch('/api/rework', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verifyItem', itemNumber: trimmedNumber }),
+        body: JSON.stringify({ action: 'verifyItem', itemNumber: primarySearchValue }),
       });
       const result = await response.json();
 
@@ -184,7 +198,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
             i.id === id
               ? {
                   ...i,
-                  itemNumber: result.data.itemNumber || i.itemNumber, // Ensure both are updated
+                  itemNumber: result.data.itemNumber || i.itemNumber, // Sync both from DB
                   itemCode: result.data.itemCode || i.itemCode,
                   itemName: result.data.itemName || i.itemName,
                 }
@@ -194,20 +208,29 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         setAutoFillTriggeredItem(id);
         setTimeout(() => setAutoFillTriggeredItem(null), 1500);
       } else if (showModal) {
-        setConfirmNewItemModal({ isOpen: true, itemNumber: trimmedNumber, itemId: id });
+        setConfirmNewItemModal({ isOpen: true, itemNumber: primarySearchValue, itemId: id });
       }
     } catch (error) {
       console.error('Error verifying item:', error);
       // Fallback to local search if API fails
-      const masterInfo = itemMaster.find((m) => m.itemNumber === trimmedNumber);
+      const masterInfo = itemMaster.find(
+        (m) => m.itemNumber === primarySearchValue || m.itemCode === primarySearchValue,
+      );
       if (masterInfo) {
         setFormItems((prev) =>
           prev.map((i) =>
-            i.id === id ? { ...i, itemName: masterInfo.itemName, itemCode: masterInfo.itemCode } : i,
+            i.id === id
+              ? {
+                  ...i,
+                  itemName: masterInfo.itemName,
+                  itemCode: masterInfo.itemCode,
+                  itemNumber: masterInfo.itemNumber,
+                }
+              : i,
           ),
         );
       } else if (showModal) {
-        setConfirmNewItemModal({ isOpen: true, itemNumber: trimmedNumber, itemId: id });
+        setConfirmNewItemModal({ isOpen: true, itemNumber: primarySearchValue, itemId: id });
       }
     }
   };
