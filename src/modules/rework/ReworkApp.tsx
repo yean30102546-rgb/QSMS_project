@@ -162,36 +162,52 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     );
   };
 
-  const handleCheckItemNumber = (id: string, showModal: boolean = true) => {
+  const handleCheckItemNumber = async (id: string, showModal: boolean = true) => {
     const item = formItems.find((i) => i.id === id);
     if (!item) return;
 
     const trimmedNumber = item.itemNumber.trim();
-    const trimmedCode = item.itemCode.trim();
+    if (!trimmedNumber) return;
 
-    if (!trimmedNumber && !trimmedCode) return;
+    try {
+      // Use direct API lookup for higher reliability and speed
+      const response = await fetch('/api/rework', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verifyItem', itemNumber: trimmedNumber }),
+      });
+      const result = await response.json();
 
-    const masterInfo = itemMaster.find(
-      (m) => (trimmedNumber && m.itemNumber === trimmedNumber) || (trimmedCode && m.itemCode === trimmedCode),
-    );
-
-    if (masterInfo) {
-      setFormItems((prev) =>
-        prev.map((i) =>
-          i.id === id
-            ? {
-                ...i,
-                itemNumber: masterInfo.itemNumber || i.itemNumber,
-                itemCode: masterInfo.itemCode || i.itemCode,
-                itemName: masterInfo.itemName || i.itemName,
-              }
-            : i,
-        ),
-      );
-      setAutoFillTriggeredItem(id);
-      setTimeout(() => setAutoFillTriggeredItem(null), 1500);
-    } else if (showModal && trimmedNumber) {
-      setConfirmNewItemModal({ isOpen: true, itemNumber: trimmedNumber, itemId: id });
+      if (result.success && result.data?.found) {
+        setFormItems((prev) =>
+          prev.map((i) =>
+            i.id === id
+              ? {
+                  ...i,
+                  itemName: result.data.itemName || i.itemName,
+                  itemCode: result.data.itemCode || i.itemCode,
+                }
+              : i,
+          ),
+        );
+        setAutoFillTriggeredItem(id);
+        setTimeout(() => setAutoFillTriggeredItem(null), 1500);
+      } else if (showModal) {
+        setConfirmNewItemModal({ isOpen: true, itemNumber: trimmedNumber, itemId: id });
+      }
+    } catch (error) {
+      console.error('Error verifying item:', error);
+      // Fallback to local search if API fails
+      const masterInfo = itemMaster.find((m) => m.itemNumber === trimmedNumber);
+      if (masterInfo) {
+        setFormItems((prev) =>
+          prev.map((i) =>
+            i.id === id ? { ...i, itemName: masterInfo.itemName, itemCode: masterInfo.itemCode } : i,
+          ),
+        );
+      } else if (showModal) {
+        setConfirmNewItemModal({ isOpen: true, itemNumber: trimmedNumber, itemId: id });
+      }
     }
   };
 
@@ -211,7 +227,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       }
       const result = await insertCase(caseSource, formItems, uploadedImages, orFiles);
       if (result.success) {
-        setSaveMessage({ type: 'success', text: 'เธเธฑเธเธ—เธถเธเธชเธณเน€เธฃเนเธ' });
+        setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
         setFormItems([{ ...initialFormItem }]);
         setUploadedImages({});
         setOrFiles([]);
@@ -220,13 +236,13 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       } else {
         setSaveMessage({
           type: 'error',
-          text: result.error || 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเนเธ”เน เธเธฃเธธเธ“เธฒเธฅเธญเธเนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ',
+          text: result.error || 'ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง',
         });
       }
     } catch (error) {
       setSaveMessage({
         type: 'error',
-        text: error instanceof Error ? error.message : 'เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเธเธฑเธเธ—เธถเธ',
+        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึก',
       });
     } finally {
       setIsSaving(false);
@@ -261,7 +277,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         loadCases();
       } else {
         console.error('Update failed:', result.error);
-        alert(`เธเธฑเธเธ—เธถเธเนเธกเนเธชเธณเน€เธฃเนเธ: ${result.error}`);
+        alert(`บันทึกไม่สำเร็จ: ${result.error}`);
       }
     } finally {
       setIsModalLoading(false);
@@ -276,12 +292,12 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         setCases(cases.filter((c) => c.id !== caseId));
         setIsModalOpen(false);
         setSelectedCase(null);
-        alert('เธฅเธเธฃเธฒเธขเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง');
+        alert('ลบรายการเรียบร้อยแล้ว');
       } else {
-        alert(`เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธฃเธฒเธขเธเธฒเธฃเนเธ”เน: ${result.error || 'Unknown error'}`);
+        alert(`ไม่สามารถลบรายการได้: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
-      alert(`เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเธฅเธ: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`เกิดข้อผิดพลาดในการลบ: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsModalLoading(false);
     }

@@ -56,7 +56,10 @@ export async function POST(request: Request) {
           }))
         }));
 
-        return NextResponse.json({ success: true, data: cases });
+        return NextResponse.json(
+          { success: true, data: cases },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
       }
 
       case 'insertCase': {
@@ -95,9 +98,9 @@ export async function POST(request: Request) {
             item_name: i.itemName,
             amount: i.amount || 0,
             reason: i.reason,
-            reason_subtype: i.reasonSubtype,
+            reason_subtype: i.reason_subtype,
             responsible: i.responsible,
-            responsible_subtype: i.responsibleSubtype,
+            responsible_subtype: i.responsible_subtype,
             details: i.details,
             line: i.line,
             image_urls: i.imageUrls || [],
@@ -111,7 +114,10 @@ export async function POST(request: Request) {
           if (itemsError) throw itemsError;
         }
 
-        return NextResponse.json({ success: true, data: caseData });
+        return NextResponse.json(
+          { success: true, data: caseData },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
       }
 
       case 'updateCaseStatus': {
@@ -135,7 +141,10 @@ export async function POST(request: Request) {
           performed_by: performedBy || 'System'
         }]);
 
-        return NextResponse.json({ success: true, data: { caseId, status } });
+        return NextResponse.json(
+          { success: true, data: { caseId, status } },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
       }
 
       case 'deleteCase': {
@@ -146,7 +155,10 @@ export async function POST(request: Request) {
           .eq('id', caseId);
 
         if (error) throw error;
-        return NextResponse.json({ success: true, data: { caseId } });
+        return NextResponse.json(
+          { success: true, data: { caseId } },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
       }
 
       case 'verifyItem': {
@@ -160,13 +172,16 @@ export async function POST(request: Request) {
         if (error) throw error;
         
         if (!data) {
-          return NextResponse.json({ success: true, data: { found: false } });
+          return NextResponse.json(
+            { success: true, data: { found: false } },
+            { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
         }
 
-        return NextResponse.json({ 
-          success: true, 
-          data: { found: true, itemName: data.item_name, itemCode: data.item_code } 
-        });
+        return NextResponse.json(
+          { success: true, data: { found: true, itemName: data.item_name, itemCode: data.item_code } },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
       }
 
       case 'loadMasterData': {
@@ -178,20 +193,42 @@ export async function POST(request: Request) {
         if (itemsRes.error) throw itemsRes.error;
         if (defectsRes.error) throw defectsRes.error;
 
-        return NextResponse.json({
-          success: true,
-          data: {
-            items: itemsRes.data.map(i => ({ 
-              itemNumber: i.item_number, 
-              itemName: i.item_name, 
-              itemCode: i.item_code 
-            })),
-            defects: defectsRes.data.map(d => ({ 
-              defectCode: d.defect_code, 
-              defectName: d.defect_name 
-            }))
-          }
-        });
+        return NextResponse.json(
+          {
+            success: true,
+            data: {
+              items: itemsRes.data.map(i => ({ 
+                itemNumber: i.item_number, 
+                itemName: i.item_name, 
+                itemCode: i.item_code 
+              })),
+              defects: defectsRes.data.map(d => ({ 
+                defectCode: d.defect_code, 
+                defectName: d.defect_name 
+              }))
+            }
+          },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
+      }
+
+      case 'saveItemMaster': {
+        const { itemNumber, itemCode, itemName } = body;
+
+        const { data, error } = await supabaseServer
+          .from('rework_master_items')
+          .upsert(
+            { item_number: itemNumber, item_code: itemCode, item_name: itemName },
+            { onConflict: 'item_number' }
+          )
+          .select()
+          .single();
+
+        if (error) throw error;
+        return NextResponse.json(
+          { success: true, message: 'บันทึก Item เรียบร้อยแล้ว', data },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
       }
 
       case 'uploadImage':
