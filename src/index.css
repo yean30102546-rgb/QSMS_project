@@ -36,6 +36,16 @@
   }
 }
 
+@layer components {
+  .glass-panel {
+    @apply bg-white/40 backdrop-blur-xl border border-white/20;
+  }
+  
+  .glass-input {
+    @apply bg-white/50 border border-black/5 focus:border-blue-400/50 focus:ring-4 focus:ring-blue-400/10 transition-all outline-none;
+  }
+}
+
 .glass-card {
   @apply bg-surface border border-border rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.02)];
 }
