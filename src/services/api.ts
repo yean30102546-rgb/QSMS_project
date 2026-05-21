@@ -242,10 +242,15 @@ export async function insertCase(
       : [];
 
     const result = await postToGas<{ caseId: string; itemIds: string[] }>({
-      action: 'insert',
-      source,
-      items: processedItems,
-      orFiles: processedOrFiles
+      action: 'insertCase',
+      caseData: {
+        id: `RW${new Date().toISOString().replace(/[-:T.Z]/g, '').substring(2, 14)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        date: new Date().toISOString().split('T')[0],
+        source,
+        profileId: getCurrentUser()?.name || 'User',
+        items: processedItems,
+        orFiles: processedOrFiles
+      }
     });
 
     if (result.success) {
