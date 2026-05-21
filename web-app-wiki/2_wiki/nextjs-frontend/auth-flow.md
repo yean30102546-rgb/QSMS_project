@@ -2,24 +2,32 @@
 [วันที่อัปเดต: 2026-05-21]
 
 ## 1. Summary & Current Implementation
-> ⚠️ **[Deprecated - Old Flow]** ระบบเก่าใช้ hardcoded `admin/admin123` ใน sessionStorage โดยตรง (ดู `1_raw/SYSTEM_ARCHITECTURE.md` หัวข้อ Authentication)
-> ระบบปัจจุบันย้ายไปใช้ GAS PIN Login แล้ว (ดู section ด้านล่าง)
-ระบบ Login ใช้ PIN-based authentication ผ่าน GAS backend
-Frontend ไม่เคยตรวจ PIN เอง — ส่งไปให้ GAS ตรวจและออก JWT กลับมา
-Token เก็บใน `sessionStorage` (ไม่ใช่ localStorage หรือ Cookie)
+ระบบ Login ใช้ PIN-based authentication ผ่าน GAS backend โดยมีการออกแบบหน้าจอใหม่ในสไตล์ **Soft Glassmorphism** (Apple-inspired) เพื่อความทันสมัยและเป็นมิตรต่อผู้ใช้งาน
+- **Frontend**: ใช้ React + Tailwind CSS + motion/react สำหรับ UI/UX
+- **Backend**: สื่อสารกับ GAS ผ่าน Next.js API Routes (Proxy)
+- **Token**: เก็บใน `sessionStorage` (JWT)
 
-**Login Flow:**
-```
-Login.tsx → loginWithPassword(userId, pin)
-  → auth.ts → POST /api/rework { action: 'loginWithPassword', profile, password }
-    → Next.js Route → GAS (ตรวจ Script Properties)
-      → GAS ออก JWT token กลับ
-        → storeAuthData() → sessionStorage
-          → Redirect to App
-```
+## 2. UI/UX Design (Modernization 2026)
+หน้าจอ Login และส่วนอื่นๆ เปลี่ยนจาก Dark Theme เป็น **Minimal Monochrome (Apple Pro)**:
+- **Visual Style**:Grayscale Gradient (`#F5F5F7` to White), ใช้การเบลอหลังกระจก (`backdrop-blur-xl`)
+- **Buttons**: ใช้สี Midnight Black (`#1d1d1f`) พร้อม Apple-inspired scale effects
+- **Interactions**: Micro-animations ตอนเข้าหน้าจอ และ Group-focus feedback บนช่อง Input
 
-## 2. Technical Code Snippet (Best Practice)
+## 3. Backend Strategy
+ปัจจุบันระบบกำลังย้ายจาก GAS ไปสู่ **Supabase**:
+- **Status**: Roster และ Rework Transactional data ย้ายไป Supabase 100% แล้ว
+- **API**: เชื่อมต่อผ่าน `/api/rework` และ `/api/roster` (Next.js Server-side)
+- **Speed**: การบันทึกและตรวจสอบรหัสสินค้า (ItemMaster) ทำงานในหลักมิลลิวินาที
 ```typescript
+// src/components/Login.tsx — Glassmorphism Implementation
+<motion.section
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="glass-panel rounded-[36px] bg-white/30 backdrop-blur-md shadow-2xl"
+>
+  <input className="glass-input w-full rounded-2xl py-3.5" ... />
+</motion.section>
+
 // src/services/auth.ts — PIN Login
 export async function loginWithPassword(userId: string, password: string): Promise<AuthResponse> {
   const response = await fetch('/api/rework', {
@@ -33,15 +41,9 @@ export async function loginWithPassword(userId: string, password: string): Promi
   }
   return result;
 }
-
-// Session storage keys
-// TOKEN_KEY = 'qsms_token'
-// USER_KEY  = 'qsms_user'
-// ROLE_KEY  = 'qsms_role'
-// TOKEN_EXPIRY_KEY = 'qsms_token_expiry'
 ```
 
-## 3. ฟังก์ชันสำคัญใน auth.ts
+## 4. ฟังก์ชันสำคัญใน auth.ts
 | ฟังก์ชัน | หน้าที่ |
 |---|---|
 | `loginWithPassword(userId, password)` | PIN Login ผ่าน GAS |
@@ -52,33 +54,20 @@ export async function loginWithPassword(userId: string, password: string): Promi
 | `logout()` | ล้าง sessionStorage ทั้งหมด |
 | `getAuthHeaders()` | ส่ง Authorization: Bearer token header |
 
-## 4. Lessons Learned {#lessons}
-> **[Deprecated - Local PIN Auth]** เดิมระบบตรวจ PIN ใน frontend (`auth.ts` มีโค้ด commented out)
-> **เปลี่ยนไปใช้:** GAS ออก JWT token เท่านั้น เพราะ local PIN อยู่ใน source code = ไม่ปลอดภัย
-> **หลักฐาน:** บรรทัด 182-211 ใน `src/services/auth.ts` (commented legacy code)
+## 5. Lessons Learned {#lessons}
+- **Glassmorphism**: การใช้ `backdrop-filter` ช่วยให้ UI ดูพรีเมียม แต่ต้องระวังเรื่อง Contrast สีตัวอักษร (ใช้ Deep Navy `#1d1d1f` บนพื้นหลังสว่าง)
+- **Token Security**: ย้ายจาก local PIN → GAS-issued JWT เพื่อความปลอดภัยสูงสุด
+- **[Deprecated]**: ระบบเก่าใช้ hardcoded `admin/admin123` และตรวจ PIN ใน frontend (ถูกยกเลิกแล้ว)
 
-> **[หมายเหตุ]** `loginWithGoogle()` และ `loginWithEmail()` ถูก Disable แล้ว
-> ใช้เฉพาะ `loginWithPassword()` เท่านั้นในระบบปัจจุบัน
-
-## 5. Firebase / Google OAuth (Planned — ยังไม่ได้ implement)
+## 6. Firebase / Google OAuth (Planned — ยังไม่ได้ implement)
 > **[Planned]** มีเอกสาร `archive_docs/AUTHENTICATION_IMPLEMENTATION.md` วางแผนใช้ Firebase + Google OAuth
 > แต่ปัจจุบัน `loginWithGoogle()` และ `loginWithEmail()` ถูก **Disable** แล้วในโค้ดจริง
 
-ถ้าต้องการ implement ในอนาคต จะต้องเพิ่ม env vars:
-```env
-REACT_APP_FIREBASE_API_KEY=xxx
-REACT_APP_FIREBASE_AUTH_DOMAIN=xxx.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=xxx
-REACT_APP_FIREBASE_STORAGE_BUCKET=xxx.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=xxx
-REACT_APP_FIREBASE_APP_ID=xxx
-REACT_APP_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-REACT_APP_TOKEN_EXPIRY_HOURS=8
-```
-
-## 6. Knowledge Relationships
+## 7. Knowledge Relationships
 - **Depends On**: [[gas-backend/gas-api.md]] — GAS ต้องมี `AUTH_TOKEN_SECRET` และ `*_PIN` properties
 - **Depends On**: [[nextjs-frontend/roles.md]] — Role กำหนดสิทธิ์หลัง login
 - **Impacted By**: [[nextjs-frontend/nextjs.md]] — `/api/rework` route เป็น proxy ที่ auth ต้องพึ่ง
+- **Uses**: [[nextjs-frontend/shadcn-ui.md]] — ใช้มาตรฐานการดีไซน์ร่วมกับ component อื่นๆ
 
-> 🔄 *อัปเดตเมื่อ 2026-05-21*: เพิ่ม Deprecated note, Firebase/OAuth planned section จาก `archive_docs/AUTHENTICATION_IMPLEMENTATION.md`
+---
+> 🔄 *อัปเดตเมื่อ 2026-05-21*: ปรับปรุง UI เป็น Soft Glassmorphism และเพิ่มรายละเอียด CSS Utilities

@@ -955,7 +955,14 @@ function handleInsert(payload) {
       data: {
         caseId: caseId,
         itemIds: itemIds,
-        timestamp: timestamp
+        timestamp: timestamp,
+        items: payload.items.map(function(item, index) {
+          return {
+            id: itemIds[index],
+            imageUrls: rowsToInsert[index][COL_IMAGE_URLS] ? rowsToInsert[index][COL_IMAGE_URLS].split('|') : [],
+            imageFolderUrl: rowsToInsert[index][COL_CASE_FOLDER] || caseFolderUrl
+          };
+        })
       }
     };
   } catch (error) {
@@ -1360,9 +1367,32 @@ function handleUpdate(payload) {
       return { success: false, error: `Case ID not found: ${caseId}` };
     }
 
+    // Read the final OR files and OR folder from the first matched row to return to the client
+    let finalOrFilesUrls = [];
+    let finalOrFolderUrl = '';
+    
+    const freshData = sheet.getDataRange().getValues();
+    for (let j = 1; j < freshData.length; j++) {
+      if (freshData[j][COL_CASE_ID] === caseId) {
+        const rawOrUrls = normalizeSheetText(freshData[j][COL_OR_FILES]);
+        finalOrFilesUrls = rawOrUrls ? rawOrUrls.split('|').filter(function(u) { return u.trim() !== ''; }) : [];
+        finalOrFolderUrl = normalizeSheetText(freshData[j][COL_OR_FOLDER]);
+        break;
+      }
+    }
+
     createBackup(sheet);
     if (lock) { lock.releaseLock(); lock = null; }
-    return { success: true, message: `Updated case ${caseId} successfully. ${deletedCount > 0 ? 'Deleted ' + deletedCount + ' items.' : ''}`, data: { updatedCount, deletedCount } };
+    return { 
+      success: true, 
+      message: `Updated case ${caseId} successfully. ${deletedCount > 0 ? 'Deleted ' + deletedCount + ' items.' : ''}`, 
+      data: { 
+        updatedCount, 
+        deletedCount,
+        orFilesUrls: finalOrFilesUrls,
+        orFolderUrl: finalOrFolderUrl
+      } 
+    };
   } catch (error) {
     if (lock) lock.releaseLock();
     return { success: false, error: `Update failed: ${error.toString()}` };
@@ -1826,7 +1856,8 @@ function extractDriveFileId(url) {
     /drive\.google\.com\/open\?id=([^&]+)/,
     /drive\.google\.com\/uc\?(?:.*&)?id=([^&]+)/,
     /drive\.google\.com\/thumbnail\?id=([^&]+)/,
-    /lh3\.googleusercontent\.com\/d\/([^/?]+)/
+    /lh3\.googleusercontent\.com\/d\/([^/?]+)/,
+    /folders\/([^/?]+)/
   ];
 
   for (var i = 0; i < patterns.length; i++) {

@@ -402,23 +402,22 @@ export function UpdateModal({
                                        ไฟล์ OR {i + 1}
                                      </a>
                                    ))}
-                                   {(!caseData.orFilesUrls || caseData.orFilesUrls.length === 0) && !isEditMode && (
+                                   {(!caseData.orFilesUrls || caseData.orFilesUrls.length === 0) && newOrFiles.length === 0 && (
                                      <span className="text-xs text-red-500 font-bold italic">ยังไม่มีการแนบไฟล์</span>
                                    )}
-                                   {isEditMode && (
-                                     <div className="flex items-center gap-3">
-                                        <input 
-                                          type="file" 
-                                          multiple 
-                                          accept=".xlsx,.xls,.pdf,.png"
-                                          onChange={(e) => setNewOrFiles(Array.from(e.target.files || []).slice(0, 2))}
-                                          className="text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-accent file:text-white"
-                                        />
-                                        {newOrFiles.length > 0 && (
-                                          <span className="text-[10px] text-accent font-bold">เลือก {newOrFiles.length} ไฟล์ใหม่</span>
-                                        )}
-                                     </div>
-                                   )}
+                                   {/* OR file upload: always visible when all items are OR (retroactive attachment) */}
+                                   <div className="flex items-center gap-3">
+                                      <input 
+                                        type="file" 
+                                        multiple 
+                                        accept=".xlsx,.xls,.pdf,.png"
+                                        onChange={(e) => setNewOrFiles(Array.from(e.target.files || []).slice(0, 2))}
+                                        className="text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-accent file:text-white"
+                                      />
+                                      {newOrFiles.length > 0 && (
+                                        <span className="text-[10px] text-accent font-bold">เลือก {newOrFiles.length} ไฟล์ใหม่</span>
+                                      )}
+                                   </div>
                                 </div>
                              </div>
                            )}
@@ -1060,6 +1059,8 @@ export function UpdateModal({
                         onClick={handleUpdate}
                         disabled={(() => {
                           if (isLoading || !caseData) return true;
+                          // Allow saving if user selected new OR files (retroactive OR upload)
+                          if (newOrFiles.length > 0 && (isOperator || isFinance || isAdmin)) return false;
                           if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
                           if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB && !isOperator) return true;
                           if (caseData.status === 'Completed' && !isAdmin) return true;

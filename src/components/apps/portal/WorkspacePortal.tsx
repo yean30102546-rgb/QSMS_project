@@ -32,7 +32,15 @@ export function WorkspacePortal({
   const greetingName = user?.name || 'User';
   
   // Preview Stats State
-  const [reworkStats, setReworkStats] = useState({ pending: '--', inProgress: '--', efficiency: '92%' });
+  const [reworkStats, setReworkStats] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    awaitingValuation: 0,
+    completed: 0,
+    completionRate: 0,
+    hasData: false,
+  });
   const [rosterStats, setRosterStats] = useState({ employees: '--', todayActive: '12', status: 'ปกติ' });
 
   useEffect(() => {
@@ -45,13 +53,23 @@ export function WorkspacePortal({
       try {
         const response = await fetchAllCases();
         if (response.success && response.data) {
-          const pending = response.data.filter(c => c.status === 'Pending' || c.status === 'Awaiting Valuation').length;
-          const inProgress = response.data.filter(c => c.status === 'In-Progress').length;
-          setReworkStats(prev => ({ 
-            ...prev, 
-            pending: pending.toString(), 
-            inProgress: inProgress.toString() 
-          }));
+          const data = response.data;
+          const total = data.length;
+          const pending = data.filter(c => c.status === 'Pending').length;
+          const inProgress = data.filter(c => c.status === 'In-Progress').length;
+          const awaitingValuation = data.filter(c => c.status === 'Awaiting Valuation').length;
+          const completed = data.filter(c => c.status === 'Completed').length;
+          const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+          
+          setReworkStats({
+            total,
+            pending,
+            inProgress,
+            awaitingValuation,
+            completed,
+            completionRate,
+            hasData: true,
+          });
         }
       } catch (err) {
         console.error('Failed to fetch rework preview:', err);
@@ -91,8 +109,8 @@ export function WorkspacePortal({
               <LayoutGrid size={18} />
             </div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-black/50">Central Control</p>
-              <h1 className="text-lg font-bold tracking-[-0.02em] text-[#1d1d1f]">ศูนย์ควบคุมกลาง</h1>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/50">Central Control</p>
+              <h1 className="text-lg font-semibold tracking-[-0.02em] text-[#1d1d1f]">ศูนย์ควบคุมกลาง</h1>
             </div>
           </div>
 
@@ -101,7 +119,7 @@ export function WorkspacePortal({
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={onLogout}
-            className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-bold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
+            className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-semibold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
           >
             ออกจากระบบ
           </motion.button>
@@ -114,7 +132,7 @@ export function WorkspacePortal({
             transition={{ duration: 0.55, ease: 'easeOut' }}
             className="glass-panel rounded-[36px] px-6 py-8 shadow-2xl shadow-black/5 md:px-10 md:py-12"
           >
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-black/60">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-black/60">
               <Sparkles size={12} />
               Welcome to the Workspace
             </p>
@@ -134,22 +152,22 @@ export function WorkspacePortal({
             className="glass-panel flex flex-col gap-4 rounded-[36px] p-5 shadow-2xl shadow-black/5"
           >
             <div className="rounded-[28px] bg-black/5 p-5 backdrop-blur-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-black/50">โปรไฟล์ของคุณ</p>
-              <p className="mt-3 text-xl font-bold tracking-[-0.02em] text-[#1d1d1f]">{user?.role?.toUpperCase() || 'USER'}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/50">โปรไฟล์ของคุณ</p>
+              <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">{user?.role?.toUpperCase() || 'USER'}</p>
               <p className="mt-1 text-sm leading-6 text-[#515154]">{user?.email || 'เข้าสู่ระบบด้วยสิทธิ์ Platform'}</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
               <div className="rounded-[28px] bg-white/40 p-5 border border-white/40">
                 <div className="mb-2 flex items-center gap-2 text-black/70">
                   <ShieldCheck size={16} />
-                  <span className="text-sm font-bold">ความปลอดภัย</span>
+                  <span className="text-sm font-semibold">ความปลอดภัย</span>
                 </div>
                 <p className="text-sm leading-6 text-[#515154]">ระบบรักษาความปลอดภัยด้วย Token ชั่วคราว และการแยกสิทธิ์ตามบทบาท</p>
               </div>
               <div className="rounded-[28px] bg-white/40 p-5 border border-white/40">
                 <div className="mb-2 flex items-center gap-2 text-black/70">
                   <Clock3 size={16} />
-                  <span className="text-sm font-bold">สถานะระบบ</span>
+                  <span className="text-sm font-semibold">สถานะระบบ</span>
                 </div>
                 <p className="text-sm leading-6 text-[#515154]">โมดูล Rework เปิดใช้งานแล้ว โมดูล Roster กำลังอยู่ในขั้นตอนเตรียมการ</p>
               </div>
@@ -176,15 +194,15 @@ export function WorkspacePortal({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${app.accent === 'blue' ? 'text-black/50' : 'text-amber-600/70'}`}>
+                    <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${app.accent === 'blue' ? 'text-black/50' : 'text-amber-600/70'}`}>
                       {app.subtitle === 'Modular Platform' ? 'โมดูลเสริม' : 'แกนหลักระบบ'}
                     </p>
-                    <h3 className="mt-3 text-[32px] font-bold leading-[1.06] text-[#1d1d1f]">
+                    <h3 className="mt-3 text-[32px] font-semibold leading-[1.06] text-[#1d1d1f]">
                       {app.title === 'QSMS Rework' ? 'ระบบจัดการงาน Rework' : 'ระบบตารางเวร QSMS Roster'}
                     </h3>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
                       isActive ? 'bg-black/5 text-black' : 'bg-amber-100 text-amber-600'
                     }`}
                   >
@@ -194,48 +212,106 @@ export function WorkspacePortal({
 
                 {/* App Preview Section */}
                 {isActive && (
-                  <div className="mt-6 grid grid-cols-3 gap-3">
-                    {app.id === 'rework' ? (
-                      <>
-                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">รอประเมิน</p>
-                          <p className="mt-1 text-xl font-bold text-[#1d1d1f]">{reworkStats.pending}</p>
-                        </div>
-                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">กำลังซ่อม</p>
-                          <p className="mt-1 text-xl font-bold text-[#1d1d1f]">{reworkStats.inProgress}</p>
-                        </div>
-                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ประสิทธิภาพ</p>
-                          <p className="mt-1 text-xl font-bold text-green-600">{reworkStats.efficiency}</p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">พนักงาน</p>
-                          <div className="mt-1 flex items-center gap-1">
-                            <Users2 size={14} className="text-black/60" />
-                            <p className="text-xl font-bold text-slate-800">{rosterStats.employees}</p>
+                  app.id === 'rework' ? (
+                    <div className="mt-6 flex flex-col gap-4 rounded-[24px] bg-white/40 p-4 border border-white/30 backdrop-blur-md shadow-inner">
+                      <div className="flex items-center justify-between text-xs font-semibold text-on-surface-variant/80 px-1">
+                        <span className="font-medium text-slate-500">
+                          คืบหน้า ({reworkStats.hasData ? `${reworkStats.completed}/${reworkStats.total}` : '--/--'} เสร็จสิ้น)
+                        </span>
+                        <span className="text-emerald-600 font-semibold">{reworkStats.hasData ? `${reworkStats.completionRate}%` : '--%'}</span>
+                      </div>
+                      
+                      {/* Proportional Segmented Progress Bar */}
+                      <div className="relative flex h-3.5 w-full overflow-hidden rounded-full bg-slate-200/50 shadow-inner">
+                        {!reworkStats.hasData ? (
+                          <div className="h-full w-full bg-slate-300/40 animate-pulse" />
+                        ) : reworkStats.total === 0 ? (
+                          <div className="h-full w-full bg-slate-200 flex items-center justify-center text-[9px] font-medium text-slate-500">
+                            ไม่มีเคสในระบบ
                           </div>
+                        ) : (
+                          <>
+                            {reworkStats.pending > 0 && (
+                              <div 
+                                style={{ width: `${(reworkStats.pending / reworkStats.total) * 100}%` }} 
+                                className="h-full bg-amber-400 transition-all duration-500 hover:brightness-95" 
+                                title={`รอดำเนินการ: ${reworkStats.pending} เคส`}
+                              />
+                            )}
+                            {reworkStats.inProgress > 0 && (
+                              <div 
+                                style={{ width: `${(reworkStats.inProgress / reworkStats.total) * 100}%` }} 
+                                className="h-full bg-sky-400 transition-all duration-500 hover:brightness-95" 
+                                title={`กำลังดำเนินการ: ${reworkStats.inProgress} เคส`}
+                              />
+                            )}
+                            {reworkStats.awaitingValuation > 0 && (
+                              <div 
+                                style={{ width: `${(reworkStats.awaitingValuation / reworkStats.total) * 100}%` }} 
+                                className="h-full bg-violet-400 transition-all duration-500 hover:brightness-95" 
+                                title={`รอประเมินราคา: ${reworkStats.awaitingValuation} เคส`}
+                              />
+                            )}
+                            {reworkStats.completed > 0 && (
+                              <div 
+                                style={{ width: `${(reworkStats.completed / reworkStats.total) * 100}%` }} 
+                                className="h-full bg-emerald-500 transition-all duration-500 hover:brightness-95" 
+                                title={`เสร็จสิ้น: ${reworkStats.completed} เคส`}
+                              />
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Legend Grid */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4 mt-0.5 px-1">
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                          <span className="h-2 w-2 rounded-full bg-amber-400" />
+                          <span className="text-slate-500">รอดำเนินการ:</span>
+                          <span className="font-semibold text-slate-800">{reworkStats.hasData ? reworkStats.pending : '--'}</span>
                         </div>
-                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">เวรวันนี้</p>
-                          <div className="mt-1 flex items-center gap-1">
-                            <CalendarDays size={14} className="text-black/60" />
-                            <p className="text-xl font-bold text-slate-800">{rosterStats.todayActive}</p>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                          <span className="h-2 w-2 rounded-full bg-sky-400" />
+                          <span className="text-slate-500">กำลังดำเนินการ:</span>
+                          <span className="font-semibold text-slate-800">{reworkStats.hasData ? reworkStats.inProgress : '--'}</span>
                         </div>
-                        <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">สถานะกะ</p>
-                          <div className="mt-1 flex items-center gap-1">
-                            <Activity size={14} className="text-green-600" />
-                            <p className="text-xl font-bold text-green-600">{rosterStats.status}</p>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                          <span className="h-2 w-2 rounded-full bg-violet-400" />
+                          <span className="text-slate-500">รอประเมินราคา:</span>
+                          <span className="font-semibold text-slate-800">{reworkStats.hasData ? reworkStats.awaitingValuation : '--'}</span>
                         </div>
-                      </>
-                    )}
-                  </div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                          <span className="text-slate-500">เสร็จสิ้น:</span>
+                          <span className="font-semibold text-slate-800">{reworkStats.hasData ? reworkStats.completed : '--'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-6 grid grid-cols-3 gap-3">
+                      <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">พนักงาน</p>
+                        <div className="mt-1 flex items-center gap-1">
+                          <Users2 size={14} className="text-black/60" />
+                          <p className="text-xl font-semibold text-slate-800">{rosterStats.employees}</p>
+                        </div>
+                      </div>
+                      <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">เวรวันนี้</p>
+                        <div className="mt-1 flex items-center gap-1">
+                          <CalendarDays size={14} className="text-black/60" />
+                          <p className="text-xl font-semibold text-slate-800">{rosterStats.todayActive}</p>
+                        </div>
+                      </div>
+                      <div className="rounded-2xl bg-white/60 p-3 shadow-sm border border-white/40">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">สถานะกะ</p>
+                        <div className="mt-1 flex items-center gap-1">
+                          <Activity size={14} className="text-green-600" />
+                          <p className="text-xl font-semibold text-green-600">{rosterStats.status}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
                 )}
 
                 <p className="mt-5 flex-1 max-w-xl text-[16px] leading-7 text-[#515154]">
@@ -254,7 +330,7 @@ export function WorkspacePortal({
                     type="button"
                     disabled={!isActive}
                     onClick={() => onOpenApp(app.route)}
-                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition shadow-lg ${
+                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition shadow-lg ${
                       isActive
                         ? 'bg-[#1d1d1f] text-white shadow-black/20 hover:bg-black'
                         : 'cursor-not-allowed bg-white/50 text-[#9d9da3] ring-1 ring-black/5'

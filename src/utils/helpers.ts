@@ -361,12 +361,23 @@ export function formatThaiDate(isoDate: string): string {
 export function formatThaiDateShort(dateString: string): string {
   if (!dateString) return '-';
   try {
+    // Detect plain YYYY-MM-DD strings and parse them WITHOUT going through
+    // `new Date()`, which would interpret them as UTC midnight and shift the
+    // displayed day backwards for positive-offset timezones like Bangkok.
+    const dateOnlyMatch = String(dateString).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) {
+      const [, yyyy, mm, dd] = dateOnlyMatch;
+      return `${dd}-${mm}-${yyyy}`;
+    }
+
+    // For full ISO strings (with time component), use Bangkok timezone
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
 
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
+    const bkk = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+    const day = String(bkk.getDate()).padStart(2, '0');
+    const month = String(bkk.getMonth() + 1).padStart(2, '0');
+    const year = bkk.getFullYear();
 
     return `${day}-${month}-${year}`;
   } catch {

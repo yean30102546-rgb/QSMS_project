@@ -178,6 +178,16 @@
   },
   "active": "2b917f128e7cdbb3",
   "lastOpenFiles": [
+    "lessons-learned/debugging-practices.md",
+    "architecture/gemini-integration.md",
+    "nextjs-frontend/roles.md",
+    "architecture/prisma-orm.md",
+    "nextjs-frontend/auth-flow.md",
+    "lessons-learned/ui-libraries-resource.md",
+    "architecture/supabase-hybrid-migration.md",
+    "nextjs-frontend/design-system.md",
+    "index.md",
+    "nextjs-frontend/portal-shell.md",
     "architecture/knowledge-synthesis.md",
     "Untitled.canvas",
     "nextjs-frontend/shadcn-ui.md",
@@ -186,7 +196,6 @@
     "architecture/tech-stack-2026.md",
     "architecture/llm-wiki-pattern.md",
     "architecture",
-    "nextjs-frontend/refactoring-history.md",
-    "index.md"
+    "nextjs-frontend/refactoring-history.md"
   ]
 }

@@ -165,7 +165,16 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
       if (response.status === 401) {
         throw new Error('Session expired. Please login again.');
       }
-      throw new Error(`Network response was not ok (${response.status})`);
+      
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Network response was not ok (${response.status})`);
+      } catch (e) {
+        if (e instanceof Error && e.message !== `Network response was not ok (${response.status})`) {
+          throw e;
+        }
+        throw new Error(`Network response was not ok (${response.status})`);
+      }
     }
 
     const result = (await response.json()) as ApiResponse<T>;

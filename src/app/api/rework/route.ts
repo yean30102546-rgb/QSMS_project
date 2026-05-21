@@ -1,6 +1,32 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
 
+const getBangkokParts = () => {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(new Date());
+  return Object.fromEntries(parts.map(p => [p.type, p.value]));
+};
+
+const getBangkokISOString = () => {
+  const parts = getBangkokParts();
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:${parts.second}+07:00`;
+};
+
+const getBangkokDateString = () => {
+  const parts = getBangkokParts();
+  return `${parts.year}-${parts.month}-${parts.day}`;
+};
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -57,7 +83,12 @@ export async function POST(request: Request) {
             details: i.details,
             line: i.line,
             imageUrls: i.image_urls || [],
-            imageFolderUrl: i.image_folder_url
+            imageFolderUrl: i.image_folder_url,
+            customerName: i.customer_name,
+            batchNo: i.batch_no,
+            packagingDate: i.packaging_date,
+            mold: i.mold,
+            uid: i.uid
           }))
         }));
 
@@ -80,7 +111,6 @@ export async function POST(request: Request) {
         }
 
         // 1. Proxy to GAS first to handle Google Drive (Images/Folders) and LINE notifications
-        // We use the original GAS 'insert' action logic
         console.log('☁️ Proxying to GAS for Drive/Notifications...');
         const gasPayload = {
           ...body,
@@ -99,22 +129,19 @@ export async function POST(request: Request) {
         }
 
         // 2. Prepare Supabase Data using results from GAS if available
-        // GAS returns updated itemIds, timestamp, and potentially URLs (if we modified GAS)
-        // For now, we use GAS response to confirm it's safe to save to Supabase
-        
-        // Extract customer name from first item as fallback for case-level
         const primaryCustomer = caseData.customerName || (caseData.items && caseData.items[0]?.customerName) || '';
+        const finalCaseId = gasResponse.data?.caseId || caseData.id;
 
         const { error: caseError } = await supabaseServer
           .from('rework_cases')
           .insert([{
-            id: caseData.id,
-            submission_date: caseData.date || new Date().toISOString().split('T')[0],
+            id: finalCaseId,
+            submission_date: caseData.date || getBangkokDateString(),
             source: caseData.source,
             customer_name: primaryCustomer,
             status: caseData.status || 'Pending',
             profile_id: caseData.profileId,
-            image_folder_url: gasResponse.data?.caseFolderUrl || caseData.imageFolderUrl, // Use GAS folder if returned
+            image_folder_url: gasResponse.data?.caseFolderUrl || caseData.imageFolderUrl,
             or_folder_url: gasResponse.data?.orFolderUrl || caseData.orFolderUrl,
             or_files_urls: gasResponse.data?.orFilesUrls || caseData.orFilesUrls || [],
             batch_no: caseData.batchNo,
@@ -125,7 +152,9 @@ export async function POST(request: Request) {
             labor_count: caseData.laborCount || 0,
             labor_hours: caseData.laborHours || 0,
             labor_rate: caseData.laborRate || 0,
-            materials: caseData.materials || []
+            materials: caseData.materials || [],
+            created_at: getBangkokISOString(),
+            updated_at: getBangkokISOString()
           }]);
 
         if (caseError) {
@@ -136,11 +165,10 @@ export async function POST(request: Request) {
         // 3. Insert items with full coverage and generated URLs from GAS
         if (caseData.items && caseData.items.length > 0) {
           const itemsToInsert = caseData.items.map((i: any, index: number) => {
-            // If GAS returned specific image URLs, map them here
             const gasItem = gasResponse.data?.items?.[index] || {};
             
             return {
-              case_id: caseData.id,
+              case_id: finalCaseId,
               item_number: i.itemNumber,
               item_code: i.itemCode,
               item_name: i.itemName,
@@ -148,11 +176,17 @@ export async function POST(request: Request) {
               reason: i.reason,
               reason_subtype: i.reasonSubtype,
               responsible: i.responsible,
-              responsibleSubtype: i.responsibleSubtype,
+              responsible_subtype: i.responsibleSubtype,
               details: i.details,
               line: i.line,
               image_urls: gasItem.imageUrls || i.imageUrls || [],
-              image_folder_url: gasItem.imageFolderUrl || i.imageFolderUrl
+              image_folder_url: gasItem.imageFolderUrl || i.imageFolderUrl,
+              customer_name: i.customerName || primaryCustomer,
+              batch_no: i.batchNo || caseData.batchNo,
+              packaging_date: i.packagingDate || caseData.packagingDate,
+              mold: i.mold || caseData.mold,
+              uid: i.uid || i.id,
+              created_at: getBangkokISOString()
             };
           });
 
@@ -167,34 +201,127 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(
-          { success: true, data: { caseId: caseData.id, gasResult: gasResponse.data } },
+          { success: true, data: { caseId: finalCaseId, gasResult: gasResponse.data } },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
         );
       }
 
       case 'updateCaseStatus': {
         const { caseId, status, resolutionMethod, reworkCost, performedBy } = body;
-        
-        const { error } = await supabaseServer
+        const updates = body.updates || {};
+
+        console.log(`☁️ Proxying update to GAS for Case ID: ${caseId}...`);
+        const gasResponse = await proxyToGAS({
+          ...body,
+          action: 'update'
+        });
+        console.log('🔄 GAS Update Response:', gasResponse);
+
+        if (!gasResponse.success) {
+          console.error('❌ GAS Update Proxy failed:', gasResponse.error);
+          throw new Error(`Google Sheets sync failed: ${gasResponse.error}`);
+        }
+
+        // 1. Delete items if deleteItemIds exists
+        if (updates.deleteItemIds && updates.deleteItemIds.length > 0) {
+          const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+          const uuidIds = updates.deleteItemIds.filter(isUuid);
+          const otherIds = updates.deleteItemIds.filter((id: string) => !isUuid(id));
+          
+          if (uuidIds.length > 0) {
+            const { error: delError1 } = await supabaseServer.from('rework_items').delete().eq('case_id', caseId).in('id', uuidIds);
+            if (delError1) console.error('Error deleting items by UUID:', delError1);
+          }
+          if (otherIds.length > 0) {
+            const { error: delError2 } = await supabaseServer.from('rework_items').delete().eq('case_id', caseId).in('uid', otherIds);
+            if (delError2) console.error('Error deleting items by UID:', delError2);
+          }
+        }
+
+        // 2. Insert or update items
+        if (updates.items && Array.isArray(updates.items)) {
+          const { data: existingDbItems } = await supabaseServer
+            .from('rework_items')
+            .select('id, uid')
+            .eq('case_id', caseId);
+          
+          const existingUids = new Set(existingDbItems?.map(x => x.uid).filter(Boolean) || []);
+          const existingIds = new Set(existingDbItems?.map(x => x.id).filter(Boolean) || []);
+
+          for (const item of updates.items) {
+            const itemData = {
+              case_id: caseId,
+              item_number: item.itemNumber,
+              item_code: item.itemCode,
+              item_name: item.itemName,
+              amount: item.amount || 0,
+              reason: item.reason,
+              reason_subtype: item.reasonSubtype,
+              responsible: item.responsible,
+              responsible_subtype: item.responsibleSubtype,
+              details: item.details,
+              line: item.line,
+              customer_name: item.customerName,
+              batch_no: item.batchNo,
+              packaging_date: item.packagingDate,
+              mold: item.mold,
+              uid: item.uid,
+              image_urls: item.imageUrls || [],
+              image_folder_url: item.imageFolderUrl
+            };
+
+            if (item.id && existingIds.has(item.id)) {
+              await supabaseServer.from('rework_items').update(itemData).eq('id', item.id);
+            } else if (item.uid && existingUids.has(item.uid)) {
+              await supabaseServer.from('rework_items').update(itemData).eq('uid', item.uid);
+            } else {
+              await supabaseServer.from('rework_items').insert([{
+                ...itemData,
+                created_at: getBangkokISOString()
+              }]);
+            }
+          }
+        }
+
+        // 3. Update the case record
+        const { error: caseUpdateError } = await supabaseServer
           .from('rework_cases')
           .update({ 
-            status, 
-            resolution_method: resolutionMethod,
-            total_rework_cost: reworkCost,
-            updated_at: new Date().toISOString()
+            status: status || updates.status, 
+            resolution_method: resolutionMethod || updates.resolutionMethod,
+            total_rework_cost: reworkCost !== undefined ? reworkCost : (updates.reworkCost !== undefined ? updates.reworkCost : 0),
+            labor_count: updates.laborCount !== undefined ? updates.laborCount : 0,
+            labor_hours: updates.laborHours !== undefined ? updates.laborHours : 0,
+            labor_rate: updates.laborRate !== undefined ? updates.laborRate : 0,
+            materials: updates.materials || [],
+            customer_name: updates.customerName,
+            source: updates.source,
+            or_files_urls: gasResponse.data?.orFilesUrls || updates.orFilesUrls || [],
+            or_folder_url: gasResponse.data?.orFolderUrl || updates.orFolderUrl || '',
+            updated_at: getBangkokISOString()
           })
           .eq('id', caseId);
 
-        if (error) throw error;
+        if (caseUpdateError) throw caseUpdateError;
 
+        // 4. Log the update
         await supabaseServer.from('rework_logs').insert([{
           case_id: caseId,
-          action: `Status updated to ${status}`,
-          performed_by: performedBy || 'System'
+          action: `Status updated to ${status || updates.status}`,
+          performed_by: performedBy || 'System',
+          timestamp: getBangkokISOString()
         }]);
 
         return NextResponse.json(
-          { success: true, data: { caseId, status } },
+          { 
+            success: true, 
+            data: { 
+              caseId, 
+              status: status || updates.status,
+              orFilesUrls: gasResponse.data?.orFilesUrls || updates.orFilesUrls || [],
+              orFolderUrl: gasResponse.data?.orFolderUrl || updates.orFolderUrl || ''
+            } 
+          },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
         );
       }
@@ -284,11 +411,19 @@ export async function POST(request: Request) {
       }
 
       case 'uploadImage':
-      case 'fetchImageDataUrl':
-        return proxyToGAS(body);
+      case 'fetchImageDataUrl': {
+        const result = await proxyToGAS(body);
+        return NextResponse.json(result, {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+      }
 
-      default:
-        return proxyToGAS(body);
+      default: {
+        const result = await proxyToGAS(body);
+        return NextResponse.json(result, {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+      }
     }
   } catch (error: any) {
     console.error('❌ Rework API Error:', error);
@@ -300,9 +435,15 @@ export async function POST(request: Request) {
 }
 
 async function proxyToGAS(body: any) {
-  const gasUrl = (process.env.GAS_WEB_APP_URL || '').trim();
+  const gasUrl = (
+    process.env.GAS_WEB_APP_URL || 
+    process.env.REACT_APP_GAS_WEB_APP_URL || 
+    process.env.VITE_GAS_WEB_APP_URL || 
+    ''
+  ).trim();
+
   if (!gasUrl) {
-    console.error('❌ GAS_WEB_APP_URL not configured');
+    console.error('❌ GAS_WEB_APP_URL not configured (checked multiple prefixes)');
     return { success: false, error: 'Legacy GAS backend URL not configured.' };
   }
 

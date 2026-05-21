@@ -86,6 +86,24 @@ function createCorsResponse(responseObj) {
 
 ---
 
+## BUG-004: Thai Character Encoding Fix บน Next.js Proxy
+**Status**: ✅ FIXED (2026-05-21)
+- *Problem*: ตัวอักษรภาษาไทยแสดงผลเป็นเครื่องหมายคำถามหรืออักษรแปลกใน LINE Notification หลังการย้าย API ไปยัง Next.js API Routes (Proxy)
+- *Solution*: บังคับเพิ่ม header `Content-Type: application/json; charset=utf-8` ในทุกการตอบกลับประเภท JSON ของ Next.js API router (`NextResponse.json`) เพื่อรักษาการเข้ารหัสอักษร UTF-8 ที่สมบูรณ์
+
+---
+
+## BUG-005: Rework Syncing, Timezones & Item-level Fields
+**Status**: ✅ FIXED (2026-05-21)
+- *Problem*: ข้อมูลตาราง Google Sheets และ Supabase ไม่สามารถซิงค์คอลัมน์ชื่อลูกค้า/Batch/วันบรรจุ/แม่พิมพ์ ได้อย่างสมบูรณ์เนื่องจากเดิมโมเดลข้อมูลระดับ Case เป็นตัวเก็บคอลัมน์เหล่านี้ร่วมกัน ทำให้เกิดความคลาดเคลื่อนเมื่อมีลูกค้าหรือวันบรรจุหลายแบบในหนึ่งใบงาน รวมถึงมีปัญหาเขตเวลานอก Bangkok ที่ดึงวันที่แล้วเลื่อนถอยหลัง (Day shifting) และการแนบไฟล์เอกสาร OR ย้อนหลังแบบ retroactive ไม่ทำงานเมื่ออยู่นอกโหมด Edit
+- *Solution*: 
+  1. แยกและปรับเปลี่ยนสกีมาจัดเก็บข้อมูลเหล่านี้ลงเป็นฟิลด์รายรายการ (item-level) ในตาราง `rework_items` และซิงค์กับคอลัมน์แถวใน Sheets ผ่าน Google Apps Script โดยใช้ UID เพื่อตรวจสอบ
+  2. บังคับใช้ timezone-aware ISO string (`+07:00`) สำหรับเขตเวลา `Asia/Bangkok` ในฝั่ง API backend เสมอ โดยเปลี่ยนไปจัดรูปแบบผ่าน `Intl.DateTimeFormat` parts เพื่อไม่ให้ขึ้นกับตัววิเคราะห์ locale ของระบบปฏิบัติการเครื่องโฮสต์ (Environment-independent formatting)
+  3. ปรับปรุง `formatThaiDateShort` ใน frontend ให้ตรวจสอบและแปลงวันที่ YYYY-MM-DD แบบ direct text parsing หลีกเลี่ยง timezone-offset เลื่อนวันถอยหลัง
+  4. ปรับเปลี่ยนเงื่อนไขใน `UpdateModal` ให้เรนเดอร์กล่องแนบไฟล์ OR และยอมให้กดเซฟส่งข้อมูลย้อนหลังได้เสมอหากทุกรายการสินค้าในใบงานเป็น `"OR"` (มีสิทธิ์เข้าถึงตาม Role Permissions)
+
+---
+
 ## Console Log Conventions (Debug Guide)
 | สัญลักษณ์ | ความหมาย |
 |---|---|
@@ -169,5 +187,21 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 ✓ Item matched: 60001001 → Product 1
 ```
 
-> 🔄 *อัปเดตเมื่อ 2026-05-21*: เพิ่ม GAS Code Pattern และ ItemMaster Diagnostic จาก `archive_docs/`
+## BUG-006: ID Mismatch ระหว่าง Supabase และ Google Sheets (GAS)
+**Status**: ✅ FIXED (2026-05-21)
+- *Problem*: เมื่อกดสร้าง Case ใหม่ Next.js จะส่งข้อมูลไปที่ GAS และ Supabase โดยฝั่ง GAS (Google Sheets) บังคับสร้าง Case ID ใหม่ขึ้นมาเองจากฝั่งระบบเสมอ (เช่น `RW26052120300...`) แต่ Next.js กลับนำ Case ID จากฝั่ง Client (`caseData.id`) ไปบันทึกลง Supabase ทำให้ ID ไม่ตรงกัน ส่งผลให้เมื่อมีการเรียกอัปเดตแก้ไขหรือใส่ทรัพยากรภายหลัง เกิดข้อผิดพลาด `Case ID not found` หรือ `Unknown action`
+- *Solution*: ปรับปรุงโค้ดใน Next.js API `src/app/api/rework/route.ts` ที่ case `insertCase` ให้ใช้ Case ID ที่ส่งกลับมาจากฝั่ง GAS (`gasResponse.data?.caseId`) ในการนำไปบันทึกลง Supabase เสมอ เพื่อรับประกันความสอดคล้องของข้อมูล 100%
+
+---
+
+## BUG-007: Image URL Sync Failure on Insert
+**Status**: ✅ FIXED (2026-05-21)
+- *Problem*: รูปภาพไม่แสดงผลในหน้าต่าง UpdateModal (`Modalupdate`) ของ Rework เนื่องจากระบบไม่สามารถดึงรูปภาพของเคสที่เพิ่งสร้างขึ้นมาแสดงได้ สาเหตุเกิดจาก Google Apps Script (`handleInsert` ใน `gas/Code.gs`) ไม่ยอมส่งคืนลิสต์ของ image URLs และ image folder URL ที่อัปโหลดเสร็จแล้วกลับมาให้ Next.js API ในขั้นตอนที่สร้างเคสใหม่ ส่งผลให้ Next.js บันทึกค่าลง Supabase ในคอลัมน์ `image_urls` ของ `rework_items` เป็นอาร์เรย์ว่าง `[]` เสมอ
+- *Solution*: 
+  1. แก้ไข `handleInsert` ใน `gas/Code.gs` ให้ส่งคืนอาร์เรย์ `items` ที่มี `imageUrls` (ดึงจาก row ในชีตหรือตอนอัปโหลด) และ `imageFolderUrl` กลับมาในฟิลด์ `data` ของ API response
+  2. สร้างสคริปต์ซิงค์รูปภาพ `scratch/sync-images.ts` เพื่อย้อนหลัง (retroactive backfill) รูปภาพจาก Google Drive/Sheets ลงใน Supabase `rework_items` สำหรับเคสเก่าที่ว่างอยู่ทั้งหมด
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-05-21*: เพิ่ม BUG-007: Image URL Sync Failure on Insert และอัปเดตประวัติแก้บั๊กย้อนหลัง
 

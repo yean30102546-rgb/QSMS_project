@@ -64,3 +64,33 @@ Knowledge สำคัญที่ได้:
   - เพิ่ม Auto-tab switching: เมื่อเลือกพนักงานใน Sidebar ระบบจะสลับไปหน้าปฏิทินทันที
   - ปรับปรุง Swap Logic: การลากวันทำงานไปทับวันทำงานจะไม่มีผล (Silent Ignore) เพื่อลดความสับสน
 - **Git**: Commit และ Push การเปลี่ยนแปลงทั้งหมดไปยัง GitHub (origin main)
+
+### [Feature] ปรับปรุง Login UI/UX (Soft Glassmorphism)
+- เปลี่ยนโทนสีหน้า Login จาก Dark เป็น **Soft Glassmorphism** (พาสเทลและกระจกฝ้า)
+- เพิ่ม CSS Utilities `.glass-panel` และ `.glass-input` ใน `src/index.css`
+- เพิ่ม Micro-animations ด้วย `motion/react` และปรับปรุง Interactive feedback (Focus rings, Hover effects)
+- **Git**: Staged และ Commit การเปลี่ยนแปลง UI ทั้งหมด
+
+### [Ingest] สังเคราะห์ข้อมูลทกเลเยอร์ (Wiki Update & Full Migration)
+- **Supabase Strategy**: สร้าง `architecture/supabase-hybrid-migration.md` บันทึกแผนการใช้ Hybrid Storage (Supabase Data + Drive Images)
+- **Design System**: สร้าง `nextjs-frontend/design-system.md` กำหนดมาตรฐาน Minimal Monochrome (Apple Pro Style)
+- **Prisma ORM**: สร้าง `architecture/prisma-orm.md` สรุปแนวทางการใช้ Prisma เพื่อคุม Type-safety ร่วมกับ Supabase
+- **UI Research**: สร้าง `lessons-learned/ui-libraries-resource.md` สรุปข้อมูล Mantine UI และ Next.js จาก Raw folder
+- **Bugs & Fixes**: บันทึก **BUG-004 (Encoding Fix)** และโซลูชันการแก้ Visual Overlapping ใน `lessons-learned/bugs-and-fixes.md`
+- **Architecture**: อัปเดต `system-architecture.md` ให้ Supabase เป็นแกนกลางข้อมูล Transactional
+- **Cleanup**: อัปเดต `index.md` ให้เป็นเวอร์ชันล่าสุด พร้อมรองรับการสืบค้นข้อมูลใหม่
+
+### [UX/UI] Typography Weight Optimization & Portal Dashboard
+- **Typography weights contrast**: ปรับปรุง [OverallTab.tsx](file:///c:/Workplace/QSMS_project/src/components/tabs/OverallTab.tsx) และ [CaseListTable.tsx](file:///c:/Workplace/QSMS_project/src/components/ui/CaseListTable.tsx) ให้รองรับลำดับตัวหนา-บาง (Contrast) ที่ดีต่อการมองเห็น (UX) ตามมาตรฐาน Minimal Monochrome
+- **Workspace Portal Preview Bar**: ปรับแก้ [WorkspacePortal.tsx](file:///c:/Workplace/QSMS_project/src/components/apps/portal/WorkspacePortal.tsx) ให้คำนวณเคสจากฐานข้อมูลแบบเรียลไทม์ และทำแถบสัดส่วนความคืบหน้า (Segmented Progress Bar) แยกสีกำกับตามสถานะงาน พร้อมตารางคำอธิบายสัญลักษณ์ (Legend Grid) ด้านล่าง
+- **Wiki Update**: บันทึกอัปเดตหลักเกณฑ์ฟอนต์ลงใน [design-system.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/nextjs-frontend/design-system.md) และเอกสารหน้า [rework-module.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/nextjs-frontend/rework-module.md)
+
+### [Ingest] สังเคราะห์ความรู้จากโฟลเดอร์ Raw ใหม่ (Prisma, VoltAgent, Chronos, Debugger, How to Debug)
+- **Prisma Configuration**: เพิ่มข้อมูลการตั้งค่า `prisma.config.ts`, การโหลด `.env` ผ่าน `dotenv`, การใช้ Driver Adapter (เช่น pg adapter), และคำสั่ง `npx prisma dev` ลงใน [prisma-orm.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/architecture/prisma-orm.md)
+- **Design System Agentic Protocol**: บันทึกนิยามสัญญะของ `DESIGN.md` (Mood, Palette, Type, Do's & Don'ts, Prompt Guide) สไตล์ VoltAgent ลงใน [design-system.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/nextjs-frontend/design-system.md) เพื่อรองรับการทำงานร่วมกับ AI Design Agents
+- **Systematic Debugging Guide**: สร้างหน้า [debugging-practices.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/lessons-learned/debugging-practices.md) เพื่อสังเคราะห์ความรู้:
+  - โมเดลดีบั๊กกิ้งเฉพาะทาง (Kodezi Chronos) และการทำงานของ 7-Layer Architecture
+  - มาตรฐานและ Checklists การวินิจฉัยปัญหาของ Claude Specialized Debugger Subagents
+  - แนวทางการสืบค้นและวินิจฉัยบั๊กผ่าน GitHub (รวมถึง Case Study การใช้ Asynchronous `.fetch()` เลี่ยงการเรียกใช้ Hook ใน `useEffect` ของ tRPC)
+- **Index Update**: เชื่อมโยงและลงทะเบียนหน้าเอกสารใหม่ลงในสารบัญหลัก [index.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/index.md)
+

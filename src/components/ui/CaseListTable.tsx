@@ -85,11 +85,11 @@ export function CaseListTable({
     return (
       <div className="glass-card border border-red-200/50 bg-red-50/50 backdrop-blur-md p-8 text-center">
         <AlertCircle className="mx-auto mb-3 text-red-500" size={40} />
-        <p className="mb-1 text-lg font-bold text-red-700">ไม่สามารถโหลดข้อมูลได้</p>
+        <p className="mb-1 text-lg font-semibold text-red-700">ไม่สามารถโหลดข้อมูลได้</p>
         <p className="mb-4 text-sm text-red-600/80">{error}</p>
         <button
           onClick={onRetry}
-          className="rounded-xl bg-red-600 px-6 py-2 text-sm font-bold text-white transition-colors hover:bg-red-700 shadow-sm"
+          className="rounded-xl bg-red-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 shadow-sm"
         >
           ลองใหม่อีกครั้ง
         </button>
@@ -103,7 +103,7 @@ export function CaseListTable({
         <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-white/50 border border-white/60">
           <Package size={36} className="text-primary" />
         </div>
-        <p className="mb-2 text-lg font-bold text-primary">ไม่พบรายการงาน Rework ในขณะนี้</p>
+        <p className="mb-2 text-lg font-semibold text-primary">ไม่พบรายการงาน Rework ในขณะนี้</p>
         <p className="mx-auto max-w-sm text-sm text-on-surface-variant/80">
           {searchQuery
             ? 'ลองปรับคำค้นหาใหม่ หรือล้างการค้นหาเพื่อดูรายการทั้งหมด'
@@ -119,14 +119,14 @@ export function CaseListTable({
         <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-white/50 border border-white/60">
           <Search size={36} className="text-primary" />
         </div>
-        <p className="mb-2 text-lg font-bold text-primary">ไม่พบรายการที่ตรงกับตัวกรอง</p>
+        <p className="mb-2 text-lg font-semibold text-primary">ไม่พบรายการที่ตรงกับตัวกรอง</p>
         <p className="mx-auto mb-4 max-w-sm text-sm text-on-surface-variant/80">
           ลองปรับเงื่อนไขตัวกรอง หรือล้างตัวกรองทั้งหมดเพื่อดูรายการทั้งหมด
         </p>
         {hasActiveFilters && (
           <button
             onClick={onClearFilters}
-            className="rounded-xl bg-primary px-6 py-2 text-sm font-bold text-white transition-all hover:bg-white hover:text-primary border border-primary shadow-sm"
+            className="rounded-xl bg-primary px-6 py-2 text-sm font-semibold text-white transition-all hover:bg-white hover:text-primary border border-primary shadow-sm"
           >
             ล้างตัวกรองทั้งหมด
           </button>
@@ -175,28 +175,28 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
     >
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-bold text-primary">{itemNameDisplay}</div>
+          <div className="text-sm font-semibold text-primary">{itemNameDisplay}</div>
           {deadlineStatus === 'warning' && (
-            <div className="flex items-center gap-1 text-[11px] font-bold text-tertiary" title="งานค้างเกิน 7 วัน">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-tertiary" title="งานค้างเกิน 7 วัน">
               <Clock size={12} />
               <span>7 วัน</span>
             </div>
           )}
           {deadlineStatus === 'danger' && (
-            <div className="flex items-center gap-1 text-[11px] font-bold text-red-600" title="งานค้างเกิน 30 วัน">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-red-600" title="งานค้างเกิน 30 วัน">
               <AlertCircle size={12} />
               <span>เกิน 30 วัน</span>
             </div>
           )}
         </div>
-        <div className="mt-1 flex items-center gap-2 text-[11px] font-semibold text-on-surface-variant/80">
+        <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-on-surface-variant/75">
           <span>{formatTimestamp(caseItem.date)}</span>
           <span>&bull;</span>
-          <span>แหล่งที่มา: <span className="font-bold text-primary">{caseItem.source}</span></span>
+          <span>แหล่งที่มา: <span className="font-semibold text-primary">{caseItem.source}</span></span>
           {caseItem.items.length > 0 && (
             <>
               <span>&bull;</span>
-              <span className="font-bold text-secondary">
+              <span className="font-semibold text-secondary">
                 {caseItem.items[0].customerName || '-'}
                 {new Set(caseItem.items.map(i => i.customerName)).size > 1 ? ' (หลายลูกค้า)' : ''}
               </span>
@@ -206,7 +206,7 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
           <span className="font-mono text-primary/80">{caseItem.id}</span>
           
           {caseItem.items.every(i => i.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-black text-red-600 border border-red-200">
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-semibold text-red-600 border border-red-200">
               <AlertCircle size={10} />
               ขาดไฟล์ OR
             </span>
@@ -215,8 +215,8 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
       </div>
 
       <div className="mr-8 text-right">
-        <p className="text-xs font-bold text-primary">{totalAmount} กล่อง</p>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">{firstItem?.reason || 'ไม่ระบุ'}</p>
+        <p className="text-xs font-semibold text-primary">{totalAmount} กล่อง</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">{firstItem?.reason || 'ไม่ระบุ'}</p>
       </div>
 
       <StatusPill status={caseItem.status} />
@@ -244,7 +244,7 @@ function StatusPill({ status }: StatusPillProps) {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10.5px] font-bold uppercase tracking-widest ${styles[status]}`}>
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] ${styles[status]}`}>
       {status === 'Awaiting Valuation' && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 mr-1.5 animate-pulse" />}
       {thaiLabels[status]}
     </span>
