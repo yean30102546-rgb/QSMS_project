@@ -82,16 +82,90 @@ export async function POST(request: Request) {
         
         return NextResponse.json({
           success: true,
-          data: { 
-            id: data.id, 
-            name: data.name, 
-            phase: data.phase, 
-            startWorkingSaturday: data.start_working_saturday 
-          }
+          data: { id: data.id, name: data.name, phase: data.phase, startWorkingSaturday: data.start_working_saturday }
         });
-      }
+        }
 
-      default:
+        case 'rosterUpdateEmployeePhase': {
+        const { employeeId, phase } = body;
+        const { error } = await supabaseServer
+          .from('roster_employees')
+          .update({ phase })
+          .eq('id', employeeId);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: { employeeId, phase } });
+        }
+
+        case 'rosterUpdateEmployeeStartSaturday': {
+        const { employeeId, startWorkingSaturday } = body;
+        const { error } = await supabaseServer
+          .from('roster_employees')
+          .update({ start_working_saturday: startWorkingSaturday })
+          .eq('id', employeeId);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: { employeeId, startWorkingSaturday } });
+        }
+
+        case 'rosterUpsertOverride': {
+        const { employeeId, dateKey, status } = body;
+
+        // Use upsert with onConflict on the unique constraint [employee_id, date_key]
+        const { data, error } = await supabaseServer
+          .from('roster_overrides')
+          .upsert(
+            { employee_id: employeeId, date_key: dateKey, status },
+            { onConflict: 'employee_id,date_key' }
+          )
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        return NextResponse.json({ 
+          success: true, 
+          data: { 
+            employeeId: data.employee_id, 
+            dateKey: data.date_key, 
+            status: data.status 
+          } 
+        });
+        }
+
+        case 'rosterSwapSaturday': {
+        const { employeeId, sourceDateKey, targetDateKey, sourceStatus, targetStatus } = body;
+
+        // Prepare swap operations
+        const p1 = sourceStatus === 'CLEAR' 
+          ? supabaseServer.from('roster_overrides').delete().eq('employee_id', employeeId).eq('date_key', sourceDateKey)
+          : supabaseServer.from('roster_overrides').upsert({ employee_id: employeeId, date_key: sourceDateKey, status: sourceStatus }, { onConflict: 'employee_id,date_key' });
+
+        const p2 = targetStatus === 'CLEAR'
+          ? supabaseServer.from('roster_overrides').delete().eq('employee_id', employeeId).eq('date_key', targetDateKey)
+          : supabaseServer.from('roster_overrides').upsert({ employee_id: employeeId, date_key: targetDateKey, status: targetStatus }, { onConflict: 'employee_id,date_key' });
+
+        const [res1, res2] = await Promise.all([p1, p2]);
+
+        if (res1.error) throw res1.error;
+        if (res2.error) throw res2.error;
+
+        return NextResponse.json({ success: true, data: { employeeId } });
+        }
+
+        case 'rosterClearMonthOverrides': {
+        const { monthKey } = body;
+        const { error } = await supabaseServer
+          .from('roster_overrides')
+          .delete()
+          .like('date_key', `${monthKey}-%`);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: { monthKey } });
+        }
+
+        default:
+
         // Pass unknown actions to existing GAS proxy logic for backwards compatibility during migration
         return proxyToGAS(body);
     }
