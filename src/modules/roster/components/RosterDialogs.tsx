@@ -17,6 +17,7 @@ interface RosterDialogsProps {
   onConfirmLeave: () => void;
   isSavingProgress: boolean;
   progress: number;
+  statusText?: string;
   isComplete: boolean;
   // Delete Employee
   deleteConfirmation: { id: string; name: string } | null;
@@ -32,6 +33,7 @@ export function RosterDialogs({
   onConfirmLeave,
   isSavingProgress,
   progress,
+  statusText,
   isComplete,
   deleteConfirmation,
   onCloseDeleteDialog,
@@ -70,7 +72,7 @@ export function RosterDialogs({
           <DialogFooter className="mt-4 flex gap-2 sm:justify-center">
             {isSavingProgress ? (
               <div className="flex-1 py-2">
-                <AppleProgressBar progress={progress} isComplete={isComplete} />
+                <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
               </div>
             ) : (
               <>

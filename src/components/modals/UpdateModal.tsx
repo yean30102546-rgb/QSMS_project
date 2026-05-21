@@ -30,7 +30,7 @@ export function UpdateModal({
   onUpdate,
   onDelete,
 }: UpdateModalProps) {
-  const { progress, isSaving, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
+  const { progress, isSaving, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
   const [caseStatus, setCaseStatus] = useState<ReworkCase['status']>(
     caseData?.status || 'Pending'
   );
@@ -1067,7 +1067,7 @@ export function UpdateModal({
                       </button>
                       {isSaving ? (
                         <div className="w-48 flex items-center">
-                          <AppleProgressBar progress={progress} isComplete={isComplete} />
+                          <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
                         </div>
                       ) : (
                         <motion.button

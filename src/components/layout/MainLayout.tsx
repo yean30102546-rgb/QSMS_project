@@ -71,6 +71,7 @@ interface MainLayoutProps {
   setOrFiles: (files: File[]) => void;
   isSaving: boolean;
   progress: number;
+  statusText?: string;
   isComplete: boolean;
   saveMessage: SaveMessage;
   isSaveDisabled: (items: ReworkItem[]) => boolean;

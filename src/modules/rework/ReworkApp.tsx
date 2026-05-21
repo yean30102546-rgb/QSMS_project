@@ -81,7 +81,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     itemId: string | null;
   }>({ isOpen: false, itemNumber: '', itemId: null });
 
-  const { progress, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
+  const { progress, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
 
   const GAS_WEB_APP_URL = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
 
@@ -369,6 +369,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         handleSubmit={handleSubmit}
         isSaving={isSaving}
         progress={progress}
+        statusText={statusText}
         isComplete={isComplete}
         saveMessage={saveMessage}
         isSaveDisabled={isSaveDisabled}

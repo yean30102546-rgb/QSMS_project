@@ -35,6 +35,7 @@ interface AddCaseTabProps {
   handleSubmit: () => void;
   isSaving: boolean;
   progress: number;
+  statusText?: string;
   isComplete: boolean;
   saveMessage: SaveMessage;
   isSaveDisabled: (items: ReworkItem[]) => boolean;
@@ -79,6 +80,7 @@ export function AddCaseTab({
   handleSubmit,
   isSaving,
   progress,
+  statusText,
   isComplete,
   saveMessage,
   isSaveDisabled,
@@ -678,8 +680,7 @@ export function AddCaseTab({
               className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto overflow-hidden relative"
             >
               {isSaving ? (
-                <AppleProgressBar progress={progress} isComplete={isComplete} />
-              ) : (
+                <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />              ) : (
                 <>
                   บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />
                 </>

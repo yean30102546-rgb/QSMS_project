@@ -68,7 +68,7 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
   const [deleteConfirmation, setDeleteEmployeeConfirm] = useState<{ id: string; name: string } | null>(null);
   const [leaveNoteInput, setLeaveNoteInput] = useState('');
 
-  const { isSaving, progress, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
+  const { isSaving, progress, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
 
   const monthKey = useMemo(
     () => `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`,
@@ -525,6 +525,7 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
         onConfirmLeave={executeUpsertLeave}
         isSavingProgress={isSaving}
         progress={progress}
+        statusText={statusText}
         isComplete={isComplete}
         deleteConfirmation={deleteConfirmation}
         onCloseDeleteDialog={() => setDeleteEmployeeConfirm(null)}
