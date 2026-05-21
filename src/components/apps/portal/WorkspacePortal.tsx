@@ -1,9 +1,20 @@
-import React from 'react';
-import { ArrowRight, Clock3, LayoutGrid, ShieldCheck, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { 
+  ArrowRight, 
+  Clock3, 
+  LayoutGrid, 
+  ShieldCheck, 
+  Sparkles, 
+  Users2, 
+  CalendarDays, 
+  Activity 
+} from 'lucide-react';
 import { motion } from 'motion/react';
 
 import type { User } from '../../../services/auth';
 import type { PortalAppDefinition } from '../../../modules/platform/types';
+import { fetchAllCases } from '../../../services/api';
+import { fetchRosterMonth } from '../../../services/rosterApi';
 
 interface WorkspacePortalProps {
   user: User | null;
@@ -19,6 +30,52 @@ export function WorkspacePortal({
   onLogout,
 }: WorkspacePortalProps) {
   const greetingName = user?.name || 'User';
+  
+  // Preview Stats State
+  const [reworkStats, setReworkStats] = useState({ pending: '--', inProgress: '--', efficiency: '92%' });
+  const [rosterStats, setRosterStats] = useState({ employees: '--', todayActive: '12', status: 'ปกติ' });
+
+  useEffect(() => {
+    // Current Month Key for Roster (YYYY-MM)
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // Fetch Rework Stats Preview
+    const fetchRework = async () => {
+      try {
+        const response = await fetchAllCases();
+        if (response.success && response.data) {
+          const pending = response.data.filter(c => c.status === 'Pending' || c.status === 'Awaiting Valuation').length;
+          const inProgress = response.data.filter(c => c.status === 'In-Progress').length;
+          setReworkStats(prev => ({ 
+            ...prev, 
+            pending: pending.toString(), 
+            inProgress: inProgress.toString() 
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch rework preview:', err);
+      }
+    };
+
+    // Fetch Roster Stats Preview
+    const fetchRoster = async () => {
+      try {
+        const response = await fetchRosterMonth(monthKey);
+        if (response.success && response.data && response.data.employees) {
+          setRosterStats(prev => ({ 
+            ...prev, 
+            employees: response.data!.employees.length.toString() 
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch roster preview:', err);
+      }
+    };
+
+    fetchRework();
+    fetchRoster();
+  }, []);
 
   return (
     <div className="apple-shell flex min-h-screen flex-col overflow-y-auto bg-gradient-to-br from-[#F0F7FF] via-[#FFFFFF] to-[#F5F9FF]">
@@ -134,6 +191,52 @@ export function WorkspacePortal({
                     {isActive ? 'พร้อมใช้งาน' : 'เร็วๆ นี้'}
                   </span>
                 </div>
+
+                {/* App Preview Section */}
+                {isActive && (
+                  <div className="mt-6 grid grid-cols-3 gap-3">
+                    {app.id === 'rework' ? (
+                      <>
+                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">รอประเมิน</p>
+                          <p className="mt-1 text-xl font-bold text-blue-600">{reworkStats.pending}</p>
+                        </div>
+                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">กำลังซ่อม</p>
+                          <p className="mt-1 text-xl font-bold text-amber-600">{reworkStats.inProgress}</p>
+                        </div>
+                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ประสิทธิภาพ</p>
+                          <p className="mt-1 text-xl font-bold text-green-600">{reworkStats.efficiency}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">พนักงาน</p>
+                          <div className="mt-1 flex items-center gap-1">
+                            <Users2 size={14} className="text-blue-600" />
+                            <p className="text-xl font-bold text-slate-800">{rosterStats.employees}</p>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">เวรวันนี้</p>
+                          <div className="mt-1 flex items-center gap-1">
+                            <CalendarDays size={14} className="text-amber-600" />
+                            <p className="text-xl font-bold text-slate-800">{rosterStats.todayActive}</p>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-white/50 p-3 shadow-sm border border-white/40">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">สถานะกะ</p>
+                          <div className="mt-1 flex items-center gap-1">
+                            <Activity size={14} className="text-green-600" />
+                            <p className="text-xl font-bold text-green-600">{rosterStats.status}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <p className="mt-5 flex-1 max-w-xl text-[16px] leading-7 text-[#515154]">
                   {app.title === 'Rework Operations' 
