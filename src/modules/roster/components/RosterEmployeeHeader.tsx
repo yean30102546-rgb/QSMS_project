@@ -5,8 +5,8 @@ import type { Employee, LeaveRecord } from '../types';
 interface RosterEmployeeHeaderProps {
   selectedEmployee: Employee;
   leaves: LeaveRecord[];
-  leaveType: 'sick' | 'business';
-  setLeaveType: (type: 'sick' | 'business') => void;
+  leaveType: 'sick' | 'business' | 'vacation';
+  setLeaveType: (type: 'sick' | 'business' | 'vacation') => void;
   leaveDate: string;
   setLeaveDate: (date: string) => void;
   onCreateLeave: (employeeId: string) => void;
@@ -42,11 +42,12 @@ export function RosterEmployeeHeader({
           <span className="text-[10px] font-bold text-[#71717a] font-thai">ประเภทการลา</span>
           <select
             value={leaveType}
-            onChange={(e) => setLeaveType(e.target.value as 'sick' | 'business')}
+            onChange={(e) => setLeaveType(e.target.value as 'sick' | 'business' | 'vacation')}
             className="border border-[#e4e4e7] rounded-lg bg-white px-2 py-1 text-xs text-[#3f3f46] outline-none"
           >
             <option value="sick">ลาป่วย</option>
             <option value="business">ลากิจ</option>
+            <option value="vacation">ลาพักร้อน</option>
           </select>
         </div>
         <div className="flex flex-col gap-0.5">
