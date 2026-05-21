@@ -8,6 +8,8 @@ import { ExportTemplate } from '../ui/ExportTemplate';
 import { DriveImage } from '../ui/DriveImage';
 import { getCurrentUserRole } from '../../services/auth';
 import { UserRole } from '../../config/auth.config';
+import { AppleProgressBar } from '../ui/AppleProgressBar';
+import { useSaveProgress } from '../../hooks/useSaveProgress';
 
 interface UpdateModalProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ export function UpdateModal({
   onUpdate,
   onDelete,
 }: UpdateModalProps) {
+  const { progress, isSaving, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
   const [caseStatus, setCaseStatus] = useState<ReworkCase['status']>(
     caseData?.status || 'Pending'
   );
@@ -158,87 +161,95 @@ export function UpdateModal({
   const handleUpdate = async () => {
     if (!caseData) return;
 
-    const updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[] } = {};
+    startSaving();
 
-    // Unified status transition logic
-    let targetStatus = (isAdmin || isOperator) ? caseStatus : caseData.status;
+    try {
+      const updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[] } = {};
 
-    // Auto-transition rules (apply if not explicitly overridden by admin or operator to a NEW status)
-    const isExplicitOverride = (isAdmin || isOperator) && caseStatus !== caseData.status;
+      // Unified status transition logic
+      let targetStatus = (isAdmin || isOperator) ? caseStatus : caseData.status;
 
-    if (!isExplicitOverride) {
-      if (caseData.status === 'Pending') {
-        const hasMaterials = materials.length > 0;
-        const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
-        if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) {
-          targetStatus = 'Awaiting Valuation';
-        } else if (!isAdmin) {
-          // Non-admins move to In-Progress just by opening/viewing/saving notes
-          targetStatus = 'In-Progress';
+      // Auto-transition rules (apply if not explicitly overridden by admin or operator to a NEW status)
+      const isExplicitOverride = (isAdmin || isOperator) && caseStatus !== caseData.status;
+
+      if (!isExplicitOverride) {
+        if (caseData.status === 'Pending') {
+          const hasMaterials = materials.length > 0;
+          const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
+          if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) {
+            targetStatus = 'Awaiting Valuation';
+          } else if (!isAdmin) {
+            // Non-admins move to In-Progress just by opening/viewing/saving notes
+            targetStatus = 'In-Progress';
+          }
+        } else if (caseData.status === 'In-Progress') {
+          const hasMaterials = materials.length > 0;
+          const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
+          if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) {
+            targetStatus = 'Awaiting Valuation';
+          }
+        } else if (caseData.status === 'Awaiting Valuation') {
+          targetStatus = 'Completed';
         }
-      } else if (caseData.status === 'In-Progress') {
-        const hasMaterials = materials.length > 0;
-        const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
-        if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) {
-          targetStatus = 'Awaiting Valuation';
+      }
+
+      updates.status = targetStatus;
+      if (isOperator || isAdmin) {
+        updates.resolutionMethod = resolutionMethod;
+      }
+      if (isAdmin) {
+        updates.source = editedSource;
+      }
+      
+      if (reworkCost !== '' && (isFinance || isAdmin)) {
+        updates.reworkCost = Number(reworkCost);
+      }
+
+      if (isPDB || isAdmin) {
+        updates.items = editedItems;
+      }
+
+      if (canManageRows || canEditUnitPrice || isAdmin) {
+        updates.materials = materials;
+      }
+
+      if (isOperator || isAdmin) {
+        if (laborCount !== '') {
+          updates.laborCount = Number(laborCount);
+        } else {
+          updates.laborCount = 0;
         }
-      } else if (caseData.status === 'Awaiting Valuation') {
-        targetStatus = 'Completed';
+        if (laborHours !== '') {
+          updates.laborHours = Number(laborHours);
+        } else {
+          updates.laborHours = 0;
+        }
       }
-    }
 
-    updates.status = targetStatus;
-    if (isOperator || isAdmin) {
-      updates.resolutionMethod = resolutionMethod;
-    }
-    if (isAdmin) {
-      updates.source = editedSource;
-    }
-    
-    if (reworkCost !== '' && (isFinance || isAdmin)) {
-      updates.reworkCost = Number(reworkCost);
-    }
-
-    if (isPDB || isAdmin) {
-      updates.items = editedItems;
-    }
-
-    if (canManageRows || canEditUnitPrice || isAdmin) {
-      updates.materials = materials;
-    }
-
-    if (isOperator || isAdmin) {
-      if (laborCount !== '') {
-        updates.laborCount = Number(laborCount);
-      } else {
-        updates.laborCount = 0;
+      if (isFinance || isAdmin) {
+        if (laborRate !== '') {
+          updates.laborRate = Number(laborRate);
+        } else {
+          updates.laborRate = 0;
+        }
       }
-      if (laborHours !== '') {
-        updates.laborHours = Number(laborHours);
-      } else {
-        updates.laborHours = 0;
+
+      // Handle OR Files in updates
+      if (newOrFiles.length > 0) {
+        updates.newOrFiles = newOrFiles;
       }
-    }
 
-    if (isFinance || isAdmin) {
-      if (laborRate !== '') {
-        updates.laborRate = Number(laborRate);
-      } else {
-        updates.laborRate = 0;
+      if (deletedItemIds.length > 0) {
+        updates.deleteItemIds = deletedItemIds;
       }
-    }
 
-    // Handle OR Files in updates
-    if (newOrFiles.length > 0) {
-      updates.newOrFiles = newOrFiles;
+      await onUpdate(caseData.id, updates);
+      finishSaving();
+      setIsEditMode(false);
+    } catch (error) {
+      console.error('Update failed:', error);
+      failSaving();
     }
-
-    if (deletedItemIds.length > 0) {
-      updates.deleteItemIds = deletedItemIds;
-    }
-
-    await onUpdate(caseData.id, updates);
-    setIsEditMode(false);
   };
 
   const handleDelete = () => {
@@ -1027,7 +1038,7 @@ export function UpdateModal({
                           <button
                             type="button"
                             onClick={() => setIsEditMode(!isEditMode)}
-                            disabled={isLoading}
+                            disabled={isLoading || isSaving}
                             className={`px-6 py-2.5 rounded-xl border text-sm font-semibold transition-colors disabled:opacity-50 ${
                               isEditMode 
                               ? 'bg-amber-50 border-amber-200 text-amber-700' 
@@ -1039,7 +1050,7 @@ export function UpdateModal({
                           <button
                             type="button"
                             onClick={handleDelete}
-                            disabled={isLoading}
+                            disabled={isLoading || isSaving}
                             className="px-6 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-50"
                           >
                             ลบรายการ
@@ -1049,31 +1060,37 @@ export function UpdateModal({
                       <button
                         type="button"
                         onClick={onClose}
-                        disabled={isLoading}
+                        disabled={isLoading || isSaving}
                         className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-50"
                       >
                         ยกเลิก
                       </button>
-                      <motion.button
-                        type="button"
-                        onClick={handleUpdate}
-                        disabled={(() => {
-                          if (isLoading || !caseData) return true;
-                          // Allow saving if user selected new OR files (retroactive OR upload)
-                          if (newOrFiles.length > 0 && (isOperator || isFinance || isAdmin)) return false;
-                          if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
-                          if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB && !isOperator) return true;
-                          if (caseData.status === 'Completed' && !isAdmin) return true;
-                          return false;
-                        })()}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
-                        className="px-8 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:bg-slate-900 active:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
-                      >
-                        {isLoading ? (
-                          <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> กำลังบันทึก...</>
-                        ) : 'ยืนยันการบันทึก'}
-                      </motion.button>
+                      {isSaving ? (
+                        <div className="w-48 flex items-center">
+                          <AppleProgressBar progress={progress} isComplete={isComplete} />
+                        </div>
+                      ) : (
+                        <motion.button
+                          type="button"
+                          onClick={handleUpdate}
+                          disabled={(() => {
+                            if (isLoading || !caseData) return true;
+                            // Allow saving if user selected new OR files (retroactive OR upload)
+                            if (newOrFiles.length > 0 && (isOperator || isFinance || isAdmin)) return false;
+                            if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
+                            if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB && !isOperator) return true;
+                            if (caseData.status === 'Completed' && !isAdmin) return true;
+                            return false;
+                          })()}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          className="px-8 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:bg-slate-900 active:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                        >
+                          {isLoading ? (
+                            <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> กำลังบันทึก...</>
+                          ) : 'ยืนยันการบันทึก'}
+                        </motion.button>
+                      )}
                     </div>
                   </div>
                 </div>

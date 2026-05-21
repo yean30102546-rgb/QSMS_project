@@ -4,6 +4,7 @@ import { MainLayout } from '../../components/layout/MainLayout';
 import { ConfirmNewItemModal } from '../../components/modals/ConfirmNewItemModal';
 import { TutorialModal } from '../../components/modals/TutorialModal';
 import { UpdateModal } from '../../components/modals/UpdateModal';
+import { useSaveProgress } from '../../hooks/useSaveProgress';
 import {
   deleteCase,
   fetchAllCases,
@@ -79,6 +80,8 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     itemNumber: string;
     itemId: string | null;
   }>({ isOpen: false, itemNumber: '', itemId: null });
+
+  const { progress, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
 
   const GAS_WEB_APP_URL = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
 
@@ -238,6 +241,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
   const handleSubmit = async () => {
     try {
       setIsSaving(true);
+      startSaving();
       const newItemsToSave = formItems.filter((item) => {
         const trimmedNum = item.itemNumber.trim();
         const trimmedCode = item.itemCode.trim();
@@ -251,6 +255,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       }
       const result = await insertCase(caseSource, formItems, uploadedImages, orFiles);
       if (result.success) {
+        finishSaving();
         setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
         setFormItems([{ ...initialFormItem }]);
         setUploadedImages({});
@@ -258,12 +263,14 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         await loadCases();
         setTimeout(() => setSaveMessage(null), 4000);
       } else {
+        failSaving();
         setSaveMessage({
           type: 'error',
           text: result.error || 'ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง',
         });
       }
     } catch (error) {
+      failSaving();
       setSaveMessage({
         type: 'error',
         text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึก',
@@ -361,6 +368,8 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         handleAutoFillBlur={(id) => handleCheckItemNumber(id, false)}
         handleSubmit={handleSubmit}
         isSaving={isSaving}
+        progress={progress}
+        isComplete={isComplete}
         saveMessage={saveMessage}
         isSaveDisabled={isSaveDisabled}
         autoFillTriggeredItem={autoFillTriggeredItem}

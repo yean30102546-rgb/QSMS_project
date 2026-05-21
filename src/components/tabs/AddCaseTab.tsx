@@ -5,6 +5,7 @@ import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X } from 'lucide-react';
 import type { ReworkItem } from '../../services/api';
 import { CUSTOMER_OPTIONS } from '../../services/api';
 import { ImageUpload } from '../ui/ImageUpload';
+import { AppleProgressBar } from '../ui/AppleProgressBar';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -33,6 +34,8 @@ interface AddCaseTabProps {
   handleAutoFillBlur: (id: string) => void;
   handleSubmit: () => void;
   isSaving: boolean;
+  progress: number;
+  isComplete: boolean;
   saveMessage: SaveMessage;
   isSaveDisabled: (items: ReworkItem[]) => boolean;
   autoFillTriggeredItem: string | null;
@@ -75,6 +78,8 @@ export function AddCaseTab({
   handleAutoFillBlur,
   handleSubmit,
   isSaving,
+  progress,
+  isComplete,
   saveMessage,
   isSaveDisabled,
   autoFillTriggeredItem,
@@ -670,13 +675,10 @@ export function AddCaseTab({
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               transition={{ duration: 0.15 }}
-              className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto"
+              className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto overflow-hidden relative"
             >
               {isSaving ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  กำลังบันทึก...
-                </>
+                <AppleProgressBar progress={progress} isComplete={isComplete} />
               ) : (
                 <>
                   บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />

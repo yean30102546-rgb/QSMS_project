@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/src/components/ui/dialog';
+import { AppleProgressBar } from '@/src/components/ui/AppleProgressBar';
 
 interface RosterDialogsProps {
   activeLeaveDialog: { dateKey: string; leaveType: 'sick' | 'business' | 'vacation' } | null;
@@ -14,6 +15,9 @@ interface RosterDialogsProps {
   leaveNoteInput: string;
   setLeaveNoteInput: (val: string) => void;
   onConfirmLeave: () => void;
+  isSavingProgress: boolean;
+  progress: number;
+  isComplete: boolean;
   // Delete Employee
   deleteConfirmation: { id: string; name: string } | null;
   onCloseDeleteDialog: () => void;
@@ -26,6 +30,9 @@ export function RosterDialogs({
   leaveNoteInput,
   setLeaveNoteInput,
   onConfirmLeave,
+  isSavingProgress,
+  progress,
+  isComplete,
   deleteConfirmation,
   onCloseDeleteDialog,
   onConfirmDelete,
@@ -61,30 +68,38 @@ export function RosterDialogs({
             </div>
           </div>
           <DialogFooter className="mt-4 flex gap-2 sm:justify-center">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={onCloseLeaveDialog}
-              className="flex-1 rounded-2xl bg-black/5 hover:bg-black/10 py-3 text-sm font-bold text-black/60 transition-colors"
-            >
-              ยกเลิก
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={onConfirmLeave}
-              className={`flex-1 rounded-2xl py-3 text-sm font-bold text-white shadow-lg transition-all ${
-                activeLeaveDialog?.leaveType === 'sick'
-                  ? 'bg-rose-600 shadow-rose-600/20 hover:bg-rose-700'
-                  : activeLeaveDialog?.leaveType === 'business'
-                    ? 'bg-amber-600 shadow-amber-600/20 hover:bg-amber-700'
-                    : 'bg-violet-600 shadow-violet-600/20 hover:bg-violet-700'
-              }`}
-            >
-              บันทึกการลา
-            </motion.button>
+            {isSavingProgress ? (
+              <div className="flex-1 py-2">
+                <AppleProgressBar progress={progress} isComplete={isComplete} />
+              </div>
+            ) : (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={onCloseLeaveDialog}
+                  className="flex-1 rounded-2xl bg-black/5 hover:bg-black/10 py-3 text-sm font-bold text-black/60 transition-colors"
+                >
+                  ยกเลิก
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={onConfirmLeave}
+                  className={`flex-1 rounded-2xl py-3 text-sm font-bold text-white shadow-lg transition-all ${
+                    activeLeaveDialog?.leaveType === 'sick'
+                      ? 'bg-rose-600 shadow-rose-600/20 hover:bg-rose-700'
+                      : activeLeaveDialog?.leaveType === 'business'
+                        ? 'bg-amber-600 shadow-amber-600/20 hover:bg-amber-700'
+                        : 'bg-violet-600 shadow-violet-600/20 hover:bg-violet-700'
+                  }`}
+                >
+                  บันทึกการลา
+                </motion.button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

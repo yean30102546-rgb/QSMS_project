@@ -9,7 +9,8 @@ import {
   getThaiMonthLabel,
 } from './calendar';
 import type { DayInfo, Employee, LeaveRecord, RosterCellStatus, RosterOverride } from './types';
-import type { User } from '../../services/auth';
+import { User } from '../../services/auth';
+import { useSaveProgress } from '../../hooks/useSaveProgress';
 import {
   addRosterEmployee,
   clearRosterMonthOverrides,
@@ -66,6 +67,8 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
   } | null>(null);
   const [deleteConfirmation, setDeleteEmployeeConfirm] = useState<{ id: string; name: string } | null>(null);
   const [leaveNoteInput, setLeaveNoteInput] = useState('');
+
+  const { isSaving, progress, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
 
   const monthKey = useMemo(
     () => `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`,
@@ -231,6 +234,9 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
 
   const executeUpsertLeave = async () => {
     if (!selectedEmployee || !activeLeaveDialog) return;
+
+    startSaving();
+
     const { dateKey, leaveType: type } = activeLeaveDialog;
     const note =
       leaveNoteInput.trim() ||
@@ -250,12 +256,21 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
       return [...filtered, newRecord];
     });
     clearSessionCache();
-    const result = await upsertRosterLeave(selectedEmployee.id, dateKey, type, note);
-    if (!result.success) {
-      setError(result.error || 'บันทึกการลาไม่สำเร็จ');
+
+    try {
+      const result = await upsertRosterLeave(selectedEmployee.id, dateKey, type, note);
+      if (!result.success) {
+        failSaving();
+        setError(result.error || 'บันทึกการลาไม่สำเร็จ');
+        setLeaves(previousLeaves);
+      } else {
+        finishSaving(() => setActiveLeaveDialog(null));
+      }
+    } catch (e) {
+      failSaving();
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
       setLeaves(previousLeaves);
     }
-    setActiveLeaveDialog(null);
   };
 
   const handleDeleteLeave = async (dateKey: string) => {
@@ -508,6 +523,9 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
         leaveNoteInput={leaveNoteInput}
         setLeaveNoteInput={setLeaveNoteInput}
         onConfirmLeave={executeUpsertLeave}
+        isSavingProgress={isSaving}
+        progress={progress}
+        isComplete={isComplete}
         deleteConfirmation={deleteConfirmation}
         onCloseDeleteDialog={() => setDeleteEmployeeConfirm(null)}
         onConfirmDelete={handleConfirmDeleteEmployee}

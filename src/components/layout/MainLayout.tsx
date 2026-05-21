@@ -70,6 +70,8 @@ interface MainLayoutProps {
   orFiles: File[];
   setOrFiles: (files: File[]) => void;
   isSaving: boolean;
+  progress: number;
+  isComplete: boolean;
   saveMessage: SaveMessage;
   isSaveDisabled: (items: ReworkItem[]) => boolean;
   autoFillTriggeredItem: string | null;
@@ -120,6 +122,8 @@ export function MainLayout({
   handleAutoFillBlur,
   handleSubmit,
   isSaving,
+  progress,
+  isComplete,
   saveMessage,
   isSaveDisabled,
   autoFillTriggeredItem,
@@ -316,6 +320,8 @@ export function MainLayout({
                     handleAutoFillBlur={handleAutoFillBlur}
                     handleSubmit={handleSubmit}
                     isSaving={isSaving}
+                    progress={progress}
+                    isComplete={isComplete}
                     saveMessage={saveMessage}
                     isSaveDisabled={isSaveDisabled}
                     autoFillTriggeredItem={autoFillTriggeredItem}
