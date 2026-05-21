@@ -75,7 +75,7 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
             </div>
           </div>
 
-          <div className="bg-[#fbfbfd] px-6 py-8 md:px-9 md:py-10">
+          <div className="bg-white/80 px-6 py-8 md:px-9 md:py-10">
             <div className="mb-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6e6e73]">Sign in</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">เข้าสู่ Central Control</h2>
@@ -85,8 +85,8 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="relative">
-                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80]" />
+              <div className="relative group">
+                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type="text"
                   value={username}
@@ -95,12 +95,12 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
                     setError(null);
                   }}
                   placeholder="Username"
-                  className="apple-input w-full py-3.5 pl-11 pr-4 text-[15px]"
+                  className="glass-input w-full rounded-2xl py-3.5 pl-11 pr-4 text-[15px]"
                 />
               </div>
 
-              <div className="relative">
-                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80]" />
+              <div className="relative group">
+                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -109,7 +109,7 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
                     setError(null);
                   }}
                   placeholder="Password"
-                  className="apple-input w-full py-3.5 pl-11 pr-11 text-[15px]"
+                  className="glass-input w-full rounded-2xl py-3.5 pl-11 pr-11 text-[15px]"
                 />
                 <button
                   type="button"
@@ -130,10 +130,12 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
                 </motion.div>
               )}
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={!username.trim() || !password.trim() || isLoading}
-                className="apple-btn-primary mt-1 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-55"
+                className="apple-btn-primary mt-1 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold shadow-lg shadow-blue-600/20 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {isLoading ? (
                   <>
@@ -146,7 +148,7 @@ export function Login({ onSuccess }: { onSuccess: (authenticated?: boolean) => v
                     <ArrowRight size={16} />
                   </>
                 )}
-              </button>
+              </motion.button>
             </form>
 
             <div className="mt-7 border-t border-[#e8e8ed] pt-5 text-xs leading-5 text-[#6e6e73]">
