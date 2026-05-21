@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * QSMS Rework Management System
  * Root orchestration for auth, portal routing, and module entry points

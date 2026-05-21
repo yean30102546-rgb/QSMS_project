@@ -20,9 +20,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="th" className="min-h-screen">
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-      </head>
       <body className="min-h-screen bg-bg text-foreground font-sans antialiased">
         <div id="root" className="min-h-screen">
           {children}
