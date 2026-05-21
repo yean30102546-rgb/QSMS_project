@@ -33,18 +33,33 @@ export function RosterSidebar({
             return (
               <motion.div
                 key={employee.id}
-                whileHover={{ x: 2 }}
-                className={`group relative flex items-center justify-between rounded-2xl py-2.5 px-3.5 transition-all cursor-pointer ${
+                initial={false}
+                animate={{
+                  backgroundColor: isSelected ? '#1d1d1f' : 'transparent',
+                  scale: isSelected ? 1.02 : 1,
+                  color: isSelected ? '#ffffff' : '#1d1d1f',
+                }}
+                whileHover={!isSelected ? { 
+                  scale: 1.01, 
+                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                } : {}}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                className={`group relative flex items-center justify-between rounded-2xl py-2.5 px-3.5 cursor-pointer ${
                   isSelected
-                    ? 'bg-[#1d1d1f] text-white shadow-lg shadow-black/20 font-bold'
-                    : 'text-[#1d1d1f] hover:bg-white/60'
+                    ? 'shadow-xl shadow-black/20 font-bold'
+                    : ''
                 }`}
                 onClick={() => onSelectEmployee(employee.id)}
               >
                 <span className="text-[14px] truncate flex items-center gap-2 flex-1">
                   {employee.name}
                   {!employee.startWorkingSaturday && (
-                    <span className="text-amber-500 font-bold text-xs" title="ยังไม่ได้ตั้งเสาร์เริ่มงาน">⚠️</span>
+                    <span 
+                      className={`font-bold text-xs ${isSelected ? 'text-amber-400' : 'text-amber-500'}`} 
+                      title="ยังไม่ได้ตั้งเสาร์เริ่มงาน"
+                    >
+                      ⚠️
+                    </span>
                   )}
                 </span>
                 <motion.button
