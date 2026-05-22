@@ -1,11 +1,12 @@
 # Auth Flow — QSMS Rework Management
-[วันที่อัปเดต: 2026-05-21]
+[วันที่อัปเดต: 2026-05-22]
 
 ## 1. Summary & Current Implementation
 ระบบ Login ใช้ PIN-based authentication ผ่าน GAS backend โดยมีการออกแบบหน้าจอใหม่ในสไตล์ **Soft Glassmorphism** (Apple-inspired) เพื่อความทันสมัยและเป็นมิตรต่อผู้ใช้งาน
 - **Frontend**: ใช้ React + Tailwind CSS + motion/react สำหรับ UI/UX
 - **Backend**: สื่อสารกับ GAS ผ่าน Next.js API Routes (Proxy)
 - **Token**: เก็บใน `sessionStorage` (JWT)
+- **Logout Transition**: ระบบออกจากระบบมีกระบวนการแอนิเมชันแบบสปริงร่วมกับกลาสมอร์ฟิสซึมระดับพรีเมียม (Apple-style segment loader) หน่วงเวลาการเปลี่ยนผ่าน 1.5 วินาทีเพื่อป้องกันความหยาบกระด้างและถอดถอนข้อมูลเซสชันอย่างปลอดภัย
 
 ## 2. UI/UX Design (Modernization 2026)
 หน้าจอ Login และส่วนอื่นๆ เปลี่ยนจาก Dark Theme เป็น **Minimal Monochrome (Apple Pro)**:
@@ -63,11 +64,22 @@ export async function loginWithPassword(userId: string, password: string): Promi
 > **[Planned]** มีเอกสาร `archive_docs/AUTHENTICATION_IMPLEMENTATION.md` วางแผนใช้ Firebase + Google OAuth
 > แต่ปัจจุบัน `loginWithGoogle()` และ `loginWithEmail()` ถูก **Disable** แล้วในโค้ดจริง
 
-## 7. Knowledge Relationships
+## 7. Premium Logout Transition (Apple Pro Style)
+เพื่อเพิ่มความลื่นไหลและดูเป็นมืออาชีพ ระบบได้ทำ Centralized Transition ใน `App.tsx`:
+- **Main View Wrapper**: ห่อหุ้มหน้าจอหลักทั้งหมดและลดขนาดลง (`scale: 0.96`), ใส่เอฟเฟกต์เบลอ (`blur(12px)`) และลดความโปร่งแสง (`opacity: 0`) ด้วย `motion.div` แบบสปริงตอนออกจากระบบ
+- **Logout Overlay**: ใช้ `AnimatePresence` แสดง Fullscreen Glassmorphic Overlay (`bg-slate-950/50 backdrop-blur-md`) และกล่องข้อความที่มีเอฟเฟกต์ Pulsing และ SVG segment loader แบบหมุน 360 องศา
+- **Execution Flow**: 
+  1. ตั้งค่าสถานะ `isLoggingOut` เป็น `true` เพื่อจำลองการแสดงอนิเมชันและ Overlay
+  2. รอเวลา 1.5 วินาทีเพื่อให้ออนิเมชันรันเสร็จเรียบร้อย
+  3. ดำเนินการล้างเซสชันผ่าน `authLogout()`
+  4. ตั้งค่ามุมมองหลักกลับสู่ `'portal'` หน้าแรก และสลับ `isLoggingOut` กลับเป็น `false` เพื่อให้อนิเมชันไหลออกนุ่มนวล
+
+## 8. Knowledge Relationships
 - **Depends On**: [[gas-backend/gas-api.md]] — GAS ต้องมี `AUTH_TOKEN_SECRET` และ `*_PIN` properties
 - **Depends On**: [[nextjs-frontend/roles.md]] — Role กำหนดสิทธิ์หลัง login
 - **Impacted By**: [[nextjs-frontend/nextjs.md]] — `/api/rework` route เป็น proxy ที่ auth ต้องพึ่ง
 - **Uses**: [[nextjs-frontend/shadcn-ui.md]] — ใช้มาตรฐานการดีไซน์ร่วมกับ component อื่นๆ
 
 ---
-> 🔄 *อัปเดตเมื่อ 2026-05-21*: ปรับปรุง UI เป็น Soft Glassmorphism และเพิ่มรายละเอียด CSS Utilities
+> 🔄 *อัปเดตเมื่อ 2026-05-22*: เพิ่มคุณลักษณะ Premium Logout Transition (Apple Pro Style) เพื่อการหน่วงสลับเซสชันอย่างงดงาม
+

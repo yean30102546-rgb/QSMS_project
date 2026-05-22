@@ -124,8 +124,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     }
   };
 
-  const handleLogout = async () => {
-    await authLogout();
+  const handleLogout = () => {
     onLogout();
   };
 

@@ -224,5 +224,16 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-05-22*: เพิ่ม BUG-008 & BUG-009: บันทึกประวัติการพัฒนาและแก้ไขระบบ Progress Bar สไตล์ Apple Pro
+## BUG-010: Rework System Color Distortion & Solid Logout Overlay Redesign
+**Status**: ✅ FIXED (2026-05-22)
+- *Problem*: 
+  1. สีของระบบ Rework เพี้ยนจากเดิมและเอฟเฟกต์เบลอ (Glassmorphism) ใน sidebar/cards เสียไป หลังจากเพิ่มอนิเมชั่นตอนออกจากระบบ สาเหตุเกิดจากการใช้ `filter: 'blur(0px)'` บน container หลัก ซึ่งทำให้เบราว์เซอร์สร้าง Stacking Context ใหม่สำหรับการฟิลเตอร์ ส่งผลเสียต่อ `backdrop-filter` และ subpixel font smoothing ของลูกทั้งหมด
+  2. หน้าจอออกจากระบบ (Logout Overlay) เดิมมีสีทึบหรือมีความทึบแสงสูงเกินไป ไม่สอดคล้องกับ Premium Apple UI
+- *Solution*:
+  1. ถอนคุณสมบัติ `filter` ออกจาก main content wrapper ใน `src/App.tsx` โดยใช้การยุบตัว `scale` และลด `opacity` เท่านั้น
+  2. ปรับปรุง Logout Overlay ให้โปร่งใสและเบลอด้วย `bg-white/10 dark:bg-black/20 backdrop-blur-[16px]` พร้อมตัวการ์ดที่เป็นกระจกโปร่งแสงและเปลี่ยนมาใช้ **iOS Spoke Activity Indicator** (12 spokes) ที่หมุนเวลายอย่างนุ่มนวล
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-05-22*: เพิ่ม BUG-010: แก้ปัญหาสีเพี้ยนจากการใช้ filter และดีไซน์หน้าจอออกจากระบบเป็นสไตล์ Apple โปร่งแสง/เบลอพร้อม iOS Spoke Spinner
 

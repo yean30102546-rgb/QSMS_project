@@ -36,7 +36,7 @@ _ไม่มีปัญหาค้างคาในขณะนี้_
 - [Refactoring History](nextjs-frontend/refactoring-history.md) - Component split, Case ID fix, Validation, Logger
 
 ## 📋 Lessons Learned & Fixes
-- [Bug & Fix History](lessons-learned/bugs-and-fixes.md) - BUG-001 ถึง BUG-009 (Rework Syncing, Timezones, Images, Time offsets, & Apple Progress Bar Redesign)
+- [Bug & Fix History](lessons-learned/bugs-and-fixes.md) - BUG-001 ถึง BUG-010 (Rework Syncing, Timezones, Progress Bar, & Apple Logout Overlay Redesign)
 - [Server Auth & Partial Updates](lessons-learned/server-auth-and-partial-updates.md) - server-side JWT verification และการ merge partial update เพื่อกันข้อมูล valuation หาย
 - [JS Learning Resources](lessons-learned/js-projects-resource.md) - 100 JavaScript Projects
 - [UI Library Research](lessons-learned/ui-libraries-resource.md) - Mantine UI & Next.js Overview

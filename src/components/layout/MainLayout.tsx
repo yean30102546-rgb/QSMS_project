@@ -157,7 +157,7 @@ export function MainLayout({
   }, [activeTab, userRole, setActiveTab]);
 
   return (
-    <div className="flex h-full overflow-hidden bg-transparent text-on-surface font-sans">
+    <div className="flex min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans">
       {/* Mobile Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
