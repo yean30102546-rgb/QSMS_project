@@ -1,56 +1,58 @@
-# QSMS Rework Management System
+# QSMS Rework & Roster Management System
 
-A modern, production-ready web application for managing rework cases with real-time Google Sheets integration.
+ระบบจัดการงาน Rework และตารางเวรพนักงาน (Roster) ระดับองค์กร ออกแบบตามแนวคิด **Minimal Monochrome (Apple Pro Style)** ที่มีความเรียบหรู ปราณีต พร้อมการเชื่อมต่อข้อมูลแบบเรียลไทม์ควบคู่กันระหว่าง Google Sheets (ผ่าน GAS Web App) และ Supabase Database
 
 ## 🎯 Features
 
-### Core Functionality
-- ✅ **Real-time Data Sync** - Seamless integration with Google Sheets via Google Apps Script
-- ✅ **Case Management** - Create, read, update rework cases with multiple items per case
-- ✅ **Status Tracking** - Track cases through Pending → In-Progress → Completed workflow
-- ✅ **Modal-based Updates** - Update case status without page redirects
-- ✅ **Image Upload** - Upload up to 5 images per item with thumbnail gallery preview
-- ✅ **Advanced Search** - Search cases by ID, source, or product name
-- ✅ **Form Validation** - Strict validation with helpful error messages
-- ✅ **Numeric Masking** - Force numeric input for specific fields (Item Code, Amount, etc.)
+### 🏢 Workspace Portal (Landing Page & Guest Mode)
+- **Live Preview Analytics** - ผู้ใช้ทั่วไปที่ยังไม่ได้เข้าสู่ระบบสามารถมองเห็นข้อมูลสรุปเคส (Active Cases, Completion Rate, Defect Reasons) และตัวอย่างเคสล่าสุดแบบจำกัดได้ทันทีโดยไม่ต้องล็อกอิน
+- **Auto-Redirect** - ตรวจเช็คสถานะเซสชันอัตโนมัติเพื่อนำทางผู้ใช้ที่เข้าสู่ระบบแล้วไปยังโมดูลหลักโดยตรง
+- **Centralized App Registry** - เมนูคลังแอปพลิเคชันสำหรับเปิดโมดูลต่างๆ (Rework, Roster, และอื่นๆ ในอนาคต)
 
-### Dashboard & Analytics
-- 📊 **Modern Dashboard** - Beautiful, contemporary design with Glassmorphism aesthetic
-- 📈 **Key Metrics** - Total cases, pending tasks, completion rate
-- 📉 **Defect Analysis** - Most frequent defect reasons visualization
-- 🏢 **Workload Distribution** - Cases by source (SFC, Customer, etc.)
-- 📋 **Status Distribution** - Visual breakdown of case statuses
+### ⚙️ Rework Module (ระบบจัดการเคสแก้ตัวสินค้า)
+- **Multi-Item Support** - บันทึกได้หลายรายการสินค้า (Rework Items) ภายใต้ใบงาน (Case) เดียวกัน
+- **Frosted Image Upload & Gallery** - อัปโหลดรูปภาพได้สูงสุด 5 ภาพต่อรายการ พร้อมคาร์รูเซลแกลเลอรีรูปภาพและการย่อขนาดไฟล์อัจฉริยะ (Client-side compression)
+- **Status & Document Action Gate** - ควบคุมสิทธิ์การกดเปลี่ยนสถานะหรือแนบไฟล์เอกสารสั่งแก้งาน (OR Document) ตามระดับตำแหน่ง (User, Supervisor, Manager)
+- **Apple Shimmer Progress Cards** - กล่องแสดงสถานะการบันทึกข้อมูลสตรีมมิ่งที่ใช้กลาสมอร์ฟิสซึ่มและแสงวิ่งวิ่งวิบวับแบบคาปซูลสไตล์ Apple Pro
+- **PDF Template Export** - ส่งออกรายงานเคส rework ออกเป็นไฟล์ PDF ที่จัดหน้าตาจัดพิมพ์ไว้อย่างเรียบร้อยสวยงาม
 
-### User Experience
-- 🎨 **Modern UI** - Clean industrial tech aesthetic with smooth animations
-- ⚡ **Async Operations** - Non-blocking saves with loading states
-- 🔄 **Status-based Sorting** - Cases automatically sorted: Pending → In-Progress → Completed
-- 📱 **Responsive Design** - Works on desktop, tablet, and mobile
-- 🇹🇭 **Thai Language Support** - Full Thai language interface
+### 📅 Roster Module (ระบบจัดตารางเวรกะพนักงาน)
+- **Interactive Calendar Grid** - ตารางปฏิทินแสดงตารางเวรรายเดือนที่เข้าใจง่ายและปรับขนาดได้ตามสัดส่วนจอ
+- **Drag-and-Drop Schedule Shifts** - สลับกะการทำงานหรือกำหนดวันลาประเภทต่างๆ (Sick Leave, Business Leave, Holiday, OT) ได้สะดวกผ่านการลากวาง
+- **Shift Stats Summary** - แสดงสรุปผลรวมจำนวนวันทำงาน วันหยุด และชั่วโมงลารวมของพนักงานแต่ละคนโดยอัตโนมัติ
+
+### 🎨 Apple Premium UI/UX
+- **Frosted Glassmorphism** - ใช้เอฟเฟกต์กระจกเบลอระดับสูง (`.glass-panel`, `.glass-input` + `backdrop-blur-xl`) และขอบโปร่งแสงสะท้อนเงา
+- **Tactile Spring Micro-animations** - การกดปุ่มหรือเปลี่ยนหน้าต่างมาพร้อมการยุบตัวขยายตัวตามกฎฟิสิกส์สปริงที่ลื่นไหล
+- **Premium Logout Transition** - อนิเมชั่นหน้าจอออกจากระบบหน่วงเวลา 1.5 วินาที พร้อม Overlay ใสเบลอฉากหลังสูง (`backdrop-blur-[16px]`) และ **iOS Spoke Activity Indicator** หมุนวนนุ่มนวล
+- **Fully Responsive** - รองรับการแสดงผลทั้งบน Desktop เควสใหญ่ และ Mobile ขนาดพกพา
 
 ---
 
 ## 🏗️ Architecture
 
 ### Frontend Stack
-- **React 18** - Component-based UI framework
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
-- **Framer Motion** - Smooth animations and transitions
-- **Lucide React** - Beautiful SVG icons
+- **Next.js 16 (App Router)** - เฟรมเวิร์กจัดการเพจและ API Routes Proxy
+- **React 19 & TypeScript** - ตัวสร้างเว็บเพจและประเภทข้อมูลที่มั่นคงปลอดภัย
+- **Tailwind CSS v4 & PostCSS** - การจัดการสไตล์ชีตประสิทธิภาพสูงและโครงสีตามธีม
+- **Motion (Framer Motion)** - ตัวขับเคลื่อนฟิสิกส์อนิเมชั่นทั้งหมดในระบบ
+- **Radix UI Primitive** - พื้นฐานคอมโพเนนต์ Dialog, Popover, Select, Tabs
 
-### Backend
-- **Google Apps Script** - Serverless backend
-- **Google Sheets** - Data storage and database
-- **Google Drive** - File hosting for images (optional)
+### Backend Stack (Hybrid Database Model)
+- **Google Sheets & Google Drive** - ใช้จัดเก็บข้อมูลชีตหลักและโฟลเดอร์รูปภาพของเคสต่างๆ
+- **Supabase Database** - ใช้บันทึกข้อมูลแบบ relational เพื่อการ Query ค้นหาที่รวดเร็วและการจัดสกีมาตารางที่สัมพันธ์กัน (Roster, Rework, Items)
+- **Google Apps Script (GAS)** - เว็บบริการฝั่งเซิร์ฟเวอร์ทำหน้าที่เป็นตัวกลางรับข้อมูลและอัปเดตชีต
 
 ### Data Flow
 ```
-React Frontend
-    ↓
-Google Apps Script Web App (JSON API)
-    ↓
-Google Sheets (Data Storage)
+                [ Workspace Portal / modules ]
+                              ↓
+                    [ Next.js API Routes ]
+                    /                    \
+                   v                      v
+      [ Supabase Postgres ]         [ Google Apps Script API ]
+                                                ↓
+                                      [ Google Sheets DB ]
 ```
 
 ---
@@ -59,26 +61,20 @@ Google Sheets (Data Storage)
 
 ```
 src/
-├── App.tsx                    # Main application component
-├── main.tsx                   # Entry point
-├── index.css                  # Global styles
-│
-├── services/
-│   └── api.ts                 # Google Apps Script API integration
-│
+├── app/                       # Next.js App Router (Layouts & Page entry)
+│   ├── api/                   # API Routes (Supabase endpoints & GAS proxy)
+│   └── page.tsx               # Entry point referencing App Client
 ├── components/
-│   ├── UpdateModal.tsx        # Modal for updating case status
-│   ├── Dashboard.tsx          # Analytics dashboard
-│   └── ImageUpload.tsx        # Image upload with preview
-│
-└── utils/
-    └── helpers.ts             # Utility functions (validation, formatting, etc.)
-
-gas/
-└── Code.gs                    # Google Apps Script backend
-
-DEPLOYMENT_GUIDE.md            # Complete deployment instructions
-README.md                      # This file
+│   ├── apps/                  # Application Modules (portal)
+│   └── layout/                # Main layout shell and sidebar navigation
+├── modules/
+│   ├── rework/                # Rework app logic (Overall, AddCase, Dashboard)
+│   ├── roster/                # Roster calendar and shift management
+│   └── platform/              # Workspace registries & types
+├── services/
+│   ├── api.ts                 # Legacy / direct GAS api functions
+│   └── auth.ts                # Session PIN verification and sessionStorage token
+└── index.css                  # Global styles (Tailwind v4 theme extensions)
 ```
 
 ---
@@ -86,39 +82,34 @@ README.md                      # This file
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 16+ and npm/yarn
-- Google Account with access to Google Sheets and Apps Script
-- A code editor (VS Code recommended)
+- Node.js 18+ และ npm/yarn
+- บัญชี Google สำหรับ Sheets & Apps Script
+- ฐานข้อมูล Supabase (พร้อมติดตั้ง DB Schema)
 
 ### Local Development
 
-1. **Clone/Download the project**
+1. **โคลนและติดตั้งโปรเจกต์**
    ```bash
-   git clone <your-repo>
-   cd rework-management
-   ```
-
-2. **Install dependencies**
-   ```bash
+   git clone <your-repo-url>
+   cd QSMS_project
    npm install
    ```
 
-3. **Start development server**
+2. **กำหนดตัวแปรสภาพแวดล้อม (Environment Variables)**
+   คัดลอกไฟล์ `.env.example` ไปเป็น `.env` และกำหนดค่าคีย์ต่างๆ:
+   - `NEXT_PUBLIC_SUPABASE_URL` และ `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `GAS_WEB_APP_URL` (URL ของ Google Apps Script Web App)
+
+3. **รันเซิร์ฟเวอร์สำหรับพัฒนา**
    ```bash
    npm run dev
    ```
+   เปิดบราวเซอร์เข้าสู่ [http://localhost:3000](http://localhost:3000)
 
-4. **Open in browser**
+4. **ตรวจสอบความปลอดภัยของไทป์**
+   ```bash
+   npm run lint
    ```
-   http://localhost:5173
-   ```
-
-### First Time Setup
-
-1. Create a Google Sheet (see DEPLOYMENT_GUIDE.md)
-2. Deploy Google Apps Script code as Web App
-3. Update `src/services/api.ts` with your GAS Web App URL
-4. Run the app locally to test
 
 ---
 
