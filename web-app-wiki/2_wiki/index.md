@@ -28,7 +28,7 @@ _ไม่มีปัญหาค้างคาในขณะนี้_
 
 ## 🧩 Frontend & Components
 - [Auth Flow](nextjs-frontend/auth-flow.md) - PIN login → Supabase/GAS → JWT → sessionStorage
-- [Portal Shell](nextjs-frontend/portal-shell.md) - Hub กลางพร้อม Live Previews สำหรับทุกโมดูล
+- [Portal Shell](nextjs-frontend/portal-shell.md) - Landing Page (Guest Mode) พร้อมข้อมูลจริงล่าสุด (Live Preview) และ Auto-redirect
 - [Rework Module](nextjs-frontend/rework-module.md) - ReworkApp.tsx, Overall, AddCase, Dashboard tabs
 - [Roster Module](nextjs-frontend/roster-module.md) - ระบบตารางเวร, Supabase Backend
 - [Role & Permissions](nextjs-frontend/roles.md) - UserRole enum, ROLE_PERMISSIONS map
