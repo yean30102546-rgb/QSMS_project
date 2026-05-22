@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
+import { AuthError, requireServerAuth } from '../../../lib/serverAuth';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action } = body;
+    await requireServerAuth(body);
 
     switch (action) {
       case 'rosterGetMonth': {
@@ -220,6 +222,12 @@ export async function POST(request: Request) {
     }
   } catch (error: any) {
     console.error('Roster API Error:', error);
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        { success: false, error: error.message, statusCode: error.status },
+        { status: error.status }
+      );
+    }
     return NextResponse.json(
       { success: false, error: error?.message || 'Internal Server Error' },
       { status: 500 }

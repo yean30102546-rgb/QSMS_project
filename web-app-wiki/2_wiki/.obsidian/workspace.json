@@ -178,6 +178,8 @@
   },
   "active": "2b917f128e7cdbb3",
   "lastOpenFiles": [
+    "nextjs-frontend/ui-ux-principles.md",
+    "lessons-learned/server-auth-and-partial-updates.md",
     "lessons-learned/debugging-practices.md",
     "architecture/gemini-integration.md",
     "nextjs-frontend/roles.md",

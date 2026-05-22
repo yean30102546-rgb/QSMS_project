@@ -1,0 +1,66 @@
+<h2>Determinant Loading Bar</h2>
+<p class="subtitle">รูปแบบแถบพลังที่ "ค่อยๆ เต็ม" จนถึง 100% เมื่อบันทึกเสร็จ</p>
+
+<div class="mockup" style="padding: 40px; background: white; border-radius: 20px; border: 1px solid #e2e8f0; max-width: 500px; margin: 0 auto;">
+  <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+    <span style="font-size: 13px; font-weight: 800; color: #1d1d1f; letter-spacing: 0.05em;">SAVING DATA...</span>
+    <span id="percent-text" style="font-size: 13px; font-weight: 800; color: #1d1d1f; font-family: monospace;">0%</span>
+  </div>
+  
+  <div style="width: 100%; height: 12px; background: #f1f5f9; border-radius: 100px; overflow: hidden; border: 1px solid #e2e8f0;">
+    <div id="progress-bar" style="width: 0%; height: 100%; background: #1d1d1f; border-radius: 100px; transition: width 0.3s ease-out;"></div>
+  </div>
+  
+  <p style="margin-top: 15px; font-size: 11px; color: #94a3b8; text-align: center; font-weight: bold;">
+    กำลังส่งข้อมูลไปยัง Google Sheets และ Supabase
+  </p>
+  
+  <div style="margin-top: 25px; display: flex; justify-content: center;">
+    <button onclick="simulateProgress()" style="background: #1d1d1f; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">กดเพื่อทดสอบ (Simulate)</button>
+  </div>
+</div>
+
+<script>
+function simulateProgress() {
+  const bar = document.getElementById('progress-bar');
+  const text = document.getElementById('percent-text');
+  let width = 0;
+  bar.style.width = '0%';
+  text.innerText = '0%';
+  
+  const interval = setInterval(() => {
+    if (width >= 100) {
+      clearInterval(interval);
+      text.innerText = 'COMPLETE!';
+      text.style.color = '#10b981';
+    } else {
+      width += Math.floor(Math.random() * 15) + 5;
+      if (width > 100) width = 100;
+      bar.style.width = width + '%';
+      text.innerText = width + '%';
+      text.style.color = '#1d1d1f';
+    }
+  }, 400);
+}
+</script>
+
+<div class="section">
+  <h3>Question: รูปแบบการแสดงผล</h3>
+  <p>คุณอยากให้แถบโหลดนี้แสดงผลแบบไหนครับ?</p>
+  <div class="options" data-choice-container>
+    <div class="option" data-choice="overlay" onclick="toggleSelect(this)">
+      <div class="letter">1</div>
+      <div class="content">
+        <h3>Full-screen Overlay</h3>
+        <p>บังทั้งหน้าจอเป็นสีขาวจางๆ (Blur) แล้วมีแถบโหลดตรงกลาง เพื่อไม่ให้ User กดปุ่มอื่นซ้ำ</p>
+      </div>
+    </div>
+    <div class="option" data-choice="modal-only" onclick="toggleSelect(this)">
+      <div class="letter">2</div>
+      <div class="content">
+        <h3>Inside Modal / Section</h3>
+        <p>แสดงผลเฉพาะในส่วนที่กำลังทำงาน (เช่น ภายใน Update Modal เท่านั้น)</p>
+      </div>
+    </div>
+  </div>
+</div>

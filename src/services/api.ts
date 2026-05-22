@@ -76,6 +76,7 @@ export interface MaterialUsage {
 export interface ReworkCase {
   id: string;
   date: string;
+  timestamp?: string;
   source: string;
   customerName?: string;
   status: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
@@ -356,6 +357,7 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
   return cases.map((caseItem) => ({
     id: normalizeString(caseItem.id),
     date: normalizeString(caseItem.date),
+    timestamp: caseItem.timestamp ? normalizeString(caseItem.timestamp) : undefined,
     source: normalizeString(caseItem.source),
     customerName: normalizeString(caseItem.customerName),
     status: caseItem.status || 'Pending',

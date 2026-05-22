@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { motion } from 'motion/react';

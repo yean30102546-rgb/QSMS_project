@@ -7,14 +7,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
+import dynamic from 'next/dynamic';
 
-import { WorkspacePortal } from './components/apps/portal/WorkspacePortal';
-import { Login } from './components/Login';
 import { portalAppRegistry } from './modules/platform/appRegistry';
 import type { AppView } from './modules/platform/types';
-import { RosterApp } from './modules/roster/RosterApp';
-import { ReworkApp } from './modules/rework/ReworkApp';
 import { getCurrentUser, isAuthenticated as authIsAuthenticated, logout as authLogout, type User } from './services/auth';
+
+const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
+const Login = dynamic(() => import('./components/Login').then(mod => mod.Login), { ssr: false });
+const RosterApp = dynamic(() => import('./modules/roster/RosterApp').then(mod => mod.RosterApp), { ssr: false });
+const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
 
 function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

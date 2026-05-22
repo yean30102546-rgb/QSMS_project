@@ -1,0 +1,109 @@
+<h2>Roster Preview: Metric View V2</h2>
+<p class="subtitle">เน้นข้อมูลสรุปที่สำคัญรายบุคคล และภาพรวมทีมที่ตัดสินใจได้ทันที</p>
+
+<div class="mockup" style="max-width: 800px; margin: 0 auto; background: #fafafa; border-radius: 32px; box-shadow: 0 40px 80px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; height: 600px;">
+  
+  <!-- Top Summary Cards -->
+  <div style="padding: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; background: #fff; border-bottom: 1px solid #f2f2f7;">
+    <div style="padding: 16px; background: #f8fafc; border-radius: 20px; border: 1px solid #e2e8f0;">
+      <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Staff Present</span>
+      <div style="font-size: 24px; font-weight: 800; color: #10b981; margin-top: 4px;">12 / 15</div>
+      <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">80% Capacity Today</div>
+    </div>
+    <div style="padding: 16px; background: #fff1f2; border-radius: 20px; border: 1px solid #fecdd3;">
+      <span style="font-size: 11px; font-weight: 800; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.05em;">On Leave</span>
+      <div style="font-size: 24px; font-weight: 800; color: #e11d48; margin-top: 4px;">3</div>
+      <div style="font-size: 11px; color: #fb7185; margin-top: 2px;">2 Sick, 1 Personal</div>
+    </div>
+    <div style="padding: 16px; background: #f5f3ff; border-radius: 20px; border: 1px solid #ddd6fe;">
+      <span style="font-size: 11px; font-weight: 800; color: #6d28d9; text-transform: uppercase; letter-spacing: 0.05em;">Retention Avg.</span>
+      <div style="font-size: 24px; font-weight: 800; color: #8b5cf6; margin-top: 4px;">92.5%</div>
+      <div style="font-size: 11px; color: #a78bfa; margin-top: 2px;">High consistency this month</div>
+    </div>
+  </div>
+
+  <!-- Scrollable Table Container -->
+  <div style="flex: 1; overflow-y: auto; background: #fff;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+      <thead style="position: sticky; top: 0; z-index: 10; background: #fff; box-shadow: 0 1px 0 #f2f2f7;">
+        <tr style="background: #fafafa;">
+          <th style="padding: 16px 24px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; width: 220px;">พนักงาน</th>
+          <th style="padding: 16px 12px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; text-align: center;">วันนี้</th>
+          <th style="padding: 16px 12px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; text-align: center;">สถิติการลา (พ.ค.)</th>
+          <th style="padding: 16px 24px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; text-align: center;">ความต่อเนื่อง</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Row 1 -->
+        <tr style="border-bottom: 1px solid #f2f2f7;">
+          <td style="padding: 20px 24px;">
+            <div style="font-size: 14px; font-weight: 700; color: #1d1d1f;">สมชาย ใจดี</div>
+            <div style="font-size: 11px; color: #86868b; margin-top: 2px;">Phase 1 • เริ่มงาน ส.02 พ.ค.</div>
+          </td>
+          <td style="padding: 20px 12px; text-align: center;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #10b981; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800;">
+              <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></span> ทำงาน
+            </span>
+          </td>
+          <td style="padding: 20px 12px; text-align: center;">
+            <div style="display: flex; justify-content: center; gap: 6px;">
+              <div title="ลาป่วย" style="background: #fff1f2; color: #f43f5e; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 1px solid #fee2e2;">0</div>
+              <div title="ลากิจ" style="background: #fff7ed; color: #f59e0b; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 1px solid #ffedd5;">1</div>
+              <div title="พักร้อน" style="background: #f5f3ff; color: #8b5cf6; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 1px solid #ddd6fe;">2</div>
+            </div>
+          </td>
+          <td style="padding: 20px 24px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div style="width: 100px; height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden;">
+                <div style="width: 85%; height: 100%; background: #1d1d1f; border-radius: 10px;"></div>
+              </div>
+              <span style="font-size: 11px; font-weight: 800; color: #1d1d1f;">85%</span>
+            </div>
+          </td>
+        </tr>
+        <!-- Row 2 (Alert State) -->
+        <tr style="border-bottom: 1px solid #f2f2f7;">
+          <td style="padding: 20px 24px;">
+            <div style="font-size: 14px; font-weight: 700; color: #1d1d1f;">นางสาว สมศรี</div>
+            <div style="font-size: 11px; color: #f59e0b; font-weight: 700; margin-top: 2px;">⚠️ ยังไม่ระบุวันเริ่มงาน</div>
+          </td>
+          <td style="padding: 20px 12px; text-align: center;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; background: #fff1f2; color: #f43f5e; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800;">
+              <span style="width: 6px; height: 6px; background: #f43f5e; border-radius: 50%;"></span> ลาป่วย
+            </span>
+          </td>
+          <td style="padding: 20px 12px; text-align: center;">
+            <div style="display: flex; justify-content: center; gap: 6px;">
+              <div title="ลาป่วย" style="background: #f43f5e; color: #fff; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2);">3</div>
+              <div title="ลากิจ" style="background: #fff7ed; color: #f59e0b; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 1px solid #ffedd5;">0</div>
+              <div title="พักร้อน" style="background: #f5f3ff; color: #8b5cf6; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 1px solid #ddd6fe;">0</div>
+            </div>
+          </td>
+          <td style="padding: 20px 24px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div style="width: 100px; height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden;">
+                <div style="width: 40%; height: 100%; background: #94a3b8; border-radius: 10px;"></div>
+              </div>
+              <span style="font-size: 11px; font-weight: 800; color: #94a3b8;">40%</span>
+            </div>
+          </td>
+        </tr>
+        <!-- Many dummy rows to show scrolling -->
+        <tr style="height: 100px; border-bottom: 1px solid #f2f2f7;"><td colspan="4" style="text-align: center; color: #ccc;">... scroll to see more staff ...</td></tr>
+        <tr style="height: 100px; border-bottom: 1px solid #f2f2f7;"><td colspan="4" style="text-align: center; color: #ccc;">... data continues ...</td></tr>
+        <tr style="height: 100px; border-bottom: 1px solid #f2f2f7;"><td colspan="4" style="text-align: center; color: #ccc;">... total 15 staff members ...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <h3>✨ Roster Preview Enhancements:</h3>
+  <ul>
+    <li><strong>Top-Level Metrics:</strong> การ์ดสรุปภาพรวมทีม (มา/ลา/อัตราคงที่) ช่วยให้หัวหน้างานรู้สถานะทีมใน 3 วินาที</li>
+    <li><strong>Visual Counter Boxes:</strong> แสดงจำนวนวันลาเป็นกล่องสีชัดเจน ถ้าวันลาเยอะจะมีเงาและสีเข้มขึ้นเพื่อให้เตะตา (Attention management)</li>
+    <li><strong>Sticky Header & Scroll:</strong> ออกแบบมาเพื่อรองรับรายชื่อพนักงานจำนวนมาก โดยที่หัวตารางและชื่อยังอยู่กับที่</li>
+    <li><strong>Priority Alerts:</strong> ปัญหาที่ต้องรีบแก้จะแสดงผลโดดเด่นใต้ชื่อพนักงาน</li>
+  </ul>
+  <p>การปรับปรุงนี้เน้นให้ข้อมูลที่ "สำคัญ" และ "นำไปใช้งานต่อได้" (Actionable) คุณโอเคกับทิศทางนี้ไหมครับ?</p>
+</div>

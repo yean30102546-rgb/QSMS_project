@@ -1,0 +1,98 @@
+<h2>Premium Apple-Style Loading</h2>
+<p class="subtitle">ยกระดับความพรีเมียมด้วยรายละเอียดที่เนียนตาขึ้น (Mac-inspired)</p>
+
+<div class="mockup" style="max-width: 500px; margin: 0 auto; background: white; border-radius: 32px; box-shadow: 0 30px 60px rgba(0,0,0,0.12); padding: 40px; border: 1px solid #f2f2f7;">
+  
+  <div id="premium-loading" style="display: block;">
+    <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end;">
+      <div>
+        <span style="font-size: 14px; font-weight: 700; color: #1d1d1f; display: block; margin-bottom: 2px;">Saving Rework Case</span>
+        <span id="status-text" style="font-size: 11px; color: #86868b; font-weight: 500;">Uploading images and syncing data...</span>
+      </div>
+      <span id="prem-percent" style="font-size: 12px; font-weight: 700; color: #1d1d1f; font-family: -apple-system, monospace;">0%</span>
+    </div>
+
+    <!-- Ultra-Sleek Bar -->
+    <div style="width: 100%; height: 6px; background: #f2f2f7; border-radius: 100px; overflow: hidden; position: relative; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+      <div id="prem-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #1d1d1f, #434343); border-radius: 100px; transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1); position: relative;">
+        <!-- Subtle moving light sweep (Indeterminate hint) -->
+        <div style="position: absolute; top: 0; left: 0; width: 100px; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); animation: sweep 2s infinite linear;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="prem-success" style="display: none; text-align: center; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+     <div style="width: 48px; height: 48px; background: #10b981; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+     </div>
+     <h3 style="font-size: 17px; font-weight: 700; color: #1d1d1f;">Successfully Saved</h3>
+     <p style="font-size: 13px; color: #86868b; margin-top: 4px;">Data is now live in both Supabase and Sheets.</p>
+  </div>
+
+  <div id="prem-btn-area" style="margin-top: 30px; display: flex; justify-content: center;">
+    <button onclick="simulatePremium()" style="background: #1d1d1f; color: white; border: none; padding: 12px 24px; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s active:scale(0.95); box-shadow: 0 8px 20px rgba(0,0,0,0.1);">Simulate Save</button>
+  </div>
+</div>
+
+<style>
+@keyframes sweep { from { transform: translateX(-150px); } to { transform: translateX(500px); } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+</style>
+
+<script>
+function simulatePremium() {
+  const bar = document.getElementById('prem-bar');
+  const text = document.getElementById('prem-percent');
+  const status = document.getElementById('status-text');
+  const loading = document.getElementById('premium-loading');
+  const success = document.getElementById('prem-success');
+  const btn = document.getElementById('prem-btn-area');
+
+  btn.style.opacity = '0.3';
+  btn.style.pointerEvents = 'none';
+  loading.style.display = 'block';
+  success.style.display = 'none';
+
+  let width = 0;
+  const statuses = ["Compressing images...", "Preparing data structure...", "Syncing with Supabase...", "Updating Google Sheets..."];
+  
+  const interval = setInterval(() => {
+    width += Math.floor(Math.random() * 10) + 5;
+    if (width >= 92) {
+      width = 92;
+      clearInterval(interval);
+      
+      // Complete after delay
+      setTimeout(() => {
+        bar.style.width = '100%';
+        text.innerText = '100%';
+        status.innerText = 'All systems synced!';
+        
+        setTimeout(() => {
+          loading.style.opacity = '0';
+          setTimeout(() => {
+            loading.style.display = 'none';
+            loading.style.opacity = '1';
+            success.style.display = 'block';
+            btn.style.display = 'none';
+          }, 300);
+        }, 600);
+      }, 800);
+    }
+    bar.style.width = width + '%';
+    text.innerText = width + '%';
+    status.innerText = statuses[Math.floor((width/100) * statuses.length)];
+  }, 400);
+}
+</script>
+
+<div class="section">
+  <h3>✨ สิ่งที่ปรับปรุงให้ดู Apple ยิ่งขึ้น:</h3>
+  <ul>
+    <li><strong>Moving Glow:</strong> เพิ่มแสงวิ่งจางๆ ภายในหลอด ให้ความรู้สึกว่าระบบกำลังประมวลผล (Indeterminate hint)</li>
+    <li><strong>Subtle Gradient:</strong> ใช้ Gradient สีเทาเข้มไปดำเพื่อให้ดูมีมิติ ไม่แบนราบ</li>
+    <li><strong>Dynamic Status Labels:</strong> เปลี่ยนข้อความสถานะตามความคืบหน้า (เช่น "Syncing...", "Uploading...") ให้ User รู้ว่าติดที่ขั้นตอนไหน</li>
+    <li><strong>Spring Curves:</strong> ใช้ Timing function ที่นุ่มนวลขึ้นในการขยับหลอด</li>
+  </ul>
+  <p>คุณโอเคกับความพรีเมียมระดับนี้ไหมครับ? หรืออยากให้ปรับสี/ความหนาจุดไหนเพิ่ม?</p>
+</div>

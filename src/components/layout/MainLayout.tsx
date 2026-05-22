@@ -1,3 +1,5 @@
+'use client';
+
 import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLeft } from 'lucide-react';

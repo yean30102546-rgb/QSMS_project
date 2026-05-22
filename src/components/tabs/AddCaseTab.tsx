@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X } from 'lucide-react';
@@ -660,33 +662,52 @@ export function AddCaseTab({
             </motion.div>
           ))}
 
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <motion.button
-              onClick={addFormItem}
-              disabled={isSaving}
-              whileHover={{ y: -2 }}
-              whileTap={{ y: 0 }}
-              transition={{ duration: 0.15 }}
-              className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-xs font-bold uppercase tracking-widest text-muted hover:bg-slate-50 disabled:opacity-50 sm:h-auto"
-            >
-              <Plus size={16} /> [ + ] เพิ่มรายการ
-            </motion.button>
-            <motion.button
-              onClick={handleSubmit}
-              disabled={isSaveDisabled(formItems) || isSaving}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              transition={{ duration: 0.15 }}
-              className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto overflow-hidden relative"
-            >
-              {isSaving ? (
-                <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />              ) : (
-                <>
-                  บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />
-                </>
-              )}
-            </motion.button>
-          </div>
+          <AnimatePresence mode="wait">
+            {isSaving ? (
+              <motion.div
+                key="saving-card"
+                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -15, scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                className="w-full rounded-2xl border border-slate-200/60 bg-white/90 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/90 dark:shadow-none"
+              >
+                <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="action-buttons"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col gap-4 sm:flex-row w-full"
+              >
+                <motion.button
+                  onClick={addFormItem}
+                  disabled={isSaving}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ y: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-xs font-bold uppercase tracking-widest text-muted hover:bg-slate-50 disabled:opacity-50 sm:h-auto"
+                >
+                  <Plus size={16} /> [ + ] เพิ่มรายการ
+                </motion.button>
+                <motion.button
+                  onClick={handleSubmit}
+                  disabled={isSaveDisabled(formItems) || isSaving}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto overflow-hidden relative"
+                >
+                  <>
+                    บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />
+                  </>
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <AnimatePresence>
             {saveMessage && (

@@ -203,5 +203,26 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-05-21*: เพิ่ม BUG-007: Image URL Sync Failure on Insert และอัปเดตประวัติแก้บั๊กย้อนหลัง
+## BUG-008: Case Submission Time Displays 07:00 For All Cases
+**Status**: ✅ FIXED (2026-05-22)
+- *Problem*: เวลาของเคส Rework ทั้งหมดแสดงเป็น 07:00 เสมอในรายการเคส หน้าต่างแสดงรายละเอียด (UpdateModal) และใบรายงาน (ExportTemplate) สาเหตุเกิดจากระบบใช้ฟิลด์ `caseItem.date` ซึ่งมีเฉพาะข้อมูลวันที่ (เช่น `YYYY-MM-DD`) ในการคำนวณ เมื่อ Javascript Date ทำการ parse จะตั้งเป็น UTC midnight (00:00:00Z) และเมื่อบวกเวลาชดเชยของโซนเวลากรุงเทพฯ (+07:00) จึงแสดงผลเป็น 07:00 ตลอดเวลา
+- *Solution*: 
+  1. เพิ่มฟิลด์ `timestamp?: string` ในโมเดลและอินเตอร์เฟส `ReworkCase` และทำ mapping ใน `normalizeCases` เพื่อส่งต่อข้อมูล `created_at` (เวลาสร้างเคสจริงจากฐานข้อมูล) มายัง frontend
+  2. ปรับปรุงคอมโพเนนต์ `CaseListTable`, `UpdateModal` และ `ExportTemplate` ให้จัดรูปแบบแสดงผลโดยใช้ `timestamp` จริงแทนวันที่ดั้งเดิม (fall back ไปที่ `date` ในกรณีไม่มีค่า)
+
+---
+
+## BUG-009: Gray-on-gray Visual Ambiguity & Layout Squishing in Save Case Progress Bar
+**Status**: ✅ FIXED (2026-05-22)
+- *Problem*: 
+  1. การเรนเดอร์ Progress Bar ภายในปุ่มบันทึกที่ถูก disabled ทับทำให้มี opacity 50% เคลือบจนมองไม่เห็นความคืบหน้า (เกิดปัญหาสีเทาซ้อนสีเทา)
+  2. แถบกว้าง `w-48` ใน UpdateModal แคบเกินไปสำหรับตัวหนังสือบอกสถานะยาวๆ ทำให้ตัวอักษรตัดขึ้นบรรทัดใหม่หรือแสดงไม่พอดี
+- *Solution*: 
+  1. แยกและแทนที่ปุ่มบันทึก/ปุ่มจัดการใน `AddCaseTab` เป็น **Dedicated Progress Card** สแตนด์อโลนเต็มรูปแบบเมื่อกำลังบันทึก ปราศจากการ disabled และรองรับธีมสีสไตล์ Apple
+  2. ปรับปรุง `AppleProgressBar` ให้มีขนาด capsule มน `h-2` ปรับโทนสี Gradient และแสงวิ่ง (shimmer sweep gradient) และนำ **Spring physics animation** มาประยุกต์ใช้เพื่อความพรีเมียม
+  3. ซ่อนปุ่ม Action อื่นชั่วขณะบันทึกใน `UpdateModal` เพื่อกันการกระทำซ้ำซ้อน และขยายพื้นที่ Progress Bar เป็น `w-72` เพื่อรองรับ text สถานะที่เรียงยาวสวยงาม
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-05-22*: เพิ่ม BUG-008 & BUG-009: บันทึกประวัติการพัฒนาและแก้ไขระบบ Progress Bar สไตล์ Apple Pro
 

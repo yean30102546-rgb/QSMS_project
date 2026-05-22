@@ -305,3 +305,12 @@
 
 @keyframes sweep { from { transform: translateX(-150px); } to { transform: translateX(500px); } }
 .animate-sweep { animation: sweep 2s infinite linear; }
+
+@keyframes sweep {
+  from { transform: translateX(-150px); }
+  to { transform: translateX(500px); }
+}
+
+.animate-sweep {
+  animation: sweep 2s infinite linear;
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
+import { assertPermission, AuthError, requireServerAuth } from '../../../lib/serverAuth';
 
 const getBangkokParts = () => {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -31,6 +32,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action } = body;
+    const requiresAuth = action !== 'loginWithPassword';
+    const auth = requiresAuth ? await requireServerAuth(body) : null;
 
     console.log(`🚀 Rework API Action: ${action}`, { bodyKeys: Object.keys(body) });
 
@@ -99,6 +102,8 @@ export async function POST(request: Request) {
       }
 
       case 'insertCase': {
+        if (!auth) throw new AuthError('Authentication required');
+        assertPermission(auth, 'create_case');
         const { caseData } = body;
         console.log('📦 Inserting Case Data:', { 
           id: caseData?.id, 
@@ -140,7 +145,7 @@ export async function POST(request: Request) {
             source: caseData.source,
             customer_name: primaryCustomer,
             status: caseData.status || 'Pending',
-            profile_id: caseData.profileId,
+            profile_id: auth.profile,
             image_folder_url: gasResponse.data?.caseFolderUrl || caseData.imageFolderUrl,
             or_folder_url: gasResponse.data?.orFolderUrl || caseData.orFolderUrl,
             or_files_urls: gasResponse.data?.orFilesUrls || caseData.orFilesUrls || [],
@@ -207,8 +212,25 @@ export async function POST(request: Request) {
       }
 
       case 'updateCaseStatus': {
+        if (!auth) throw new AuthError('Authentication required');
+        assertPermission(auth, 'update_status');
         const { caseId, status, resolutionMethod, reworkCost, performedBy } = body;
         const updates = body.updates || {};
+        const hasValuationChange =
+          reworkCost !== undefined ||
+          updates.reworkCost !== undefined ||
+          updates.laborRate !== undefined;
+        const hasResolutionChange =
+          resolutionMethod !== undefined ||
+          updates.resolutionMethod !== undefined;
+
+        if (hasValuationChange) {
+          assertPermission(auth, 'fill_valuation');
+        }
+
+        if (hasResolutionChange) {
+          assertPermission(auth, 'fill_resolution');
+        }
 
         console.log(`☁️ Proxying update to GAS for Case ID: ${caseId}...`);
         const gasResponse = await proxyToGAS({
@@ -221,6 +243,15 @@ export async function POST(request: Request) {
           console.error('❌ GAS Update Proxy failed:', gasResponse.error);
           throw new Error(`Google Sheets sync failed: ${gasResponse.error}`);
         }
+
+        const { data: existingCase, error: existingCaseError } = await supabaseServer
+          .from('rework_cases')
+          .select('status, resolution_method, total_rework_cost, labor_count, labor_hours, labor_rate, materials, customer_name, source, or_files_urls, or_folder_url')
+          .eq('id', caseId)
+          .maybeSingle();
+
+        if (existingCaseError) throw existingCaseError;
+        if (!existingCase) throw new Error(`Case ${caseId} not found`);
 
         // 1. Delete items if deleteItemIds exists
         if (updates.deleteItemIds && updates.deleteItemIds.length > 0) {
@@ -287,17 +318,17 @@ export async function POST(request: Request) {
         const { error: caseUpdateError } = await supabaseServer
           .from('rework_cases')
           .update({ 
-            status: status || updates.status, 
-            resolution_method: resolutionMethod || updates.resolutionMethod,
-            total_rework_cost: reworkCost !== undefined ? reworkCost : (updates.reworkCost !== undefined ? updates.reworkCost : 0),
-            labor_count: updates.laborCount !== undefined ? updates.laborCount : 0,
-            labor_hours: updates.laborHours !== undefined ? updates.laborHours : 0,
-            labor_rate: updates.laborRate !== undefined ? updates.laborRate : 0,
-            materials: updates.materials || [],
-            customer_name: updates.customerName,
-            source: updates.source,
-            or_files_urls: gasResponse.data?.orFilesUrls || updates.orFilesUrls || [],
-            or_folder_url: gasResponse.data?.orFolderUrl || updates.orFolderUrl || '',
+            status: status ?? updates.status ?? existingCase.status,
+            resolution_method: resolutionMethod ?? updates.resolutionMethod ?? existingCase.resolution_method,
+            total_rework_cost: reworkCost ?? updates.reworkCost ?? existingCase.total_rework_cost,
+            labor_count: updates.laborCount ?? existingCase.labor_count,
+            labor_hours: updates.laborHours ?? existingCase.labor_hours,
+            labor_rate: updates.laborRate ?? existingCase.labor_rate,
+            materials: updates.materials ?? existingCase.materials ?? [],
+            customer_name: updates.customerName ?? existingCase.customer_name,
+            source: updates.source ?? existingCase.source,
+            or_files_urls: gasResponse.data?.orFilesUrls ?? updates.orFilesUrls ?? existingCase.or_files_urls ?? [],
+            or_folder_url: gasResponse.data?.orFolderUrl ?? updates.orFolderUrl ?? existingCase.or_folder_url ?? '',
             updated_at: getBangkokISOString()
           })
           .eq('id', caseId);
@@ -308,7 +339,7 @@ export async function POST(request: Request) {
         await supabaseServer.from('rework_logs').insert([{
           case_id: caseId,
           action: `Status updated to ${status || updates.status}`,
-          performed_by: performedBy || 'System',
+          performed_by: performedBy || auth.profile || auth.email || 'System',
           timestamp: getBangkokISOString()
         }]);
 
@@ -327,6 +358,8 @@ export async function POST(request: Request) {
       }
 
       case 'deleteCase': {
+        if (!auth) throw new AuthError('Authentication required');
+        assertPermission(auth, 'delete_case');
         const { caseId } = body;
         const { error } = await supabaseServer
           .from('rework_cases')
@@ -427,6 +460,12 @@ export async function POST(request: Request) {
     }
   } catch (error: any) {
     console.error('❌ Rework API Error:', error);
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        { success: false, error: error.message, statusCode: error.status },
+        { status: error.status, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    }
     return NextResponse.json(
       { success: false, error: error?.message || 'เกิดข้อผิดพลาดภายในระบบ' },
       { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }

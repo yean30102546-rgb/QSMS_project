@@ -11,14 +11,10 @@
             "id": "6df75f71c9fa6504",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "DOCUMENTATION_INDEX.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "DOCUMENTATION_INDEX"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -185,10 +181,32 @@
   },
   "active": "6df75f71c9fa6504",
   "lastOpenFiles": [
+    "7 Key UI Design Principles + How To Use Them/7 Key UI Design Principles + How To Use Them.md",
+    "7 Key UI Design Principles + How To Use Them",
+    "10 UX/UI Design Portfolio Examples to Inspire You (Updated for 2026)/10 UXUI Design Portfolio Examples to Inspire You (Updated for 2026).md",
+    "การออกแบบ UX/UI ที่ดี/การออกแบบ UXUI ที่ดี และมีประสิทธิภาพ.md",
+    "10 UX/UI Design Portfolio Examples to Inspire You (Updated for 2026)",
+    "10 UX",
+    "VoltAgent/VoltAgentawesome-design-md A collection of DESIGN.md files inspired by popular brand design systems. Drop one into your project and let coding agents generate a matching UI.md",
+    "การออกแบบ UX/UI ที่ดี",
+    "การออกแบบ UX",
+    "VoltAgent",
+    "debugger.md/awesome-claude-code-subagentscategories04-quality-securitydebugger.md at main.md",
+    "How to Debug Your Code/How to Debug Your Code, the Right Way — Like a Pro with Examples.md",
+    "debugger.md",
+    "Kodezi Chronos/KodeziChronos Kodezi Chronos is a debugging-first language model that achieves state-of-the-art results on SWE-bench Lite (80.33%) and 67% real-world fix accuracy, over six times better than GPT-4. Built with Adaptive Graph-Guided Retrieval and.md",
+    "How to Debug Your Code",
+    "prisma/prismaprisma Next-generation ORM for Node.js & TypeScript  PostgreSQL, MySQL, MariaDB, SQL Server, SQLite, MongoDB and CockroachDB.md",
+    "Kodezi Chronos",
+    "prisma",
+    "Next.js คืออะไร ช่วยให้เราทำงานได้ง่ายขึ้นยังไงบ้าง/Next.js คืออะไร ช่วยให้เราทำงานได้ง่ายขึ้นยังไงบ้าง.md",
+    "5 reasons to choose Mantine (UI)/5 reasons to choose Mantine (UI).md",
+    "Next.js คืออะไร ช่วยให้เราทำงานได้ง่ายขึ้นยังไงบ้าง",
+    "Mantine/A fully featured React components library.md",
+    "100-javascript-projects/pradipchaudhary100-javascript-projects Explore a curated collection of 100 practical JavaScript projects to sharpen your skills from beginner to advanced levels.md",
+    "DOCUMENTATION_INDEX.md",
     "Untitled.canvas",
     "tech stack/tech stack 2026.md",
-    "tech stack",
-    "llm-wiki/llm-wiki.md",
-    "llm-wiki"
+    "llm-wiki/llm-wiki.md"
   ]
 }

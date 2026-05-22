@@ -3,6 +3,8 @@
  * Apple-inspired shared entry surface for modular portal flow
  */
 
+'use client';
+
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Eye, EyeOff, Lock, UserCircle2 } from 'lucide-react';

@@ -1,11 +1,21 @@
 # Next.js Config & Architecture — QSMS
-[วันที่อัปเดต: 2026-05-21]
+[วันที่อัปเดต: 2026-05-22]
 
 ## 1. Summary & Current Implementation
 โปรเจกต์ใช้ **Next.js App Router** (ไม่ใช่ Pages Router) รันที่ port 3000
 GAS ไม่ถูกเรียกตรงจาก browser — ผ่าน Next.js API Routes เป็น Proxy ทั้งหมด (แก้ปัญหา CORS)
 
-## 2. โครงสร้างสำคัญ
+## 2. Next.js 15 Features & Rendering Strategies
+โปรเจกต์ QSMS เลือกใช้ Next.js 15 เพื่อเพิ่มประสิทธิภาพและผลิตภาพของนักพัฒนา:
+- **Rendering Modes Selection**:
+  - **Server-Side Rendering (SSR)**: ทำการเรนเดอร์หน้าเว็บฝั่ง Server ทุกครั้งที่มี Request เหมาะสมกับข้อมูล Rework/Roster ที่เปลี่ยนแปลงบ่อยครั้งเพื่อความสดใหม่ของข้อมูล
+  - **Static Site Generation (SSG)**: เหมาะสำหรับหน้าเพจที่เป็นข้อมูลคงที่ (เช่น หน้าแนะนำหรือข้อตกลงใช้งาน) ซึ่งจะเรนเดอร์เป็น HTML ตั้งแต่ขั้นตอน Build ทำให้โหลดหน้าเว็บได้รวดเร็วมาก
+  - **Client-Side Rendering (CSR)**: ใช้สำหรับส่วนโต้ตอบที่ซับซ้อน เช่น ตารางเวรและการอัปเดตข้อมูลของ modal ที่ต้องการประมวลผลบนเบราว์เซอร์ทันที
+- **Automatic Code Splitting**: Next.js แบ่งย่อย JavaScript อัตโนมัติเป็นชิ้นเล็กๆ ตามเส้นทางที่ใช้งานจริง ทำให้ไฟล์ที่ไม่จำเป็นยังไม่ถูกโหลดมา ทำให้ผู้ใช้เข้าหน้า Portal ได้อย่างฉับไว
+- **Turbopack**: ใช้เป็นระบบ Compiler แทน Webpack ในระหว่างพัฒนา (`next dev --turbo`) ทำให้การประมวลผลและการทำ Fast Refresh รวดเร็วขึ้นอย่างมหาศาล
+- **Built-in Support for Tailwind CSS & TypeScript**: รองรับการตรวจสอบคุณภาพโค้ดผ่าน ESLint และการประมวลผลสไตล์ร่วมกับ Tailwind ได้อย่างเป็นธรรมชาติ
+
+## 3. โครงสร้างสำคัญ
 ```
 src/
 ├── app/

@@ -190,7 +190,7 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
           )}
         </div>
         <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-on-surface-variant/75">
-          <span>{formatTimestamp(caseItem.date)}</span>
+          <span>{formatTimestamp(caseItem.timestamp || caseItem.date)}</span>
           <span>&bull;</span>
           <span>แหล่งที่มา: <span className="font-semibold text-primary">{caseItem.source}</span></span>
           {caseItem.items.length > 0 && (

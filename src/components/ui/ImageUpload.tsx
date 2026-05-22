@@ -10,6 +10,8 @@
  * - Preview gallery
  */
 
+'use client';
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

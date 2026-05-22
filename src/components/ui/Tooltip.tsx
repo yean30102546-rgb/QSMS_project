@@ -8,6 +8,8 @@
  *   </Tooltip>
  */
 
+'use client';
+
 import React, { useState } from 'react';
 
 interface TooltipProps {

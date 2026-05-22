@@ -1,0 +1,73 @@
+<h2>Roster Summary: Alternative Cell Styles</h2>
+<p class="subtitle">เลือกรูปแบบการแสดงผลในตาราง "ภาพรวม" ที่นอกเหนือจากจุดสี</p>
+
+<div class="options" data-choice-container>
+  
+  <!-- Option A: Icon Indicators -->
+  <div class="option" data-choice="icons" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Icon-based Symbols</h3>
+      <p>ใช้ไอคอนสื่อความหมายแทนจุดสี ดูทันสมัยและเข้าใจง่ายขึ้น</p>
+      <div class="mockup" style="background: white; border-radius: 12px; margin-top: 10px; overflow: hidden; border: 1px solid #eee;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #f0f0f0;">
+            <td style="padding: 10px; font-size: 12px; font-weight: bold; width: 100px;">สมชาย</td>
+            <td style="padding: 10px; text-align: center;"><span style="color: #10b981;">✔</span></td>
+            <td style="padding: 10px; text-align: center;"><span style="color: #cbd5e1;">✖</span></td>
+            <td style="padding: 10px; text-align: center;"><span style="color: #8b5cf6;">✈</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Full-Cell Color (Heatmap) -->
+  <div class="option" data-choice="heatmap" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Full-Cell Color Blocks</h3>
+      <p>ระบายสีทั้งช่องสี่เหลี่ยม เห็นภาพรวมสัดส่วนวันทำงาน/วันหยุดชัดเจนเหมือนปฏิทินระดับโปร</p>
+      <div class="mockup" style="background: white; border-radius: 12px; margin-top: 10px; overflow: hidden; border: 1px solid #eee;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #f0f0f0;">
+            <td style="padding: 10px; font-size: 12px; font-weight: bold; width: 100px;">สมชาย</td>
+            <td style="background: #10b981; width: 30px; border: 1px solid white;"></td>
+            <td style="background: #f1f5f9; width: 30px; border: 1px solid white;"></td>
+            <td style="background: #8b5cf6; width: 30px; border: 1px solid white;"></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Text Badges (Abbr) -->
+  <div class="option" data-choice="pills" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Abbreviation Pills</h3>
+      <p>ใช้ตัวย่อในแคปซูลขนาดเล็ก อ่านง่ายและไม่ต้องเดาความหมายสี</p>
+      <div class="mockup" style="background: white; border-radius: 12px; margin-top: 10px; overflow: hidden; border: 1px solid #eee;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #f0f0f0;">
+            <td style="padding: 10px; font-size: 12px; font-weight: bold; width: 100px;">สมชาย</td>
+            <td style="padding: 5px; text-align: center;">
+              <span style="background: #ecfdf5; color: #10b981; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 800;">W</span>
+            </td>
+            <td style="padding: 5px; text-align: center;">
+              <span style="background: #f8fafc; color: #94a3b8; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 800;">O</span>
+            </td>
+            <td style="padding: 5px; text-align: center;">
+              <span style="background: #f5f3ff; color: #8b5cf6; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 800;">V</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section">
+  <p>คุณอยากให้เปลี่ยนจาก "จุด" เป็นรูปแบบไหนใน 3 อย่างนี้ครับ? หรือมีไอเดียอื่นที่อยากลองไหม?</p>
+</div>

@@ -4,6 +4,8 @@
  * All charts update reactively without page refresh
  */
 
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {

@@ -109,7 +109,7 @@ export const ExportTemplate = React.forwardRef<HTMLDivElement, ExportTemplatePro
             </div>
             <div style={infoBoxStyle}>
               <p style={infoLabelStyle}>วันที่รายงาน</p>
-              <p style={infoValueStyle}>{formatThaiDate(caseData.date)}</p>
+              <p style={infoValueStyle}>{formatThaiDate(caseData.timestamp || caseData.date)}</p>
             </div>
             <div style={infoBoxStyle}>
               <p style={infoLabelStyle}>จำนวนรายการรวม</p>

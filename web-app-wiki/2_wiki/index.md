@@ -6,7 +6,7 @@
 ## ⚠️ Active Conflicts
 _ไม่มีปัญหาค้างคาในขณะนี้_
 
-> 📥 **Ingested**: `1_raw/` + `archive_docs/` + `llm-wiki/` + `tech stack/` + `Mantine/` + `Next.js/` + `Prisma/` + `VoltAgent/` + `Kodezi Chronos/` + `debugger.md/` + `How to Debug Your Code/` — สังเคราะห์แล้วเมื่อ 2026-05-21
+> 📥 **Ingested**: `1_raw/` + `archive_docs/` + `llm-wiki/` + `tech stack/` + `Mantine/` + `Next.js/` + `Prisma/` + `VoltAgent/` + `Kodezi Chronos/` + `debugger.md/` + `How to Debug Your Code/` + `7 Key UI Design Principles.../` + `10 UX/` + `การออกแบบ UX/` + `Next.js คืออะไร.../` — สังเคราะห์แล้วเมื่อ 2026-05-22
 
 ---
 
@@ -22,6 +22,7 @@ _ไม่มีปัญหาค้างคาในขณะนี้_
 
 ## 🧩 Architecture & Patterns
 - [Design System](nextjs-frontend/design-system.md) - มาตรฐาน Minimal Monochrome (Apple Pro Style)
+- [UI/UX Design Principles](nextjs-frontend/ui-ux-principles.md) - Figma UI principles, BIZIDEA guidelines, and portfolio inspiration patterns
 - [LLM Wiki Pattern](architecture/llm-wiki-pattern.md) - Karpathy Method: Raw → Wiki → Schema
 - [Tech Stack 2026](architecture/tech-stack-2026.md) - Next.js+React standard, T3, MERN, Vector DB, Roadmap 7เดือน
 
@@ -35,11 +36,12 @@ _ไม่มีปัญหาค้างคาในขณะนี้_
 - [Refactoring History](nextjs-frontend/refactoring-history.md) - Component split, Case ID fix, Validation, Logger
 
 ## 📋 Lessons Learned & Fixes
-- [Bug & Fix History](lessons-learned/bugs-and-fixes.md) - BUG-001 ถึง BUG-007 (Rework Syncing, Timezones, & Images)
+- [Bug & Fix History](lessons-learned/bugs-and-fixes.md) - BUG-001 ถึง BUG-009 (Rework Syncing, Timezones, Images, Time offsets, & Apple Progress Bar Redesign)
+- [Server Auth & Partial Updates](lessons-learned/server-auth-and-partial-updates.md) - server-side JWT verification และการ merge partial update เพื่อกันข้อมูล valuation หาย
 - [JS Learning Resources](lessons-learned/js-projects-resource.md) - 100 JavaScript Projects
 - [UI Library Research](lessons-learned/ui-libraries-resource.md) - Mantine UI & Next.js Overview
 - [Systematic Debugging](lessons-learned/debugging-practices.md) - ระบบดีบั๊กเชิงรุกสไตล์ Chronos & Subagent Specs & Hooks rules
 
 ---
 
-> 🔄 *สังเคราะห์ข้อมูลล่าสุดเมื่อ 2026-05-21* — ระบบ wiki อัปเดตโดย AI Agent ตามโปรโตคอล AGENTS.md
+> 🔄 *สังเคราะห์ข้อมูลล่าสุดเมื่อ 2026-05-22* — ระบบ wiki อัปเดตโดย AI Agent ตามโปรโตคอล AGENTS.md

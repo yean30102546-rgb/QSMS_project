@@ -1,0 +1,52 @@
+<h2>Loading Animation Styles</h2>
+<p class="subtitle">เลือกสไตล์การ Loading ที่เหมาะกับระบบ QSMS ของคุณ</p>
+
+<div class="options">
+  <div class="option" data-choice="apple-spinner" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Apple Pro Spinner</h3>
+      <p>คลาสสิก มินิมอล ใช้เส้นหมุนแบบนุ่มนวล เหมาะกับการโหลดสั้นๆ ในปุ่มหรือ Modal</p>
+      <div class="mockup" style="display:flex; justify-content:center; align-items:center; height:60px; background:white; border-radius:12px; margin-top:10px;">
+        <div style="width:24px; height:24px; border:3px solid #e2e8f0; border-top:3px solid #1d1d1f; border-radius:50%; animation: spin 1s linear infinite;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="pulse-shimmer" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Modern Pulse / Shimmer</h3>
+      <p>ใช้การไล่เฉดสีที่เคลื่อนไหว (Skeleton) ให้ความรู้สึกทันสมัยและดู "มีชีวิต" ระหว่างรอข้อมูล</p>
+      <div class="mockup" style="padding:15px; background:white; border-radius:12px; margin-top:10px;">
+        <div style="height:12px; width:70%; background:linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size:200% 100%; border-radius:6px; animation: shimmer 1.5s infinite;"></div>
+        <div style="height:12px; width:40%; background:linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size:200% 100%; border-radius:6px; margin-top:8px; animation: shimmer 1.5s infinite;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="industrial-bar" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Industrial Progress Bar</h3>
+      <p>แถบสถานะที่วิ่งไปข้างหน้า เหมาะสำหรับงานบันทึกข้อมูลหนักๆ ที่ต้องการความชัดเจน</p>
+      <div class="mockup" style="padding:15px; background:white; border-radius:12px; margin-top:10px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="width:100%; height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;">
+          <div style="width:60%; height:100%; background:#1d1d1f; animation: progress 2s infinite ease-in-out;"></div>
+        </div>
+        <span style="font-size:10px; font-weight:bold; margin-top:8px; color:#64748b; text-align:center;">บันทึกข้อมูล...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+</style>
+
+<div class="section">
+  <h3>เลือกสไตล์ที่คุณชอบ</h3>
+  <p>หรือถ้าอยากได้แบบ Overlay บังทั้งหน้าจอ (Full-screen Overlay) ระหว่างบันทึกข้อมูล บอกได้เลยนะครับ!</p>
+</div>

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2, Package } from 'lucide-react';
@@ -379,7 +381,7 @@ export function UpdateModal({
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">วันที่</p>
-                            <p className="text-sm font-bold text-foreground">{formatThaiDate(caseData.date)}</p>
+                            <p className="text-sm font-bold text-foreground">{formatThaiDate(caseData.timestamp || caseData.date)}</p>
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">จำนวนรายการ</p>
@@ -1032,13 +1034,13 @@ export function UpdateModal({
                       </button>
                     </div>
 
-                    <div className="flex gap-3">
-                      {isAdmin && (
+                    <div className="flex gap-3 items-center">
+                      {!isSaving && isAdmin && (
                         <>
                           <button
                             type="button"
                             onClick={() => setIsEditMode(!isEditMode)}
-                            disabled={isLoading || isSaving}
+                            disabled={isLoading}
                             className={`px-6 py-2.5 rounded-xl border text-sm font-semibold transition-colors disabled:opacity-50 ${
                               isEditMode 
                               ? 'bg-amber-50 border-amber-200 text-amber-700' 
@@ -1050,23 +1052,25 @@ export function UpdateModal({
                           <button
                             type="button"
                             onClick={handleDelete}
-                            disabled={isLoading || isSaving}
+                            disabled={isLoading}
                             className="px-6 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-50"
                           >
                             ลบรายการ
                           </button>
                         </>
                       )}
-                      <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isLoading || isSaving}
-                        className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-50"
-                      >
-                        ยกเลิก
-                      </button>
+                      {!isSaving && (
+                        <button
+                          type="button"
+                          onClick={onClose}
+                          disabled={isLoading}
+                          className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-50"
+                        >
+                          ยกเลิก
+                        </button>
+                      )}
                       {isSaving ? (
-                        <div className="w-48 flex items-center">
+                        <div className="w-72 flex items-center">
                           <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
                         </div>
                       ) : (
