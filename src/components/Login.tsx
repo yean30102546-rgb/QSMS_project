@@ -17,6 +17,10 @@ export function Login({
   onSuccess: (authenticated?: boolean) => void;
   onBack?: () => void;
 }) {
+  const handleBack = onBack || (() => {
+    window.location.href = '/';
+  });
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -84,16 +88,15 @@ export function Login({
           </div>
 
           <div className="bg-white/80 px-6 py-8 md:px-9 md:py-10">
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="mb-6 inline-flex items-center gap-1 text-xs font-semibold text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
-              >
-                <ChevronLeft size={14} />
-                ย้อนกลับสู่ศูนย์ควบคุม
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleBack}
+              className="mb-6 inline-flex items-center gap-1 text-xs font-semibold text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+            >
+              <ChevronLeft size={14} />
+              ย้อนกลับสู่ศูนย์ควบคุม
+            </button>
+
             <div className="mb-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6e6e73]">Sign in</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">เข้าสู่ Central Control</h2>
