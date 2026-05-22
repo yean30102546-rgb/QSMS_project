@@ -22,7 +22,8 @@ function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [appUser, setAppUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<AppView>('login');
+  const [currentView, setCurrentView] = useState<AppView>('portal');
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState<AppView | null>(null);
 
   useEffect(() => {
     const authenticated = authIsAuthenticated();
@@ -30,7 +31,7 @@ function AuthWrapper() {
 
     setIsAuthenticated(authenticated);
     setAppUser(currentUser);
-    setCurrentView(authenticated ? 'portal' : 'login');
+    setCurrentView('portal');
     setAuthLoading(false);
   }, []);
 
@@ -38,21 +39,35 @@ function AuthWrapper() {
     if (authenticated) {
       setIsAuthenticated(true);
       setAppUser(getCurrentUser());
-      setCurrentView('portal');
+      if (redirectAfterLogin) {
+        setCurrentView(redirectAfterLogin);
+        setRedirectAfterLogin(null);
+      } else {
+        setCurrentView('portal');
+      }
       return;
     }
 
     const stillAuthenticated = authIsAuthenticated();
     setIsAuthenticated(stillAuthenticated);
     setAppUser(getCurrentUser());
-    setCurrentView(stillAuthenticated ? 'portal' : 'login');
+    if (stillAuthenticated) {
+      if (redirectAfterLogin) {
+        setCurrentView(redirectAfterLogin);
+        setRedirectAfterLogin(null);
+      } else {
+        setCurrentView('portal');
+      }
+    } else {
+      setCurrentView('login');
+    }
   };
 
   const handleLogout = async () => {
     await authLogout();
     setIsAuthenticated(false);
     setAppUser(null);
-    setCurrentView('login');
+    setCurrentView('portal');
   };
 
   if (authLoading) {
@@ -67,8 +82,16 @@ function AuthWrapper() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Login onSuccess={refreshAuth} />;
+  if (currentView === 'login') {
+    return (
+      <Login
+        onSuccess={refreshAuth}
+        onBack={() => {
+          setRedirectAfterLogin(null);
+          setCurrentView('portal');
+        }}
+      />
+    );
   }
 
   if (currentView === 'portal') {
@@ -76,8 +99,18 @@ function AuthWrapper() {
       <WorkspacePortal
         user={appUser}
         apps={portalAppRegistry}
-        onOpenApp={(route) => setCurrentView(route)}
+        onOpenApp={(route) => {
+          if (route === 'portal') {
+            setCurrentView('portal');
+          } else if (isAuthenticated) {
+            setCurrentView(route);
+          } else {
+            setRedirectAfterLogin(route);
+            setCurrentView('login');
+          }
+        }}
         onLogout={handleLogout}
+        onLogin={() => setCurrentView('login')}
       />
     );
   }

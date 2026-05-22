@@ -23,6 +23,7 @@ interface WorkspacePortalProps {
   apps: PortalAppDefinition[];
   onOpenApp: (route: PortalAppDefinition['route']) => void;
   onLogout: () => void;
+  onLogin?: () => void;
 }
 
 export function WorkspacePortal({
@@ -30,8 +31,10 @@ export function WorkspacePortal({
   apps,
   onOpenApp,
   onLogout,
+  onLogin,
 }: WorkspacePortalProps) {
-  const greetingName = user?.name || 'User';
+  const isGuest = !user;
+  const greetingName = user?.name || 'ผู้เยี่ยมชม';
   
   // Preview Stats State
   const [reworkStats, setReworkStats] = useState({
@@ -53,6 +56,43 @@ export function WorkspacePortal({
   });
 
   useEffect(() => {
+    if (isGuest) {
+      const fetchPublic = async () => {
+        try {
+          const response = await fetch('/api/rework', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'fetchPublicOverview' })
+          });
+          const resJson = await response.json();
+          if (resJson.success && resJson.data) {
+            const { rework, roster } = resJson.data;
+            setReworkStats({
+              total: rework.total,
+              pending: rework.pending,
+              inProgress: rework.inProgress,
+              awaitingValuation: rework.awaitingValuation,
+              completed: rework.completed,
+              completionRate: rework.completionRate,
+              hasData: true
+            });
+            setRosterStats({
+              totalEmployees: roster.totalEmployees,
+              staffPresentCount: roster.staffPresentCount,
+              onLeaveCount: roster.onLeaveCount,
+              leaveSummary: roster.leaveSummary,
+              retentionRate: roster.retentionRate,
+              hasData: true
+            });
+          }
+        } catch (err) {
+          console.error('Failed to fetch public stats overview:', err);
+        }
+      };
+      fetchPublic();
+      return;
+    }
+
     // Current Month Key for Roster (YYYY-MM)
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -132,7 +172,7 @@ export function WorkspacePortal({
 
     fetchRework();
     fetchRoster();
-  }, []);
+  }, [isGuest]);
 
   return (
     <div className="apple-shell flex min-h-screen flex-col overflow-y-auto bg-gradient-to-br from-[#F0F7FF] via-[#FFFFFF] to-[#F5F9FF]">
@@ -153,15 +193,27 @@ export function WorkspacePortal({
             </div>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="button"
-            onClick={onLogout}
-            className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-semibold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
-          >
-            ออกจากระบบ
-          </motion.button>
+          {isGuest ? (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={onLogin}
+              className="rounded-xl bg-[#1d1d1f] px-5 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-black"
+            >
+              เข้าสู่ระบบ
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={onLogout}
+              className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-semibold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
+            >
+              ออกจากระบบ
+            </motion.button>
+          )}
         </header>
 
         <section className="mb-12 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -176,7 +228,7 @@ export function WorkspacePortal({
               Welcome to the Workspace
             </p>
             <h2 className="max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.03em] text-[#1d1d1f] md:text-5xl">
-              สวัสดีคุณ {greetingName}, ยินดีต้อนรับสู่ระบบงานกลาง
+              สวัสดีคุณ{greetingName}, ยินดีต้อนรับสู่ระบบงานกลาง
             </h2>
             <p className="mt-5 max-w-2xl text-[17px] leading-7 text-[#515154]">
               เลือกใช้งานโมดูลที่ต้องการผ่านศูนย์กลางควบคุมนี้ ระบบ Rework พร้อมใช้งานเต็มรูปแบบ 
@@ -192,8 +244,17 @@ export function WorkspacePortal({
           >
             <div className="rounded-[28px] bg-black/5 p-5 backdrop-blur-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/50">โปรไฟล์ของคุณ</p>
-              <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">{user?.role?.toUpperCase() || 'USER'}</p>
-              <p className="mt-1 text-sm leading-6 text-[#515154]">{user?.email || 'เข้าสู่ระบบด้วยสิทธิ์ Platform'}</p>
+              {isGuest ? (
+                <>
+                  <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">GUEST (ผู้มาเยือน)</p>
+                  <p className="mt-1 text-sm leading-6 text-[#515154]">เข้าสู่ระบบเพื่อใช้งานระบบแบบเต็มรูปแบบ</p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">{user?.role?.toUpperCase() || 'USER'}</p>
+                  <p className="mt-1 text-sm leading-6 text-[#515154]">{user?.email || 'เข้าสู่ระบบด้วยสิทธิ์ Platform'}</p>
+                </>
+              )}
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
               <div className="rounded-[28px] bg-white/40 p-5 border border-white/40">
@@ -254,8 +315,12 @@ export function WorkspacePortal({
                   app.id === 'rework' ? (
                     <div className="mt-6 flex flex-col gap-4 rounded-[24px] bg-white/40 p-4 border border-white/30 backdrop-blur-md shadow-inner">
                       <div className="flex items-center justify-between text-xs font-semibold text-on-surface-variant/80 px-1">
-                        <span className="font-medium text-slate-500">
-                          คืบหน้า ({reworkStats.hasData ? `${reworkStats.completed}/${reworkStats.total}` : '--/--'} เสร็จสิ้น)
+                        <span className="font-medium text-slate-500 flex items-center gap-1.5">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          </span>
+                          ข้อมูลจริงล่าสุด (Live): คืบหน้า ({reworkStats.hasData ? `${reworkStats.completed}/${reworkStats.total}` : '--/--'} เสร็จ)
                         </span>
                         <span className="text-emerald-600 font-semibold">{reworkStats.hasData ? `${reworkStats.completionRate}%` : '--%'}</span>
                       </div>
@@ -387,8 +452,11 @@ export function WorkspacePortal({
                       <div className="mt-1 flex flex-col gap-2 rounded-2xl bg-white/50 p-3.5 border border-white/40">
                         <div className="flex justify-between items-center px-1">
                           <div className="flex items-center gap-1.5">
-                            <Activity size={14} className="text-sky-600" />
-                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">อัตราการมาทำงาน (เดือนนี้)</span>
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">อัตราการมาทำงานสะสม (Live)</span>
                           </div>
                           <span className="text-xs font-bold text-slate-700">
                             {rosterStats.hasData ? `${rosterStats.retentionRate}%` : '--%'}

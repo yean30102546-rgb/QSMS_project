@@ -32,12 +32,103 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action } = body;
-    const requiresAuth = action !== 'loginWithPassword';
+    const requiresAuth = action !== 'loginWithPassword' && action !== 'fetchPublicOverview';
     const auth = requiresAuth ? await requireServerAuth(body) : null;
 
     console.log(`🚀 Rework API Action: ${action}`, { bodyKeys: Object.keys(body) });
 
     switch (action) {
+      case 'fetchPublicOverview': {
+        const todayKey = getBangkokDateString();
+        const currentMonthKey = todayKey.substring(0, 7);
+
+        // Fetch data in parallel
+        const [casesRes, empRes, todayLeavesRes, monthLeavesRes] = await Promise.all([
+          supabaseServer
+            .from('rework_cases')
+            .select('status')
+            .eq('is_deleted', false),
+          supabaseServer
+            .from('roster_employees')
+            .select('id'),
+          supabaseServer
+            .from('roster_leaves')
+            .select('leave_type')
+            .eq('date_key', todayKey),
+          supabaseServer
+            .from('roster_leaves')
+            .select('id')
+            .like('date_key', `${currentMonthKey}-%`)
+        ]);
+
+        if (casesRes.error) throw casesRes.error;
+        if (empRes.error) throw empRes.error;
+        if (todayLeavesRes.error) throw todayLeavesRes.error;
+        if (monthLeavesRes.error) throw monthLeavesRes.error;
+
+        // 1. Rework calculations
+        let pending = 0;
+        let inProgress = 0;
+        let awaitingValuation = 0;
+        let completed = 0;
+
+        (casesRes.data || []).forEach((c: any) => {
+          if (c.status === 'Pending') pending++;
+          else if (c.status === 'In-Progress') inProgress++;
+          else if (c.status === 'Awaiting Valuation') awaitingValuation++;
+          else if (c.status === 'Completed') completed++;
+        });
+
+        const totalCases = pending + inProgress + awaitingValuation + completed;
+        const completionRate = totalCases > 0 ? parseFloat(((completed / totalCases) * 100).toFixed(1)) : 0;
+
+        // 2. Roster calculations
+        const totalEmployees = empRes.data.length;
+        const onLeaveCount = todayLeavesRes.data.length;
+        const staffPresentCount = Math.max(0, totalEmployees - onLeaveCount);
+
+        const leaveSummary = { sick: 0, business: 0, vacation: 0 };
+        todayLeavesRes.data.forEach((l: any) => {
+          const type = (l.leave_type || '').toLowerCase();
+          if (type.includes('sick') || type.includes('ป่วย')) leaveSummary.sick++;
+          else if (type.includes('business') || type.includes('กิจ')) leaveSummary.business++;
+          else leaveSummary.vacation++;
+        });
+
+        const workDays = 22;
+        const totalPossibleManDays = totalEmployees * workDays;
+        let retentionRate = 100;
+        if (totalPossibleManDays > 0) {
+          const totalLeavesInMonth = monthLeavesRes.data.length;
+          const attendance = ((totalPossibleManDays - totalLeavesInMonth) / totalPossibleManDays) * 100;
+          retentionRate = parseFloat(Math.min(100, Math.max(0, attendance)).toFixed(1));
+        }
+
+        return NextResponse.json(
+          {
+            success: true,
+            data: {
+              rework: {
+                total: totalCases,
+                pending,
+                inProgress,
+                awaitingValuation,
+                completed,
+                completionRate
+              },
+              roster: {
+                totalEmployees,
+                staffPresentCount,
+                onLeaveCount,
+                leaveSummary,
+                retentionRate
+              }
+            }
+          },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
+      }
+
       case 'fetchAllCases': {
         const { data, error } = await supabaseServer
           .from('rework_cases')
