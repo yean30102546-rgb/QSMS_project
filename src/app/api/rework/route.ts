@@ -542,6 +542,81 @@ export async function POST(request: Request) {
         });
       }
 
+      case 'loginWithPassword': {
+        const { profile, password } = body;
+        const profileLower = (profile || '').toLowerCase();
+
+        // MOCK ACCOUNTS
+        const mockAccounts: Record<string, { pass: string, role: string, name: string }> = {
+          'qsms': { pass: 'Qsms123', role: 'qsms', name: 'QSMS Test' },
+          'operator': { pass: 'Operator123', role: 'operator', name: 'Operator Test' },
+          'finance': { pass: 'Finance123', role: 'finance', name: 'Finance Test' }
+        };
+
+        if (mockAccounts[profileLower]) {
+          if (mockAccounts[profileLower].pass === password) {
+            // Generate a fake JWT token that passes frontend AND backend validation
+            const headerObj = { alg: 'HS256', typ: 'JWT' };
+            const payloadObj = {
+              sub: profileLower,
+              profile: mockAccounts[profileLower].role, // MUST match serverAuth.ts expectation
+              exp: Math.floor(Date.now() / 1000) + (8 * 3600),
+              type: 'auth_token'
+            };
+            
+            const headerStr = Buffer.from(JSON.stringify(headerObj)).toString('base64url');
+            const payloadStr = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+            const unsignedToken = `${headerStr}.${payloadStr}`;
+            
+            // Sign the token using AUTH_SECRET (same logic as serverAuth.ts)
+            const AUTH_SECRET = (process.env.AUTH_TOKEN_SECRET || process.env.GAS_AUTH_TOKEN_SECRET || '').trim();
+            let mockToken = unsignedToken;
+            if (AUTH_SECRET) {
+              const key = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(AUTH_SECRET),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign'],
+              );
+              const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(unsignedToken));
+              const signatureStr = Buffer.from(signature).toString('base64url');
+              mockToken = `${unsignedToken}.${signatureStr}`;
+            } else {
+              // If no secret, just append a mock signature (it will fail later if secret is expected, but better than nothing)
+              mockToken = `${unsignedToken}.mock-signature`;
+            }
+
+            return NextResponse.json(
+              {
+                success: true,
+                data: {
+                  token: mockToken,
+                  user: {
+                    email: `${profileLower}@test.com`,
+                    name: mockAccounts[profileLower].name,
+                    role: mockAccounts[profileLower].role
+                  },
+                  expiresIn: 8 * 3600
+                }
+              },
+              { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+            );
+          } else {
+            return NextResponse.json(
+              { success: false, error: 'รหัสผ่านไม่ถูกต้อง (Mock)' },
+              { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+            );
+          }
+        }
+
+        // Fallback to GAS
+        const result = await proxyToGAS(body);
+        return NextResponse.json(result, {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+      }
+
       default: {
         const result = await proxyToGAS(body);
         return NextResponse.json(result, {

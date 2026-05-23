@@ -13,21 +13,22 @@ export enum UserRole {
   PDB      = 'pdb',      // Add/Overall/Update/Resolution/Export
   OPERATOR = 'operator', // Production Rework
   FINANCE  = 'finance',  // Overall (Valuation only)
+  WFG      = 'wfg',      // Rework only, Add Case, Overall, Update Resolution
 }
 ```
 
 ## 3. Permission Matrix
-| Permission | ADMIN | QSMS | PDB | OPERATOR | FINANCE |
-|---|:---:|:---:|:---:|:---:|:---:|
-| `view_dashboard` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `view_overall` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `create_case` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `edit_case` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `delete_case` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `update_status` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `fill_resolution` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `fill_valuation` | ✅ | ✅ | ❌ | ❌ | ✅ |
-| `export_data` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Permission | ADMIN | QSMS | PDB | OPERATOR | FINANCE | WFG |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| `view_dashboard` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `view_overall` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `create_case` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| `edit_case` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `delete_case` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `update_status` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| `fill_resolution` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| `fill_valuation` | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| `export_data` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ## 4. วิธีตรวจสิทธิ์ในโค้ด
 ```typescript

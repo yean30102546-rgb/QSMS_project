@@ -66,10 +66,11 @@ export function UpdateModal({
   const userRole = getCurrentUserRole();
   const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.QSMS;
   const isFinance = userRole === UserRole.FINANCE || isAdmin;
-  const isPDB = userRole === UserRole.PDB || isAdmin;
-  const isOperator = userRole === UserRole.OPERATOR || isAdmin;
+  const isPDB = userRole === UserRole.PDB || userRole === UserRole.WFG || userRole === UserRole.OPERATOR || isAdmin;
+  const isOperator = userRole === UserRole.OPERATOR || userRole === UserRole.WFG || userRole === UserRole.PDB || isAdmin;
 
-  const isStrictOperator = userRole === UserRole.OPERATOR && !isAdmin;
+  const isRestrictedRole = userRole === UserRole.OPERATOR || userRole === UserRole.WFG || userRole === UserRole.PDB;
+  const isStrictOperator = isRestrictedRole && !isAdmin;
   const canManageRows = isOperator || isAdmin;
   const canEditMaterialNameQty = isOperator || isAdmin;
   const canEditUnitPrice = isFinance || isAdmin;

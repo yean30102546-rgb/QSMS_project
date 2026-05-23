@@ -94,3 +94,26 @@ Knowledge สำคัญที่ได้:
   - แนวทางการสืบค้นและวินิจฉัยบั๊กผ่าน GitHub (รวมถึง Case Study การใช้ Asynchronous `.fetch()` เลี่ยงการเรียกใช้ Hook ใน `useEffect` ของ tRPC)
 - **Index Update**: เชื่อมโยงและลงทะเบียนหน้าเอกสารใหม่ลงในสารบัญหลัก [index.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/index.md)
 
+## 2026-05-23
+
+### [Testing] จัดทำระบบทดสอบอัตโนมัติ (Testing Pipeline)
+- **Unit & Integration Testing (Vitest)**: ติดตั้งและตั้งค่า Vitest ร่วมกับ React Testing Library เขียนครอบคลุม 51 Test Cases ตรวจทานฟังก์ชัน helper, ฟอร์ม validation, และการเข้าถึงตามบทบาท (RBAC) ใน Auth Service
+- **Bug Fix**: แก้ปัญหา BUG-011 จัดเรียงเคส Rework เพื่อแสดงสถานะ Pending ขึ้นลำดับแรกสุดตามด้วย In-Progress, Awaiting Valuation, และ Completed เสมอ พร้อมเรียงตามวันที่สร้างเคสจากล่าสุดลงมา
+- **End-to-End Testing (Playwright)**: ตั้งค่าและเขียนสคริปต์ Playwright E2E 3 ชุด: หน้า Landing Page, ระบบล็อกอินด้วย PIN (Guest / Success / Failure / Logout), และระบบส่งฟอร์ม Rework พร้อมจำลองการดึงชื่อสินค้าอัตโนมัติ (Autofill) และระบบเลือกโมดอล
+- **Wiki Update**: บันทึกหน้าเอกสาร [testing-pipeline.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/nextjs-frontend/testing-pipeline.md) และลงทะเบียนใน [index.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/index.md) พร้อมบันทึก [log.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/log.md)
+
+### [Ingest] สังเคราะห์ความรู้จากโฟลเดอร์ Raw และ Workspace (Deep Agents Framework, Harness Skills, Testsprite, & General Learnings)
+- **Deep Agents Framework**: สังเคราะห์ความรู้เกี่ยวกับ Monorepo structure, core SDK components (filesystem, sub-agents, memory, skills), make commands, และ ruff/conventional commits coding guidelines จากโฟลเดอร์ `deepagents-main` และ raw markdown ลงใน [deepagents.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/agent-frameworks/deepagents.md)
+- **Harness Skills**: บันทึกรูปแบบและการตั้งค่าบอร์ดทักษะ (Agent Skills) สำหรับการทำงานร่วมกับ AI Coding Assistants (Claude Code, Cursor, Copilot) และ Harness MCP v2 Server ลงใน [harness-skills.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/agent-frameworks/harness-skills.md)
+- **Testsprite spec & tests**: จัดทำสเปกการทดสอบอัตโนมัติของสิทธิ์เข้าใช้งานตามบทบาท (RBAC) และการทดสอบ Golden Path โดยแปลงข้อมูลสเปกดิวและชุดรหัสทดสอบ Python Playwright ลงใน [testsprite-testing.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/nextjs-frontend/testsprite-testing.md)
+- **General Development Learnings**: รวบรวมบทเรียนการเขียนโปรแกรม การทำ Form validation, Google Sheets batch update logic, timezones direct parsing, และ dynamic SSR exclusion config (Hydration mismatch) ลงใน [development-learnings.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/lessons-learned/development-learnings.md)
+- **Index Update**: อัปเดตลิสต์ของ Ingested files และลงทะเบียนลิงก์หน้าเอกสารใหม่ทั้งหมดลงในสารบัญหลัก [index.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/index.md)
+
+### [RBAC] เพิ่มและกำหนดสิทธิ์ผู้ใช้กลุ่ม WFG และยุบรวมสิทธิ์ (Consolidation)
+- **WFG Role Addition**: เพิ่มบทบาทใหม่ `WFG` เข้าสู่ระบบ RBAC เพื่อจำกัดการเข้าถึง
+- **Portal & Routing Guards**: ซ่อนโมดูล Roster จากกลุ่มผู้ใช้ WFG, Operator และ PDB ใน WorkspacePortal และเขียน Guard block การเข้า URL โดยตรงใน `App.tsx`
+- **Rework Permissions Consolidation**: อัปเดตระบบตรวจสอบสิทธิ์ให้ Operator, WFG และ PDB มีระดับสิทธิ์เดียวกันทั้งหมด คือสามารถ เพิ่มงาน อัปเดตสถานะเป็น "กำลังดำเนินการ" หรือ "รอประเมินราคา" ได้ สามารถใส่วัสดุและจำนวนชั่วโมงช่างได้ แต่ **ไม่สามารถกรอกช่องค่าใช้จ่าย (Cost/Unit Price)** และถูกตัดสิทธิ์การ Export ข้อมูล
+- **Test Accounts**: เพิ่ม Mock credentials ใน `app/api/rework/route.ts` สำหรับการทดสอบด้วย `qsms`, `operator`, และ `finance`
+- **Wiki Update**: บันทึกโครงสร้าง Permission matrix ที่อัปเดตใหม่ลงในหน้า [roles.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/nextjs-frontend/roles.md) และลงข้อมูลใน [log.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/log.md)
+
+

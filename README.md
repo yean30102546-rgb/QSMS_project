@@ -111,6 +111,20 @@ src/
    npm run lint
    ```
 
+5. **การรันทดสอบระบบ (Testing)**
+   * **Unit & Integration Tests (Vitest):**
+     ```bash
+     npm run test
+     ```
+   * **End-to-End Tests (Playwright E2E):**
+     ```bash
+     npm run test:e2e
+     ```
+     หรือหากต้องการรันเพื่อดีบั๊กแบบมี UI/Interactive mode:
+     ```bash
+     npx playwright test --ui
+     ```
+
 ---
 
 ## 📊 Data Schema
@@ -256,24 +270,31 @@ The application is fully responsive:
 
 ---
 
-## 🔐 Security Considerations
+## 🔐 Security Considerations & Role-Based Access Control (RBAC)
+
+### Access Control & Roles
+ระบบใช้การคัดแยกสิทธิ์ตามบทบาทผู้ใช้งาน (RBAC) ทั้งในส่วนของ UI (Frontend) และ API Endpoints (Backend):
+- **ADMIN / QSMS** - สิทธิ์สูงสุด สามารถจัดการได้ทุกส่วน รวมถึงการลบเคส การจัดการแดชบอร์ด และสิทธิ์ในการใช้ Roster Module
+- **FINANCE** - แผนกการเงิน มีสิทธิ์ในการสืบค้นดูรายการ และทำหน้าที่ตรวจสอบประเมินราคาอัปเดตช่อง Rework Cost และ Labor Rate เท่านั้น ไม่สามารถสร้างเคสใหม่หรือแก้ไขข้อมูลสินค้าได้
+- **OPERATOR / WFG / PDB (Consolidated Roles)** - กลุ่มงานการผลิตและคลังสินค้า มีสิทธิ์การใช้งานจำกัดเฉพาะโมดูล **Rework** (ซ่อนโมดูล Roster ทั้งหมด)
+  - สิทธิ์ทำงาน: สามารถเพิ่มงาน Rework ได้, อัปเดตสถานะงานเป็น "In-Progress" หรือส่งต่อไปสถานะ "Awaiting Valuation" (รอประเมินราคา) ได้
+  - ข้อจำกัด: **ไม่สามารถมองเห็นหรือแก้ไขฟิลด์ค่าใช้จ่ายใดๆ ได้ (No Pricing/Cost access)** และไม่มีสิทธิ์ในฟังก์ชันการ Export ข้อมูลหรือเรียกดูหน้า Dashboard
+
+### 🧪 Local Test Accounts (บัญชีทดสอบระบบภายใน)
+สำหรับการทดสอบระบบบนเครื่อง Local หรือสภาพแวดล้อมจำลอง สามารถเข้าสู่ระบบด้วยบัญชีจำลองด้านล่างนี้ได้โดยตรง (ไม่ต้องผ่านการลงทะเบียนบนระบบ GAS จริง):
+- **QSMS / Admin Account:** Username: `qsms`, Password: `Qsms123`
+- **Operator / WFG / PDB Account:** Username: `operator`, Password: `Operator123`
+- **Finance Account:** Username: `finance`, Password: `Finance123`
 
 ### Data Protection
-- All data stored in Google Sheets (benefits from Google's security)
-- HTTPS enforced on deployed frontend
-- No sensitive data in local storage
-- GAS functions execute with account permissions
-
-### Access Control
-- GAS deployed as Web App with "Anyone" access (adjust if needed)
-- Google Sheet permissions control data access
-- Consider adding authentication layer for sensitive deployments
+- ข้อมูลหลักทั้งหมดถูกบันทึกและซิงค์ควบคู่ระหว่าง Google Sheets และ Supabase PostgreSQL
+- ระบบ API Middleware ตรวจสอบความถูกต้องและลายเซ็นของ Token ด้วย `AUTH_TOKEN_SECRET` ทุกครั้งที่มีการแก้ไขข้อมูล
+- ข้อมูลความลับและสิทธิ์ของผู้ใช้จะถูกเก็บในเซสชันที่ปลอดภัยและใช้การรับรองความถูกต้องด้วยโทเค็น JWT-like ของระบบ GAS/Next.js Proxy
 
 ### Best Practices
-- Don't hardcode sensitive information
-- Use environment variables for URLs
-- Regularly backup Google Sheets
-- Monitor GAS quotas and usage
+- หลีกเลี่ยงการเปิดเผยรหัสและ `AUTH_TOKEN_SECRET` ในที่สาธารณะ
+- ใช้ Environment variables ในการเก็บค่า URL และ Security Keys ทั้งหมด
+- หมั่นตรวจสอบและสำรองข้อมูล Google Sheets สม่ำเสมอ
 
 ---
 

@@ -276,7 +276,10 @@ export function WorkspacePortal({
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          {apps.map((app, index) => {
+          {apps.filter(app => {
+            const isRestrictedRole = user?.role === 'wfg' || user?.role === 'operator' || user?.role === 'pdb';
+            return !(app.id === 'roster' && isRestrictedRole);
+          }).map((app, index) => {
             const isActive = app.status === 'active';
             const accentClasses =
               app.accent === 'blue'

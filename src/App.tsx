@@ -113,6 +113,13 @@ function AuthWrapper() {
           if (route === 'portal') {
             setCurrentView('portal');
           } else if (isAuthenticated) {
+            if (route === 'roster') {
+              const isRestrictedRole = appUser?.role === 'wfg' || appUser?.role === 'operator' || appUser?.role === 'pdb';
+              if (isRestrictedRole) {
+                // Ignore roster navigation for restricted roles
+                return;
+              }
+            }
             setCurrentView(route);
           } else {
             setRedirectAfterLogin(route);

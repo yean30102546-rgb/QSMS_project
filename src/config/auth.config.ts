@@ -40,6 +40,7 @@ export enum UserRole {
   PDB = 'pdb',               // Add Case, Overall, Update Status, Resolution, Export
   OPERATOR = 'operator',     // Operator Role / Production Rework
   FINANCE = 'finance',       // Overall (Valuation only)
+  WFG = 'wfg',               // WFG Role (Rework only, Add Case, Overall, Update Resolution)
 }
 
 export const ROLE_PERMISSIONS = {
@@ -70,18 +71,22 @@ export const ROLE_PERMISSIONS = {
     'create_case',
     'update_status',
     'fill_resolution',
-    'export_data',
   ],
   [UserRole.OPERATOR]: [
     'view_overall',
     'create_case',
     'update_status',
     'fill_resolution',
-    'export_data',
   ],
   [UserRole.FINANCE]: [
     'view_overall',
     'fill_valuation',
+  ],
+  [UserRole.WFG]: [
+    'view_overall',
+    'create_case',
+    'update_status',
+    'fill_resolution',
   ],
 };
 
