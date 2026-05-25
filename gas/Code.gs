@@ -443,21 +443,28 @@ function validateItem(item) {
 }
 
 /**
- * Check for duplicate ItemNumbers in payload
+ * Check for duplicate combinations in payload
+ * Allows same item+reason if boxNumber, mold, or line is different
  */
 function checkDuplicateItemNumbers(items) {
   const seen = new Set();
   const duplicates = [];
-  
+
   for (let i = 0; i < items.length; i++) {
     const itemNum = String(items[i].itemNumber || '').trim();
     const reason = String(items[i].reason || '').trim();
+    const boxNum = String(items[i].boxNumber || '').trim();
+    const mold = String(items[i].mold || '').trim();
+    const line = String(items[i].line || '').trim();
+
     if (!itemNum || !reason) {
       continue;
     }
 
-    const compositeKey = itemNum + '||' + reason;
-    const duplicateLabel = itemNum + ' (' + reason + ')';
+    // New Composite Key: Item + Reason + Box + Mold + Line
+    const compositeKey = [itemNum, reason, boxNum, mold, line].join('||');
+    const duplicateLabel = itemNum + ' (' + reason + ') [Box: ' + (boxNum || '-') + ', Mold: ' + (mold || '-') + ', Line: ' + (line || '-') + ']';
+
     if (seen.has(compositeKey)) {
       if (!duplicates.includes(duplicateLabel)) {
         duplicates.push(duplicateLabel);
@@ -465,13 +472,12 @@ function checkDuplicateItemNumbers(items) {
     }
     seen.add(compositeKey);
   }
-  
+
   return {
     hasDuplicates: duplicates.length > 0,
     duplicates: duplicates
   };
 }
-
 function normalizeSheetText(value) {
   return String(value || '').trim();
 }
@@ -877,7 +883,7 @@ function handleInsert(payload) {
       row[COL_ITEM_NAME] = sanitizeString(item.itemName);
       row[COL_ITEM_CODE] = sanitizeString(item.itemCode);
       row[COL_BATCH_NO] = sanitizeString(item.batchNo || '');
-      row[COL_PACKAGING_DATE] = sanitizeString(item.packagingDate || '');
+      row[COL_PACKAGING_DATE] = sanitizeString(item.boxNumber || item.packagingDate || '');
       row[COL_MOLD] = sanitizeString(item.mold || '');
       row[COL_LINE] = sanitizeString(item.line || '');
       row[COL_AMOUNT] = item.amount;

@@ -343,8 +343,9 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
       imageUrls,
       imageFolderUrl: normalizeString(item.imageFolderUrl),
       batchNo: normalizeString(item.batchNo || item.batch_no),
-      packagingDate: normalizeString(item.packagingDate),
+      boxNumber: normalizeString(item.boxNumber || item.packagingDate),
       mold: normalizeString(item.mold),
+,
       line: normalizeString(item.line),
       linkedSourceId: normalizeString(item.linkedSourceId || item.linked_source_id),
       customerName: normalizeString(item.customerName),
@@ -553,5 +554,8 @@ export async function deleteCase(caseId: string): Promise<ApiResponse> {
       success: false,
       error: error instanceof Error ? error.message : 'Delete failed',
     };
+  }
+}
+
   }
 }

@@ -22,10 +22,13 @@ export interface ReworkItemValidationInput {
   responsible?: string;
   details?: string;
   batchNo?: string;
+  boxNumber?: string;
   reasonSubtype?: string;
   responsibleSubtype?: string;
   linkedSourceId?: string;
   customerName?: string;
+  mold?: string;
+  line?: string;
 }
 
 export function validateItemNumber(value: string | number): ValidationError | null {
@@ -119,6 +122,17 @@ export function validateBatchNo(value: string | undefined): ValidationError | nu
   return null;
 }
 
+export function validateBoxNumber(value: string | undefined): ValidationError | null {
+  const boxNumber = String(value || '').trim();
+  if (!boxNumber) {
+    return { field: 'boxNumber', message: 'Box Number is required' };
+  }
+  if (!/^\d+$/.test(boxNumber)) {
+    return { field: 'boxNumber', message: 'Box Number must contain only numbers' };
+  }
+  return null;
+}
+
 export function validateReworkItem(item: ReworkItemValidationInput): ValidationResult {
   const errors = [
     validateItemNumber(item.itemNumber || ''),
@@ -129,6 +143,7 @@ export function validateReworkItem(item: ReworkItemValidationInput): ValidationR
     validateResponsible(item.responsible || ''),
     validateDetails(item.details),
     validateBatchNo(item.batchNo),
+    validateBoxNumber(item.boxNumber),
     // Subtype Validation (Logic for Thailand)
     (item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !String(item.reasonSubtype || '').trim() 
       ? { field: 'reasonSubtype', message: `กรุณาระบุรูปแบบการ${item.reason}` } : null,
@@ -152,7 +167,13 @@ export function getFieldErrors(errors: ValidationError[]): Record<string, string
 }
 
 export function findDuplicateItemNumbers(
-  items: Array<{ itemNumber?: string | number; reason?: string }>
+  items: Array<{ 
+    itemNumber?: string | number; 
+    reason?: string;
+    boxNumber?: string;
+    mold?: string;
+    line?: string;
+  }>
 ): { hasDuplicates: boolean; duplicates: string[] } {
   const seen = new Set<string>();
   const duplicates: string[] = [];
@@ -160,10 +181,15 @@ export function findDuplicateItemNumbers(
   items.forEach((item) => {
     const itemNumber = String(item.itemNumber || '').trim();
     const reason = String(item.reason || '').trim();
+    const boxNumber = String(item.boxNumber || '').trim();
+    const mold = String(item.mold || '').trim();
+    const line = String(item.line || '').trim();
+    
     if (!itemNumber || !reason) return;
 
-    const compositeKey = `${itemNumber}||${reason}`;
-    const duplicateLabel = `${itemNumber} (${reason})`;
+    // New Composite Key: Item + Reason + Box + Mold + Line
+    const compositeKey = `${itemNumber}||${reason}||${boxNumber}||${mold}||${line}`;
+    const duplicateLabel = `${itemNumber} (${reason}) - Box: ${boxNumber || '-'}, Mold: ${mold || '-'}, Line: ${line || '-'}`;
 
     if (seen.has(compositeKey) && !duplicates.includes(duplicateLabel)) {
       duplicates.push(duplicateLabel);

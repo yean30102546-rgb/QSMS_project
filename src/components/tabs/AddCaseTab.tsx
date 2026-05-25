@@ -385,10 +385,13 @@ export function AddCaseTab({
                 </div>
                 <div className="col-span-1">
                   <InputField
-                    label="วันบรรจุ (Packaging Date) *"
-                    type="date"
-                    value={item.packagingDate || ''}
-                    onChange={(v) => updateFormItem(item.id, 'packagingDate', v)}
+                    label="เลขกล่อง (Box Number) *"
+                    value={item.boxNumber || ''}
+                    onChange={(v) => {
+                      const val = v.replace(/\D/g, ''); // Numeric only
+                      updateFormItem(item.id, 'boxNumber', val);
+                    }}
+                    placeholder="ระบุเลขกล่อง..."
                     disabled={isSaving}
                   />
                 </div>
