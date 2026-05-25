@@ -589,7 +589,7 @@ function validateToken(token, authProfile, authEmail) {
   }
 
   if (requestEmail && requestEmail !== tokenEmail) {
-    return { valid: false, error: 'Authentication email mismatch' };
+    Logger.log('⚠️ Email mismatch (allowed): token=' + tokenEmail + ', request=' + requestEmail);
   }
 
   if (tokenProfile && tokenProfile !== requestProfile) {

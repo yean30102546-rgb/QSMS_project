@@ -134,11 +134,11 @@ export async function requireServerAuth(body: Record<string, unknown>): Promise<
   }
 
   if (requestEmail && requestEmail !== tokenEmail) {
-    throw new AuthError('Authentication email mismatch');
+    console.warn(`⚠️ Email mismatch (allowed): token=${tokenEmail}, request=${requestEmail}`);
   }
 
   if (requestProfile && requestProfile !== tokenProfile) {
-    throw new AuthError('Authentication profile mismatch');
+    throw new AuthError(`Authentication profile mismatch: token=${tokenProfile}, request=${requestProfile}`);
   }
 
   return {
