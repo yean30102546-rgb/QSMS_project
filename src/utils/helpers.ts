@@ -118,7 +118,9 @@ export function isSaveDisabled(items: ReworkItem[]): boolean {
 }
 
 /**
- * Sort cases by status: Pending > In-Progress > Awaiting Valuation > Completed
+ * Sort cases by priority: 
+ * 1. Status: Pending > In-Progress > Awaiting Valuation > Completed
+ * 2. Date/Timestamp: Newest first within each status
  */
 export function sortCasesByStatus(
   cases: ReworkCase[]
@@ -130,11 +132,22 @@ export function sortCasesByStatus(
     Completed: 3 
   };
 
-  return [...cases].sort(
-    (a, b) =>
-      (statusOrder[a.status as keyof typeof statusOrder] || 999) -
-      (statusOrder[b.status as keyof typeof statusOrder] || 999)
-  );
+  return [...cases].sort((a, b) => {
+    // 1. Sort by Status Priority
+    const aStatus = statusOrder[a.status] ?? 999;
+    const bStatus = statusOrder[b.status] ?? 999;
+    
+    if (aStatus !== bStatus) {
+      return aStatus - bStatus;
+    }
+    
+    // 2. Sort by Recency (Newest First) within same status
+    // Use timestamp if available (more precise), otherwise use date
+    const aTime = new Date(a.timestamp || a.date).getTime();
+    const bTime = new Date(b.timestamp || b.date).getTime();
+    
+    return bTime - aTime;
+  });
 }
 
 /**

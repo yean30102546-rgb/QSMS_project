@@ -23,9 +23,30 @@ export function Login({
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load remembered credentials
+  React.useEffect(() => {
+    const savedUser = localStorage.getItem('remembered_user');
+    const savedPass = localStorage.getItem('remembered_pass');
+    
+    if (savedUser) {
+      setUsername(savedUser);
+      setRememberMe(true);
+    }
+    
+    if (savedPass) {
+      try {
+        // Simple obfuscation decoding
+        setPassword(atob(savedPass));
+      } catch (e) {
+        console.error('Failed to decode saved password');
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -45,6 +66,15 @@ export function Login({
         setPassword('');
         setError(response.error || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่');
         return;
+      }
+
+      // Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem('remembered_user', username.trim().toUpperCase());
+        localStorage.setItem('remembered_pass', btoa(password)); // Simple obfuscation
+      } else {
+        localStorage.removeItem('remembered_user');
+        localStorage.removeItem('remembered_pass');
       }
 
       onSuccess(true);
@@ -139,6 +169,19 @@ export function Login({
                 >
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
+              </div>
+
+              <div className="flex items-center gap-2 px-1">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="rememberMe" className="text-xs font-medium text-[#6e6e73] cursor-pointer hover:text-[#1d1d1f] transition-colors">
+                  จดจำรหัสผ่านไว้ในเครื่องนี้
+                </label>
               </div>
 
               {error && (

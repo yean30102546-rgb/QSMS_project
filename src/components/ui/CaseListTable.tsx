@@ -1,7 +1,8 @@
 import React from 'react';
-import { AlertCircle, Clock, Package, Search } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, Package, Search } from 'lucide-react';
 
 import type { ReworkCase } from '../../services/api';
+import { formatThaiDateShort } from '../../utils/helpers';
 
 interface CaseListTableProps {
   cases: ReworkCase[];
@@ -190,6 +191,11 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
           )}
         </div>
         <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-on-surface-variant/75">
+          <div className="flex items-center gap-1 text-primary/80">
+            <Calendar size={11} className="shrink-0" />
+            <span className="font-semibold">{formatThaiDateShort(caseItem.date)}</span>
+          </div>
+          <span>&bull;</span>
           <span>{formatTimestamp(caseItem.timestamp || caseItem.date)}</span>
           <span>&bull;</span>
           <span>แหล่งที่มา: <span className="font-semibold text-primary">{caseItem.source}</span></span>

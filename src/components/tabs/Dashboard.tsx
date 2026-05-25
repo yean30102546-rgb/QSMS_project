@@ -339,13 +339,13 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                     <div className="flex-1 relative">
                       <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
                         className="w-full px-4 py-2 border border-white/10 rounded-xl text-sm bg-white/5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" />
-                      <span className="absolute -top-1.5 left-3 bg-[#111116] px-1.5 text-[9px] text-on-surface-variant font-bold">เริ่มต้น</span>
+                      <span className="absolute -top-1.5 left-3 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-on-surface-variant font-bold border border-white/5">เริ่มต้น</span>
                     </div>
                     <span className="text-on-surface-variant text-xs font-bold">→</span>
                     <div className="flex-1 relative">
                       <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
                         className="w-full px-4 py-2 border border-white/10 rounded-xl text-sm bg-white/5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" />
-                      <span className="absolute -top-1.5 left-3 bg-[#111116] px-1.5 text-[9px] text-on-surface-variant font-bold">สิ้นสุด</span>
+                      <span className="absolute -top-1.5 left-3 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-on-surface-variant font-bold border border-white/5">สิ้นสุด</span>
                     </div>
                   </div>
                 </div>
