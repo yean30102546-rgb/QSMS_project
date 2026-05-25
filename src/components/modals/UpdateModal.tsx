@@ -509,11 +509,11 @@ export function UpdateModal({
                                               />
                                             </div>
                                             <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">วันบรรจุ (Packaging Date)</label>
-                                              <input 
-                                                type="date"
-                                                value={item.packagingDate || ''} 
-                                                onChange={(e) => {
+                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">เลขกล่อง (Box Number)</label>
+                                              <input
+                                                type="text"
+                                                value={item.packagingDate || ''}
+                                                placeholder="เช่น 001"                                                onChange={(e) => {
                                                   const newItems = [...editedItems];
                                                   newItems[index] = { ...newItems[index], packagingDate: e.target.value };
                                                   setEditedItems(newItems);

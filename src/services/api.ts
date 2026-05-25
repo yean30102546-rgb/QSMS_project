@@ -46,6 +46,7 @@ export interface ReworkItem {
   imageFolderUrl?: string; // URL ของ folder ใน Google Drive ที่เก็บรูปทั้งหมดของ case นี้
   status?: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
   batchNo?: string;
+  boxNumber?: string;
   packagingDate?: string;
   mold?: string;
   line?: string;
@@ -345,7 +346,6 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
       batchNo: normalizeString(item.batchNo || item.batch_no),
       boxNumber: normalizeString(item.boxNumber || item.packagingDate),
       mold: normalizeString(item.mold),
-,
       line: normalizeString(item.line),
       linkedSourceId: normalizeString(item.linkedSourceId || item.linked_source_id),
       customerName: normalizeString(item.customerName),
@@ -554,8 +554,5 @@ export async function deleteCase(caseId: string): Promise<ApiResponse> {
       success: false,
       error: error instanceof Error ? error.message : 'Delete failed',
     };
-  }
-}
-
   }
 }

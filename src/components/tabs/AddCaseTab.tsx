@@ -53,6 +53,7 @@ const REASON_MAIN_OPTIONS = [
   'อื่นๆ',
 ] as const;
 
+
 const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'แตกตะเข็บ', 'รอยมีด'] as const;
 const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื้อน'] as const;
 
@@ -318,8 +319,8 @@ export function AddCaseTab({
                     placeholder="เช่น 60001234A"
                     disabled={isSaving}
                     className={`w-full rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber'
-                        ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
-                        : 'border-border bg-slate-50 focus:border-accent'
+                      ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
+                      : 'border-border bg-slate-50 focus:border-accent'
                       }`}
                   />
                 </div>
@@ -344,8 +345,8 @@ export function AddCaseTab({
                       placeholder="เช่น 40001234"
                       disabled={isSaving}
                       className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode'
-                          ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
-                          : 'border-border bg-slate-50 focus:border-accent'
+                        ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
+                        : 'border-border bg-slate-50 focus:border-accent'
                         }`}
                     />
                     <motion.button
@@ -386,12 +387,10 @@ export function AddCaseTab({
                 <div className="col-span-1">
                   <InputField
                     label="เลขกล่อง (Box Number) *"
-                    value={item.boxNumber || ''}
-                    onChange={(v) => {
-                      const val = v.replace(/\D/g, ''); // Numeric only
-                      updateFormItem(item.id, 'boxNumber', val);
-                    }}
-                    placeholder="ระบุเลขกล่อง..."
+                    type="text"
+                    value={item.packagingDate || ''}
+                    onChange={(v) => updateFormItem(item.id, 'packagingDate', v)}
+                    placeholder="เช่น 001"
                     disabled={isSaving}
                   />
                 </div>
@@ -479,8 +478,8 @@ export function AddCaseTab({
                                   }
                                 }}
                                 className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isSelected
-                                    ? (item.reason === 'รั่ว' ? 'border border-accent bg-accent text-white' : 'bg-slate-800 text-white shadow-lg')
-                                    : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                  ? (item.reason === 'รั่ว' ? 'border border-accent bg-accent text-white' : 'bg-slate-800 text-white shadow-lg')
+                                  : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
                                   }`}
                                 disabled={isSaving}
                               >
@@ -546,8 +545,8 @@ export function AddCaseTab({
                                 setExpandedResponsibleSelection(null);
                               }}
                               className={`rounded-xl px-4 py-3 text-sm font-semibold transition-colors duration-200 ${item.responsibleSubtype === subtype
-                                  ? 'border border-accent bg-accent text-white'
-                                  : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                ? 'border border-accent bg-accent text-white'
+                                : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
                                 }`}
                               disabled={isSaving}
                             >
@@ -715,8 +714,8 @@ export function AddCaseTab({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 className={`rounded-lg border p-4 text-sm font-semibold ${saveMessage.type === 'success'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : 'border-red-200 bg-red-50 text-red-700'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-red-200 bg-red-50 text-red-700'
                   }`}
               >
                 {saveMessage.text}

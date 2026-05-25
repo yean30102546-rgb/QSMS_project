@@ -189,6 +189,32 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
 
     if (!primarySearchValue) return;
 
+    // 1. Cross-Item Check: Check other items in the current form FIRST
+    const existingInForm = formItems.find(i => 
+      i.id !== id && 
+      i.itemName && 
+      (i.itemNumber.trim() === primarySearchValue || i.itemCode.trim() === primarySearchValue)
+    );
+
+    if (existingInForm) {
+      setFormItems((prev) =>
+        prev.map((i) =>
+          i.id === id
+            ? {
+                ...i,
+                itemNumber: existingInForm.itemNumber,
+                itemCode: existingInForm.itemCode,
+                itemName: existingInForm.itemName,
+                batchNo: existingInForm.batchNo || i.batchNo, // Auto-fill Batch No as well
+              }
+            : i,
+        ),
+      );
+      setAutoFillTriggeredItem(id);
+      setTimeout(() => setAutoFillTriggeredItem(null), 1500);
+      return; // Found in form, no need to call API
+    }
+
     try {
       setIsVerifyingItem(prev => ({ ...prev, [id]: true }));
       // Use direct API lookup for higher reliability and speed

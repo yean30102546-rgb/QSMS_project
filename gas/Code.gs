@@ -31,7 +31,7 @@ const COL_ITEM_NUMBER = 5;
 const COL_ITEM_CODE = 6;
 const COL_ITEM_NAME = 7;
 const COL_BATCH_NO = 8;
-const COL_PACKAGING_DATE = 9;
+const COL_BOX_NUMBER = 9;
 const COL_MOLD = 10;
 const COL_LINE = 11;
 const COL_AMOUNT = 12;
@@ -56,7 +56,7 @@ const COL_LABOR_RATE = 29;
 const MAIN_HEADERS = [
   'Case ID', 'Timestamp', 'Status', 'Source', 'Customer Name', 
   'Item Number', 'Item Code', 'Item Name', 
-  'Batch No', 'Packing Date', 'Mold', 'Line', 
+  'Batch No', 'Box Number', 'Mold', 'Line', 
   'Amount', 'Reason', 'Reason Subtype', 'Linked Source ID',
   'Responsible', 'Responsible Subtype', 'Details',
   'Resolution Method', 'Rework Cost', 
@@ -282,6 +282,22 @@ function validateBatchNo(batchNo) {
 }
 
 /**
+ * Validate Box Number format (numeric only)
+ */
+function validateBoxNumber(boxNumber) {
+  if (!boxNumber || boxNumber === '') {
+    return { valid: false, error: 'เลขกล่อง (Box Number) จำเป็นต้องระบุ' };
+  }
+  
+  const str = String(boxNumber).trim();
+  if (!/^\d+$/.test(str)) {
+    return { valid: false, error: 'เลขกล่อง (Box Number) ต้องเป็นตัวเลขเท่านั้น. Got: ' + str };
+  }
+  
+  return { valid: true };
+}
+
+/**
  * Validate ItemCode format (numeric, max 11 digits if provided)
  */
 function validateItemCode(itemCode) {
@@ -423,6 +439,9 @@ function validateItem(item) {
 
   const batchNoCheck = validateBatchNo(item.batchNo);
   if (!batchNoCheck.valid) errors.push(batchNoCheck.error);
+  
+  const boxNumberCheck = validateBoxNumber(item.boxNumber);
+  if (!boxNumberCheck.valid) errors.push(boxNumberCheck.error);
   
   const amountCheck = validateAmount(item.amount);
   if (!amountCheck.valid) errors.push(amountCheck.error);
@@ -883,7 +902,7 @@ function handleInsert(payload) {
       row[COL_ITEM_NAME] = sanitizeString(item.itemName);
       row[COL_ITEM_CODE] = sanitizeString(item.itemCode);
       row[COL_BATCH_NO] = sanitizeString(item.batchNo || '');
-      row[COL_PACKAGING_DATE] = sanitizeString(item.boxNumber || item.packagingDate || '');
+      row[COL_BOX_NUMBER] = sanitizeString(item.boxNumber || item.packagingDate || '');
       row[COL_MOLD] = sanitizeString(item.mold || '');
       row[COL_LINE] = sanitizeString(item.line || '');
       row[COL_AMOUNT] = item.amount;
@@ -1071,7 +1090,7 @@ function handleReadAll(payload) {
         itemName: normalizeSheetText(row[COL_ITEM_NAME]),
         itemCode: normalizeSheetText(row[COL_ITEM_CODE]),
         batchNo: normalizeSheetText(row[COL_BATCH_NO]),
-        packagingDate: normalizeSheetText(row[COL_PACKAGING_DATE]),
+        packagingDate: normalizeSheetText(row[COL_BOX_NUMBER]),
         mold: normalizeSheetText(row[COL_MOLD]),
         line: normalizeSheetText(row[COL_LINE]),
         amount: normalizeSheetAmount(row[COL_AMOUNT]),
@@ -1262,7 +1281,7 @@ function handleUpdate(payload) {
               if (itemUpdate.itemName) sheet.getRange(i + 1, COL_ITEM_NAME + 1).setValue(itemUpdate.itemName);
               if (itemUpdate.itemCode !== undefined) sheet.getRange(i + 1, COL_ITEM_CODE + 1).setValue(itemUpdate.itemCode);
               if (itemUpdate.batchNo) sheet.getRange(i + 1, COL_BATCH_NO + 1).setValue(itemUpdate.batchNo);
-              if (itemUpdate.packagingDate !== undefined) sheet.getRange(i + 1, COL_PACKAGING_DATE + 1).setValue(itemUpdate.packagingDate);
+              if (itemUpdate.packagingDate !== undefined) sheet.getRange(i + 1, COL_BOX_NUMBER + 1).setValue(itemUpdate.packagingDate);
               if (itemUpdate.mold !== undefined) sheet.getRange(i + 1, COL_MOLD + 1).setValue(itemUpdate.mold);
               if (itemUpdate.line !== undefined) sheet.getRange(i + 1, COL_LINE + 1).setValue(itemUpdate.line);
               if (itemUpdate.amount !== undefined) sheet.getRange(i + 1, COL_AMOUNT + 1).setValue(itemUpdate.amount);
@@ -2114,7 +2133,7 @@ function standardizeSheetStructure() {
       'Item Name': COL_ITEM_NAME,
       'Item Code': COL_ITEM_CODE,
       'Batch No': COL_BATCH_NO,
-      'Packing Date': COL_PACKAGING_DATE,
+      'Packing Date': COL_BOX_NUMBER,
       'Mold': COL_MOLD,
       'Line': COL_LINE,
       'Amount': COL_AMOUNT,
