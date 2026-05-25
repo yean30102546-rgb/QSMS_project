@@ -53,7 +53,7 @@ const REASON_MAIN_OPTIONS = [
   'อื่นๆ',
 ] as const;
 
-const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'แตกตะเข็บ', 'รอยมีด'] as const;
+const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'แตกตะเข็บ', 'รอยมีด'] as const;
 const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื้อน'] as const;
 
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
@@ -63,7 +63,7 @@ const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };
- 
+
 // CUSTOMER_OPTIONS moved to api.ts
 
 export function AddCaseTab({
@@ -132,7 +132,7 @@ export function AddCaseTab({
 
   const handleReasonChange = (itemId: string, reason: string) => {
     updateFormItem(itemId, 'reason', reason);
-    
+
     // Clear subtype if it's not a type that uses subtypes
     if (reason !== 'รั่ว' && reason !== 'เปื้อน') {
       updateFormItem(itemId, 'reasonSubtype', '');
@@ -158,13 +158,13 @@ export function AddCaseTab({
   const toggleReasonSubtype = (itemId: string, currentSubtypes: string, subtype: string) => {
     const subtypes = currentSubtypes ? currentSubtypes.split(',').map(s => s.trim()).filter(Boolean) : [];
     const index = subtypes.indexOf(subtype);
-    
+
     if (index > -1) {
       subtypes.splice(index, 1);
     } else {
       subtypes.push(subtype);
     }
-    
+
     updateFormItem(itemId, 'reasonSubtype', subtypes.join(', '));
   };
 
@@ -204,7 +204,7 @@ export function AddCaseTab({
           </div>
 
           {formItems.length > 0 && formItems.every(item => item.customerName === 'OR') && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="mt-6 border-t border-slate-100 pt-6"
@@ -219,38 +219,38 @@ export function AddCaseTab({
                     <p className="text-[11px] text-amber-700/80">แนบไฟล์ Excel, PDF หรือ PNG (สูงสุด 2 ไฟล์)</p>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-4">
-                    <div className="flex-1 min-w-[240px]">
-                      <input 
-                        ref={fileInputRef}
-                        type="file" 
-                        multiple 
-                        accept=".xlsx,.xls,.pdf,.png"
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          setOrFiles(files.slice(0, 2));
-                        }}
-                        className="block w-full text-sm text-slate-500
+                  <div className="flex-1 min-w-[240px]">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".xlsx,.xls,.pdf,.png"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setOrFiles(files.slice(0, 2));
+                      }}
+                      className="block w-full text-sm text-slate-500
                           file:mr-4 file:py-2 file:px-4
                           file:rounded-full file:border-0
                           file:text-sm file:font-semibold
                           file:bg-amber-100 file:text-amber-700
                           hover:file:bg-amber-200"
-                      />
-                   </div>
-                   {orFiles.length > 0 && (
-                     <div className="flex gap-2 items-center">
-                        {orFiles.map((file, i) => (
-                          <div key={i} className="px-3 py-1 bg-white border border-amber-200 rounded-lg text-xs font-medium text-amber-800 flex items-center gap-2">
-                            {file.name}
-                            <button onClick={() => setOrFiles(orFiles.filter((_, idx) => idx !== i))} className="text-amber-400 hover:text-amber-600">
-                              <X size={14} />
-                            </button>
-                          </div>
-                        ))}
-                     </div>
-                   )}
+                    />
+                  </div>
+                  {orFiles.length > 0 && (
+                    <div className="flex gap-2 items-center">
+                      {orFiles.map((file, i) => (
+                        <div key={i} className="px-3 py-1 bg-white border border-amber-200 rounded-lg text-xs font-medium text-amber-800 flex items-center gap-2">
+                          {file.name}
+                          <button onClick={() => setOrFiles(orFiles.filter((_, idx) => idx !== i))} className="text-amber-400 hover:text-amber-600">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -317,11 +317,10 @@ export function AddCaseTab({
                     onBlur={() => handleAutoFillBlur(item.id)}
                     placeholder="เช่น 60001234A"
                     disabled={isSaving}
-                    className={`w-full rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${
-                      item.lastActiveField === 'itemNumber'
+                    className={`w-full rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber'
                         ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
                         : 'border-border bg-slate-50 focus:border-accent'
-                    }`}
+                      }`}
                   />
                 </div>
 
@@ -344,11 +343,10 @@ export function AddCaseTab({
                       onBlur={() => handleAutoFillBlur(item.id)}
                       placeholder="เช่น 40001234"
                       disabled={isSaving}
-                      className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${
-                        item.lastActiveField === 'itemCode'
+                      className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode'
                           ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
                           : 'border-border bg-slate-50 focus:border-accent'
-                      }`}
+                        }`}
                     />
                     <motion.button
                       type="button"
@@ -441,65 +439,64 @@ export function AddCaseTab({
                           <option key={option} value={option} className="text-slate-900">{option}</option>
                         ))}
                       </select>
-                        {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedReasonSelection(expandedReasonSelection === item.id ? null : item.id)}
-                            className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20 disabled:opacity-50"
-                            disabled={isSaving}
-                          >
-                            เลือก
-                          </button>
-                        )}
-                      </div>
-                      <AnimatePresence>
-                        {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && expandedReasonSelection === item.id && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="grid grid-cols-1 gap-2"
-                          >
-                            {(item.reason === 'รั่ว' ? LEAK_SUBTYPES : STAIN_SUBTYPES).map((subtype) => {
-                              const isSelected = item.reason === 'รั่ว' 
-                                ? item.reasonSubtype === subtype 
-                                : (item.reasonSubtype || '').split(', ').includes(subtype);
-                              
-                              return (
-                                <button
-                                  key={subtype}
-                                  type="button"
-                                  onClick={() => {
-                                    if (item.reason === 'รั่ว') {
-                                      updateFormItem(item.id, 'reasonSubtype', subtype);
-                                      setExpandedReasonSelection(null);
-                                    } else {
-                                      toggleReasonSubtype(item.id, item.reasonSubtype || '', subtype);
-                                    }
-                                  }}
-                                  className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
-                                    isSelected
-                                      ? (item.reason === 'รั่ว' ? 'border border-accent bg-accent text-white' : 'bg-slate-800 text-white shadow-lg')
-                                      : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedReasonSelection(expandedReasonSelection === item.id ? null : item.id)}
+                          className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20 disabled:opacity-50"
+                          disabled={isSaving}
+                        >
+                          เลือก
+                        </button>
+                      )}
+                    </div>
+                    <AnimatePresence>
+                      {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && expandedReasonSelection === item.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="grid grid-cols-1 gap-2"
+                        >
+                          {(item.reason === 'รั่ว' ? LEAK_SUBTYPES : STAIN_SUBTYPES).map((subtype) => {
+                            const isSelected = item.reason === 'รั่ว'
+                              ? item.reasonSubtype === subtype
+                              : (item.reasonSubtype || '').split(', ').includes(subtype);
+
+                            return (
+                              <button
+                                key={subtype}
+                                type="button"
+                                onClick={() => {
+                                  if (item.reason === 'รั่ว') {
+                                    updateFormItem(item.id, 'reasonSubtype', subtype);
+                                    setExpandedReasonSelection(null);
+                                  } else {
+                                    toggleReasonSubtype(item.id, item.reasonSubtype || '', subtype);
+                                  }
+                                }}
+                                className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isSelected
+                                    ? (item.reason === 'รั่ว' ? 'border border-accent bg-accent text-white' : 'bg-slate-800 text-white shadow-lg')
+                                    : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
                                   }`}
-                                  disabled={isSaving}
-                                >
-                                  {subtype}
-                                </button>
-                              );
-                            })}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && item.reasonSubtype && (
-                        <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
-                          <p className="mb-1 text-[10px] font-semibold text-muted">เลือก:</p>
-                          <p className="text-sm font-semibold text-accent">{item.reasonSubtype}</p>
-                        </div>
+                                disabled={isSaving}
+                              >
+                                {subtype}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
                       )}
-                      {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !item.reasonSubtype && (
-                        <p className="text-[10px] font-medium text-amber-600">กรุณาเลือกรูปแบบ {item.reason}</p>
-                      )}
+                    </AnimatePresence>
+                    {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && item.reasonSubtype && (
+                      <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
+                        <p className="mb-1 text-[10px] font-semibold text-muted">เลือก:</p>
+                        <p className="text-sm font-semibold text-accent">{item.reasonSubtype}</p>
+                      </div>
+                    )}
+                    {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !item.reasonSubtype && (
+                      <p className="text-[10px] font-medium text-amber-600">กรุณาเลือกรูปแบบ {item.reason}</p>
+                    )}
                   </div>
                 </div>
 
@@ -545,11 +542,10 @@ export function AddCaseTab({
                                 updateFormItem(item.id, 'responsibleSubtype', subtype);
                                 setExpandedResponsibleSelection(null);
                               }}
-                              className={`rounded-xl px-4 py-3 text-sm font-semibold transition-colors duration-200 ${
-                                item.responsibleSubtype === subtype
+                              className={`rounded-xl px-4 py-3 text-sm font-semibold transition-colors duration-200 ${item.responsibleSubtype === subtype
                                   ? 'border border-accent bg-accent text-white'
                                   : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
-                              }`}
+                                }`}
                               disabled={isSaving}
                             >
                               {subtype}
@@ -715,11 +711,10 @@ export function AddCaseTab({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className={`rounded-lg border p-4 text-sm font-semibold ${
-                  saveMessage.type === 'success'
+                className={`rounded-lg border p-4 text-sm font-semibold ${saveMessage.type === 'success'
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                     : 'border-red-200 bg-red-50 text-red-700'
-                }`}
+                  }`}
               >
                 {saveMessage.text}
               </motion.div>

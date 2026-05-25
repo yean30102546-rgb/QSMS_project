@@ -175,9 +175,11 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     );
   };
 
+  const [isVerifyingItem, setIsVerifyingItem] = useState<Record<string, boolean>>({});
+
   const handleCheckItemNumber = async (id: string, showModal: boolean = true) => {
     const item = formItems.find((i) => i.id === id);
-    if (!item) return;
+    if (!item || isVerifyingItem[id]) return;
 
     // Smart Priority: Use the last edited field first
     const primarySearchValue =
@@ -188,6 +190,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     if (!primarySearchValue) return;
 
     try {
+      setIsVerifyingItem(prev => ({ ...prev, [id]: true }));
       // Use direct API lookup for higher reliability and speed
       const response = await fetch('/api/rework', {
         method: 'POST',
@@ -236,6 +239,8 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       } else if (showModal) {
         setConfirmNewItemModal({ isOpen: true, itemNumber: primarySearchValue, itemId: id });
       }
+    } finally {
+      setIsVerifyingItem(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -397,10 +402,24 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         isOpen={confirmNewItemModal.isOpen}
         itemNumber={confirmNewItemModal.itemNumber}
         onConfirm={async (name) => {
-          setFormItems((prev) =>
-            prev.map((i) => (i.id === confirmNewItemModal.itemId ? { ...i, itemName: name } : i)),
-          );
-          setConfirmNewItemModal({ isOpen: false, itemNumber: '', itemId: null });
+          try {
+            const item = formItems.find(i => i.id === confirmNewItemModal.itemId);
+            if (item) {
+              // Immediately save to Master database
+              await saveItemToMaster(confirmNewItemModal.itemNumber, item.itemCode, name);
+              
+              setFormItems((prev) =>
+                prev.map((i) => (i.id === confirmNewItemModal.itemId ? { ...i, itemName: name } : i)),
+              );
+              
+              // Refresh local master data cache
+              loadMasterData();
+            }
+          } catch (err) {
+            console.error('Failed to save new item to master:', err);
+          } finally {
+            setConfirmNewItemModal({ isOpen: false, itemNumber: '', itemId: null });
+          }
         }}
         onCancel={() => setConfirmNewItemModal({ isOpen: false, itemNumber: '', itemId: null })}
         isLoading={isSaving}

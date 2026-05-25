@@ -303,6 +303,16 @@ export function ImageUpload({
     if (!card) return;
 
     const handleCardPaste = (e: ClipboardEvent) => {
+      // PREVENT: Don't process if user is typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.contentEditable === 'true'
+      ) {
+        return;
+      }
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
