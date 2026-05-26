@@ -25,6 +25,9 @@ type SelectionModalState = {
 interface AddCaseTabProps {
   caseSource: string;
   setCaseSource: (source: string) => void;
+  caseNumber: string;
+  setCaseNumber: (num: string) => void;
+  existingCaseIds: string[];
   formItems: ReworkItem[];
   addFormItem: () => void;
   removeFormItem: (id: string) => void;
@@ -73,6 +76,9 @@ const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
 export function AddCaseTab({
   caseSource,
   setCaseSource,
+  caseNumber,
+  setCaseNumber,
+  existingCaseIds = [],
   formItems,
   addFormItem,
   removeFormItem,
@@ -215,6 +221,39 @@ export function AddCaseTab({
                 <option>SFC</option>
                 <option>Customer</option>
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">หมายเลขเคส (Case ID) *</label>
+              <div className="flex items-center gap-0">
+                <span className="inline-flex items-center rounded-l-xl border border-r-0 border-border bg-slate-100 px-3 py-3 text-sm font-bold text-primary select-none">
+                  {caseSource === 'Customer' ? 'RT' : 'RW'}
+                </span>
+                <input
+                  type="text"
+                  value={caseNumber}
+                  onChange={(e) => setCaseNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="087"
+                  className="w-24 border-y border-border bg-white px-3 py-3 text-sm font-semibold text-center focus:border-accent focus:outline-none"
+                  maxLength={4}
+                />
+                <span className="inline-flex items-center rounded-r-xl border border-l-0 border-border bg-slate-100 px-3 py-3 text-sm font-bold text-muted select-none">
+                  - {new Date().getFullYear()}
+                </span>
+              </div>
+              {caseNumber.trim() && (() => {
+                const composedId = `${caseSource === 'Customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`;
+                const isDuplicate = existingCaseIds.includes(composedId);
+                return isDuplicate ? (
+                  <p className="ml-1 text-[10px] font-semibold text-red-600">
+                    ⚠️ Case ID "{composedId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น
+                  </p>
+                ) : (
+                  <p className="ml-1 text-[10px] font-semibold text-emerald-600">
+                    ✓ Case ID: {composedId}
+                  </p>
+                );
+              })()}
             </div>
 
           </div>

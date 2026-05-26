@@ -398,6 +398,42 @@ export function formatThaiDateShort(dateString: string): string {
   }
 }
 
+/**
+ * Convert DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD for date input
+ */
+export function convertDMYToYMD(dmy: string): string {
+  if (!dmy) return '';
+  const cleanDmy = String(dmy).trim();
+  const parts = cleanDmy.split(/[/-]/);
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    if (day && month && year && day.length <= 2 && month.length <= 2 && year.length === 4) {
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+  }
+  return '';
+}
+
+/**
+ * Convert YYYY-MM-DD to DD/MM/YYYY for storage/display
+ */
+export function convertYMDToDMY(ymd: string): string {
+  if (!ymd) return '';
+  const cleanYmd = String(ymd).trim();
+  const parts = cleanYmd.split(/[/-]/);
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    if (year.length === 4 && month.length <= 2 && day.length <= 2) {
+      return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+    }
+    // If year is actually day (already in DD/MM/YYYY)
+    if (day.length === 4 && month.length <= 2 && year.length <= 2) {
+      return `${year.padStart(2, '0')}/${month.padStart(2, '0')}/${day}`;
+    }
+  }
+  return cleanYmd;
+}
+
 // ===== ADVANCED VALIDATION FUNCTIONS =====
 
 /**

@@ -235,5 +235,41 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-05-22*: เพิ่ม BUG-010: แก้ปัญหาสีเพี้ยนจากการใช้ filter และดีไซน์หน้าจอออกจากระบบเป็นสไตล์ Apple โปร่งแสง/เบลอพร้อม iOS Spoke Spinner
+## BUG-011: Item Master Conflict Blockers from Fragmented Data
+**Status**: ✅ FIXED (2026-05-26)
+- *Problem*: ข้อมูลสินค้า (Item Master) ในระบบเดิมมีลักษณะกระจัดกระจาย (Fragmented) เช่น แถวหนึ่งมีเฉพาะ `Item Number` อีกแถวมีเฉพาะ `Item Code` ทำให้เมื่อผู้ใช้กรอกข้อมูลทั้งคู่ในฟอร์มเดียวกัน ระบบจะระบุว่าตรงกับสองแถวที่ต่างกัน และแจ้งเตือนสถานะ `conflict` (รหัสซ้ำซ้อนในระบบ) บล็อกไม่ให้ผู้ใช้สามารถกดบันทึกใบงานได้
+- *Solution*: พัฒนากลไก **Smart Auto-Merge** ใน Backend (ทั้ง Next.js API และ Google Apps Script) โดยหากตรวจพบว่า `Item Number` และ `Item Code` ตรงกับข้อมูลคนละแถว ระบบจะทำการเปรียบเทียบชื่อสินค้า (`Item Name`) ก่อน หากไม่มีการขัดแย้งของชื่อสะกดจริง (ชื่อตรงกัน หรือมีฝ่ายใดฝ่ายหนึ่งเป็นค่าว่าง) ระบบจะทำการยุบรวมข้อมูลทั้งหมดเข้าด้วยกันเป็นแถวเดียวกัน และลบแถวที่ซ้ำซ้อนออกอัตโนมัติ เพื่อทำความสะอาดฐานข้อมูล Master และปลดบล็อกผู้ใช้งาน
+
+---
+
+## BUG-012: Relax Validation Constraints to Allow Nullable Fields
+**Status**: ✅ FIXED (2026-05-27)
+- *Problem*: ข้อมูลสินค้าในระบบ rework (เช่น บาร์โค้ด Item Number, รหัสสินค้า Item Code, หมายเลขล็อต Batch no., เลขกล่อง Box Number, โมลด์ Mold, ไลน์ Line, และจำนวน Amount) เดิมมีข้อจำกัดที่เข้มงวดและเป็นฟิลด์บังคับกรอก (Required) ทำให้ผู้ใช้งานไม่สะดวกเมื่อข้อมูลจริงหน้างานไม่ครบถ้วน
+- *Solution*: 
+  1. ปรับปรุงตัวตรวจสอบความถูกต้องทั้งระบบ Frontend (`src/services/validation.ts`) และ Google Apps Script (`gas/Code.gs`) ให้ตรวจสอบเฉพาะ 4 ฟิลด์หลักที่จำเป็นเท่านั้น คือ: ชื่อลูกค้า (`Customer Name`), ชื่อรายการสินค้า (`Item Name`), สาเหตุที่พบ (`Reason`), และผู้รับผิดชอบ (`Responsible`)
+  2. ฟิลด์อื่นทั้งหมด เช่น `Item Number`, `Item Code`, `Batch no.`, `Box Number`, `Mold`, `Line`, และ `Amount` ถูกปรับเป็นฟิลด์ทางเลือก (Optional) สามารถเป็นค่าว่างเปล่า (Null / Empty string) ได้
+  3. อัปเดตอินเทอร์เฟซหน้าจอหลัก (`src/components/tabs/AddCaseTab.tsx`) นำดอกจัน `*` ออกจาก label ของฟิลด์ดังกล่าว และอัปเดตชุดทดสอบ Unit Tests เพื่อยืนยันความถูกต้องผ่านหมด 100%
+
+---
+
+## BUG-013: Unique Constraint Violation on Master Item Save for Empty Barcode
+**Status**: ✅ FIXED (2026-05-27)
+- *Problem*: เมื่อผู้ใช้งานบันทึกเคสที่มีสินค้าที่ไม่ได้ระบุบาร์โค้ด (Item Number เป็นค่าว่าง) ระบบจะพยายามส่งข้อมูลไปลงทะเบียนที่ API `/api/rework` (Action: `saveItemMaster`) ส่งผลให้เกิดข้อผิดพลาด `duplicate key value violates unique constraint "rework_master_items_item_number_key"` เนื่องจากในตาราง `rework_master_items` ของ Supabase มีการบังคับค่า `UNIQUE` สำหรับ `item_number` ทำให้การใส่ค่าว่างเปล่าซ้ำกันหลายตัวเกิดการขัดแย้งของคีย์ (Key Conflict)
+- *Solution*: 
+  1. แก้ไข Handler `saveItemMaster` ใน `src/app/api/rework/route.ts` ให้ทำการตรวจสอบค่า `itemNumber` ก่อน หากเป็นค่าว่างหรือไม่มีข้อมูล บิลด์จะข้ามขั้นตอนการบันทึกลงในตาราง `rework_master_items` ใน Supabase และแจ้งเตือนสำเร็จ (Early return success) ทันที
+  2. ทำให้ระบบรองรับการสร้างเคสแบบไม่ต้องลงทะเบียน Master Product ในกรณีที่สินค้าไม่มีหมายเลขบาร์โค้ดได้โดยไม่ติดขัด
+
+---
+
+## BUG-014: Display Only First Item's Reason in Overall Case List
+**Status**: ✅ FIXED (2026-05-27)
+- *Problem*: ในตารางสรุปรายการเคส (Overall Tab) ข้อมูลสาเหตุหลักจะดึงเฉพาะไอเทมแรก (`firstItem.reason`) มาแสดงผลเท่านั้น ซึ่งไม่ครอบคลุมเคสที่มีหลายรายการสินค้าและมีสาเหตุความผิดปกติที่แตกต่างกันในเคสเดียวกัน
+- *Solution*: ปรับปรุงคอมโพเนนต์ `CaseListTable.tsx` ให้รวบรวมสาเหตุหลักที่ไม่ซ้ำกันทั้งหมดจากทุกรายการในเคสนั้น (`uniqueReasons`) และนำมาจัดแสดงผลร่วมกันโดยคั่นด้วยเครื่องหมายจุลภาค (เช่น `รั่ว, อื่นๆ`) เพื่อสะท้อนข้อมูลความผิดปกติที่สมบูรณ์และถูกต้อง
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-05-27*: เพิ่ม BUG-014: ปรับปรุงให้หน้า Overall แสดงสาเหตุหลักทั้งหมดแบบรวบยอดกรณีมีหลายไอเทม
+
+
+
 

@@ -80,9 +80,24 @@
 | GAS as Backend | ⚠️ Serverless approach — ประหยัดค่าใช้จ่าย แต่ limited |
 | No Vector DB | ℹ️ ไม่จำเป็นตอนนี้ — หาก integrate AI ในอนาคตควรพิจารณา |
 
-## 11. Knowledge Relationships
+## 11. Modern Full-Stack LMS Tech Stack (NotebookLM 2026 Ingestion)
+ถอดรหัสคู่มือการพัฒนา Full-Stack Web Application (เช่น ระบบ LMS) เพื่อทดแทน WordPress ด้วยเทคโนโลยีปี 2026 ที่เน้นความเร็ว ความคุ้มค่า และ Type-safety 100% ตั้งแต่หน้าบ้านถึงหลังบ้าน:
+- **Core Framework**: **Next.js (App Router) + React 19** ดึงข้อมูลตรงผ่าน React Server Components และควบคุมหลังบ้านด้วย Server Actions
+- **Database & ORM**: **Drizzle ORM + MySQL** ทางเลือกที่เบาและเร็วกว่า Prisma ทำงานแบบ TypeScript-first และคิวรีได้เร็วบน Serverless/Edge
+- **E2E Type Safety**: **TypeScript + Zod** ใช้ Validate ข้อมูลทุกเลเยอร์เพื่อลดบั๊กบน Production ได้ถึง 99%
+- **Auth & Security**: **NextAuth v5** ทำงานร่วมกับ Edge Middleware และ Drizzle เชื่อมต่อ Google/GitHub ได้รวดเร็ว
+- **Styling**: **Tailwind CSS v4** รันไว คอมไพล์เร็ว ไร้การกำหนดคอนฟิกที่วุ่นวาย
+- **Testing**: **Vitest + Playwright** (Vitest ทำ Unit/Integration test ได้ไวกว่า Jest และ Playwright คลุม E2E ผู้ใช้จริง)
+- **Modern Tooling**:
+  - *Tiptap*: Headless Rich Text Editor สำหรับการทำ content management
+  - *dnd kit*: ระบบ Drag-and-drop สำหรับจัดการลำดับอย่างลื่นไหล
+  - *Stripe*: Payment Gateway ยอดนิยม
+  - *Resend*: บริการส่งอีเมลผ่าน Next.js ที่รวดเร็ว
+
+## 12. Knowledge Relationships
 - **Impacted By**: [[nextjs-frontend/nextjs.md]] — QSMS ใช้ Next.js ตาม trend
 - **Impacted By**: [[gas-backend/gas-api.md]] — GAS แทน conventional backend (trade-off)
 - **Depends On**: [[architecture/llm-wiki-pattern.md]] — Wiki นี้ใช้ LLM Wiki pattern
+- **Connected To**: [[lessons-learned/ui-libraries-resource.md]] — การเปรียบเทียบไลบรารีและแนวทาง UI/UX
 
-> 🔄 *สร้างเมื่อ 2026-05-21*: Ingested จาก `1_raw/tech stack/tech stack 2026.md` (NotebookLM Summary)
+> 🔄 *อัปเดตเมื่อ 2026-05-26*: Ingested ข้อมูลเพิ่มเติมจาก `1_raw/Tech Stack 2026/Note Taking & Research Assistant Powered by AI.md` (NotebookLM Summary)

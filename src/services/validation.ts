@@ -32,10 +32,10 @@ export interface ReworkItemValidationInput {
   verificationStatus?: string;
 }
 
-export function validateItemNumber(value: string | number): ValidationError | null {
-  const itemNumber = String(value).trim();
+export function validateItemNumber(value: string | number | undefined | null): ValidationError | null {
+  const itemNumber = String(value || '').trim();
   if (!itemNumber) {
-    return { field: 'itemNumber', message: 'Item Number is required' };
+    return null; // Item Number is optional
   }
   if (!/^[a-zA-Z0-9.\-_/ ]+$/.test(itemNumber)) {
     return { field: 'itemNumber', message: 'Item Number contains invalid characters' };
@@ -60,10 +60,10 @@ export function validateItemName(value: string): ValidationError | null {
   return null;
 }
 
-export function validateItemCode(value: string | number): ValidationError | null {
+export function validateItemCode(value: string | number | undefined | null): ValidationError | null {
   const itemCode = String(value || '').trim();
   if (!itemCode) {
-    return { field: 'itemCode', message: 'Item Code is required' };
+    return null; // Item Code is optional/nullable
   }
   if (!/^\d+$/.test(itemCode)) {
     return { field: 'itemCode', message: 'Item Code must contain only digits' };
@@ -74,7 +74,10 @@ export function validateItemCode(value: string | number): ValidationError | null
   return null;
 }
 
-export function validateAmount(value: string | number): ValidationError | null {
+export function validateAmount(value: string | number | undefined | null): ValidationError | null {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return null; // Amount is optional
+  }
   const amount = parseInt(String(value), 10);
   if (isNaN(amount)) {
     return { field: 'amount', message: 'Amount must be a valid number' };
@@ -114,10 +117,10 @@ export function validateDetails(value: string | undefined): ValidationError | nu
   return null;
 }
 
-export function validateBatchNo(value: string | undefined): ValidationError | null {
+export function validateBatchNo(value: string | undefined | null): ValidationError | null {
   const batchNo = String(value || '').trim();
   if (!batchNo) {
-    return { field: 'batchNo', message: 'Batch no. is required' };
+    return null; // Batch no. is optional
   }
   if (!/^[a-zA-Z0-9.\-_/ ]+$/.test(batchNo)) {
     return { field: 'batchNo', message: 'Batch no. contains invalid characters' };
@@ -128,7 +131,7 @@ export function validateBatchNo(value: string | undefined): ValidationError | nu
 export function validateBoxNumber(value: string | undefined): ValidationError | null {
   const boxNumber = String(value || '').trim();
   if (!boxNumber) {
-    return { field: 'boxNumber', message: 'Box Number is required' };
+    return null; // Box Number is optional/nullable
   }
   if (!/^\d+$/.test(boxNumber)) {
     return { field: 'boxNumber', message: 'Box Number must contain only numbers' };

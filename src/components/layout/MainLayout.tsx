@@ -60,6 +60,9 @@ interface MainLayoutProps {
   };
   caseSource: string;
   setCaseSource: (source: string) => void;
+  caseNumber: string;
+  setCaseNumber: (num: string) => void;
+  existingCaseIds: string[];
   formItems: ReworkItem[];
   addFormItem: () => void;
   removeFormItem: (id: string) => void;
@@ -115,6 +118,9 @@ export function MainLayout({
   stats,
   caseSource,
   setCaseSource,
+  caseNumber,
+  setCaseNumber,
+  existingCaseIds,
   formItems,
   addFormItem,
   removeFormItem,
@@ -152,10 +158,11 @@ export function MainLayout({
 
   // RBAC: Redirect to overall if accessing unauthorized tab
   React.useEffect(() => {
-    if (activeTab === 'dashboard' && userRole !== 'QSMS') {
+    const roleUpper = String(userRole || '').toUpperCase();
+    if (activeTab === 'dashboard' && roleUpper !== 'QSMS') {
       setActiveTab('overall');
     }
-    if (activeTab === 'add' && userRole === 'FINANCE') {
+    if (activeTab === 'add' && roleUpper === 'FINANCE') {
       setActiveTab('overall');
     }
   }, [activeTab, userRole, setActiveTab]);
@@ -199,7 +206,7 @@ export function MainLayout({
             label="ภาพรวม (Overall)"
             icon={<LayoutDashboard size={16} />}
           />
-          {userRole !== 'FINANCE' && (
+          {String(userRole || '').toUpperCase() !== 'FINANCE' && (
             <SidebarItem
               active={activeTab === 'add'}
               onClick={() => handleTabChange('add')}
@@ -227,7 +234,7 @@ export function MainLayout({
           />
         </nav>
 
-        {userRole === 'QSMS' && (
+        {String(userRole || '').toUpperCase() === 'QSMS' && (
           <div className="mt-auto border-t border-white/20 pt-8">
             <SidebarItem
               active={activeTab === 'dashboard'}
@@ -302,7 +309,7 @@ export function MainLayout({
               </motion.div>
             )}
 
-            {activeTab === 'add' && userRole !== 'FINANCE' && (
+            {activeTab === 'add' && String(userRole || '').toUpperCase() !== 'FINANCE' && (
               <motion.div
                 key="add"
                 initial={{ opacity: 0, y: 20 }}
@@ -315,6 +322,9 @@ export function MainLayout({
                   <AddCaseTab
                     caseSource={caseSource}
                     setCaseSource={setCaseSource}
+                    caseNumber={caseNumber}
+                    setCaseNumber={setCaseNumber}
+                    existingCaseIds={existingCaseIds}
                     formItems={formItems}
                     addFormItem={addFormItem}
                     removeFormItem={removeFormItem}
@@ -342,7 +352,7 @@ export function MainLayout({
               </motion.div>
             )}
 
-            {activeTab === 'dashboard' && userRole === 'QSMS' && (
+            {activeTab === 'dashboard' && String(userRole || '').toUpperCase() === 'QSMS' && (
               <motion.div
                 key="dashboard"
                 initial={{ opacity: 0, y: 20 }}

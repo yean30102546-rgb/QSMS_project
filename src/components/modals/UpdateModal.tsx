@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2, Package } from 'lucide-react';
 import { ReworkCase, CUSTOMER_OPTIONS, MaterialUsage } from '../../services/api';
-import { formatThaiDate, formatThaiDateShort, enforceNumeric } from '../../utils/helpers';
+import { formatThaiDate, formatThaiDateShort, enforceNumeric, convertDMYToYMD, convertYMDToDMY } from '../../utils/helpers';
 import { useExportReport } from '../../hooks/useExportReport';
 import { ExportTemplate } from '../ui/ExportTemplate';
 import { DriveImage } from '../ui/DriveImage';
@@ -497,13 +497,14 @@ export function UpdateModal({
                                             <div className="space-y-1">
                                               <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Batch no.</label>
                                               <input 
-                                                value={item.batchNo || ''} 
+                                                type="date"
+                                                value={convertDMYToYMD(item.batchNo || '')} 
                                                 onChange={(e) => {
                                                   const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], batchNo: e.target.value };
+                                                  newItems[index] = { ...newItems[index], batchNo: convertYMDToDMY(e.target.value) };
                                                   setEditedItems(newItems);
                                                 }}
-                                                placeholder="240..."
+                                                placeholder="เช่น 26/05/2026"
                                                 className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
                                               />
                                             </div>

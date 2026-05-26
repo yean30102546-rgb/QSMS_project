@@ -1,5 +1,5 @@
 # Rework Module — QSMS
-[วันที่อัปเดต: 2026-05-21]
+[วันที่อัปเดต: 2026-05-26]
 
 ## 1. Summary & Current Implementation
 Module หลักของระบบ อยู่ที่ `src/modules/rework/ReworkApp.tsx`
@@ -27,7 +27,7 @@ ReworkApp.tsx
 ## 3. Data Schema & Syncing (Updated 2026-05-21)
 ข้อมูลเคสและรายการ (items) รองรับฟิลด์ระดับ item ดังนี้:
 - `customerName` (ลูกค้า): เช่น Eneos, BCP, OR (รองรับการตั้งค่ายืดหยุ่นราย item)
-- `batchNo` (Batch number): เลขการผลิตราย item
+- `batchNo` (Batch number): เลขการผลิตราย item (ปรับปรุงให้ใช้ช่อง input ประเภท Date เลือกวันผลิต และจัดเก็บในฟอร์แมตสากล `DD/MM/YYYY`)
 - `packagingDate` (วันบรรจุ): วันที่ผลิตบรรจุ
 - `mold` (แม่พิมพ์): หมายเลขหรือชื่อโมลด์
 - `uid` (Unique ID): รหัสเฉพาะของ item เพื่อการทำ syncing อย่างถูกต้องระหว่าง Supabase และ Sheets

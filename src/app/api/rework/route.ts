@@ -544,6 +544,14 @@ export async function POST(request: Request) {
         const trimmedCode = (itemCode || '').trim();
         const trimmedName = (itemName || '').trim();
 
+        if (!trimmedNum) {
+          console.log('⚠️ Skipping saveItemMaster: itemNumber is empty.');
+          return NextResponse.json(
+            { success: true, message: 'ข้ามการบันทึก Item Master เนื่องจากไม่มี Item Number', data: null },
+            { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
+
         // 1. Conflict Check: check if itemNumber matches one row and itemCode matches another row
         let matchByNumber: any = null;
         let matchByCode: any = null;
@@ -570,15 +578,51 @@ export async function POST(request: Request) {
           }
         }
 
-        if (matchByNumber && matchByCode && matchByNumber.id !== matchByCode.id) {
-          return NextResponse.json(
-            { success: false, error: 'CONFLICT', message: 'รหัสสินค้ามีความซ้ำซ้อนในระบบ' },
-            { status: 409, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-          );
-        }
+        let existingRecord = null;
+        let resultData = null;
 
-        const existingRecord = matchByNumber || matchByCode;
-        let resultData;
+        if (matchByNumber && matchByCode && matchByNumber.id !== matchByCode.id) {
+          // Check if names conflict
+          const name1 = (matchByNumber.item_name || '').trim();
+          const name2 = (matchByCode.item_name || '').trim();
+          const hasNameConflict = name1 && name2 && name1.toLowerCase() !== name2.toLowerCase();
+
+          if (hasNameConflict) {
+            return NextResponse.json(
+              { success: false, error: 'CONFLICT', message: 'รหัสสินค้ามีความซ้ำซ้อนในระบบ' },
+              { status: 409, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+            );
+          }
+
+          // No name conflict: Auto-Merge!
+          const mergedName = name1 || name2 || trimmedName;
+          const { data: updatedRecord, error: updateErr } = await supabaseServer
+            .from('rework_master_items')
+            .update({
+              item_code: trimmedCode,
+              item_name: mergedName,
+              item_number: trimmedNum
+            })
+            .eq('id', matchByNumber.id)
+            .select()
+            .single();
+
+          if (updateErr) throw updateErr;
+
+          // Delete matchByCode which is now merged into matchByNumber
+          const { error: deleteErr } = await supabaseServer
+            .from('rework_master_items')
+            .delete()
+            .eq('id', matchByCode.id);
+
+          if (deleteErr) {
+            console.error('Error deleting duplicate master item row during auto-merge:', deleteErr);
+          }
+
+          existingRecord = updatedRecord;
+        } else {
+          existingRecord = matchByNumber || matchByCode;
+        }
 
         if (existingRecord) {
           // Check if it's already a complete item

@@ -116,4 +116,20 @@ Knowledge สำคัญที่ได้:
 - **Test Accounts**: เพิ่ม Mock credentials ใน `app/api/rework/route.ts` สำหรับการทดสอบด้วย `qsms`, `operator`, และ `finance`
 - **Wiki Update**: บันทึกโครงสร้าง Permission matrix ที่อัปเดตใหม่ลงในหน้า [roles.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/nextjs-frontend/roles.md) และลงข้อมูลใน [log.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/log.md)
 
+## 2026-05-26
+
+### [Git & System] Git Pull และ Synchronize สภาพแวดล้อม
+- **Git Pull**: ดึงโค้ดล่าสุดจากรีโมต `main` (fast-forward to 16262e7) ซึ่งแก้ไขระบบ Item Master Auto-fill และปรับปรุง UI
+- **Stash Management**: ใช้ `git stash` เพื่อเก็บประวัติการแก้ไขและนำกลับมาใช้ผ่าน `git stash pop` ได้โดยสมบูรณ์
+- **Dependencies Update**: รัน `npm install` อัปเกรด/คลีนแพ็กเกจ (ถอนออก 84 แพ็กเกจที่ไม่ได้ใช้งาน)
+
+### [Ingest] สังเคราะห์และอัปเดต Wiki สมองส่วนลึก
+- **LMS Tech Stack 2026 Ingestion**: สังเคราะห์ข้อมูลของ NotebookLM clip เกี่ยวกับ Next.js 19 + React 19 + Drizzle ORM + Zod + NextAuth v5 + Tailwind CSS v4 และการทำ Testing Pipeline (Vitest, Playwright) ลงใน [tech-stack-2026.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/architecture/tech-stack-2026.md)
+- **Lessons Learned Sync**: ย้ายและรวมบทเรียนใหม่เข้ามาในระบบ Obsidian Wiki:
+  - [rbac-casing-and-e2e.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/lessons-learned/rbac-casing-and-e2e.md) (เรื่อง UserRole Uppercase Enums และ Playwright Locators)
+  - [item-master-upsert-flow.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/lessons-learned/item-master-upsert-flow.md) (เรื่อง Item Master Auto-fill, Debounce 600ms, การป้องกันการเขียนทับ, และการเตือน conflict)
+  - [SESSION_KNOWLEDGE_2026_05_25.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/SESSION_KNOWLEDGE_2026_05_25.md) (เรื่องการปรับปรุง UX เรียงลำดับ, Remember Me, และ Explicit Date Icons)
+- **Index Update**: ลงทะเบียนลิงก์ทั้งหมดลงในหน้าดัชนีความรู้หลัก [index.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/index.md)
+
+
 

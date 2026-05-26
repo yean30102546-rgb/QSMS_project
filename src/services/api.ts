@@ -200,7 +200,8 @@ export async function insertCase(
   source: string,
   items: ReworkItem[],
   imageData?: Record<string, File[]>,
-  orFiles?: File[]
+  orFiles?: File[],
+  customCaseId?: string
 ): Promise<ApiResponse<{ caseId: string; itemIds: string[] }>> {
   try {
     // แปลงไฟล์รูปภาพทั้งหมดเป็น Base64 ก่อนส่ง (เพื่อให้ GAS.txt รับได้)
@@ -241,8 +242,12 @@ export async function insertCase(
       };
     }));
 
+    // Use custom Case ID if provided, otherwise fallback to auto-generated timestamp ID
+    const caseId = customCaseId || `RW${new Date().toISOString().replace(/[-:T.Z]/g, '').substring(2, 14)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+
     console.log('📦 Sending case to GAS:', {
       source,
+      caseId,
       itemCount: processedItems.length,
       totalImages: processedItems.reduce((sum, item) => sum + item.images.length, 0),
       orFilesCount: orFiles?.length || 0
@@ -256,7 +261,7 @@ export async function insertCase(
     const result = await postToGas<{ caseId: string; itemIds: string[] }>({
       action: 'insertCase',
       caseData: {
-        id: `RW${new Date().toISOString().replace(/[-:T.Z]/g, '').substring(2, 14)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        id: caseId,
         date: new Date().toISOString().split('T')[0],
         source,
         profileId: getCurrentUser()?.name || 'User',

@@ -29,6 +29,7 @@ const initialFormItem: ReworkItem = {
   itemCode: '',
   batchNo: '',
   packagingDate: '',
+  boxNumber: '',
   mold: '',
   line: '',
   amount: 1,
@@ -67,6 +68,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     return 'SFC';
   });
   const [orFiles, setOrFiles] = useState<File[]>([]);
+  const [caseNumber, setCaseNumber] = useState<string>('');
   const [formItems, setFormItems] = useState<ReworkItem[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('rework_formItems');
@@ -188,6 +190,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       }];
       setFormItems(resetItems);
       setCaseSource('SFC');
+      setCaseNumber('');
       setUploadedImages({});
       setOrFiles([]);
       
@@ -694,6 +697,23 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       return;
     }
     try {
+      // Compose Case ID from prefix + number + year
+      const trimmedNumber = caseNumber.trim();
+      if (!trimmedNumber) {
+        alert('กรุณากรอกหมายเลขเคส (Running Number)');
+        return;
+      }
+      const prefix = caseSource === 'Customer' ? 'RT' : 'RW';
+      const currentYear = new Date().getFullYear();
+      const composedCaseId = `${prefix}${trimmedNumber}-${currentYear}`;
+
+      // Duplicate Case ID check against loaded cases
+      const isDuplicate = cases.some(c => c.id === composedCaseId);
+      if (isDuplicate) {
+        alert(`หมายเลขเคส "${composedCaseId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น`);
+        return;
+      }
+
       setIsSaving(true);
       startSaving();
       const newItemsToSave = formItems.filter((item) => {
@@ -720,11 +740,12 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           throw new Error(res.error || `ไม่สามารถบันทึกข้อมูลสินค้า ${item.itemNumber} ลงในฐานข้อมูลกลางได้`);
         }
       }
-      const result = await insertCase(caseSource, formItems, uploadedImages, orFiles);
+      const result = await insertCase(caseSource, formItems, uploadedImages, orFiles, composedCaseId);
       if (result.success) {
         finishSaving();
         setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
         setFormItems([{ ...initialFormItem }]);
+        setCaseNumber('');
         setUploadedImages({});
         setOrFiles([]);
         await loadCases();
@@ -824,6 +845,9 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         stats={getStatistics(cases)}
         caseSource={caseSource}
         setCaseSource={setCaseSource}
+        caseNumber={caseNumber}
+        setCaseNumber={setCaseNumber}
+        existingCaseIds={cases.map(c => c.id)}
         formItems={formItems}
         addFormItem={addFormItem}
         removeFormItem={removeFormItem}

@@ -162,6 +162,15 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
   const itemNameDisplay = multipleItems 
     ? `${firstItem?.itemName || 'N/A'} (+${caseItem.items.length - 1} รายการ)` 
     : firstItem?.itemName || 'N/A';
+  
+  const uniqueReasons = Array.from(new Set(caseItem.items.map(i => i.reason).filter(Boolean)));
+  const reasonsDisplay = uniqueReasons.length > 0 ? uniqueReasons.join(', ') : 'ไม่ระบุ';
+
+  // Derive correct display prefix based on source
+  const correctPrefix = caseItem.source === 'Customer' ? 'RT' : 'RW';
+  const displayId = caseItem.id.startsWith('RW') || caseItem.id.startsWith('RT')
+    ? correctPrefix + caseItem.id.substring(2)
+    : caseItem.id;
 
   return (
     <div
@@ -176,6 +185,7 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
     >
       <div className="flex-1">
         <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary border border-primary/20 font-mono tracking-wide">{displayId}</span>
           <div className="text-sm font-semibold text-primary">{itemNameDisplay}</div>
           {deadlineStatus === 'warning' && (
             <div className="flex items-center gap-1 text-[11px] font-semibold text-tertiary" title="งานค้างเกิน 7 วัน">
@@ -208,9 +218,7 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
               </span>
             </>
           )}
-          <span>&bull;</span>
-          <span className="font-mono text-primary/80">{caseItem.id}</span>
-          
+
           {caseItem.items.every(i => i.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
             <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-semibold text-red-600 border border-red-200">
               <AlertCircle size={10} />
@@ -222,7 +230,7 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
 
       <div className="mr-8 text-right">
         <p className="text-xs font-semibold text-primary">{totalAmount} กล่อง</p>
-        <p className="text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">{firstItem?.reason || 'ไม่ระบุ'}</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">{reasonsDisplay}</p>
       </div>
 
       <StatusPill status={caseItem.status} />
