@@ -1,6 +1,6 @@
-export type AppView = 'login' | 'portal' | 'rework' | 'roster';
+export type AppView = 'login' | 'portal' | 'rework' | 'roster' | 'rag';
 
-export type PortalAppId = 'rework' | 'roster';
+export type PortalAppId = 'rework' | 'roster' | 'rag';
 
 export interface PortalAppDefinition {
   id: PortalAppId;
@@ -9,7 +9,7 @@ export interface PortalAppDefinition {
   description: string;
   route: AppView;
   status: 'active' | 'coming-soon';
-  accent: 'blue' | 'gold';
+  accent: 'blue' | 'gold' | 'purple';
 }
 
 export interface ModularizationBoundary {

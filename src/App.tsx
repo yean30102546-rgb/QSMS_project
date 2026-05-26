@@ -17,6 +17,7 @@ const WorkspacePortal = dynamic(() => import('./components/apps/portal/Workspace
 const Login = dynamic(() => import('./components/Login').then(mod => mod.Login), { ssr: false });
 const RosterApp = dynamic(() => import('./modules/roster/RosterApp').then(mod => mod.RosterApp), { ssr: false });
 const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
+const RagApp = dynamic(() => import('./modules/rag/RagApp').then(mod => mod.RagApp), { ssr: false });
 
 function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -154,6 +155,8 @@ function AuthWrapper() {
     );
   } else if (currentView === 'roster') {
     content = <RosterApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
+  } else if (currentView === 'rag') {
+    content = <RagApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else {
     content = <ReworkApp user={appUser} onLogout={handleLogout} onBackToPortal={() => setCurrentView('portal')} />;
   }

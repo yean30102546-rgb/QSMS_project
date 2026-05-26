@@ -5,7 +5,6 @@ export const portalAppRegistry: PortalAppDefinition[] = [
     id: 'rework',
     title: 'QSMS Rework',
     subtitle: 'Quality control and case resolution',
-
     description: 'Manage rework cases, images, valuations, and role-based workflow from one operational workspace.',
     route: 'rework',
     status: 'active',
@@ -19,6 +18,15 @@ export const portalAppRegistry: PortalAppDefinition[] = [
     route: 'roster',
     status: 'active',
     accent: 'gold',
+  },
+  {
+    id: 'rag',
+    title: 'QSMS DocAI RAG',
+    subtitle: 'AI Document Spec Search',
+    description: 'Upload specification sheets (PDF/Excel) and ask questions to the AI assistant to search specs.',
+    route: 'rag',
+    status: 'active',
+    accent: 'purple',
   },
 ];
 

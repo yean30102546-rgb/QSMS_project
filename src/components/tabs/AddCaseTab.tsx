@@ -8,6 +8,7 @@ import type { ReworkItem } from '../../services/api';
 import { CUSTOMER_OPTIONS } from '../../services/api';
 import { ImageUpload } from '../ui/ImageUpload';
 import { AppleProgressBar } from '../ui/AppleProgressBar';
+import { convertDMYToYMD, convertYMDToDMY } from '../../utils/helpers';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -56,13 +57,13 @@ const REASON_MAIN_OPTIONS = [
 ] as const;
 
 
-const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วโดนเครื่องจักร', 'แตกตะเข็บ', 'รอยมีด'] as const;
+const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วโดนเครื่องจักร', 'รั่วกระแทก', 'แตกตะเข็บ', 'รอยมีด'] as const;
 const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื้อน'] as const;
 
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
 
 const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
-  SFC: ['PDF', 'PDB', 'WPK', 'อื่นๆ'],
+  SFC: ['PDF', 'PDB', 'WPK', 'WFG', 'อื่นๆ'],
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };
@@ -332,7 +333,7 @@ export function AddCaseTab({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 mb-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                      หมายเลขบาร์โค้ด (Item Number) *
+                      หมายเลขบาร์โค้ด (Item Number)
                     </label>
                     {item.lastActiveField === 'itemNumber' && (
                       <span className="text-[9px] font-bold text-black/40 bg-black/5 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
@@ -368,7 +369,7 @@ export function AddCaseTab({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 mb-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                      รหัสสินค้า (Item Code) *
+                      รหัสสินค้า (Item Code)
                     </label>
                     {item.lastActiveField === 'itemCode' && (
                       <span className="text-[9px] font-bold text-black/40 bg-black/5 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
@@ -415,19 +416,20 @@ export function AddCaseTab({
               <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                 <div className="col-span-1">
                   <InputField
-                    label="หมายเลขล็อต (Batch no.) *"
-                    value={item.batchNo || ''}
-                    onChange={(v) => updateFormItem(item.id, 'batchNo', v)}
-                    placeholder="เช่น 240510"
+                    label="หมายเลขล็อต (Batch no.)"
+                    type="date"
+                    value={convertDMYToYMD(item.batchNo || '')}
+                    onChange={(v) => updateFormItem(item.id, 'batchNo', convertYMDToDMY(v))}
+                    placeholder="เช่น 26/05/2026"
                     disabled={isSaving}
                   />
                 </div>
                 <div className="col-span-1">
                   <InputField
-                    label="เลขกล่อง (Box Number) *"
+                    label="เลขกล่อง (Box Number)"
                     type="text"
-                    value={item.packagingDate || ''}
-                    onChange={(v) => updateFormItem(item.id, 'packagingDate', v)}
+                    value={item.boxNumber || ''}
+                    onChange={(v) => updateFormItem(item.id, 'boxNumber', v)}
                     placeholder="เช่น 001"
                     disabled={isSaving}
                   />
@@ -454,7 +456,7 @@ export function AddCaseTab({
                 </div>
                 <div className="col-span-2 md:col-span-1">
                   <InputField
-                    label="จำนวน (Amount) *"
+                    label="จำนวน (Amount)"
                     type="number"
                     value={item.amount}
                     onChange={(v) => updateFormItem(item.id, 'amount', v)}
