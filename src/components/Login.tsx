@@ -216,7 +216,7 @@ export function Login({
             </form>
 
             <div className="mt-7 border-t border-[#e8e8ed] pt-5 text-xs leading-5 text-[#6e6e73]">
-              <p>ตัวอย่าง profile: `QSMS`, `PDB`, `OPERATOR`, `FINANCE`</p>
+              <p>ตัวอย่าง profile: `QSMS`, `OPERATOR`, `FINANCE`</p>
               <p className="mt-1">หากต้องการแก้บัญชี ให้ปรับค่าใน Google Apps Script Properties</p>
             </div>
           </div>

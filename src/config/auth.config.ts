@@ -7,23 +7,23 @@
 export const AUTH_CONFIG = {
   // Token expiry in hours
   tokenExpiryHours: 8,
-  
+
   // Refresh token before expiry (in minutes)
   tokenRefreshThreshold: 15,
-  
+
   // Session timeout in minutes (after this, user must re-login)
   sessionTimeoutMinutes: 480, // 8 hours
-  
+
   // Use secure HTTP-only cookies (recommended for production)
   useSecureCookies: true,
-  
+
   // Enable multi-factor authentication
   enableMFA: false, // Set to true if needed for security
-  
+
   // Failed login attempts before lockout
   maxFailedLoginAttempts: 5,
   lockoutDurationMinutes: 15,
-  
+
   // Password requirements
   passwordRequirements: {
     minLength: 8,
@@ -35,26 +35,12 @@ export const AUTH_CONFIG = {
 
 // ===== USER ROLES & PERMISSIONS =====
 export enum UserRole {
-  ADMIN = 'admin',           // Full access
-  QSMS = 'qsms',             // Full access, Delete, Edit
-  PDB = 'pdb',               // Add Case, Overall, Update Status, Resolution, Export
-  OPERATOR = 'operator',     // Operator Role / Production Rework
-  FINANCE = 'finance',       // Overall (Valuation only)
-  WFG = 'wfg',               // WFG Role (Rework only, Add Case, Overall, Update Resolution)
+  QSMS = 'QSMS',             // Full access, Delete, Edit
+  OPERATOR = 'OPERATOR',     // Operator Role / Production Rework
+  FINANCE = 'FINANCE',       // Overall (Valuation only)
 }
 
 export const ROLE_PERMISSIONS = {
-  [UserRole.ADMIN]: [
-    'view_dashboard',
-    'view_overall',
-    'create_case',
-    'edit_case',
-    'delete_case',
-    'update_status',
-    'fill_resolution',
-    'fill_valuation',
-    'export_data',
-  ],
   [UserRole.QSMS]: [
     'view_dashboard',
     'view_overall',
@@ -66,12 +52,6 @@ export const ROLE_PERMISSIONS = {
     'fill_valuation',
     'export_data',
   ],
-  [UserRole.PDB]: [
-    'view_overall',
-    'create_case',
-    'update_status',
-    'fill_resolution',
-  ],
   [UserRole.OPERATOR]: [
     'view_overall',
     'create_case',
@@ -81,12 +61,6 @@ export const ROLE_PERMISSIONS = {
   [UserRole.FINANCE]: [
     'view_overall',
     'fill_valuation',
-  ],
-  [UserRole.WFG]: [
-    'view_overall',
-    'create_case',
-    'update_status',
-    'fill_resolution',
   ],
 };
 

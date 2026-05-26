@@ -1,5 +1,4 @@
 import asyncio
-import re
 from playwright import async_api
 from playwright.async_api import expect
 
@@ -9,109 +8,60 @@ async def run_test():
     context = None
 
     try:
-        # Start a Playwright session in asynchronous mode
         pw = await async_api.async_playwright().start()
-
-        # Launch a Chromium browser in headless mode with custom arguments
         browser = await pw.chromium.launch(
             headless=True,
             args=[
                 "--window-size=1280,720",
-                "--disable-dev-shm-usage",
-                "--ipc=host",
-                "--single-process"
+                "--disable-dev-shm-usage"
             ],
         )
 
-        # Create a new browser context (like an incognito window)
         context = await browser.new_context()
-        # Wider default timeout to match the agent's DOM-stability budget;
-        # auto-waiting Playwright APIs (expect, locator.wait_for) inherit this.
         context.set_default_timeout(15000)
 
-        # Open a new page in the browser context
         page = await context.new_page()
 
-        # Interact with the page elements to simulate user flow
-        # -> navigate
-        await page.goto("http://localhost:4173")
+        print("Navigating to http://localhost:3000")
+        await page.goto("http://localhost:3000")
         try:
             await page.wait_for_load_state("domcontentloaded", timeout=5000)
         except Exception:
             pass
+            
+        print("Clicking login on portal...")
+        # The login button on portal is the first button
+        portal_login_btn = page.locator("header button").first
+        await portal_login_btn.wait_for(state="visible", timeout=10000)
+        await portal_login_btn.click()
         
-        # -> Fill username (index 6) with 'QSMS', fill password (index 7) with 'QSMS', then click the submit button (index 9) to attempt login.
-        # text input placeholder="Enter Username"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/div/input").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("QSMS")
+        # Wait for the login page to animate in
+        await page.wait_for_timeout(1000)
         
-        # -> Fill username (index 6) with 'QSMS', fill password (index 7) with 'QSMS', then click the submit button (index 9) to attempt login.
-        # password input placeholder="Enter Password"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/div[2]/div/input").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("QSMS")
+        # Fill username
+        username_input = page.get_by_placeholder("Username")
+        await username_input.wait_for(state="visible", timeout=10000)
+        await username_input.fill("QSMS")
         
-        # -> Fill username (index 6) with 'QSMS', fill password (index 7) with 'QSMS', then click the submit button (index 9) to attempt login.
-        # button "เข้าสู่ระบบ"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/button").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.click()
+        # Fill password
+        password_input = page.get_by_placeholder("Password")
+        await password_input.wait_for(state="visible", timeout=10000)
+        await password_input.fill("Qsms123")
         
-        # -> Fill the password field (index 7) with 'QSMS' and click the submit button (index 9) to attempt login again, then verify whether the authenticated area loads.
-        # password input placeholder="Enter Password"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/div[2]/div/input").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("QSMS")
+        # Click login button (the submit button)
+        login_btn = page.locator("button[type='submit']")
+        await login_btn.wait_for(state="visible", timeout=10000)
+        await login_btn.click()
         
-        # -> Fill the password field (index 7) with 'QSMS' and click the submit button (index 9) to attempt login again, then verify whether the authenticated area loads.
-        # button "เข้าสู่ระบบ"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/button").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.click()
+        # Verify authenticated area (e.g. portal apps appear)
+        print("Waiting for Portal or Rework App to load...")
+        # After login, it should show Central Workspace apps and the 'ออกจากระบบ' (Sign Out) button
+        logout_btn = page.locator("button:has-text('ออกจากระบบ')")
+        await expect(logout_btn).to_be_visible(timeout=15000)
         
-        # -> Fill the password field (index 7) with 'QSMS', click the submit button (index 9), then wait for the UI to settle and verify that the authenticated area and protected pages (cases) are accessible.
-        # password input placeholder="Enter Password"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/div[2]/div/input").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("QSMS")
+        current_url = await page.evaluate("() => window.location.href")
+        print(f"Login successful, current URL: {current_url}")
         
-        # -> Fill the password field (index 7) with 'QSMS', click the submit button (index 9), then wait for the UI to settle and verify that the authenticated area and protected pages (cases) are accessible.
-        # button "Processing..."
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/button").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.click()
-        
-        # -> Fill the password field (index 7) with 'QSMS', click the submit button (index 9), wait for the UI to settle, then verify whether the authenticated area appears and protected pages (cases) are accessible.
-        # password input placeholder="Enter Password"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/div[2]/div/input").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("QSMS")
-        
-        # -> Fill the password field (index 7) with 'QSMS', click the submit button (index 9), wait for the UI to settle, then verify whether the authenticated area appears and protected pages (cases) are accessible.
-        # button "เข้าสู่ระบบ"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/button").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.click()
-        
-        # -> Fill the password field (index 7) with the operator password 'Qsms123' and click the submit button (index 9) to verify whether authentication succeeds.
-        # password input placeholder="Enter Password"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/div[2]/div/input").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("Qsms123")
-        
-        # -> Fill the password field (index 7) with the operator password 'Qsms123' and click the submit button (index 9) to verify whether authentication succeeds.
-        # button "เข้าสู่ระบบ"
-        elem = page.locator("xpath=/html/body/div/div/div[2]/div/form/button").nth(0)
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.click()
-        
-        # --> Test passed — verified by AI agent
-        frame = context.pages[-1]
-        current_url = await frame.evaluate("() => window.location.href")
-        assert current_url is not None, "Test completed successfully"
-        await asyncio.sleep(5)
-
     finally:
         if context:
             await context.close()
@@ -120,5 +70,5 @@ async def run_test():
         if pw:
             await pw.stop()
 
-asyncio.run(run_test())
-    
+if __name__ == "__main__":
+    asyncio.run(run_test())

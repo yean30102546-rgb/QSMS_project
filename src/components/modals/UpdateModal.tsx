@@ -64,12 +64,11 @@ export function UpdateModal({
   const [laborRate, setLaborRate] = useState<number | string>('');
 
   const userRole = getCurrentUserRole();
-  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.QSMS;
+  const isAdmin = userRole === UserRole.QSMS;
   const isFinance = userRole === UserRole.FINANCE || isAdmin;
-  const isPDB = userRole === UserRole.PDB || userRole === UserRole.WFG || userRole === UserRole.OPERATOR || isAdmin;
-  const isOperator = userRole === UserRole.OPERATOR || userRole === UserRole.WFG || userRole === UserRole.PDB || isAdmin;
-
-  const isRestrictedRole = userRole === UserRole.OPERATOR || userRole === UserRole.WFG || userRole === UserRole.PDB;
+  const isOperator = userRole === UserRole.OPERATOR || isAdmin;
+  const isPDB = isOperator;
+  const isRestrictedRole = userRole === UserRole.OPERATOR;
   const isStrictOperator = isRestrictedRole && !isAdmin;
   const canManageRows = isOperator || isAdmin;
   const canEditMaterialNameQty = isOperator || isAdmin;
@@ -632,9 +631,23 @@ export function UpdateModal({
                                 </div>
 
                                 <div className="space-y-2">
-                                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest">รูปภาพแนบ ({images.length}):</p>
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">รูปภาพแนบ ({images.length}):</p>
+                                    {item.imageFolderUrl && (
+                                      <a 
+                                        href={item.imageFolderUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm"
+                                        title="เปิดโฟลเดอร์ Google Drive"
+                                      >
+                                        <ExternalLink size={12} />
+                                        ไปยังโฟลเดอร์
+                                      </a>
+                                    )}
+                                  </div>
                                   {images.length > 0 ? (
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-3 gap-3">
                                       {images.map((url, imgIdx) => (
                                         <motion.button
                                           key={imgIdx}

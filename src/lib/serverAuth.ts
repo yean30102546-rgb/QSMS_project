@@ -6,6 +6,7 @@ const AUTH_SECRET = (
 
 const PROFILE_ALIASES: Record<string, string> = {
   WFG: 'OPERATOR',
+  PDB: 'OPERATOR',
 };
 
 const PROFILE_PERMISSIONS: Record<string, string[]> = {
@@ -31,7 +32,6 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'fill_valuation',
     'export_data',
   ],
-  PDB: ['view_overall', 'create_case', 'update_status', 'fill_resolution', 'export_data'],
   OPERATOR: ['view_overall', 'create_case', 'update_status', 'fill_resolution', 'export_data'],
   FINANCE: ['view_overall', 'fill_valuation'],
 };

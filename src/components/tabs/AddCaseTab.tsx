@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search } from 'lucide-react';
 
 import type { ReworkItem } from '../../services/api';
 import { CUSTOMER_OPTIONS } from '../../services/api';
@@ -27,13 +27,15 @@ interface AddCaseTabProps {
   formItems: ReworkItem[];
   addFormItem: () => void;
   removeFormItem: (id: string) => void;
+  resetFormItem: (id: string) => void;
+  clearAllForm: () => void;
+  duplicateFormItem: (id: string) => void;
   updateFormItem: (id: string, field: string, value: string | number) => void;
   handleImagesSelected: (itemId: string, files: File[]) => void;
   uploadedImages: Record<string, File[]>;
   orFiles: File[];
   setOrFiles: (files: File[]) => void;
-  handleCheckItemNumber: (id: string) => void;
-  handleAutoFillBlur: (id: string) => void;
+  handleCheckItem: (id: string, field: 'itemNumber' | 'itemCode') => void;
   handleSubmit: () => void;
   isSaving: boolean;
   progress: number;
@@ -54,13 +56,13 @@ const REASON_MAIN_OPTIONS = [
 ] as const;
 
 
-const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'แตกตะเข็บ', 'รอยมีด'] as const;
+const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วโดนเครื่องจักร', 'แตกตะเข็บ', 'รอยมีด'] as const;
 const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื้อน'] as const;
 
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
 
 const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
-  SFC: ['PDB', 'WPK', 'อื่นๆ'],
+  SFC: ['PDF', 'PDB', 'WPK', 'อื่นๆ'],
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };
@@ -73,13 +75,15 @@ export function AddCaseTab({
   formItems,
   addFormItem,
   removeFormItem,
+  resetFormItem,
+  clearAllForm,
+  duplicateFormItem,
   updateFormItem,
   handleImagesSelected,
   uploadedImages,
   orFiles,
   setOrFiles,
-  handleCheckItemNumber,
-  handleAutoFillBlur,
+  handleCheckItem,
   handleSubmit,
   isSaving,
   progress,
@@ -182,8 +186,18 @@ export function AddCaseTab({
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">บันทึกงาน Rework ใหม่</h2>
           <p className="mt-1 text-sm text-muted">เพิ่มข้อมูลล็อตสินค้าที่พบคราบหรือความเสียหายเพื่อบันทึกเข้าสู่ระบบ</p>
         </div>
-        <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted">
-          <Clock size={12} /> บันทึกข้อมูลสด
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={clearAllForm}
+            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-red-600 hover:border-red-200 active:scale-95"
+            title="ล้างข้อมูลที่กรอกค้างไว้ทั้งหมดในหน้านี้"
+          >
+            <Trash2 size={12} /> ล้างฟอร์มทั้งหมด
+          </button>
+          <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted">
+            <Clock size={12} /> บันทึกข้อมูลสด
+          </div>
         </div>
       </div>
 
@@ -262,35 +276,50 @@ export function AddCaseTab({
           {formItems.map((item, idx) => (
             <motion.div
               key={item.id}
+              id={`form-card-${item.id}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="glass-card relative overflow-hidden bg-white p-8"
             >
               <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
               <div className="mb-8 flex items-center justify-between">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-accent">
+                <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
                   <Plus size={16} /> รายการที่ {idx + 1}
+                  {item.verificationStatus === 'verified' && (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> พบในระบบ
+                    </span>
+                  )}
+                  {item.verificationStatus === 'new' && (
+                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> สินค้าใหม่
+                    </span>
+                  )}
+                  {item.verificationStatus === 'checking' && (
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
+                    </span>
+                  )}
+                  {item.verificationStatus === 'updating' && (
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> กำลังอัพเดตข้อมูล...
+                    </span>
+                  )}
+                  {item.verificationStatus === 'conflict' && (
+                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> ⚠️ รหัสซ้ำซ้อนในระบบ
+                    </span>
+                  )}
                 </h3>
-                {formItems.length > 1 && (
-                  <motion.button
-                    onClick={() => removeFormItem(item.id)}
-                    whileHover={{ scale: 1.1, color: 'rgb(239, 68, 68)' }}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ duration: 0.15 }}
-                    className="will-change-transform rounded-lg p-1.5 text-muted hover:bg-red-50"
-                  >
-                    <Trash2 size={16} />
-                  </motion.button>
-                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="space-y-2">
                   <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">ชื่อลูกค้า (Customer Name) *</label>
                   <select
                     value={item.customerName || ''}
                     onChange={(e) => updateFormItem(item.id, 'customerName', e.target.value)}
-                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none disabled:opacity-50 h-[46px]"
                     disabled={isSaving}
                   >
                     <option value="">กรุณาเลือก</option>
@@ -300,7 +329,7 @@ export function AddCaseTab({
                   </select>
                 </div>
 
-                <div className="lg:col-span-2">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 mb-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
                       หมายเลขบาร์โค้ด (Item Number) *
@@ -311,24 +340,35 @@ export function AddCaseTab({
                       </span>
                     )}
                   </div>
-                  <input
-                    type="text"
-                    value={item.itemNumber}
-                    onChange={(e) => updateFormItem(item.id, 'itemNumber', e.target.value)}
-                    onBlur={() => handleAutoFillBlur(item.id)}
-                    placeholder="เช่น 60001234A"
-                    disabled={isSaving}
-                    className={`w-full rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber'
-                      ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
-                      : 'border-border bg-slate-50 focus:border-accent'
-                      }`}
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={item.itemNumber}
+                      onChange={(e) => updateFormItem(item.id, 'itemNumber', e.target.value)}
+                      placeholder="เช่น 60001234A"
+                      disabled={isSaving}
+                      className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber'
+                        ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
+                        : 'border-border bg-slate-50 focus:border-accent'
+                        }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleCheckItem(item.id, 'itemNumber')}
+                      disabled={isSaving || !item.itemNumber.trim()}
+                      className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                      title="ตรวจสอบข้อมูลด้วยบาร์โค้ด"
+                    >
+                      <Search size={16} />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="lg:col-span-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 mb-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                      รหัสสินค้า (Item Code)
+                      รหัสสินค้า (Item Code) *
                     </label>
                     {item.lastActiveField === 'itemCode' && (
                       <span className="text-[9px] font-bold text-black/40 bg-black/5 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
@@ -336,30 +376,28 @@ export function AddCaseTab({
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-3">
+                  <div className="relative flex items-center">
                     <input
                       type="text"
+                      autoComplete="off"
                       value={item.itemCode}
                       onChange={(e) => updateFormItem(item.id, 'itemCode', e.target.value)}
-                      onBlur={() => handleAutoFillBlur(item.id)}
                       placeholder="เช่น 40001234"
                       disabled={isSaving}
-                      className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode'
+                      className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode'
                         ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
                         : 'border-border bg-slate-50 focus:border-accent'
                         }`}
                     />
-                    <motion.button
+                    <button
                       type="button"
-                      onClick={() => handleCheckItemNumber(item.id)}
-                      disabled={isSaving || (!item.itemNumber.trim() && !item.itemCode.trim())}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.15 }}
-                      className="will-change-transform whitespace-nowrap rounded-xl border-2 border-[#1d1d1f] bg-[#1d1d1f] px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => handleCheckItem(item.id, 'itemCode')}
+                      disabled={isSaving || !item.itemCode.trim()}
+                      className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                      title="ตรวจสอบข้อมูลด้วยรหัสสินค้า"
                     >
-                      ตรวจสอบข้อมูลสินค้า
-                    </motion.button>
+                      <Search size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -656,6 +694,45 @@ export function AddCaseTab({
                     maxImages={5}
                   />
                 </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-6">
+                <motion.button
+                  type="button"
+                  onClick={() => {
+                    duplicateFormItem(item.id);
+                    setTimeout(() => {
+                      const card = document.getElementById(`form-card-${item.id}`);
+                      card?.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-100"
+                >
+                  <Copy size={16} /> คัดลอกรายการ
+                </motion.button>
+                {formItems.length > 1 ? (
+                  <motion.button
+                    type="button"
+                    onClick={() => removeFormItem(item.id)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
+                  >
+                    <Trash2 size={16} /> ลบรายการ
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="button"
+                    onClick={() => resetFormItem(item.id)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+                  >
+                    <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
+                  </motion.button>
+                )}
               </div>
             </motion.div>
           ))}

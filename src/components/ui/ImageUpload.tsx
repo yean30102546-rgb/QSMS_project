@@ -345,7 +345,7 @@ export function ImageUpload({
       )}
 
       {/* Minimalist Gallery */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <AnimatePresence mode="popLayout">
           {imageItems.map((item, idx) => (
             <motion.div

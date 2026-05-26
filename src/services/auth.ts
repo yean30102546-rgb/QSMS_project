@@ -164,9 +164,10 @@ export async function loginWithPassword(userId: string, password: string): Promi
       };
     }
 
+    const rawRole = result.data.user.role || UserRole.OPERATOR;
     const user: User = {
       ...result.data.user,
-      role: result.data.user.role || UserRole.PDB,
+      role: rawRole.toUpperCase() as UserRole,
     };
 
     storeAuthData(result.data.token, user, result.data.expiresIn);

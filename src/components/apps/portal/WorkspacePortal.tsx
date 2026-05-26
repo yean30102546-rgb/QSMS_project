@@ -277,7 +277,7 @@ export function WorkspacePortal({
 
         <section className="grid gap-6 lg:grid-cols-2">
           {apps.filter(app => {
-            const isRestrictedRole = user?.role === 'wfg' || user?.role === 'operator' || user?.role === 'pdb';
+            const isRestrictedRole = user?.role === 'OPERATOR';
             return !(app.id === 'roster' && isRestrictedRole);
           }).map((app, index) => {
             const isActive = app.status === 'active';

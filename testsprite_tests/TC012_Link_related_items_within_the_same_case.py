@@ -23,7 +23,7 @@ async def run_test():
         context.set_default_timeout(15000)
         page = await context.new_page()
         # -> navigate
-        await page.goto("http://localhost:4173")
+        await page.goto("http://localhost:3000")
         try:
             await page.wait_for_load_state("domcontentloaded", timeout=5000)
         except Exception:

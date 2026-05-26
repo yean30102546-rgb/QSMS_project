@@ -54,6 +54,7 @@ export interface ReworkItem {
   customerName?: string;
   uid?: string; // Stable unique ID from backend
   lastActiveField?: 'itemNumber' | 'itemCode'; // Tracks user priority
+  verificationStatus?: 'idle' | 'checking' | 'verified' | 'new' | 'failed' | 'updating' | 'conflict';
 }
 
 export const CUSTOMER_OPTIONS = [

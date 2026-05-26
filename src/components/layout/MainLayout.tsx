@@ -63,11 +63,13 @@ interface MainLayoutProps {
   formItems: ReworkItem[];
   addFormItem: () => void;
   removeFormItem: (id: string) => void;
+  resetFormItem: (id: string) => void;
+  clearAllForm: () => void;
+  duplicateFormItem: (id: string) => void;
   updateFormItem: (id: string, field: string, value: string | number) => void;
   handleImagesSelected: (itemId: string, files: File[]) => void;
   uploadedImages: Record<string, File[]>;
-  handleCheckItemNumber: (id: string) => void;
-  handleAutoFillBlur: (id: string) => void;
+  handleCheckItem: (id: string, field: 'itemNumber' | 'itemCode') => void;
   handleSubmit: () => void;
   orFiles: File[];
   setOrFiles: (files: File[]) => void;
@@ -116,13 +118,15 @@ export function MainLayout({
   formItems,
   addFormItem,
   removeFormItem,
+  resetFormItem,
+  clearAllForm,
+  duplicateFormItem,
   updateFormItem,
   handleImagesSelected,
   uploadedImages,
   orFiles,
   setOrFiles,
-  handleCheckItemNumber,
-  handleAutoFillBlur,
+  handleCheckItem,
   handleSubmit,
   isSaving,
   progress,
@@ -148,10 +152,10 @@ export function MainLayout({
 
   // RBAC: Redirect to overall if accessing unauthorized tab
   React.useEffect(() => {
-    if (activeTab === 'dashboard' && userRole !== 'admin' && userRole !== 'qsms') {
+    if (activeTab === 'dashboard' && userRole !== 'QSMS') {
       setActiveTab('overall');
     }
-    if (activeTab === 'add' && userRole === 'finance') {
+    if (activeTab === 'add' && userRole === 'FINANCE') {
       setActiveTab('overall');
     }
   }, [activeTab, userRole, setActiveTab]);
@@ -195,7 +199,7 @@ export function MainLayout({
             label="ภาพรวม (Overall)"
             icon={<LayoutDashboard size={16} />}
           />
-          {userRole !== 'finance' && (
+          {userRole !== 'FINANCE' && (
             <SidebarItem
               active={activeTab === 'add'}
               onClick={() => handleTabChange('add')}
@@ -223,7 +227,7 @@ export function MainLayout({
           />
         </nav>
 
-        {(userRole === 'admin' || userRole === 'qsms') && (
+        {userRole === 'QSMS' && (
           <div className="mt-auto border-t border-white/20 pt-8">
             <SidebarItem
               active={activeTab === 'dashboard'}
@@ -298,7 +302,7 @@ export function MainLayout({
               </motion.div>
             )}
 
-            {activeTab === 'add' && userRole !== 'finance' && (
+            {activeTab === 'add' && userRole !== 'FINANCE' && (
               <motion.div
                 key="add"
                 initial={{ opacity: 0, y: 20 }}
@@ -314,13 +318,15 @@ export function MainLayout({
                     formItems={formItems}
                     addFormItem={addFormItem}
                     removeFormItem={removeFormItem}
+                    resetFormItem={resetFormItem}
+                    clearAllForm={clearAllForm}
+                    duplicateFormItem={duplicateFormItem}
                     updateFormItem={updateFormItem}
                     handleImagesSelected={handleImagesSelected}
                     uploadedImages={uploadedImages}
                     orFiles={orFiles}
                     setOrFiles={setOrFiles}
-                    handleCheckItemNumber={handleCheckItemNumber}
-                    handleAutoFillBlur={handleAutoFillBlur}
+                    handleCheckItem={handleCheckItem}
                     handleSubmit={handleSubmit}
                     isSaving={isSaving}
                     progress={progress}
@@ -336,7 +342,7 @@ export function MainLayout({
               </motion.div>
             )}
 
-            {activeTab === 'dashboard' && (userRole === 'admin' || userRole === 'qsms') && (
+            {activeTab === 'dashboard' && userRole === 'QSMS' && (
               <motion.div
                 key="dashboard"
                 initial={{ opacity: 0, y: 20 }}

@@ -29,6 +29,7 @@ export interface ReworkItemValidationInput {
   customerName?: string;
   mold?: string;
   line?: string;
+  verificationStatus?: string;
 }
 
 export function validateItemNumber(value: string | number): ValidationError | null {
@@ -61,7 +62,9 @@ export function validateItemName(value: string): ValidationError | null {
 
 export function validateItemCode(value: string | number): ValidationError | null {
   const itemCode = String(value || '').trim();
-  if (!itemCode) return null;
+  if (!itemCode) {
+    return { field: 'itemCode', message: 'Item Code is required' };
+  }
   if (!/^\d+$/.test(itemCode)) {
     return { field: 'itemCode', message: 'Item Code must contain only digits' };
   }
@@ -205,7 +208,7 @@ export function findDuplicateItemNumbers(
 
 export function isSaveDisabled(items: ReworkItemValidationInput[]): boolean {
   if (items.length === 0) return true;
-  return items.some((item) => !validateReworkItem(item).isValid);
+  return items.some((item) => !validateReworkItem(item).isValid || item.verificationStatus === 'conflict');
 }
 
 export function sanitizeInput(input: string): string {

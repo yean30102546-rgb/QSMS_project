@@ -230,24 +230,19 @@ export function userHasPermission(userRole: UserRole, permission: string): boole
 export function getAvailableRoles(): Array<{ value: UserRole; label: string; description: string }> {
   return [
     {
-      value: UserRole.ADMIN,
-      label: 'Administrator',
-      description: 'Full system access, user management, and system configuration',
-    },
-    {
       value: UserRole.QSMS,
-      label: 'QSMS',
+      label: 'QSMS (Administrator)',
       description: 'Full system access, delete, and advanced editing',
     },
     {
-      value: UserRole.PDB,
-      label: 'PDB',
-      description: 'Can create cases and update resolution methods',
+      value: UserRole.OPERATOR,
+      label: 'Operator',
+      description: 'Production operator role, case recording, and updates',
     },
     {
       value: UserRole.FINANCE,
       label: 'Finance',
-      description: 'Valuation and rework cost assessment only',
+      description: 'Valuation evaluation and cost management',
     },
   ];
 }

@@ -387,7 +387,7 @@ export function ImageUpload({
       {/* Image Gallery */}
       {imageItems.length > 0 && (
         <div className="space-y-3">
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <AnimatePresence>
               {imageItems.map((item, idx) => (
                 <motion.div

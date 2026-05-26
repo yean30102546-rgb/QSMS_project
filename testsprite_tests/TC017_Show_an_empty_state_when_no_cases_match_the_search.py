@@ -34,7 +34,7 @@ async def run_test():
 
         # Interact with the page elements to simulate user flow
         # -> navigate
-        await page.goto("http://localhost:4173")
+        await page.goto("http://localhost:3000")
         try:
             await page.wait_for_load_state("domcontentloaded", timeout=5000)
         except Exception:

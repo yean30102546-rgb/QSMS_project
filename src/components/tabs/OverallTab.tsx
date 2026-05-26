@@ -83,7 +83,6 @@ export function OverallTab({
                 สวัสดี {
                   userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
                   userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
-                  userRole.toLowerCase() === 'pdb' ? 'แผนก PDB' :
                   userRole.toLowerCase() === 'finance' ? 'แผนกการเงิน' :
                   userRole.toLowerCase() === 'management' ? 'ฝ่ายบริหาร' :
                   userRole.toUpperCase()

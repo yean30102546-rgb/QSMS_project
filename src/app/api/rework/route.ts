@@ -465,24 +465,46 @@ export async function POST(request: Request) {
       }
 
       case 'verifyItem': {
-        const { itemNumber } = body;
-        const { data, error } = await supabaseServer
-          .from('rework_master_items')
-          .select('*')
-          .or(`item_number.eq.${itemNumber},item_code.eq.${itemNumber}`)
-          .maybeSingle();
-
-        if (error) throw error;
+        const { itemNumber, itemCode } = body;
         
-        if (!data) {
+        const conditions: string[] = [];
+        if (itemNumber) conditions.push(`item_number.eq.${itemNumber}`);
+        if (itemCode) conditions.push(`item_code.eq.${itemCode}`);
+        
+        if (conditions.length === 0) {
           return NextResponse.json(
             { success: true, data: { found: false } },
             { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
           );
         }
 
+        const { data, error } = await supabaseServer
+          .from('rework_master_items')
+          .select('*')
+          .or(conditions.join(','))
+          .limit(1);
+
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+          return NextResponse.json(
+            { success: true, data: { found: false } },
+            { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
+
+        const record = data[0];
         return NextResponse.json(
-          { success: true, data: { found: true, itemName: data.item_name, itemCode: data.item_code, itemNumber: data.item_number } },
+          { 
+            success: true, 
+            data: { 
+              found: true, 
+              id: record.id,
+              itemName: record.item_name, 
+              itemCode: record.item_code, 
+              itemNumber: record.item_number 
+            } 
+          },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
         );
       }
@@ -518,18 +540,108 @@ export async function POST(request: Request) {
       case 'saveItemMaster': {
         const { itemNumber, itemCode, itemName } = body;
 
-        const { data, error } = await supabaseServer
-          .from('rework_master_items')
-          .upsert(
-            { item_number: itemNumber, item_code: itemCode, item_name: itemName },
-            { onConflict: 'item_number' }
-          )
-          .select()
-          .single();
+        const trimmedNum = (itemNumber || '').trim();
+        const trimmedCode = (itemCode || '').trim();
+        const trimmedName = (itemName || '').trim();
 
-        if (error) throw error;
+        // 1. Conflict Check: check if itemNumber matches one row and itemCode matches another row
+        let matchByNumber: any = null;
+        let matchByCode: any = null;
+
+        if (trimmedNum) {
+          const { data: numMatches } = await supabaseServer
+            .from('rework_master_items')
+            .select('*')
+            .eq('item_number', trimmedNum)
+            .limit(1);
+          if (numMatches && numMatches.length > 0) {
+            matchByNumber = numMatches[0];
+          }
+        }
+
+        if (trimmedCode) {
+          const { data: codeMatches } = await supabaseServer
+            .from('rework_master_items')
+            .select('*')
+            .eq('item_code', trimmedCode)
+            .limit(1);
+          if (codeMatches && codeMatches.length > 0) {
+            matchByCode = codeMatches[0];
+          }
+        }
+
+        if (matchByNumber && matchByCode && matchByNumber.id !== matchByCode.id) {
+          return NextResponse.json(
+            { success: false, error: 'CONFLICT', message: 'รหัสสินค้ามีความซ้ำซ้อนในระบบ' },
+            { status: 409, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
+
+        const existingRecord = matchByNumber || matchByCode;
+        let resultData;
+
+        if (existingRecord) {
+          // Check if it's already a complete item
+          const dbNum = (existingRecord.item_number || '').trim();
+          const dbCode = (existingRecord.item_code || '').trim();
+          const dbName = (existingRecord.item_name || '').trim();
+          const isComplete = dbNum && dbCode && dbName;
+
+          if (isComplete) {
+            // Already complete, skip updating to protect master data
+            resultData = existingRecord;
+          } else {
+            // Update only missing values
+            const updatePayload: any = {};
+            if (!dbNum && trimmedNum) updatePayload.item_number = trimmedNum;
+            if (!dbCode && trimmedCode) updatePayload.item_code = trimmedCode;
+            if (!dbName && trimmedName) updatePayload.item_name = trimmedName;
+
+            if (Object.keys(updatePayload).length > 0) {
+              const { data, error } = await supabaseServer
+                .from('rework_master_items')
+                .update(updatePayload)
+                .eq('id', existingRecord.id)
+                .select()
+                .single();
+                
+              if (error) throw error;
+              resultData = data;
+            } else {
+              resultData = existingRecord;
+            }
+          }
+        } else {
+          // Insert new record
+          const { data, error } = await supabaseServer
+            .from('rework_master_items')
+            .insert([{
+              item_number: trimmedNum,
+              item_code: trimmedCode,
+              item_name: trimmedName
+            }])
+            .select()
+            .single();
+            
+          if (error) throw error;
+          resultData = data;
+        }
+
+        // Also proxy to GAS to update Google Sheet ItemMaster
+        console.log('☁️ Proxying saveItemMaster to GAS...');
+        try {
+          await proxyToGAS({
+            ...body,
+            itemNumber: trimmedNum,
+            itemCode: trimmedCode,
+            itemName: trimmedName
+          });
+        } catch (gasErr) {
+          console.error('Error proxying saveItemMaster to GAS:', gasErr);
+        }
+
         return NextResponse.json(
-          { success: true, message: 'บันทึก Item เรียบร้อยแล้ว', data },
+          { success: true, message: 'บันทึก Item เรียบร้อยแล้ว', data: resultData },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
         );
       }
@@ -570,22 +682,23 @@ export async function POST(request: Request) {
             
             // Sign the token using AUTH_SECRET (same logic as serverAuth.ts)
             const AUTH_SECRET = (process.env.AUTH_TOKEN_SECRET || process.env.GAS_AUTH_TOKEN_SECRET || '').trim();
-            let mockToken = unsignedToken;
-            if (AUTH_SECRET) {
-              const key = await crypto.subtle.importKey(
-                'raw',
-                new TextEncoder().encode(AUTH_SECRET),
-                { name: 'HMAC', hash: 'SHA-256' },
-                false,
-                ['sign'],
+            if (!AUTH_SECRET) {
+              return NextResponse.json(
+                { success: false, error: 'AUTH_TOKEN_SECRET is not configured on the server.', statusCode: 500 },
+                { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
               );
-              const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(unsignedToken));
-              const signatureStr = Buffer.from(signature).toString('base64url');
-              mockToken = `${unsignedToken}.${signatureStr}`;
-            } else {
-              // If no secret, just append a mock signature (it will fail later if secret is expected, but better than nothing)
-              mockToken = `${unsignedToken}.mock-signature`;
             }
+            
+            const key = await crypto.subtle.importKey(
+              'raw',
+              new TextEncoder().encode(AUTH_SECRET),
+              { name: 'HMAC', hash: 'SHA-256' },
+              false,
+              ['sign'],
+            );
+            const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(unsignedToken));
+            const signatureStr = Buffer.from(signature).toString('base64url');
+            const mockToken = `${unsignedToken}.${signatureStr}`;
 
             return NextResponse.json(
               {

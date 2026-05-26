@@ -158,8 +158,9 @@ function getAuthProfiles() {
     },
   };
   
-  // Legacy alias support: map WFG to the OPERATOR credentials so legacy logins or tests still authenticate
+  // Legacy alias support: map WFG/PDB to the OPERATOR credentials so legacy logins or tests still authenticate
   profiles.WFG = profiles.OPERATOR;
+  profiles.PDB = profiles.OPERATOR;
   
   return profiles;
 }
@@ -1176,7 +1177,7 @@ function handleUpdate(payload) {
     // Check permissions for specific updates
     const isAdminOrQSMS = (userRole === 'ADMIN' || userRole === 'QSMS');
     const isFinance = (userRole === 'FINANCE');
-    const isOperator = (userRole === 'OPERATOR' || userRole === 'WFG');
+    const isOperator = (userRole === 'OPERATOR' || userRole === 'WFG' || userRole === 'PDB');
 
     const seenItemIdsByCase = {};
 
@@ -1858,10 +1859,63 @@ function saveItemMaster(payload) {
       return { success: false, error: 'Item Number or Item Code is required' };
     }
 
-    // Check if itemNumber already exists
+    const pItemNumber = itemNumber.toLowerCase();
+    const pItemCode = itemCode.toLowerCase();
+
+    // 1. Conflict Check: check if itemNumber matches one row and itemCode matches another
+    let rowForNumber = -1;
+    let rowForCode = -1;
+
     for (let i = 1; i < data.length; i++) {
-      if (itemNumber && String(data[i][0] || '').trim() === itemNumber) {
-        return { success: true, message: 'Item already exists in master data' };
+      const sheetNumber = String(data[i][0] || '').trim().toLowerCase();
+      const sheetCode = String(data[i][1] || '').trim().toLowerCase();
+
+      if (pItemNumber && sheetNumber === pItemNumber) {
+        rowForNumber = i;
+      }
+      if (pItemCode && sheetCode === pItemCode) {
+        rowForCode = i;
+      }
+    }
+
+    if (rowForNumber !== -1 && rowForCode !== -1 && rowForNumber !== rowForCode) {
+      return { success: false, error: 'CONFLICT', message: 'รหัสสินค้ามีความซ้ำซ้อนในระบบ' };
+    }
+
+    const matchedRowIndex = rowForNumber !== -1 ? rowForNumber : rowForCode;
+
+    if (matchedRowIndex !== -1) {
+      const sheetNumber = String(data[matchedRowIndex][0] || '').trim();
+      const sheetCode = String(data[matchedRowIndex][1] || '').trim();
+      const sheetName = String(data[matchedRowIndex][2] || '').trim();
+
+      const isComplete = sheetNumber && sheetCode && sheetName;
+
+      if (isComplete) {
+        // Skip updates for complete items to protect master data integrity
+        return { success: true, message: 'ข้อมูลสมบูรณ์อยู่แล้ว ข้ามการอัพเดต' };
+      }
+
+      let updated = false;
+
+      // Update only missing values
+      if (!sheetNumber && itemNumber) {
+        sheet.getRange(matchedRowIndex + 1, 1).setValue(itemNumber);
+        updated = true;
+      }
+      if (!sheetCode && itemCode) {
+        sheet.getRange(matchedRowIndex + 1, 2).setValue(itemCode);
+        updated = true;
+      }
+      if (!sheetName && itemName) {
+        sheet.getRange(matchedRowIndex + 1, 3).setValue(itemName);
+        updated = true;
+      }
+
+      if (updated) {
+        return { success: true, message: 'อัปเดตข้อมูลสินค้าสำเร็จ' };
+      } else {
+        return { success: true, message: 'สินค้ามีอยู่แล้วในระบบ' };
       }
     }
 

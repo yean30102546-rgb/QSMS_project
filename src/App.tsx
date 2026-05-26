@@ -22,9 +22,16 @@ function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [appUser, setAppUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<AppView>('portal');
+  const [currentView, _setCurrentView] = useState<AppView>('portal');
   const [redirectAfterLogin, setRedirectAfterLogin] = useState<AppView | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const setCurrentView = (view: AppView) => {
+    _setCurrentView(view);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('currentView', view);
+    }
+  };
 
   useEffect(() => {
     const authenticated = authIsAuthenticated();
@@ -32,7 +39,21 @@ function AuthWrapper() {
 
     setIsAuthenticated(authenticated);
     setAppUser(currentUser);
-    setCurrentView('portal');
+    
+    if (typeof window !== 'undefined') {
+      const savedView = sessionStorage.getItem('currentView') as AppView | null;
+      if (savedView && savedView !== 'login' && authenticated) {
+        if (savedView === 'roster' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
+          setCurrentView('portal');
+        } else {
+          setCurrentView(savedView);
+        }
+      } else {
+        setCurrentView('portal');
+      }
+    } else {
+      setCurrentView('portal');
+    }
     setAuthLoading(false);
   }, []);
 
@@ -114,7 +135,8 @@ function AuthWrapper() {
             setCurrentView('portal');
           } else if (isAuthenticated) {
             if (route === 'roster') {
-              const isRestrictedRole = appUser?.role === 'wfg' || appUser?.role === 'operator' || appUser?.role === 'pdb';
+              const upperRole = appUser?.role?.toUpperCase();
+              const isRestrictedRole = upperRole === 'OPERATOR';
               if (isRestrictedRole) {
                 // Ignore roster navigation for restricted roles
                 return;
