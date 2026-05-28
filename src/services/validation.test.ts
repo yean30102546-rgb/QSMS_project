@@ -100,6 +100,7 @@ describe('Validation Services', () => {
       customerName: 'John Doe',
       batchNo: 'B01',
       boxNumber: '001',
+      imageCount: 1,
     }
 
     it('should pass with valid fields', () => {
@@ -157,6 +158,25 @@ describe('Validation Services', () => {
       const result = findDuplicateItemNumbers(items)
       expect(result.hasDuplicates).toBe(false)
     })
+
+    it('should not treat same item number with same reason but different reasonSubtypes as duplicate', () => {
+      const items = [
+        { itemNumber: 'ITEM1', reason: 'รั่ว', reasonSubtype: 'รั่วซึม' },
+        { itemNumber: 'ITEM1', reason: 'รั่ว', reasonSubtype: 'รั่วตามด' },
+      ]
+      const result = findDuplicateItemNumbers(items)
+      expect(result.hasDuplicates).toBe(false)
+    })
+
+    it('should treat same item number with same reason and same reasonSubtype as duplicate', () => {
+      const items = [
+        { itemNumber: 'ITEM1', reason: 'รั่ว', reasonSubtype: 'รั่วซึม' },
+        { itemNumber: 'ITEM1', reason: 'รั่ว', reasonSubtype: 'รั่วซึม' },
+      ]
+      const result = findDuplicateItemNumbers(items)
+      expect(result.hasDuplicates).toBe(true)
+      expect(result.duplicates).toContain('ITEM1 (รั่ว - รั่วซึม) - Box: -, Mold: -, Line: -')
+    })
   })
 
   describe('isSaveDisabled', () => {
@@ -166,15 +186,30 @@ describe('Validation Services', () => {
 
     it('should return true if any item is invalid', () => {
       const items = [
-        { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001' },
-        { itemNumber: 'ITEM2', itemName: '', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001' }, // Invalid itemName
+        { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001', imageCount: 1 },
+        { itemNumber: 'ITEM2', itemName: '', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001', imageCount: 1 }, // Invalid itemName
+      ]
+      expect(isSaveDisabled(items)).toBe(true)
+    })
+
+    it('should return true if any item is missing images', () => {
+      const items = [
+        { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001', imageCount: 0 },
+      ]
+      expect(isSaveDisabled(items)).toBe(true)
+    })
+
+    it('should return true if any item is duplicate', () => {
+      const items = [
+        { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001', imageCount: 1 },
+        { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001', imageCount: 1 },
       ]
       expect(isSaveDisabled(items)).toBe(true)
     })
 
     it('should return false if all items are valid', () => {
       const items = [
-        { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001' },
+        { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001', imageCount: 1 },
       ]
       expect(isSaveDisabled(items)).toBe(false)
     })

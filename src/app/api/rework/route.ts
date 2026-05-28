@@ -713,9 +713,25 @@ export async function POST(request: Request) {
               { status: 409, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
             );
           }
+        }
 
+        // --- Transaction Integrity: Proxy to GAS BEFORE Supabase mutations ---
+        console.log('☁️ Proxying saveItemMaster to GAS...');
+        const gasResponse = await proxyToGAS({
+          ...body,
+          itemNumber: trimmedNum,
+          itemCode: trimmedCode,
+          itemName: trimmedName
+        });
+        if (!gasResponse.success) {
+          console.error('❌ GAS Sync failed for saveItemMaster:', gasResponse.error);
+          throw new Error(gasResponse.error || 'Failed to sync with Google Sheets (ItemMaster)');
+        }
+        // ---------------------------------------------------------------------
+
+        if (matchByNumber && matchByCode && matchByNumber.id !== matchByCode.id) {
           // No name conflict: Auto-Merge!
-          const mergedName = name1 || name2 || trimmedName;
+          const mergedName = (matchByNumber.item_name || '').trim() || (matchByCode.item_name || '').trim() || trimmedName;
           const { data: updatedRecord, error: updateErr } = await supabaseServer
             .from('rework_master_items')
             .update({
@@ -789,19 +805,6 @@ export async function POST(request: Request) {
 
           if (error) throw error;
           resultData = data;
-        }
-
-        // Also proxy to GAS to update Google Sheet ItemMaster
-        console.log('☁️ Proxying saveItemMaster to GAS...');
-        try {
-          await proxyToGAS({
-            ...body,
-            itemNumber: trimmedNum,
-            itemCode: trimmedCode,
-            itemName: trimmedName
-          });
-        } catch (gasErr) {
-          console.error('Error proxying saveItemMaster to GAS:', gasErr);
         }
 
         return NextResponse.json(

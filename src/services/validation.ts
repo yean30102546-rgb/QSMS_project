@@ -30,6 +30,7 @@ export interface ReworkItemValidationInput {
   mold?: string;
   line?: string;
   verificationStatus?: string;
+  imageCount?: number;
 }
 
 export function validateItemNumber(value: string | number | undefined | null): ValidationError | null {
@@ -157,6 +158,9 @@ export function validateReworkItem(item: ReworkItemValidationInput): ValidationR
       ? { field: 'responsibleSubtype', message: 'กรุณาระบุหน่วยงานที่รับผิดชอบ' } : null,
     !String(item.customerName || '').trim()
       ? { field: 'customerName', message: 'Customer Name is required' } : null,
+    // Image Validation (Mandatory Evidence)
+    (item.imageCount ?? 0) < 1
+      ? { field: 'images', message: 'กรุณาแนบรูปภาพอย่างน้อย 1 รูป' } : null,
   ].filter((error): error is ValidationError => Boolean(error));
 
   return {
@@ -176,6 +180,7 @@ export function findDuplicateItemNumbers(
   items: Array<{ 
     itemNumber?: string | number; 
     reason?: string;
+    reasonSubtype?: string;
     boxNumber?: string;
     mold?: string;
     line?: string;
@@ -187,15 +192,16 @@ export function findDuplicateItemNumbers(
   items.forEach((item) => {
     const itemNumber = String(item.itemNumber || '').trim();
     const reason = String(item.reason || '').trim();
+    const reasonSubtype = String(item.reasonSubtype || '').trim();
     const boxNumber = String(item.boxNumber || '').trim();
     const mold = String(item.mold || '').trim();
     const line = String(item.line || '').trim();
     
     if (!itemNumber || !reason) return;
 
-    // New Composite Key: Item + Reason + Box + Mold + Line
-    const compositeKey = `${itemNumber}||${reason}||${boxNumber}||${mold}||${line}`;
-    const duplicateLabel = `${itemNumber} (${reason}) - Box: ${boxNumber || '-'}, Mold: ${mold || '-'}, Line: ${line || '-'}`;
+    // New Composite Key: Item + Reason + Subtype + Box + Mold + Line
+    const compositeKey = `${itemNumber}||${reason}||${reasonSubtype}||${boxNumber}||${mold}||${line}`;
+    const duplicateLabel = `${itemNumber} (${reason}${reasonSubtype ? ` - ${reasonSubtype}` : ''}) - Box: ${boxNumber || '-'}, Mold: ${mold || '-'}, Line: ${line || '-'}`;
 
     if (seen.has(compositeKey) && !duplicates.includes(duplicateLabel)) {
       duplicates.push(duplicateLabel);
@@ -211,6 +217,7 @@ export function findDuplicateItemNumbers(
 
 export function isSaveDisabled(items: ReworkItemValidationInput[]): boolean {
   if (items.length === 0) return true;
+  if (findDuplicateItemNumbers(items).hasDuplicates) return true;
   return items.some((item) => !validateReworkItem(item).isValid || item.verificationStatus === 'conflict');
 }
 

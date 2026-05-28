@@ -52,6 +52,7 @@ export interface ReworkItem {
   line?: string;
   linkedSourceId?: string;
   customerName?: string;
+  imageCount?: number;
   uid?: string; // Stable unique ID from backend
   lastActiveField?: 'itemNumber' | 'itemCode'; // Tracks user priority
   verificationStatus?: 'idle' | 'checking' | 'verified' | 'new' | 'failed' | 'updating' | 'conflict';
@@ -77,6 +78,7 @@ export interface MaterialUsage {
 
 export interface ReworkCase {
   id: string;
+  caseName?: string;
   date: string;
   timestamp?: string;
   source: string;
@@ -327,35 +329,42 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
   const seenIds = new Map<string, number>();
 
   return sourceItems.map((item, index) => {
-    const imageUrls = Array.isArray(item.imageUrls)
-      ? item.imageUrls
-      : Array.isArray(item.urls)
-        ? item.urls
-        : item.url
-          ? [normalizeString(item.url)]
+    const rawItem = item as Record<string, unknown> & Partial<ReworkItem> & { 
+      urls?: string[]; 
+      url?: string; 
+      batch_no?: string; 
+      linked_source_id?: string; 
+    };
+    
+    const imageUrls = Array.isArray(rawItem.imageUrls)
+      ? rawItem.imageUrls
+      : Array.isArray(rawItem.urls)
+        ? rawItem.urls
+        : rawItem.url
+          ? [normalizeString(rawItem.url)]
           : [];
 
     return {
       id: createNormalizedItemId(caseItem.id, item, index, seenIds),
-      itemNumber: normalizeString(item.itemNumber),
-      itemName: normalizeString(item.itemName),
-      itemCode: normalizeString(item.itemCode),
-      amount: normalizeAmount(item.amount),
-      reason: normalizeString(item.reason),
-      reasonSubtype: normalizeString(item.reasonSubtype),
-      responsible: normalizeString(item.responsible),
-      responsibleSubtype: normalizeString(item.responsibleSubtype),
-      details: normalizeString(item.details),
-      status: item.status || caseItem.status || 'Pending',
+      itemNumber: normalizeString(rawItem.itemNumber),
+      itemName: normalizeString(rawItem.itemName),
+      itemCode: normalizeString(rawItem.itemCode),
+      amount: normalizeAmount(rawItem.amount),
+      reason: normalizeString(rawItem.reason),
+      reasonSubtype: normalizeString(rawItem.reasonSubtype),
+      responsible: normalizeString(rawItem.responsible),
+      responsibleSubtype: normalizeString(rawItem.responsibleSubtype),
+      details: normalizeString(rawItem.details),
+      status: rawItem.status || caseItem.status || 'Pending',
       imageUrls,
-      imageFolderUrl: normalizeString(item.imageFolderUrl),
-      batchNo: normalizeString(item.batchNo || item.batch_no),
-      boxNumber: normalizeString(item.boxNumber || item.packagingDate),
-      mold: normalizeString(item.mold),
-      line: normalizeString(item.line),
-      linkedSourceId: normalizeString(item.linkedSourceId || item.linked_source_id),
-      customerName: normalizeString(item.customerName),
-      uid: normalizeString(item.uid),
+      imageFolderUrl: normalizeString(rawItem.imageFolderUrl),
+      batchNo: normalizeString(rawItem.batchNo || rawItem.batch_no),
+      boxNumber: normalizeString(rawItem.boxNumber || rawItem.packagingDate),
+      mold: normalizeString(rawItem.mold),
+      line: normalizeString(rawItem.line),
+      linkedSourceId: normalizeString(rawItem.linkedSourceId || rawItem.linked_source_id),
+      customerName: normalizeString(rawItem.customerName),
+      uid: normalizeString(rawItem.uid),
     };
   });
 }
@@ -363,6 +372,7 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
 function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
   return cases.map((caseItem) => ({
     id: normalizeString(caseItem.id),
+    caseName: caseItem.caseName ? normalizeString(caseItem.caseName) : undefined,
     date: normalizeString(caseItem.date),
     timestamp: caseItem.timestamp ? normalizeString(caseItem.timestamp) : undefined,
     source: normalizeString(caseItem.source),
