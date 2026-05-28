@@ -2,6 +2,109 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { assertPermission, AuthError, requireServerAuth } from '../../../lib/serverAuth';
 
+export const maxDuration = 60; // Allow up to 60s for slow GAS file uploads
+export const dynamic = 'force-dynamic';
+
+interface DBItem {
+  id: string;
+  item_number: string;
+  item_code: string;
+  item_name: string;
+  amount?: number | string;
+  reason?: string;
+  reason_subtype?: string;
+  responsible?: string;
+  responsible_subtype?: string;
+  details?: string;
+  line?: string;
+  image_urls?: string[];
+  image_folder_url?: string;
+  customer_name?: string;
+  batch_no?: string;
+  packaging_date?: string;
+  mold?: string;
+  uid?: string;
+}
+
+interface FrontendItem {
+  id: string;
+  itemNumber: string;
+  itemName: string;
+  itemCode: string;
+  amount: number | string;
+  reason: string;
+  reasonSubtype?: string;
+  responsible: string;
+  responsibleSubtype?: string;
+  details?: string;
+  line?: string;
+  imageUrls?: string[];
+  imageFolderUrl?: string;
+  customerName?: string;
+  batchNo?: string;
+  packagingDate?: string;
+  mold?: string;
+  uid?: string;
+  images?: string[];
+}
+
+interface MasterItem {
+  id: string;
+  item_name?: string;
+  item_code?: string;
+  item_number?: string;
+}
+
+
+interface DBMaterial {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  unitPrice?: number;
+  totalPrice?: number;
+}
+
+interface GasResponse {
+  success: boolean;
+  error?: string;
+  data?: {
+    caseId?: string;
+    caseFolderUrl?: string;
+    orFolderUrl?: string;
+    orFilesUrls?: string[];
+    items?: Array<{
+      id: string;
+      imageUrls?: string[];
+      imageFolderUrl?: string;
+    }>;
+  };
+}
+
+interface DBCase {
+  id: string;
+  case_name?: string;
+  submission_date: string;
+  created_at: string;
+  source: string;
+  customer_name?: string;
+  status: string;
+  profile_id: string;
+  image_folder_url?: string;
+  or_folder_url?: string;
+  or_files_urls?: string[];
+  batch_no?: string;
+  packaging_date?: string;
+  mold?: string;
+  total_rework_cost?: number | string;
+  resolution_method?: string;
+  labor_count?: number;
+  labor_hours?: number | string;
+  labor_rate?: number | string;
+  materials?: DBMaterial[];
+  items?: DBItem[];
+}
+
 const getBangkokParts = () => {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Bangkok",
@@ -72,7 +175,7 @@ export async function POST(request: Request) {
         let awaitingValuation = 0;
         let completed = 0;
 
-        (casesRes.data || []).forEach((c: any) => {
+        (casesRes.data || []).forEach((c: { status: string }) => {
           if (c.status === 'Pending') pending++;
           else if (c.status === 'In-Progress') inProgress++;
           else if (c.status === 'Awaiting Valuation') awaitingValuation++;
@@ -88,7 +191,7 @@ export async function POST(request: Request) {
         const staffPresentCount = Math.max(0, totalEmployees - onLeaveCount);
 
         const leaveSummary = { sick: 0, business: 0, vacation: 0 };
-        todayLeavesRes.data.forEach((l: any) => {
+        todayLeavesRes.data.forEach((l: { leave_type: string | null }) => {
           const type = (l.leave_type || '').toLowerCase();
           if (type.includes('sick') || type.includes('ป่วย')) leaveSummary.sick++;
           else if (type.includes('business') || type.includes('กิจ')) leaveSummary.business++;
@@ -144,8 +247,9 @@ export async function POST(request: Request) {
           throw error;
         }
 
-        const cases = data.map((c: any) => ({
+        const cases = data.map((c: DBCase) => ({
           id: c.id,
+          caseName: c.case_name || c.id,
           date: c.submission_date,
           timestamp: c.created_at,
           source: c.source,
@@ -158,18 +262,18 @@ export async function POST(request: Request) {
           batchNo: c.batch_no,
           packagingDate: c.packaging_date,
           mold: c.mold,
-          reworkCost: parseFloat(c.total_rework_cost || 0),
+          reworkCost: parseFloat(String(c.total_rework_cost || 0)),
           resolutionMethod: c.resolution_method,
           laborCount: c.labor_count,
-          laborHours: parseFloat(c.labor_hours || 0),
-          laborRate: parseFloat(c.labor_rate || 0),
+          laborHours: parseFloat(String(c.labor_hours || 0)),
+          laborRate: parseFloat(String(c.labor_rate || 0)),
           materials: c.materials || [],
-          items: (c.items || []).map((i: any) => ({
+          items: (c.items || []).map((i: DBItem) => ({
             id: i.id,
             itemNumber: i.item_number,
             itemCode: i.item_code,
             itemName: i.item_name,
-            amount: parseFloat(i.amount || 0),
+            amount: parseFloat(String(i.amount || 0)),
             reason: i.reason,
             reasonSubtype: i.reason_subtype,
             responsible: i.responsible,
@@ -196,8 +300,8 @@ export async function POST(request: Request) {
         if (!auth) throw new AuthError('Authentication required');
         assertPermission(auth, 'create_case');
         const { caseData } = body;
-        console.log('📦 Inserting Case Data:', { 
-          id: caseData?.id, 
+        console.log('📦 Inserting Case Data:', {
+          id: caseData?.id,
           itemCount: caseData?.items?.length,
           hasOrFiles: !!caseData?.orFiles?.length
         });
@@ -213,9 +317,10 @@ export async function POST(request: Request) {
           action: 'insert', // GAS uses 'insert'
           items: caseData.items,
           source: caseData.source,
-          orFiles: caseData.orFiles
+          orFiles: caseData.orFiles,
+          caseId: caseData.id
         };
-        
+
         const gasResponse = await proxyToGAS(gasPayload);
         console.log('🔄 GAS Response:', gasResponse);
 
@@ -232,6 +337,7 @@ export async function POST(request: Request) {
           .from('rework_cases')
           .insert([{
             id: finalCaseId,
+            case_name: caseData.caseName || finalCaseId,
             submission_date: caseData.date || getBangkokDateString(),
             source: caseData.source,
             customer_name: primaryCustomer,
@@ -260,9 +366,9 @@ export async function POST(request: Request) {
 
         // 3. Insert items with full coverage and generated URLs from GAS
         if (caseData.items && caseData.items.length > 0) {
-          const itemsToInsert = caseData.items.map((i: any, index: number) => {
-            const gasItem = gasResponse.data?.items?.[index] || {};
-            
+          const itemsToInsert = caseData.items.map((i: FrontendItem, index: number) => {
+            const gasItem = gasResponse.data?.items?.[index];
+
             return {
               case_id: finalCaseId,
               item_number: i.itemNumber,
@@ -275,8 +381,8 @@ export async function POST(request: Request) {
               responsible_subtype: i.responsibleSubtype,
               details: i.details,
               line: i.line,
-              image_urls: gasItem.imageUrls || i.imageUrls || [],
-              image_folder_url: gasItem.imageFolderUrl || i.imageFolderUrl,
+              image_urls: gasItem?.imageUrls || i.imageUrls || [],
+              image_folder_url: gasItem?.imageFolderUrl || i.imageFolderUrl,
               customer_name: i.customerName || primaryCustomer,
               batch_no: i.batchNo || caseData.batchNo,
               packaging_date: i.packagingDate || caseData.packagingDate,
@@ -337,7 +443,7 @@ export async function POST(request: Request) {
 
         const { data: existingCase, error: existingCaseError } = await supabaseServer
           .from('rework_cases')
-          .select('status, resolution_method, total_rework_cost, labor_count, labor_hours, labor_rate, materials, customer_name, source, or_files_urls, or_folder_url')
+          .select('status, resolution_method, total_rework_cost, labor_count, labor_hours, labor_rate, materials, customer_name, source, or_files_urls, or_folder_url, case_name')
           .eq('id', caseId)
           .maybeSingle();
 
@@ -349,7 +455,7 @@ export async function POST(request: Request) {
           const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
           const uuidIds = updates.deleteItemIds.filter(isUuid);
           const otherIds = updates.deleteItemIds.filter((id: string) => !isUuid(id));
-          
+
           if (uuidIds.length > 0) {
             const { error: delError1 } = await supabaseServer.from('rework_items').delete().eq('case_id', caseId).in('id', uuidIds);
             if (delError1) console.error('Error deleting items by UUID:', delError1);
@@ -366,7 +472,7 @@ export async function POST(request: Request) {
             .from('rework_items')
             .select('id, uid')
             .eq('case_id', caseId);
-          
+
           const existingUids = new Set(existingDbItems?.map(x => x.uid).filter(Boolean) || []);
           const existingIds = new Set(existingDbItems?.map(x => x.id).filter(Boolean) || []);
 
@@ -408,7 +514,7 @@ export async function POST(request: Request) {
         // 3. Update the case record
         const { error: caseUpdateError } = await supabaseServer
           .from('rework_cases')
-          .update({ 
+          .update({
             status: status ?? updates.status ?? existingCase.status,
             resolution_method: resolutionMethod ?? updates.resolutionMethod ?? existingCase.resolution_method,
             total_rework_cost: reworkCost ?? updates.reworkCost ?? existingCase.total_rework_cost,
@@ -418,6 +524,7 @@ export async function POST(request: Request) {
             materials: updates.materials ?? existingCase.materials ?? [],
             customer_name: updates.customerName ?? existingCase.customer_name,
             source: updates.source ?? existingCase.source,
+            case_name: updates.caseName ?? existingCase.case_name,
             or_files_urls: gasResponse.data?.orFilesUrls ?? updates.orFilesUrls ?? existingCase.or_files_urls ?? [],
             or_folder_url: gasResponse.data?.orFolderUrl ?? updates.orFolderUrl ?? existingCase.or_folder_url ?? '',
             updated_at: getBangkokISOString()
@@ -435,14 +542,14 @@ export async function POST(request: Request) {
         }]);
 
         return NextResponse.json(
-          { 
-            success: true, 
-            data: { 
-              caseId, 
+          {
+            success: true,
+            data: {
+              caseId,
               status: status || updates.status,
               orFilesUrls: gasResponse.data?.orFilesUrls || updates.orFilesUrls || [],
               orFolderUrl: gasResponse.data?.orFolderUrl || updates.orFolderUrl || ''
-            } 
+            }
           },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
         );
@@ -466,11 +573,11 @@ export async function POST(request: Request) {
 
       case 'verifyItem': {
         const { itemNumber, itemCode } = body;
-        
+
         const conditions: string[] = [];
         if (itemNumber) conditions.push(`item_number.eq.${itemNumber}`);
         if (itemCode) conditions.push(`item_code.eq.${itemCode}`);
-        
+
         if (conditions.length === 0) {
           return NextResponse.json(
             { success: true, data: { found: false } },
@@ -482,10 +589,10 @@ export async function POST(request: Request) {
           .from('rework_master_items')
           .select('*')
           .or(conditions.join(','))
-          .limit(1);
+          .limit(2);
 
         if (error) throw error;
-        
+
         if (!data || data.length === 0) {
           return NextResponse.json(
             { success: true, data: { found: false } },
@@ -493,17 +600,30 @@ export async function POST(request: Request) {
           );
         }
 
+        // Detect identity conflict: itemNumber matches one row, itemCode matches another
+        if (itemNumber && itemCode && data.length > 1) {
+          const matchByNumber = data.find(r => r.item_number === itemNumber);
+          const matchByCode = data.find(r => r.item_code === itemCode);
+
+          if (matchByNumber && matchByCode && matchByNumber.id !== matchByCode.id) {
+            return NextResponse.json(
+              { success: true, data: { found: true, conflict: true } },
+              { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+            );
+          }
+        }
+
         const record = data[0];
         return NextResponse.json(
-          { 
-            success: true, 
-            data: { 
-              found: true, 
+          {
+            success: true,
+            data: {
+              found: true,
               id: record.id,
-              itemName: record.item_name, 
-              itemCode: record.item_code, 
-              itemNumber: record.item_number 
-            } 
+              itemName: record.item_name,
+              itemCode: record.item_code,
+              itemNumber: record.item_number
+            }
           },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
         );
@@ -522,14 +642,14 @@ export async function POST(request: Request) {
           {
             success: true,
             data: {
-              items: itemsRes.data.map(i => ({ 
-                itemNumber: i.item_number, 
-                itemName: i.item_name, 
-                itemCode: i.item_code 
+              items: itemsRes.data.map(i => ({
+                itemNumber: i.item_number,
+                itemName: i.item_name,
+                itemCode: i.item_code
               })),
-              defects: defectsRes.data.map(d => ({ 
-                defectCode: d.defect_code, 
-                defectName: d.defect_name 
+              defects: defectsRes.data.map(d => ({
+                defectCode: d.defect_code,
+                defectName: d.defect_name
               }))
             }
           },
@@ -553,8 +673,8 @@ export async function POST(request: Request) {
         }
 
         // 1. Conflict Check: check if itemNumber matches one row and itemCode matches another row
-        let matchByNumber: any = null;
-        let matchByCode: any = null;
+        let matchByNumber: MasterItem | null = null;
+        let matchByCode: MasterItem | null = null;
 
         if (trimmedNum) {
           const { data: numMatches } = await supabaseServer
@@ -578,8 +698,8 @@ export async function POST(request: Request) {
           }
         }
 
-        let existingRecord = null;
-        let resultData = null;
+        let existingRecord: MasterItem | null = null;
+        let resultData: MasterItem | null = null;
 
         if (matchByNumber && matchByCode && matchByNumber.id !== matchByCode.id) {
           // Check if names conflict
@@ -636,7 +756,7 @@ export async function POST(request: Request) {
             resultData = existingRecord;
           } else {
             // Update only missing values
-            const updatePayload: any = {};
+            const updatePayload: Partial<Omit<MasterItem, 'id'>> = {};
             if (!dbNum && trimmedNum) updatePayload.item_number = trimmedNum;
             if (!dbCode && trimmedCode) updatePayload.item_code = trimmedCode;
             if (!dbName && trimmedName) updatePayload.item_name = trimmedName;
@@ -648,7 +768,7 @@ export async function POST(request: Request) {
                 .eq('id', existingRecord.id)
                 .select()
                 .single();
-                
+
               if (error) throw error;
               resultData = data;
             } else {
@@ -666,7 +786,7 @@ export async function POST(request: Request) {
             }])
             .select()
             .single();
-            
+
           if (error) throw error;
           resultData = data;
         }
@@ -719,11 +839,11 @@ export async function POST(request: Request) {
               exp: Math.floor(Date.now() / 1000) + (8 * 3600),
               type: 'auth_token'
             };
-            
+
             const headerStr = Buffer.from(JSON.stringify(headerObj)).toString('base64url');
             const payloadStr = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
             const unsignedToken = `${headerStr}.${payloadStr}`;
-            
+
             // Sign the token using AUTH_SECRET (same logic as serverAuth.ts)
             const AUTH_SECRET = (process.env.AUTH_TOKEN_SECRET || process.env.GAS_AUTH_TOKEN_SECRET || '').trim();
             if (!AUTH_SECRET) {
@@ -732,7 +852,7 @@ export async function POST(request: Request) {
                 { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
               );
             }
-            
+
             const key = await crypto.subtle.importKey(
               'raw',
               new TextEncoder().encode(AUTH_SECRET),
@@ -781,7 +901,7 @@ export async function POST(request: Request) {
         });
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Rework API Error:', error);
     if (error instanceof AuthError) {
       return NextResponse.json(
@@ -789,18 +909,19 @@ export async function POST(request: Request) {
         { status: error.status, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       );
     }
+    const errMsg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดภายในระบบ';
     return NextResponse.json(
-      { success: false, error: error?.message || 'เกิดข้อผิดพลาดภายในระบบ' },
+      { success: false, error: errMsg },
       { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
     );
   }
 }
 
-async function proxyToGAS(body: any) {
+async function proxyToGAS(body: Record<string, unknown>): Promise<GasResponse> {
   const gasUrl = (
-    process.env.GAS_WEB_APP_URL || 
-    process.env.REACT_APP_GAS_WEB_APP_URL || 
-    process.env.VITE_GAS_WEB_APP_URL || 
+    process.env.GAS_WEB_APP_URL ||
+    process.env.REACT_APP_GAS_WEB_APP_URL ||
+    process.env.VITE_GAS_WEB_APP_URL ||
     ''
   ).trim();
 
@@ -820,9 +941,10 @@ async function proxyToGAS(body: any) {
       return { success: false, error: `Legacy backend error: ${response.status}` };
     }
 
-    return await response.json();
-  } catch (err: any) {
+    return (await response.json()) as GasResponse;
+  } catch (err: unknown) {
     console.error('❌ GAS Proxy Error:', err);
-    return { success: false, error: err.message || 'GAS Communication failed' };
+    const errMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errMsg || 'GAS Communication failed' };
   }
 }
