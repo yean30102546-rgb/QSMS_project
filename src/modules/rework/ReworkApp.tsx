@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { MainLayout } from '../../components/layout/MainLayout';
+import { ConflictModal } from '../../components/modals/ConflictModal';
 import { TutorialModal } from '../../components/modals/TutorialModal';
 import { UpdateModal } from '../../components/modals/UpdateModal';
 import { useSaveProgress } from '../../hooks/useSaveProgress';
@@ -53,6 +54,7 @@ interface ReworkAppProps {
 
 export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('overall');
   const [searchQuery, setSearchQuery] = useState('');
   const [cases, setCases] = useState<ReworkCase[]>([]);
@@ -193,7 +195,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       setCaseNumber('');
       setUploadedImages({});
       setOrFiles([]);
-      
+
       // Clear all pending timeouts
       Object.keys(verificationTimeouts.current).forEach(id => {
         clearTimeout(verificationTimeouts.current[id]);
@@ -213,9 +215,9 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         prev.map((item) =>
           item.id === id
             ? {
-                ...initialFormItem,
-                id, // Keep the same ID
-              }
+              ...initialFormItem,
+              id, // Keep the same ID
+            }
             : item
         )
       );
@@ -330,25 +332,31 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           prev.map((i) =>
             i.id === itemId
               ? {
-                  ...i,
-                  verificationStatus: 'verified',
-                }
+                ...i,
+                verificationStatus: 'verified',
+              }
               : i
           )
         );
       } else {
         throw new Error(res.error || 'Failed to update master data');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Background master update failed:', err);
-      const isConflict = err.message?.includes('CONFLICT') || String(err).includes('CONFLICT');
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const isConflict = errMsg.includes('CONFLICT') || String(err).includes('CONFLICT');
+      
+      if (isConflict) {
+        setIsConflictModalOpen(true);
+      }
+
       setFormItems((prev) =>
         prev.map((i) =>
           i.id === itemId
             ? {
-                ...i,
-                verificationStatus: isConflict ? 'conflict' : 'new',
-              }
+              ...i,
+              verificationStatus: isConflict ? 'conflict' : 'new',
+            }
             : i
         )
       );
@@ -367,11 +375,11 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     );
 
     // 1. Cross-Item Check: Check other items in the current form FIRST
-    const existingInForm = formItems.find(i => 
-      i.id !== itemId && 
-      i.itemName && 
-      ((field === 'itemNumber' && i.itemNumber.trim() === value) || 
-       (field === 'itemCode' && i.itemCode.trim() === value))
+    const existingInForm = formItems.find(i =>
+      i.id !== itemId &&
+      i.itemName &&
+      ((field === 'itemNumber' && i.itemNumber.trim() === value) ||
+        (field === 'itemCode' && i.itemCode.trim() === value))
     );
 
     if (existingInForm) {
@@ -379,13 +387,13 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         prev.map((i) =>
           i.id === itemId
             ? {
-                ...i,
-                itemNumber: existingInForm.itemNumber,
-                itemCode: existingInForm.itemCode,
-                itemName: existingInForm.itemName,
-                verificationStatus: 'verified',
-                batchNo: existingInForm.batchNo || i.batchNo,
-              }
+              ...i,
+              itemNumber: existingInForm.itemNumber,
+              itemCode: existingInForm.itemCode,
+              itemName: existingInForm.itemName,
+              verificationStatus: 'verified',
+              batchNo: existingInForm.batchNo || i.batchNo,
+            }
             : i,
         ),
       );
@@ -464,13 +472,14 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           const hasCodeConflict = dbCode && cardCode && dbCode.trim().toLowerCase() !== cardCode.toLowerCase();
           const hasNumConflict = dbNum && cardNum && dbNum.trim().toLowerCase() !== cardNum.toLowerCase();
 
-          if (hasCodeConflict || hasNumConflict) {
+          if (hasCodeConflict || hasNumConflict || result.data?.conflict === true) {
+            setIsConflictModalOpen(true);
             return prev.map((i) =>
               i.id === itemId
                 ? {
-                    ...i,
-                    verificationStatus: 'conflict',
-                  }
+                  ...i,
+                  verificationStatus: 'conflict',
+                }
                 : i
             );
           }
@@ -493,12 +502,12 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
             return prev.map((i) =>
               i.id === itemId
                 ? {
-                    ...i,
-                    itemNumber: cardNum,
-                    itemCode: cardCode,
-                    itemName: cardName,
-                    verificationStatus: 'updating',
-                  }
+                  ...i,
+                  itemNumber: cardNum,
+                  itemCode: cardCode,
+                  itemName: cardName,
+                  verificationStatus: 'updating',
+                }
                 : i
             );
           }
@@ -506,22 +515,23 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           return prev.map((i) =>
             i.id === itemId
               ? {
-                  ...i,
-                  itemNumber: dbNum || i.itemNumber,
-                  itemCode: dbCode || i.itemCode,
-                  itemName: dbName || i.itemName,
-                  verificationStatus: 'verified',
-                }
+                ...i,
+                itemNumber: dbNum || i.itemNumber,
+                itemCode: dbCode || i.itemCode,
+                itemName: dbName || i.itemName,
+                verificationStatus: 'verified',
+              }
               : i,
           );
         } else {
           if (result.error === 'CONFLICT') {
+            setIsConflictModalOpen(true);
             return prev.map((i) =>
               i.id === itemId
                 ? {
-                    ...i,
-                    verificationStatus: 'conflict',
-                  }
+                  ...i,
+                  verificationStatus: 'conflict',
+                }
                 : i
             );
           }
@@ -529,7 +539,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           const trimmedNum = currentItem.itemNumber.trim();
           const trimmedCode = currentItem.itemCode.trim();
           const trimmedName = currentItem.itemName.trim();
-          
+
           let shouldUpdateMaster = false;
           if (field === 'itemNumber' && trimmedCode) {
             const matchInMaster = itemMaster.find(m => m.itemCode === trimmedCode);
@@ -557,9 +567,9 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
             return prev.map((i) =>
               i.id === itemId
                 ? {
-                    ...i,
-                    verificationStatus: 'updating',
-                  }
+                  ...i,
+                  verificationStatus: 'updating',
+                }
                 : i
             );
           }
@@ -567,25 +577,26 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           return prev.map((i) =>
             i.id === itemId
               ? {
-                  ...i,
-                  verificationStatus: (field === 'itemCode' && i.itemName && i.itemNumber) ? 'verified' : 'new',
-                }
+                ...i,
+                verificationStatus: (field === 'itemCode' && i.itemName && i.itemNumber) ? 'verified' : 'new',
+              }
               : i,
           );
         }
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error verifying item:', error);
-      const isConflict = error.message?.includes('CONFLICT') || String(error).includes('CONFLICT');
-      
+      const errMsg = error instanceof Error ? error.message : String(error);
+      const isConflict = errMsg.includes('CONFLICT') || String(error).includes('CONFLICT');
+
       if (isConflict) {
         setFormItems((prev) =>
           prev.map((i) =>
             i.id === itemId
               ? {
-                  ...i,
-                  verificationStatus: 'conflict',
-                }
+                ...i,
+                verificationStatus: 'conflict',
+              }
               : i
           )
         );
@@ -617,12 +628,13 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           const hasNumConflict = dbNum && cardNum && dbNum.trim().toLowerCase() !== cardNum.toLowerCase();
 
           if (hasCodeConflict || hasNumConflict) {
+            setIsConflictModalOpen(true);
             return prev.map((i) =>
               i.id === itemId
                 ? {
-                    ...i,
-                    verificationStatus: 'conflict',
-                  }
+                  ...i,
+                  verificationStatus: 'conflict',
+                }
                 : i
             );
           }
@@ -644,12 +656,12 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
             return prev.map((i) =>
               i.id === itemId
                 ? {
-                    ...i,
-                    itemNumber: cardNum,
-                    itemCode: cardCode,
-                    itemName: cardName,
-                    verificationStatus: 'updating',
-                  }
+                  ...i,
+                  itemNumber: cardNum,
+                  itemCode: cardCode,
+                  itemName: cardName,
+                  verificationStatus: 'updating',
+                }
                 : i
             );
           }
@@ -657,21 +669,21 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
           return prev.map((i) =>
             i.id === itemId
               ? {
-                  ...i,
-                  itemName: masterInfo.itemName,
-                  itemCode: masterInfo.itemCode,
-                  itemNumber: masterInfo.itemNumber,
-                  verificationStatus: 'verified',
-                }
+                ...i,
+                itemName: masterInfo.itemName,
+                itemCode: masterInfo.itemCode,
+                itemNumber: masterInfo.itemNumber,
+                verificationStatus: 'verified',
+              }
               : i,
           );
         } else {
           return prev.map((i) =>
             i.id === itemId
               ? {
-                  ...i,
-                  verificationStatus: (field === 'itemCode' && i.itemName && i.itemNumber) ? 'verified' : 'new',
-                }
+                ...i,
+                verificationStatus: (field === 'itemCode' && i.itemName && i.itemNumber) ? 'verified' : 'new',
+              }
               : i,
           );
         }
@@ -692,8 +704,13 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
   };
 
   const handleSubmit = async () => {
-    if (isSaveDisabled(formItems)) {
-      alert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ต้องระบุรหัสสินค้า, บาร์โค้ด และชื่อสินค้า)');
+    const itemsWithImageCount = formItems.map(item => ({
+      ...item,
+      imageCount: (uploadedImages[item.id] || []).length
+    }));
+
+    if (isSaveDisabled(itemsWithImageCount)) {
+      alert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ต้องระบุรหัสสินค้า, บาร์โค้ด, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)');
       return;
     }
     try {
@@ -769,7 +786,10 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
     }
   };
 
-  const handleUpdateCase = async (caseId: string, updates: Partial<ReworkCase>) => {
+  const handleUpdateCase = async (
+    caseId: string,
+    updates: Partial<ReworkCase> & { deleteItemIds?: string[]; newOrFiles?: File[] }
+  ) => {
     try {
       setIsModalLoading(true);
       const result = await updateCase(caseId, updates);
@@ -777,13 +797,13 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         setCases((prevCases) =>
           prevCases.map((c) => {
             if (c.id === caseId) {
-              const { newOrFiles, deleteItemIds, ...cleanUpdates } = updates as any;
+              const { newOrFiles, deleteItemIds, ...cleanUpdates } = updates;
               const updatedCase = { ...c, ...cleanUpdates };
 
               if (cleanUpdates.items || deleteItemIds) {
                 let updatedItems = cleanUpdates.items ? [...cleanUpdates.items] : [...c.items];
                 if (deleteItemIds && deleteItemIds.length > 0) {
-                  updatedItems = updatedItems.filter((item: any) => !deleteItemIds.includes(item.uid || item.id));
+                  updatedItems = updatedItems.filter((item) => !deleteItemIds.includes(item.uid || item.id));
                 }
                 updatedCase.items = updatedItems;
               }
@@ -866,7 +886,10 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         statusText={statusText}
         isComplete={isComplete}
         saveMessage={saveMessage}
-        isSaveDisabled={isSaveDisabled}
+        isSaveDisabled={(items) => isSaveDisabled(items.map(i => ({
+          ...i,
+          imageCount: (uploadedImages[i.id] || []).length
+        })))}
         autoFillTriggeredItem={autoFillTriggeredItem}
         isLoadingMaster={isLoadingMaster}
         selectionModal={selectionModal}
@@ -887,6 +910,7 @@ export function ReworkApp({ user, onLogout, onBackToPortal }: ReworkAppProps) {
       />
 
       <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
+      <ConflictModal isOpen={isConflictModalOpen} onClose={() => setIsConflictModalOpen(false)} />
     </>
   );
 }
