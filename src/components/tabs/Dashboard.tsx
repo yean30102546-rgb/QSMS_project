@@ -26,13 +26,16 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<CaseStatus[]>([]);
   const [reasonFilter, setReasonFilter] = useState<string[]>([]);
+  const [responsibleFilter, setResponsibleFilter] = useState<string[]>([]);
   const [customerFilter, setCustomerFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   
   // New States for Dual-View Analysis
   const [viewMode, setViewMode] = useState<ViewMode>('units');
+  const [analysisDimension, setAnalysisDimension] = useState<'reason' | 'responsible'>('reason');
   const [selectedMainReason, setSelectedMainReason] = useState<string | null>(null);
+  const [selectedMainResponsible, setSelectedMainResponsible] = useState<string | null>(null);
 
   // ===== EXTRACT UNIQUE VALUES =====
   const uniqueReasons = useMemo(() => {
@@ -53,6 +56,15 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
     return Array.from(customers).sort();
   }, [cases]);
 
+  const uniqueResponsibles = useMemo(() => {
+    const responsibles = new Set<string>();
+    cases.forEach(c => c.items?.forEach(item => {
+      const trimmedResp = String(item.responsible || '').trim();
+      if (trimmedResp) responsibles.add(trimmedResp);
+    }));
+    return Array.from(responsibles).sort();
+  }, [cases]);
+
   // ===== APPLY FILTERS =====
   const filteredCases = useMemo(() => {
     return cases.filter(c => {
@@ -62,6 +74,11 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       if (reasonFilter.length > 0) {
         const hasReason = c.items?.some(item => reasonFilter.includes(item.reason));
         if (!hasReason) return false;
+      }
+      // Responsible filter
+      if (responsibleFilter.length > 0) {
+        const hasResponsible = c.items?.some(item => responsibleFilter.includes(String(item.responsible || '').trim()));
+        if (!hasResponsible) return false;
       }
       // Customer filter
       if (customerFilter.length > 0) {
@@ -80,14 +97,15 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       }
       return true;
     });
-  }, [cases, statusFilter, reasonFilter, customerFilter, dateFrom, dateTo]);
+  }, [cases, statusFilter, reasonFilter, responsibleFilter, customerFilter, dateFrom, dateTo]);
 
-  const hasActiveFilters = statusFilter.length > 0 || reasonFilter.length > 0 || customerFilter.length > 0 || dateFrom || dateTo;
-  const activeFilterCount = (statusFilter.length > 0 ? 1 : 0) + (reasonFilter.length > 0 ? 1 : 0) + (customerFilter.length > 0 ? 1 : 0) + (dateFrom || dateTo ? 1 : 0);
+  const hasActiveFilters = statusFilter.length > 0 || reasonFilter.length > 0 || responsibleFilter.length > 0 || customerFilter.length > 0 || dateFrom || dateTo;
+  const activeFilterCount = (statusFilter.length > 0 ? 1 : 0) + (reasonFilter.length > 0 ? 1 : 0) + (responsibleFilter.length > 0 ? 1 : 0) + (customerFilter.length > 0 ? 1 : 0) + (dateFrom || dateTo ? 1 : 0);
 
   const clearAllFilters = () => {
     setStatusFilter([]);
     setReasonFilter([]);
+    setResponsibleFilter([]);
     setCustomerFilter([]);
     setDateFrom('');
     setDateTo('');
@@ -111,6 +129,9 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       unitsByReason: {} as Record<string, number>,
       frequencyByReason: {} as Record<string, number>,
       subtypesByMainReason: {} as Record<string, Record<string, { units: number; frequency: number }>>,
+      unitsByResponsible: {} as Record<string, number>,
+      frequencyByResponsible: {} as Record<string, number>,
+      subtypesByMainResponsible: {} as Record<string, Record<string, { units: number; frequency: number }>>,
       sources: {} as Record<string, number>
     };
 
@@ -132,10 +153,12 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       caseItem.items?.forEach(item => {
         // Item-level filtering for stats accuracy
         if (reasonFilter.length > 0 && !reasonFilter.includes(item.reason)) return;
+        if (responsibleFilter.length > 0 && !responsibleFilter.includes(String(item.responsible || '').trim())) return;
         if (customerFilter.length > 0 && !customerFilter.includes(String(item.customerName || '').trim())) return;
 
         const amount = item.amount || 0;
         const mainReason = String(item.reason || 'ไม่ระบุ').trim();
+        const mainResponsible = String(item.responsible || 'ไม่ระบุ').trim();
         
         // Count Correlation (Linkage)
         if (mainReason.includes('เปื้อน') && item.linkedSourceId) {
@@ -174,6 +197,29 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             initialStats.subtypesByMainReason[mainReason][st].frequency += amount;
           });
         }
+
+        // Responsible calculations
+        initialStats.unitsByResponsible[mainResponsible] = (initialStats.unitsByResponsible[mainResponsible] || 0) + amount;
+        const responsibleSubtypes = String(item.responsibleSubtype || '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        if (responsibleSubtypes.length === 0) {
+          initialStats.frequencyByResponsible[mainResponsible] = (initialStats.frequencyByResponsible[mainResponsible] || 0) + amount;
+        } else {
+          responsibleSubtypes.forEach(st => {
+            initialStats.frequencyByResponsible[mainResponsible] = (initialStats.frequencyByResponsible[mainResponsible] || 0) + amount;
+            if (!initialStats.subtypesByMainResponsible[mainResponsible]) {
+              initialStats.subtypesByMainResponsible[mainResponsible] = {};
+            }
+            if (!initialStats.subtypesByMainResponsible[mainResponsible][st]) {
+              initialStats.subtypesByMainResponsible[mainResponsible][st] = { units: 0, frequency: 0 };
+            }
+            initialStats.subtypesByMainResponsible[mainResponsible][st].units += amount;
+            initialStats.subtypesByMainResponsible[mainResponsible][st].frequency += amount;
+          });
+        }
       });
     });
 
@@ -185,22 +231,40 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
 
   // Chart Data preparation based on View Mode and Drill-down
   const chartData = useMemo(() => {
-    if (selectedMainReason) {
-      // Subtype View
-      const subtypes = stats.subtypesByMainReason[selectedMainReason] || {};
-      return Object.entries(subtypes)
-        .map(([name, counts]) => ({
-          name,
-          value: viewMode === 'units' ? counts.units : counts.frequency
-        }))
-        .sort((a, b) => b.value - a.value);
+    if (analysisDimension === 'reason') {
+      if (selectedMainReason) {
+        // Subtype View
+        const subtypes = stats.subtypesByMainReason[selectedMainReason] || {};
+        return Object.entries(subtypes)
+          .map(([name, counts]) => ({
+            name,
+            value: viewMode === 'units' ? counts.units : counts.frequency
+          }))
+          .sort((a, b) => b.value - a.value);
+      } else {
+        // Main Reason View
+        return Object.entries(viewMode === 'units' ? stats.unitsByReason : stats.frequencyByReason)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value);
+      }
     } else {
-      // Main Reason View
-      return Object.entries(viewMode === 'units' ? stats.unitsByReason : stats.frequencyByReason)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
+      if (selectedMainResponsible) {
+        // Responsible Subtype View
+        const subtypes = stats.subtypesByMainResponsible[selectedMainResponsible] || {};
+        return Object.entries(subtypes)
+          .map(([name, counts]) => ({
+            name,
+            value: viewMode === 'units' ? counts.units : counts.frequency
+          }))
+          .sort((a, b) => b.value - a.value);
+      } else {
+        // Main Responsible View
+        return Object.entries(viewMode === 'units' ? stats.unitsByResponsible : stats.frequencyByResponsible)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value);
+      }
     }
-  }, [selectedMainReason, viewMode, stats]);
+  }, [analysisDimension, selectedMainReason, selectedMainResponsible, viewMode, stats]);
 
   const maxChartValue = Math.max(1, ...chartData.map(d => d.value));
   const sourceEntries = Object.entries(stats.sources).sort(([, a], [, b]) => b - a);
@@ -296,6 +360,20 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   </div>
                 </div>
 
+                {/* Responsible Filter */}
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">👤 ผู้รับผิดชอบ (Responsible)</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {uniqueResponsibles.map(responsible => (
+                      <motion.button key={responsible} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => toggleArrayFilter(responsibleFilter, responsible, setResponsibleFilter)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${responsibleFilter.includes(responsible) ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'bg-white/5 border-white/5 text-on-surface-variant hover:bg-white/10'}`}
+                      >{responsible}</motion.button>
+                    ))}
+                    {uniqueResponsibles.length === 0 && <span className="text-xs text-on-surface-variant italic">ไม่มีข้อมูล</span>}
+                  </div>
+                </div>
+
                 {/* Customer Filter */}
                 <div className="space-y-2.5">
                   <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">🏢 ลูกค้า (Customer)</label>
@@ -381,6 +459,12 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   <button onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)} className="hover:text-orange-300 text-orange-400 ml-0.5"><X size={10} /></button>
                 </span>
               ))}
+              {responsibleFilter.map(resp => (
+                <span key={`t-resp-${resp}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold">
+                  {resp}
+                  <button onClick={() => toggleArrayFilter(responsibleFilter, resp, setResponsibleFilter)} className="hover:text-cyan-300 text-cyan-400 ml-0.5"><X size={10} /></button>
+                </span>
+              ))}
               {customerFilter.map(c => (
                 <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold">
                   {c}
@@ -422,11 +506,14 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
         <div className="lg:col-span-2 glass-panel p-6 md:p-8 rounded-2xl border border-white/10 shadow-glass">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
-              {selectedMainReason && (
+              {(selectedMainReason || selectedMainResponsible) && (
                 <motion.button
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  onClick={() => setSelectedMainReason(null)}
+                  onClick={() => {
+                    setSelectedMainReason(null);
+                    setSelectedMainResponsible(null);
+                  }}
                   className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant hover:text-foreground transition-colors border border-white/5"
                 >
                   <ChevronLeft size={16} />
@@ -435,28 +522,55 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <div>
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Layers size={16} className="text-primary" />
-                  {selectedMainReason ? `รายละเอียด: ${selectedMainReason}` : 'วิเคราะห์สาเหตุข้อบกพร่อง'}
+                  {selectedMainReason 
+                    ? `รายละเอียดสาเหตุ: ${selectedMainReason}` 
+                    : selectedMainResponsible 
+                    ? `รายละเอียดงานของ: ${selectedMainResponsible}`
+                    : analysisDimension === 'reason' ? 'วิเคราะห์สาเหตุข้อบกพร่อง' : 'วิเคราะห์ตามผู้รับผิดชอบ'}
                 </h3>
                 <p className="text-[10px] text-on-surface-variant font-medium">
-                  {selectedMainReason ? 'เจาะลึกรายละเอียดย่อย (Subtypes)' : 'ภาพรวมสาเหตุหลัก (Main Reasons) - คลิกเพื่อเจาะลึก'}
+                  {selectedMainReason || selectedMainResponsible 
+                    ? 'เจาะลึกรายละเอียดย่อย (Subtypes)' 
+                    : 'ภาพรวมหลัก (Main Categories) - คลิกเพื่อเจาะลึก'}
                 </p>
               </div>
             </div>
 
-            {/* Toggle View Mode */}
-            <div className="flex bg-white/5 p-1 rounded-xl w-fit border border-white/5">
-              <button
-                onClick={() => setViewMode('units')}
-                className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'units' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
-              >
-                ปริมาณสินค้า (Units)
-              </button>
-              <button
-                onClick={() => setViewMode('defects')}
-                className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'defects' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
-              >
-                ความถี่ปัญหา (Defects)
-              </button>
+            {/* Toggles container */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Toggle Dimension */}
+              {!selectedMainReason && !selectedMainResponsible && (
+                <div className="flex bg-white/5 p-1 rounded-xl w-fit border border-white/5">
+                  <button
+                    onClick={() => setAnalysisDimension('reason')}
+                    className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${analysisDimension === 'reason' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                  >
+                    ดูตามสาเหตุ
+                  </button>
+                  <button
+                    onClick={() => setAnalysisDimension('responsible')}
+                    className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${analysisDimension === 'responsible' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                  >
+                    ดูตามผู้รับผิดชอบ
+                  </button>
+                </div>
+              )}
+
+              {/* Toggle View Mode */}
+              <div className="flex bg-white/5 p-1 rounded-xl w-fit border border-white/5">
+                <button
+                  onClick={() => setViewMode('units')}
+                  className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'units' ? 'bg-indigo-500 text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                >
+                  ปริมาณ (Units)
+                </button>
+                <button
+                  onClick={() => setViewMode('defects')}
+                  className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'defects' ? 'bg-indigo-500 text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                >
+                  ความถี่ (Defects)
+                </button>
+              </div>
             </div>
           </div>
 
@@ -471,19 +585,26 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                  {chartData.map((item) => (
-                    <div 
-                      key={item.name} 
-                      className={`group relative ${!selectedMainReason ? 'cursor-pointer hover:bg-white/5' : ''} p-2 rounded-xl transition-all border border-transparent hover:border-white/5`}
-                      onClick={() => !selectedMainReason && setSelectedMainReason(item.name)}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-on-surface">{item.name}</span>
-                          {!selectedMainReason && (
-                            <ArrowRight size={11} className="text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1" />
-                          )}
-                        </div>
+                  {chartData.map((item) => {
+                    const isMainView = !selectedMainReason && !selectedMainResponsible;
+                    return (
+                      <div 
+                        key={item.name} 
+                        className={`group relative ${isMainView ? 'cursor-pointer hover:bg-white/5' : ''} p-2 rounded-xl transition-all border border-transparent hover:border-white/5`}
+                        onClick={() => {
+                          if (isMainView) {
+                            if (analysisDimension === 'reason') setSelectedMainReason(item.name);
+                            else setSelectedMainResponsible(item.name);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-on-surface">{item.name}</span>
+                            {isMainView && (
+                              <ArrowRight size={11} className="text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1" />
+                            )}
+                          </div>
                         <span className="text-xs font-black text-foreground">{item.value.toLocaleString()}</span>
                       </div>
                       <div className="w-full bg-white/5 border border-white/5 rounded-full h-2.5 overflow-hidden">
@@ -495,7 +616,8 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                         />
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </motion.div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">

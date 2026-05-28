@@ -13,8 +13,9 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Upload, Image as ImageIcon, AlertCircle, Eye, Trash2, Maximize2 } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, AlertCircle, Eye, Trash2, Maximize2, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ImageEditor } from './ImageEditor';
 import {
   validateImageFile,
   compressImage,
@@ -57,6 +58,7 @@ export function ImageUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [editingImage, setEditingImage] = useState<{ id: string; preview: string; name: string } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -297,6 +299,33 @@ export function ImageUpload({
     setImageItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const handleSaveAnnotatedImage = (editedFile: File) => {
+    if (!editingImage) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const newPreview = e.target?.result as string;
+      setImageItems((prev) =>
+        prev.map((item) =>
+          item.id === editingImage.id
+            ? {
+                ...item,
+                file: editedFile,
+                compressedFile: editedFile,
+                preview: newPreview,
+                status: 'complete',
+                progress: 100,
+                originalSize: editedFile.size,
+                compressedSize: editedFile.size,
+              }
+            : item
+        )
+      );
+      setEditingImage(null);
+    };
+    reader.readAsDataURL(editedFile);
+  };
+
   return (
     <div className="space-y-4" ref={containerRef}>
       {/* Header with Apple Style Label */}
@@ -380,6 +409,13 @@ export function ImageUpload({
                       <Maximize2 size={14} />
                     </button>
                     <button
+                      onClick={() => setEditingImage({ id: item.id, preview: item.preview, name: item.file.name })}
+                      className="p-1.5 rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors"
+                      title="วาด/เน้นข้อบกพร่อง"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
                       onClick={() => removeImage(item.id)}
                       className="p-1.5 rounded-full bg-red-500/80 text-white hover:bg-red-600 transition-colors"
                       title="ลบรูปภาพ"
@@ -453,6 +489,24 @@ export function ImageUpload({
               alt="Fullscreen Preview"
               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
               onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Full Screen Image Editor Overlay */}
+      <AnimatePresence>
+        {editingImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[105]"
+          >
+            <ImageEditor
+              imageSrc={editingImage.preview}
+              originalFileName={editingImage.name}
+              onCancel={() => setEditingImage(null)}
+              onSave={handleSaveAnnotatedImage}
             />
           </motion.div>
         )}

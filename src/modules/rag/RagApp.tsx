@@ -2,16 +2,27 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, Sparkles, Bot, BrainCircuit } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
+import * as pdfjsLib from 'pdfjs-dist';
+import { User } from '../../services/auth';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+// Set up PDF.js worker
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co';
 // Client-safe anonymous key used in frontend
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key-to-prevent-crash';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.warn('⚠️ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in .env. Supabase client features will fail.');
+}
+
 interface RagAppProps {
-  user: any;
+  user: User | null;
   onBackToPortal: () => void;
 }
 
@@ -102,6 +113,41 @@ export function RagApp({ user, onBackToPortal }: RagAppProps) {
     });
   };
 
+  // Helper to convert PDF pages to Blob images
+  const extractPdfPagesAsImages = async (file: File): Promise<Blob[]> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const images: Blob[] = [];
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 }); // 1.5 scale for good quality
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) continue;
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(resolve, 'image/jpeg', 0.8);
+        });
+
+        if (blob) {
+          images.push(blob);
+        }
+      }
+      return images;
+    } catch (err) {
+      console.error('PDF to Image conversion error:', err);
+      return [];
+    }
+  };
+
   // Process the file upload queue sequentially (concurrency control)
   const processQueue = async (itemsToProcess: UploadQueueItem[]) => {
     for (const item of itemsToProcess) {
@@ -110,10 +156,34 @@ export function RagApp({ user, onBackToPortal }: RagAppProps) {
       try {
         const fileType = item.file.name.endsWith('.xlsx') ? 'xlsx' : 'pdf';
         
+        // Extract and upload images if PDF
+        let imageUrls: string[] = [];
+        if (fileType === 'pdf') {
+          setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'uploading', progress: 40 } : q));
+          const pageImages = await extractPdfPagesAsImages(item.file);
+          
+          setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'uploading', progress: 60 } : q));
+          
+          for (let i = 0; i < pageImages.length; i++) {
+            const fileName = `doc_${item.id}_page_${i + 1}.jpg`;
+            const { data, error } = await supabase.storage
+              .from('rag_images')
+              .upload(fileName, pageImages[i], { contentType: 'image/jpeg' });
+              
+            if (!error && data) {
+              const { data: publicData } = supabase.storage
+                .from('rag_images')
+                .getPublicUrl(fileName);
+              if (publicData.publicUrl) {
+                imageUrls.push(publicData.publicUrl);
+              }
+            }
+          }
+        }
+
         // Convert file to base64
+        setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'processing', progress: 80 } : q));
         const base64Data = await fileToBase64(item.file);
-        
-        setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'processing', progress: 60 } : q));
 
         // Call our ingest API endpoint
         const res = await fetch('/api/rag', {
@@ -124,7 +194,7 @@ export function RagApp({ user, onBackToPortal }: RagAppProps) {
             filename: item.file.name,
             fileType,
             base64Data,
-            imageUrls: [] // Can extend to extract and upload images first
+            imageUrls
           })
         });
 
@@ -135,9 +205,10 @@ export function RagApp({ user, onBackToPortal }: RagAppProps) {
         } else {
           throw new Error(result.error || 'Ingest API failed');
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error(`Error processing ${item.file.name}:`, err);
-        setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'failed', progress: 0, error: err.message || 'เกิดข้อผิดพลาด' } : q));
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'failed', progress: 0, error: errMsg || 'เกิดข้อผิดพลาด' } : q));
       }
     }
     fetchDocuments();
@@ -241,22 +312,29 @@ export function RagApp({ user, onBackToPortal }: RagAppProps) {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-base font-bold tracking-tight">QSMS DocAI RAG</h1>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">ระบบค้นหาและถามตอบเอกสารสเปกผลิตภัณฑ์อัตโนมัติ</p>
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-lg w-7 h-7 shadow-sm">
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+              <h1 className="text-base font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">QSMS DocAI RAG</h1>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+              <BrainCircuit className="h-3 w-3" /> ระบบสืบค้นเอกสารด้วย AI (Gemini 1.5)
+            </p>
           </div>
         </div>
         <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
           <button
             onClick={() => setActiveTab('chat')}
-            className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${activeTab === 'chat' ? 'bg-[#5b21b6] text-white shadow-xs' : 'text-slate-600 dark:text-slate-300'}`}
+            className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${activeTab === 'chat' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
           >
-            แชทสืบค้น
+            <Bot className="h-3.5 w-3.5" /> แชทกับ AI
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${activeTab === 'documents' ? 'bg-[#5b21b6] text-white shadow-xs' : 'text-slate-600 dark:text-slate-300'}`}
+            className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${activeTab === 'documents' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
           >
-            คลังเอกสาร ({documents.length})
+            <FileText className="h-3.5 w-3.5" /> คลังความรู้ ({documents.length})
           </button>
         </div>
       </header>
@@ -270,16 +348,25 @@ export function RagApp({ user, onBackToPortal }: RagAppProps) {
               {messages.map((m, idx) => (
                 <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div 
-                    className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-xs ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-xs ${
                       m.role === 'user' 
-                        ? 'bg-[#5b21b6] text-white rounded-br-none' 
-                        : 'bg-white border border-slate-200 text-[#1d1d1f] rounded-bl-none dark:bg-[#1c1c1e] dark:border-slate-800 dark:text-white'
+                        ? 'bg-gradient-to-tr from-slate-800 to-slate-700 text-white rounded-br-none dark:from-slate-700 dark:to-slate-600' 
+                        : 'bg-white/80 backdrop-blur-sm border border-indigo-100/50 text-[#1d1d1f] rounded-bl-none dark:bg-[#1c1c1e]/80 dark:border-indigo-900/30 dark:text-white shadow-[0_4px_20px_-4px_rgba(79,70,229,0.05)]'
                     }`}
                   >
                     {m.role === 'user' ? (
                       <p className="whitespace-pre-line leading-relaxed">{m.text}</p>
                     ) : (
-                      renderMessageContent(m.text)
+                      <div className="flex gap-3">
+                        <div className="shrink-0 mt-0.5">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm">
+                            <Bot className="h-3.5 w-3.5 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1 w-full overflow-hidden">
+                          {renderMessageContent(m.text)}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -300,21 +387,26 @@ export function RagApp({ user, onBackToPortal }: RagAppProps) {
             </div>
 
             {/* Input Bar */}
-            <form onSubmit={handleSendMessage} className="border-t border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#1c1c1e] flex gap-3 shadow-md">
-              <input
-                type="text"
-                placeholder="พิมพ์คำถามเพื่อสืบค้นสเปก เช่น 'สเปกขวด PTT MAX SPEED 4T ฝาสีอะไร?'"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                disabled={loading}
-                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs focus:border-purple-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 focus:bg-white dark:focus:bg-[#1c1c1e] transition-colors"
-              />
+            <form onSubmit={handleSendMessage} className="border-t border-indigo-100/50 bg-white/80 backdrop-blur-xl p-4 dark:border-indigo-900/30 dark:bg-[#1c1c1e]/80 flex gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.04)] z-10">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                  <Sparkles className="h-4 w-4 text-indigo-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="ถาม AI เกี่ยวกับสเปกผลิตภัณฑ์ เช่น 'ขวด PTT MAX SPEED ใช้ฝาสีอะไร?'"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  disabled={loading}
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 pl-10 pr-4 py-3.5 text-[13px] text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none dark:border-slate-700 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-[#1c1c1e] transition-all"
+                />
+              </div>
               <button
                 type="submit"
-                disabled={loading}
-                className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#5b21b6] text-white hover:bg-purple-700 active:scale-95 transition"
+                disabled={loading || !query.trim()}
+                className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none"
               >
-                <Send className="h-4.5 w-4.5" />
+                <Send className="h-5 w-5 ml-0.5" />
               </button>
             </form>
           </div>

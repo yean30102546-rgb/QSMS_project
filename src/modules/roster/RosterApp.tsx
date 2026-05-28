@@ -134,7 +134,7 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
             setHolidays(parsed.holidays || []);
             setLeaves(parsed.leaves || []);
             setSelectedEmployeeId((prev) =>
-              prev && parsed.employees.some((e: any) => e.id === prev)
+              prev && parsed.employees.some((e: Employee) => e.id === prev)
                 ? prev
                 : parsed.employees[0]?.id || ''
             );

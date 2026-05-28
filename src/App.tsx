@@ -18,6 +18,7 @@ const Login = dynamic(() => import('./components/Login').then(mod => mod.Login),
 const RosterApp = dynamic(() => import('./modules/roster/RosterApp').then(mod => mod.RosterApp), { ssr: false });
 const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
 const RagApp = dynamic(() => import('./modules/rag/RagApp').then(mod => mod.RagApp), { ssr: false });
+const GuideApp = dynamic(() => import('./modules/guide/GuideApp').then(mod => mod.GuideApp), { ssr: false });
 
 function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -157,6 +158,8 @@ function AuthWrapper() {
     content = <RosterApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else if (currentView === 'rag') {
     content = <RagApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
+  } else if (currentView === 'guide') {
+    content = <GuideApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else {
     content = <ReworkApp user={appUser} onLogout={handleLogout} onBackToPortal={() => setCurrentView('portal')} />;
   }

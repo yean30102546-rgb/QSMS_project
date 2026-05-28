@@ -52,6 +52,7 @@ const COL_ITEM_ID = 26;
 const COL_LABOR_COUNT = 27;
 const COL_LABOR_HOURS = 28;
 const COL_LABOR_RATE = 29;
+const COL_CASE_NAME = 30;
 
 const MAIN_HEADERS = [
   'Case ID', 'Timestamp', 'Status', 'Source', 'Customer Name', 
@@ -61,7 +62,7 @@ const MAIN_HEADERS = [
   'Responsible', 'Responsible Subtype', 'Details',
   'Resolution Method', 'Rework Cost', 
   'Image URLs', 'Case Folder URL', 'OR Files', 'OR Folder URL', 'UID', 'Item ID',
-  'Labor Count', 'Labor Hours', 'Labor Rate'
+  'Labor Count', 'Labor Hours', 'Labor Rate', 'Case Name'
 ];
 
 // ===== AUTHENTICATION SETTINGS =====
@@ -249,8 +250,8 @@ function doGet(e) {
  * Validate ItemNumber format (alphanumeric, max 50 chars)
  */
 function validateItemNumber(itemNumber) {
-  if (!itemNumber) {
-    return { valid: false, error: 'Item Number is required' };
+  if (!itemNumber || String(itemNumber).trim() === '') {
+    return { valid: true }; // Item Number is optional
   }
   
   const str = String(itemNumber).trim();
@@ -270,8 +271,8 @@ function validateItemNumber(itemNumber) {
  * Validate BatchNo format (numeric only)
  */
 function validateBatchNo(batchNo) {
-  if (!batchNo) {
-    return { valid: false, error: 'Batch No. is required' };
+  if (!batchNo || String(batchNo).trim() === '') {
+    return { valid: true }; // Batch no. is optional
   }
   
   const str = String(batchNo).trim();
@@ -286,8 +287,8 @@ function validateBatchNo(batchNo) {
  * Validate Box Number format (numeric only)
  */
 function validateBoxNumber(boxNumber) {
-  if (!boxNumber || boxNumber === '') {
-    return { valid: false, error: 'เลขกล่อง (Box Number) จำเป็นต้องระบุ' };
+  if (!boxNumber || String(boxNumber).trim() === '') {
+    return { valid: true }; // Box Number is optional/nullable
   }
   
   const str = String(boxNumber).trim();
@@ -324,7 +325,7 @@ function validateItemCode(itemCode) {
  */
 function validateAmount(amount) {
   if (amount === null || amount === undefined || amount === '') {
-    return { valid: false, error: 'Amount is required' };
+    return { valid: true }; // Amount is optional
   }
   
   const num = parseInt(amount);
@@ -473,6 +474,7 @@ function checkDuplicateItemNumbers(items) {
   for (let i = 0; i < items.length; i++) {
     const itemNum = String(items[i].itemNumber || '').trim();
     const reason = String(items[i].reason || '').trim();
+    const reasonSubtype = String(items[i].reasonSubtype || '').trim();
     const boxNum = String(items[i].boxNumber || '').trim();
     const mold = String(items[i].mold || '').trim();
     const line = String(items[i].line || '').trim();
@@ -481,9 +483,9 @@ function checkDuplicateItemNumbers(items) {
       continue;
     }
 
-    // New Composite Key: Item + Reason + Box + Mold + Line
-    const compositeKey = [itemNum, reason, boxNum, mold, line].join('||');
-    const duplicateLabel = itemNum + ' (' + reason + ') [Box: ' + (boxNum || '-') + ', Mold: ' + (mold || '-') + ', Line: ' + (line || '-') + ']';
+    // New Composite Key: Item + Reason + Subtype + Box + Mold + Line
+    const compositeKey = [itemNum, reason, reasonSubtype, boxNum, mold, line].join('||');
+    const duplicateLabel = itemNum + ' (' + reason + (reasonSubtype ? ' - ' + reasonSubtype : '') + ') [Box: ' + (boxNum || '-') + ', Mold: ' + (mold || '-') + ', Line: ' + (line || '-') + ']';
 
     if (seen.has(compositeKey)) {
       if (!duplicates.includes(duplicateLabel)) {
@@ -835,8 +837,13 @@ function handleInsert(payload) {
       });
     }
     
-    // Generate unique case ID with timestamp + random suffix, checked against existing sheet IDs.
-    const caseId = generateCaseId(existingCaseIds);
+    // Use custom case ID if provided, otherwise generate a unique one.
+    const caseId = payload.caseId || generateCaseId(existingCaseIds);
+    
+    if (existingCaseIds.has(caseId)) {
+      if (lock) { lock.releaseLock(); lock = null; }
+      return { success: false, error: 'Case ID already exists: ' + caseId, errorCode: 'DUPLICATE_CASE_ID' };
+    }
     const now = new Date();
     const timestamp = Utilities.formatDate(now, "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss+07:00");
 
@@ -924,6 +931,7 @@ function handleInsert(payload) {
       row[COL_LABOR_COUNT] = payload.laborCount || 0;
       row[COL_LABOR_HOURS] = payload.laborHours || 0;
       row[COL_LABOR_RATE] = payload.laborRate || 0;
+      row[COL_CASE_NAME] = sanitizeString(payload.caseName || '');
       
       rowsToInsert.push(row);
     });
@@ -1125,6 +1133,7 @@ function handleReadAll(payload) {
           laborHours: (COL_LABOR_HOURS < row.length && row[COL_LABOR_HOURS] !== undefined) ? normalizeSheetAmount(row[COL_LABOR_HOURS]) : 0,
           laborRate: (COL_LABOR_RATE < row.length && row[COL_LABOR_RATE] !== undefined) ? normalizeSheetAmount(row[COL_LABOR_RATE]) : 0,
           status: normalizeSheetText(row[COL_STATUS]) || 'Pending',
+          caseName: (COL_CASE_NAME < row.length && row[COL_CASE_NAME] !== undefined) ? normalizeSheetText(row[COL_CASE_NAME]) : '',
           items: [item],
           materials: materialsMap.get(caseId) || []
         });
@@ -1209,6 +1218,11 @@ function handleUpdate(payload) {
         // 0. Administrative Source Edit
         if (isAdminOrQSMS && updates.source) {
           sheet.getRange(i + 1, COL_SOURCE + 1).setValue(updates.source);
+        }
+
+        // Case Name Edit
+        if (updates.caseName !== undefined) {
+          sheet.getRange(i + 1, COL_CASE_NAME + 1).setValue(updates.caseName);
         }
 
         // 1. Update Resolution Method (Operator or Admin/QSMS)

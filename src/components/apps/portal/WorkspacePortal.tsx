@@ -297,11 +297,11 @@ export function WorkspacePortal({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${app.accent === 'blue' ? 'text-black/50' : 'text-amber-600/70'}`}>
-                      {app.subtitle === 'Modular Platform' ? 'โมดูลเสริม' : 'แกนหลักระบบ'}
+                    <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${app.accent === 'blue' ? 'text-black/50' : app.accent === 'purple' ? 'text-purple-600/70' : 'text-amber-600/70'}`}>
+                      {app.subtitle}
                     </p>
                     <h3 className="mt-3 text-[32px] font-semibold leading-[1.06] text-[#1d1d1f]">
-                      {app.title === 'QSMS Rework' ? 'ระบบจัดการงาน Rework' : 'ระบบตารางเวร QSMS Roster'}
+                      {app.title}
                     </h3>
                   </div>
                   <span
@@ -394,7 +394,7 @@ export function WorkspacePortal({
                         </div>
                       </div>
                     </div>
-                  ) : (
+                  ) : app.id === 'roster' ? (
                     <div className="mt-6 flex flex-col gap-4 rounded-[24px] bg-white/40 p-4 border border-white/30 backdrop-blur-md shadow-inner">
                       {/* Top Stats: Present vs Leave */}
                       <div className="grid grid-cols-2 gap-3">
@@ -476,13 +476,11 @@ export function WorkspacePortal({
                         </div>
                       </div>
                     </div>
-                  )
+                  ) : null
                 )}
 
                 <p className="mt-5 flex-1 max-w-xl text-[16px] leading-7 text-[#515154]">
-                  {app.title === 'Rework Operations' 
-                    ? 'ระบบติดตามและบันทึกงานซ่อมแซม พร้อม Dashboard รายงานผลและระบบ ItemMaster'
-                    : 'ระบบบริหารจัดการตารางเวลาทำงานของพนักงาน และตารางเวรที่ปรับเปลี่ยนได้ตามต้องการ'}
+                  {app.description}
                 </p>
 
                 <div className="mt-8 flex flex-wrap items-center justify-between gap-4">

@@ -4,7 +4,7 @@ import { AuthError, requireServerAuth } from '../../../lib/serverAuth';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     const { action } = body;
     await requireServerAuth(body);
 
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
         // Pass unknown actions to existing GAS proxy logic for backwards compatibility during migration
         return proxyToGAS(body);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Roster API Error:', error);
     if (error instanceof AuthError) {
       return NextResponse.json(
@@ -228,8 +228,9 @@ export async function POST(request: Request) {
         { status: error.status }
       );
     }
+    const errMsg = error instanceof Error ? error.message : 'Internal Server Error';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Internal Server Error' },
+      { success: false, error: errMsg },
       { status: 500 }
     );
   }
@@ -238,7 +239,7 @@ export async function POST(request: Request) {
 /**
  * Fallback proxy to existing Google Apps Script backend
  */
-async function proxyToGAS(body: any) {
+async function proxyToGAS(body: Record<string, unknown>) {
   const gasUrl = (process.env.GAS_CALENDAR_WEB_APP_URL || '').trim();
   if (!gasUrl) {
     return NextResponse.json(

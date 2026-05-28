@@ -28,6 +28,15 @@ export const portalAppRegistry: PortalAppDefinition[] = [
     status: 'active',
     accent: 'purple',
   },
+  {
+    id: 'guide',
+    title: 'Presentation & Guide',
+    subtitle: 'Interactive User Guide',
+    description: 'Explore high-fidelity interactive tutorials and documentation for the QSMS Rework and Roster systems.',
+    route: 'guide',
+    status: 'active',
+    accent: 'blue',
+  },
 ];
 
 export const modularizationBoundaries: ModularizationBoundary[] = [

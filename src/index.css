@@ -16,6 +16,23 @@
   --color-apple-blue: #1d1d1f;
   --color-primary: #1d1d1f;
   --color-primary-dark: #000000;
+
+  /* Prototype Theme Colors */
+  --color-system-background: #FFFFFF;
+  --color-surface-tertiary: #E8E8ED;
+  --color-surface-secondary: #F5F5F7;
+  --color-surface-bright: #fcf8fb;
+  --color-surface-variant: #e4e2e4;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container: #f0edef;
+  --color-on-surface: #1b1b1d;
+  --color-on-surface-variant: #414755;
+  --color-divider-color: rgba(0, 0, 0, 0.1);
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-apple-blue-deep: #0066CC;
+  --color-outline-variant: #c1c6d7;
 }
 
 @layer components {
@@ -29,6 +46,22 @@
 
   .apple-btn-primary {
     @apply bg-[#1d1d1f] text-white hover:bg-black transition-all shadow-lg shadow-black/10;
+  }
+
+  .apple-input {
+    @apply border border-black/10 rounded-lg transition-all duration-200 outline-none focus:border-blue-500/50 focus:ring-[3px] focus:ring-blue-500/30;
+  }
+
+  .apple-button {
+    @apply rounded-lg px-4 py-2 font-medium transition-colors duration-200;
+  }
+
+  .apple-button-primary {
+    @apply bg-[#007AFF] text-white hover:bg-[#0056b3];
+  }
+
+  .glass-bg {
+    @apply bg-[#F5F5F7]/80 backdrop-blur-[12px];
   }
 }
 

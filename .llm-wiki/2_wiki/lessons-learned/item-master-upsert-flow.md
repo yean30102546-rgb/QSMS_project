@@ -15,7 +15,14 @@
 3. **Smart Master Upsert & Protection**:
    - **Complete Item Protection**: หากในฐานข้อมูลมีข้อมูลครบทั้ง 3 ฟิลด์แล้ว (Item Number, Item Code, Item Name) ระบบจะข้ามการอัปเดตเพื่อป้องกันการเขียนทับข้อมูลที่ถูกต้องจากความผิดพลาดของผู้ใช้ (Human Error)
    - **Incomplete Item Auto-Update**: ระบบจะสั่งอัปเดตฟิลด์ที่ขาดหายไปลงฐานข้อมูลกลาง (ทั้ง Supabase และ Google Sheets) อัตโนมัติ เฉพาะในกรณีที่รายการแถวเดิมมีค่าไม่ครบ 3 ฟิลด์เท่านั้น
-4. **Conflict Prevention**: หากผู้ใช้กรอก `Item Number` ไปตรงกับสินค้า A แต่กรอก `Item Code` ไปตรงกับสินค้า B ในฐานข้อมูล ระบบจะแสดงสถานะ `conflict` (รหัสซ้ำซ้อนในระบบ) และทำการปิดการใช้งาน (disable) ปุ่มบันทึกเคสเพื่อความปลอดภัย
+4. **Conflict Prevention & Modal Integration**: 
+   - หากผู้ใช้กรอก `Item Number` ไปตรงกับสินค้า A แต่กรอก `Item Code` ไปตรงกับสินค้า B ในฐานข้อมูล ระบบจะแสดงสถานะ `conflict` (รหัสซ้ำซ้อนในระบบ)
+   - **Conflict Modal**: ระบบจะแสดงหน้าต่างแจ้งเตือนทันทีที่พบความขัดแย้ง เพื่อบล็อกการทำงานและบังคับให้ผู้ใช้แก้ไขรหัสให้ถูกต้องก่อนดำเนินการต่อ
+   - ปิดการใช้งาน (disable) ปุ่มบันทึกเคสเพื่อความปลอดภัยจนกว่าสถานะ Conflict จะหายไป
+
+5. **Transaction Integrity (Atomic Submission)**:
+   - **Sequencing Strategy**: ในกระบวนการบันทึกข้อมูล Item Master ระบบจะทำการซิงค์ไปยัง Google Sheets ผ่าน GAS Proxy เป็นอันดับแรก **ก่อน** ที่จะทำการ Update หรือ Insert ข้อมูลลงใน Supabase
+   - **Rollback on Failure**: หาก GAS Proxy ส่งคืนค่าความล้มเหลว (เช่น ไม่สามารถเขียนลง Sheet ได้) ระบบจะระงับการทำงานในฝั่ง Supabase ทันทีและแจ้ง Error กลับไปยังผู้ใช้ เพื่อให้ข้อมูลทั้งสองฝั่ง (Sheets และ Supabase) ตรงกันเสมอ (Consistence Consistency)
 
 ## 2. Technical Code Snippet (Best Practice)
 การตรวจสอบ Conflict ใน Backend (`route.ts`):

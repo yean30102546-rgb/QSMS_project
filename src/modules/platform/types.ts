@@ -1,6 +1,6 @@
-export type AppView = 'login' | 'portal' | 'rework' | 'roster' | 'rag';
+export type AppView = 'login' | 'portal' | 'rework' | 'roster' | 'rag' | 'guide';
 
-export type PortalAppId = 'rework' | 'roster' | 'rag';
+export type PortalAppId = 'rework' | 'roster' | 'rag' | 'guide';
 
 export interface PortalAppDefinition {
   id: PortalAppId;

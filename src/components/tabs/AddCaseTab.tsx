@@ -8,7 +8,7 @@ import type { ReworkItem } from '../../services/api';
 import { CUSTOMER_OPTIONS } from '../../services/api';
 import { ImageUpload } from '../ui/ImageUpload';
 import { AppleProgressBar } from '../ui/AppleProgressBar';
-import { convertDMYToYMD, convertYMDToDMY } from '../../utils/helpers';
+import { convertDMYToYMD, convertYMDToDMY, findDuplicateItemNumbers } from '../../utils/helpers';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -60,7 +60,7 @@ const REASON_MAIN_OPTIONS = [
 ] as const;
 
 
-const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วโดนเครื่องจักร', 'รั่วกระแทก', 'แตกตะเข็บ', 'รอยมีด'] as const;
+const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วขูดเจาะ', 'รั่วโดนเครื่องจักร', 'รั่วกระแทก', 'รั่วตะเข็บ', ' รั่วบุบแตก', 'รอยมีด'] as const;
 const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื้อน'] as const;
 
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
@@ -216,7 +216,7 @@ export function AddCaseTab({
               <select
                 value={caseSource}
                 onChange={(e) => setCaseSource(e.target.value)}
-                className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none"
+                className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
               >
                 <option>SFC</option>
                 <option>Customer</option>
@@ -225,23 +225,27 @@ export function AddCaseTab({
 
             <div className="space-y-2">
               <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">หมายเลขเคส (Case ID) *</label>
-              <div className="flex items-center gap-0">
-                <span className="inline-flex items-center rounded-l-xl border border-r-0 border-border bg-slate-100 px-3 py-3 text-sm font-bold text-primary select-none">
+              <div className={`flex items-center w-fit overflow-hidden rounded-xl bg-white/80 backdrop-blur-md shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(59,130,246,0.15)] group ${!caseNumber.trim() ? 'border-red-400/60 focus-within:border-red-400/80 focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(239,68,68,0.15)]' : 'border-slate-200/60 focus-within:border-blue-400/30'}`}>
+                <span className={`inline-flex items-center pl-4 pr-1 py-2.5 text-[15px] font-medium select-none transition-colors duration-200 ${!caseNumber.trim() ? 'text-red-400 group-focus-within:text-red-500' : 'text-slate-400 group-focus-within:text-blue-500'}`}>
                   {caseSource === 'Customer' ? 'RT' : 'RW'}
                 </span>
                 <input
                   type="text"
                   value={caseNumber}
                   onChange={(e) => setCaseNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="087"
-                  className="w-24 border-y border-border bg-white px-3 py-3 text-sm font-semibold text-center focus:border-accent focus:outline-none"
+                  placeholder="012"
+                  className="w-14 bg-transparent px-0 py-2.5 text-[15px] font-semibold text-center text-slate-800 outline-none border-none placeholder:text-slate-300 placeholder:font-normal"
                   maxLength={4}
                 />
-                <span className="inline-flex items-center rounded-r-xl border border-l-0 border-border bg-slate-100 px-3 py-3 text-sm font-bold text-muted select-none">
+                <span className={`inline-flex items-center pr-4 pl-1 py-2.5 text-[15px] font-medium select-none ${!caseNumber.trim() ? 'text-red-400' : 'text-slate-400'}`}>
                   - {new Date().getFullYear()}
                 </span>
               </div>
-              {caseNumber.trim() && (() => {
+              {!caseNumber.trim() ? (
+                <p className="ml-1 text-[10px] font-semibold text-red-600">
+                  ⚠️ จำเป็นต้องกรอกหมายเลขเคส
+                </p>
+              ) : (() => {
                 const composedId = `${caseSource === 'Customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`;
                 const isDuplicate = existingCaseIds.includes(composedId);
                 return isDuplicate ? (
@@ -319,7 +323,7 @@ export function AddCaseTab({
               id={`form-card-${item.id}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-card relative overflow-hidden bg-white p-8"
+              className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
             >
               <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
               <div className="mb-8 flex items-center justify-between">
@@ -353,13 +357,13 @@ export function AddCaseTab({
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div className="space-y-2">
                   <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">ชื่อลูกค้า (Customer Name) *</label>
                   <select
                     value={item.customerName || ''}
                     onChange={(e) => updateFormItem(item.id, 'customerName', e.target.value)}
-                    className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none disabled:opacity-50 h-[46px]"
+                    className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none disabled:opacity-50 h-[46px]"
                     disabled={isSaving}
                   >
                     <option value="">กรุณาเลือก</option>
@@ -389,8 +393,8 @@ export function AddCaseTab({
                       placeholder="เช่น 60001234A"
                       disabled={isSaving}
                       className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber'
-                        ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
-                        : 'border-border bg-slate-50 focus:border-accent'
+                        ? 'border-blue-500 bg-white ring-4 ring-blue-500/10'
+                        : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
                         }`}
                     />
                     <button
@@ -425,8 +429,8 @@ export function AddCaseTab({
                       placeholder="เช่น 40001234"
                       disabled={isSaving}
                       className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode'
-                        ? 'border-[#1d1d1f] bg-white ring-2 ring-black/5'
-                        : 'border-border bg-slate-50 focus:border-accent'
+                        ? 'border-blue-500 bg-white ring-4 ring-blue-500/10'
+                        : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
                         }`}
                     />
                     <button
@@ -452,8 +456,8 @@ export function AddCaseTab({
                 />
               </div>
 
-              <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                <div className="col-span-1">
+              <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <div className="col-span-2 sm:col-span-1">
                   <InputField
                     label="หมายเลขล็อต (Batch no.)"
                     type="date"
@@ -493,7 +497,7 @@ export function AddCaseTab({
                     disabled={isSaving}
                   />
                 </div>
-                <div className="col-span-2 md:col-span-1">
+                <div className="col-span-1">
                   <InputField
                     label="จำนวน (Amount)"
                     type="number"
@@ -512,7 +516,7 @@ export function AddCaseTab({
                       <select
                         value={item.reason}
                         onChange={(e) => handleReasonChange(item.id, e.target.value)}
-                        className="flex-1 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-accent focus:outline-none disabled:opacity-50"
+                        className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none disabled:opacity-50"
                         disabled={isSaving}
                       >
                         <option value="" className="text-slate-400">กรุณาเลือก</option>
@@ -588,7 +592,7 @@ export function AddCaseTab({
                       <select
                         value={item.responsible}
                         onChange={(e) => handleResponsibleChange(item.id, e.target.value)}
-                        className="flex-1 rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-accent focus:outline-none disabled:opacity-50"
+                        className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none disabled:opacity-50"
                         disabled={isSaving}
                       >
                         <option value="" className="text-slate-400">กรุณาเลือก</option>
@@ -722,7 +726,7 @@ export function AddCaseTab({
                     value={item.details || ''}
                     onChange={(e) => updateFormItem(item.id, 'details', e.target.value)}
                     placeholder="ระบุรายละเอียดเพิ่มเติม..."
-                    className="w-full resize-none rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                    className="w-full resize-none rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none disabled:opacity-50"
                     disabled={isSaving}
                   />
                 </div>
@@ -737,7 +741,7 @@ export function AddCaseTab({
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-6">
+              <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
                 <motion.button
                   type="button"
                   onClick={() => {
@@ -749,7 +753,7 @@ export function AddCaseTab({
                   }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-100"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-100"
                 >
                   <Copy size={16} /> คัดลอกรายการ
                 </motion.button>
@@ -759,7 +763,7 @@ export function AddCaseTab({
                     onClick={() => removeFormItem(item.id)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex items-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
                   >
                     <Trash2 size={16} /> ลบรายการ
                   </motion.button>
@@ -769,7 +773,7 @@ export function AddCaseTab({
                     onClick={() => resetFormItem(item.id)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-200"
                   >
                     <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
                   </motion.button>
@@ -791,37 +795,65 @@ export function AddCaseTab({
                 <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
               </motion.div>
             ) : (
-              <motion.div
-                key="action-buttons"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-col gap-4 sm:flex-row w-full"
-              >
-                <motion.button
-                  onClick={addFormItem}
-                  disabled={isSaving}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ y: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-xs font-bold uppercase tracking-widest text-muted hover:bg-slate-50 disabled:opacity-50 sm:h-auto"
+              <div className="flex flex-col w-full gap-4">
+                <AnimatePresence>
+                  {formItems.length > 1 && (() => {
+                    const dupCheck = findDuplicateItemNumbers(formItems);
+                    return dupCheck.hasDuplicates ? (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 flex flex-col gap-1.5 shadow-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-red-800">⚠️ ตรวจพบบาร์โค้ดสินค้าและสาเหตุที่ซ้ำกันในรายการ:</span>
+                        </div>
+                        <ul className="list-disc pl-5 mt-1 space-y-1 font-mono">
+                          {dupCheck.duplicates.map((lbl, idx) => (
+                            <li key={idx}>{lbl}</li>
+                          ))}
+                        </ul>
+                        <p className="mt-1 text-[10px] text-red-600/90 font-medium">
+                          * กรุณาแก้ไข หรือระบุเลขกล่อง (Box Number), Mold หรือ Line ให้มีความแตกต่างกันในรายการที่ซ้ำ เพื่อให้ระบบแยกข้อมูลได้ถูกต้อง
+                        </p>
+                      </motion.div>
+                    ) : null;
+                  })()}
+                </AnimatePresence>
+
+                <motion.div
+                  key="action-buttons"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col gap-4 sm:flex-row w-full"
                 >
-                  <Plus size={16} /> [ + ] เพิ่มรายการ
-                </motion.button>
-                <motion.button
-                  onClick={handleSubmit}
-                  disabled={isSaveDisabled(formItems) || isSaving}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto overflow-hidden relative"
-                >
-                  <>
-                    บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />
-                  </>
-                </motion.button>
-              </motion.div>
+                  <motion.button
+                    onClick={addFormItem}
+                    disabled={isSaving}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ y: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-xs font-bold uppercase tracking-widest text-muted hover:bg-slate-50 disabled:opacity-50 sm:h-auto"
+                  >
+                    <Plus size={16} /> [ + ] เพิ่มรายการ
+                  </motion.button>
+                  <motion.button
+                    onClick={handleSubmit}
+                    disabled={isSaveDisabled(formItems) || isSaving || !caseNumber.trim() || existingCaseIds.includes(`${caseSource === 'Customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`)}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto overflow-hidden relative"
+                  >
+                    <>
+                      บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />
+                    </>
+                  </motion.button>
+                </motion.div>
+              </div>
             )}
           </AnimatePresence>
 
@@ -907,7 +939,7 @@ function InputField({ label, value, onChange, onBlur, placeholder, type = 'text'
         onBlur={onBlur}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium transition-all placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent focus:outline-none"
+        className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
       />
     </div>
   );

@@ -185,8 +185,10 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
     >
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary border border-primary/20 font-mono tracking-wide">{displayId}</span>
-          <div className="text-sm font-semibold text-primary">{itemNameDisplay}</div>
+          <div className="text-sm font-bold text-primary truncate max-w-[200px] md:max-w-[300px]">{caseItem.caseName || displayId}</div>
+          {caseItem.caseName && (
+             <span className="inline-flex items-center rounded-md bg-slate-100/80 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 border border-slate-200/60 font-mono tracking-wide">{displayId}</span>
+          )}
           {deadlineStatus === 'warning' && (
             <div className="flex items-center gap-1 text-[11px] font-semibold text-tertiary" title="งานค้างเกิน 7 วัน">
               <Clock size={12} />
@@ -201,6 +203,8 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
           )}
         </div>
         <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-on-surface-variant/75">
+          <span className="font-semibold text-primary/80 truncate max-w-[150px]">{itemNameDisplay}</span>
+          <span>&bull;</span>
           <div className="flex items-center gap-1 text-primary/80">
             <Calendar size={11} className="shrink-0" />
             <span className="font-semibold">{formatThaiDateShort(caseItem.date)}</span>

@@ -316,810 +316,621 @@ export function UpdateModal({
       <AnimatePresence mode="wait">
         {isOpen && (
           <>
-            {/* Backdrop - quick fade */}
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={onClose}
-              className="fixed inset-0 bg-black/40 z-40 will-change-opacity"
+              onClick={handleRequestClose}
+              className="fixed inset-0 bg-black/35 backdrop-blur-[2px] z-40 will-change-opacity"
             />
 
-            {/* Modal - slide-up quickly */}
+            {/* Modal Container */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none will-change-transform"
+              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 pointer-events-none will-change-transform"
             >
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 30 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="pointer-events-auto w-full max-w-3xl max-h-[90vh] will-change-transform"
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                animate={{
+                  opacity: editExitIntent ? 0.6 : 1,
+                  y: 0,
+                  scale: editExitIntent ? 0.98 : 1,
+                }}
+                exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                aria-hidden={!!editExitIntent}
+                className="pointer-events-auto w-full max-w-5xl max-h-[90vh] will-change-transform flex"
               >
-                <div className="bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200/80 max-h-[90vh] flex flex-col">
-                  {/* Header */}
-                  <div className="bg-slate-50 px-8 py-6 flex items-center justify-between border-b border-slate-200">
-                    <div>
-                      <h2 className="text-xl font-bold text-foreground">อัปเดตสถานะงาน</h2>
-                      <p className="text-sm text-muted mt-1">{caseData?.id}</p>
-                    </div>
-                    <motion.button
-                      type="button"
-                      onClick={onClose}
-                      disabled={isLoading}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      transition={{ duration: 0.15 }}
-                      className="p-2 hover:bg-white rounded-lg disabled:opacity-50 will-change-transform"
-                    >
-                      <X size={20} className="text-foreground" />
-                    </motion.button>
-                  </div>
-
-                  {/* Content — scrollable */}
-                  <div className="px-8 py-6 space-y-8 overflow-y-auto flex-1">
-                    {/* Case Info */}
-                    {caseData && (
-                      <div className="bg-slate-50 rounded-xl p-6 space-y-4 shadow-inner border border-slate-100">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                          <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">แหล่งที่มา</p>
-                            {isEditMode ? (
-                              <input 
-                                value={editedSource} 
-                                onChange={(e) => setEditedSource(e.target.value)}
-                                className="w-full px-2 py-1 text-sm border rounded bg-white font-bold"
-                              />
-                            ) : (
-                              <p className="text-sm font-bold text-foreground">{caseData.source}</p>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">วันที่</p>
-                            <p className="text-sm font-bold text-foreground">{formatThaiDate(caseData.timestamp || caseData.date)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">จำนวนรายการ</p>
-                            <p className="text-sm font-bold text-foreground">{caseData.items.length} รายการ</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">สถานะปัจจุบัน</p>
-                            <StatusBadge status={caseData.status} />
-                          </div>
+                {isEditMode ? (
+                  /* =========================================
+                     EDIT MODE SCREEN (Prototype Style)
+                     ========================================= */
+                  <div className="relative bg-system-background w-full rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-divider-color flex flex-col max-h-[90vh] overflow-hidden">
+                    {/* Header */}
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-divider-color bg-surface-secondary/50 shrink-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-apple-blue-deep/10 flex items-center justify-center">
+                          <PenTool size={16} className="text-apple-blue-deep" />
                         </div>
-
-                        {/* Customer Row */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-200/50">
-                           <div className="col-span-1">
-                              <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">ลูกค้า</p>
-                              <p className="text-sm font-bold text-slate-400 italic">แยกตามรายการ</p>
-                           </div>
-                           {(editedItems.every(i => i.customerName === 'OR')) && (
-                             <div className="col-span-3">
-                                <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">เอกสาร OR</p>
-                                <div className="flex flex-wrap gap-2">
-                                   {caseData.orFilesUrls && caseData.orFilesUrls.map((url, i) => (
-                                     <a 
-                                       key={i} 
-                                       href={url} 
-                                       target="_blank" 
-                                       rel="noopener noreferrer"
-                                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200 hover:bg-amber-100 transition-colors"
-                                     >
-                                       <ExternalLink size={12} />
-                                       ไฟล์ OR {i + 1}
-                                     </a>
-                                   ))}
-                                   {(!caseData.orFilesUrls || caseData.orFilesUrls.length === 0) && newOrFiles.length === 0 && (
-                                     <span className="text-xs text-red-500 font-bold italic">ยังไม่มีการแนบไฟล์</span>
-                                   )}
-                                   {/* OR file upload: always visible when all items are OR (retroactive attachment) */}
-                                   <div className="flex items-center gap-3">
-                                      <input 
-                                        type="file" 
-                                        multiple 
-                                        accept=".xlsx,.xls,.pdf,.png"
-                                        onChange={(e) => setNewOrFiles(Array.from(e.target.files || []).slice(0, 2))}
-                                        className="text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-accent file:text-white"
-                                      />
-                                      {newOrFiles.length > 0 && (
-                                        <span className="text-[10px] text-accent font-bold">เลือก {newOrFiles.length} ไฟล์ใหม่</span>
-                                      )}
-                                   </div>
-                                </div>
-                             </div>
-                           )}
-                        </div>
+                        <h2 className="text-[20px] font-semibold text-on-surface">Edit Mode</h2>
+                        <span className="text-[14px] text-on-surface-variant font-medium bg-surface-variant px-3 py-1 rounded-full">
+                          {previewCaseName || caseData?.id}
+                        </span>
                       </div>
-                    )}
-
-                    {/* ===== รายละเอียดและรูปภาพแนบ แบ่งตาม Item ===== */}
-                    {caseData && (
-                      <div className="space-y-5">
-                        <div className="flex items-center gap-2">
-                          <FileText size={16} className="text-accent" />
-                          <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
-                            รายละเอียดและรูปภาพแนบ
-                          </label>
-                        </div>
-
-                        {editedItems.map((item, index) => {
-                          const images = item.imageUrls || [];
-                          return (
-                            <div key={item.id || index} className="bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4">
-                              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                                  <div className="flex items-center gap-3 flex-1">
-                                    <span className="w-7 h-7 rounded-lg bg-accent text-white text-xs font-black flex items-center justify-center shadow-sm shrink-0">
-                                      {index + 1}
-                                    </span>
-                                    <div className="flex-1">
-                                      {isEditMode ? (
-                                        <div className="flex flex-col gap-3">
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">ชื่อรายการ (Item Name)</label>
-                                              <input 
-                                                value={item.itemName} 
-                                                onChange={(e) => {
-                                                  const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], itemName: e.target.value };
-                                                  setEditedItems(newItems);
-                                                }}
-                                                placeholder="ชื่อรายการ"
-                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                              />
-                                            </div>
-                                            <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">ลูกค้า (Customer)</label>
-                                              <select
-                                                value={item.customerName || ''}
-                                                onChange={(e) => {
-                                                  const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], customerName: e.target.value };
-                                                  setEditedItems(newItems);
-                                                }}
-                                                className="w-full text-sm font-bold border border-slate-200 rounded-lg bg-white px-3 py-2 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                                              >
-                                                <option value="">เลือกสีลูกค้า</option>
-                                                {CUSTOMER_OPTIONS.map(opt => (
-                                                  <option key={opt} value={opt}>{opt}</option>
-                                                ))}
-                                              </select>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                            <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Batch no.</label>
-                                              <input 
-                                                type="date"
-                                                value={convertDMYToYMD(item.batchNo || '')} 
-                                                onChange={(e) => {
-                                                  const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], batchNo: convertYMDToDMY(e.target.value) };
-                                                  setEditedItems(newItems);
-                                                }}
-                                                placeholder="เช่น 26/05/2026"
-                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                              />
-                                            </div>
-                                            <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">เลขกล่อง (Box Number)</label>
-                                              <input
-                                                type="text"
-                                                value={item.packagingDate || ''}
-                                                placeholder="เช่น 001"                                                onChange={(e) => {
-                                                  const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], packagingDate: e.target.value };
-                                                  setEditedItems(newItems);
-                                                }}
-                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                              />
-                                            </div>
-                                            <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Mold</label>
-                                              <input 
-                                                value={item.mold || ''} 
-                                                onChange={(e) => {
-                                                  const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], mold: enforceNumeric(e.target.value) };
-                                                  setEditedItems(newItems);
-                                                }}
-                                                placeholder="Mold"
-                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                              />
-                                            </div>
-                                            <div className="space-y-1">
-                                              <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Line</label>
-                                              <input 
-                                                value={item.line || ''} 
-                                                onChange={(e) => {
-                                                  const newItems = [...editedItems];
-                                                  newItems[index] = { ...newItems[index], line: enforceNumeric(e.target.value) };
-                                                  setEditedItems(newItems);
-                                                }}
-                                                placeholder="Line"
-                                                className="w-full text-sm font-bold px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                                              />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-1">
-                                          <div className="flex items-center gap-2">
-                                            <p className="text-sm font-bold text-foreground">{item.itemName}</p>
-                                            <span className="px-1.5 py-0.5 rounded bg-slate-200 text-[8px] font-black uppercase text-slate-600">
-                                              {item.customerName || 'N/A'}
-                                            </span>
-                                          </div>
-                                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                            <p className="text-[10px] text-muted font-bold">SN: <span className="text-foreground">{item.itemNumber}</span></p>
-                                            <p className="text-[10px] text-muted font-bold">Code: <span className="text-foreground">{item.itemCode || 'N/A'}</span></p>
-                                            <p className="text-[10px] text-muted font-bold">Batch: <span className="text-foreground">{item.batchNo || 'N/A'}</span></p>
-                                            <p className="text-[10px] text-muted font-bold">Date: <span className="text-foreground">{formatThaiDateShort(item.packagingDate || '')}</span></p>
-                                            <p className="text-[10px] text-muted font-bold">Mold: <span className="text-foreground">{item.mold || 'N/A'}</span></p>
-                                            <p className="text-[10px] text-muted font-bold">Line: <span className="text-foreground">{item.line || 'N/A'}</span></p>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                      {isEditMode ? (
-                                        <div className="flex flex-col items-end gap-2">
-                                          <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-muted uppercase tracking-wider block text-right">จำนวน</label>
-                                            <div className="flex items-center gap-2">
-                                              <input 
-                                                type="number"
-                                                value={item.amount === undefined || item.amount === null || item.amount.toString() === 'NaN' ? '' : item.amount}
-                                                onChange={(e) => {
-                                                  const newItems = [...editedItems];
-                                                  const val = e.target.value;
-                                                  newItems[index] = { ...newItems[index], amount: val === '' ? '' as any : Number(val) };
-                                                  setEditedItems(newItems);
-                                                }}
-                                                className="w-20 px-2 py-1.5 text-center text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                                              />
-                                              <button
-                                                type="button"
-                                                onClick={() => handleRemoveItem(index)}
-                                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                                                title="ลบรายการย่อย"
-                                              >
-                                                <Trash2 size={18} />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <span className="px-3 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-700 shadow-sm">
-                                          {item.amount} ชิ้น
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                {item.linkedSourceId && (
-                                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-lg">
-                                    <HelpCircle size={14} className="text-amber-600" />
-                                    <span className="text-[10px] font-bold text-amber-800">Linked to leaking source</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest">อาการเสีย/รายละเอียด:</p>
-                                  {isEditMode || isPDB ? (
-                                    <textarea 
-                                      value={item.details || ''} 
-                                      onChange={(e) => {
-                                        const newItems = [...editedItems];
-                                        newItems[index] = { ...newItems[index], details: e.target.value };
-                                        setEditedItems(newItems);
-                                      }}
-                                      className="w-full bg-white p-3 rounded-xl border border-slate-200 text-sm text-slate-700 min-h-[60px] focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                                    />
-                                  ) : (
-                                    <div className="bg-white p-3 rounded-xl border border-slate-200 text-sm text-slate-700 min-h-[60px] whitespace-pre-wrap leading-relaxed shadow-sm">
-                                      {item.details || <span className="text-slate-400 italic">ไม่มีข้อมูล</span>}
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">รูปภาพแนบ ({images.length}):</p>
-                                    {item.imageFolderUrl && (
-                                      <a 
-                                        href={item.imageFolderUrl} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm"
-                                        title="เปิดโฟลเดอร์ Google Drive"
-                                      >
-                                        <ExternalLink size={12} />
-                                        ไปยังโฟลเดอร์
-                                      </a>
-                                    )}
-                                  </div>
-                                  {images.length > 0 ? (
-                                    <div className="grid grid-cols-3 gap-3">
-                                      {images.map((url, imgIdx) => (
-                                        <motion.button
-                                          key={imgIdx}
-                                          whileHover={{ scale: 1.05 }}
-                                          whileTap={{ scale: 0.95 }}
-                                          onClick={() => setLightboxUrl(url)}
-                                          className="aspect-square rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-white"
-                                        >
-                                          <DriveImage src={url} alt="Rework" className="w-full h-full object-cover" />
-                                        </motion.button>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div className="bg-white p-4 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400">
-                                      <ImageOff size={20} className="mb-1 opacity-20" />
-                                      <span className="text-[10px] font-bold">ไม่มีรูปภาพ</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* ===== LABOR RESOURCE MANAGEMENT SECTION ===== */}
-                    <div className="space-y-4 pt-6 border-t border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <Clock size={18} className="text-accent" />
-                        <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider">
-                          จัดการเวลาทำงาน (Labor / Man-hour Management)
-                        </label>
-                      </div>
-
-                      <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4">
-                        <div className={`grid grid-cols-1 ${canViewFinancialData ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
-                          {/* 1. Labor Count Dropdown */}
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">
-                              จำนวนพนักงาน (คน)
-                            </label>
-                            <select
-                              value={laborCount}
-                              onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
-                              disabled={!canEditMaterialNameQty}
-                              className="w-full text-sm font-bold border border-slate-200 rounded-lg bg-white px-2.5 py-1.5 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none disabled:bg-slate-100 disabled:text-slate-500 transition-all"
+                      <div className="flex items-center gap-3">
+                        {isSaving && <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />}
+                        {!isSaving && (
+                          <>
+                            <button onClick={handleRequestClose} className="px-4 py-2 text-[14px] font-medium text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleSaveEdit}
+                              disabled={isLoading || !isAdmin}
+                              className="px-5 py-2 text-[14px] font-semibold text-white bg-[#0066cc] hover:bg-[#0055aa] rounded-full shadow-sm transition-all disabled:opacity-50"
                             >
-                              <option value="">-- เลือกจำนวนพนักงาน --</option>
-                              <option value="1">1 คน</option>
-                              <option value="2">2 คน</option>
-                              <option value="3">3 คน</option>
-                              <option value="4">4 คน</option>
-                              <option value="5">5 คน</option>
+                              Save Changes
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="overflow-y-auto flex-1 custom-scrollbar p-6 bg-surface-bright space-y-6">
+                      
+                      {/* Case Info - Edit */}
+                      <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
+                        <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
+                          <AlertCircle size={18} className="text-on-surface-variant" />
+                          <h3 className="text-[16px] font-semibold text-on-surface">Case Information</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">แหล่งที่มา</label>
+                            <select
+                              value={editedSource}
+                              onChange={(e) => setEditedSource(e.target.value)}
+                              className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-[15px] font-semibold rounded-lg text-on-surface"
+                            >
+                              {SOURCE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
                           </div>
-
-                          {/* 2. Labor Hours Input */}
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">
-                              ชั่วโมงที่ใช้ (ชม.)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              placeholder="ระบุจำนวนชั่วโมง"
-                              value={laborHours === undefined || laborHours === null || laborHours.toString() === 'NaN' ? '' : laborHours}
-                              onChange={(e) => setLaborHours(e.target.value === '' ? '' : Number(e.target.value))}
-                              disabled={!canEditMaterialNameQty}
-                              className="w-full px-2.5 py-1.5 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none disabled:bg-slate-100 disabled:text-slate-500 transition-all"
-                            />
+                          <div className="space-y-2">
+                            <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">เลขที่เคส</label>
+                            <div className="flex items-center bg-surface-secondary rounded-lg border border-divider-color focus-within:ring-[3px] focus-within:ring-blue-500/30 transition-all overflow-hidden">
+                              <span className="pl-4 py-2.5 text-[15px] font-semibold text-on-surface-variant">{caseNamePrefix}</span>
+                              <input
+                                value={editedCaseNumber}
+                                onChange={(e) => setEditedCaseNumber(enforceNumeric(e.target.value))}
+                                className="w-full bg-transparent px-2 py-2.5 text-[15px] font-bold text-center outline-none text-on-surface"
+                              />
+                              <span className="pr-4 py-2.5 text-[15px] font-semibold text-on-surface-variant">-{caseNameYear}</span>
+                            </div>
                           </div>
+                        </div>
 
-                          {/* 3. Labor Rate Input (Only shown to Finance or Admin/QSMS) */}
-                          {canViewFinancialData && (
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 mb-1">
-                                อัตราค่าแรง (บาท/ชม.)
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="1"
-                                  placeholder="ระบุอัตราค่าแรง"
-                                  value={laborRate === undefined || laborRate === null || laborRate.toString() === 'NaN' ? '' : laborRate}
-                                  onChange={(e) => setLaborRate(e.target.value === '' ? '' : Number(e.target.value))}
-                                  disabled={!canEditUnitPrice}
-                                  className="w-full pl-6 pr-2.5 py-1.5 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none disabled:bg-slate-100 disabled:text-slate-500 transition-all"
-                                />
-                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">฿</span>
+                        {/* Files Section */}
+                        {(editedItems.every(i => i.customerName === 'OR')) && (
+                          <div className="pt-4 border-t border-divider-color space-y-3">
+                            <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">เอกสาร OR</label>
+                            <div className="flex flex-wrap items-center gap-3">
+                              {caseData?.orFilesUrls?.map((url, i) => (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-surface-secondary rounded-full text-[#0066cc] text-[13px] font-semibold hover:bg-surface-variant transition-colors">
+                                  <ExternalLink size={14} /> OR {i + 1}
+                                </a>
+                              ))}
+                              <div className="flex items-center gap-2 bg-surface-secondary rounded-full px-4 py-2 hover:bg-surface-variant transition-colors cursor-pointer border border-dashed border-divider-color">
+                                <input type="file" multiple accept=".xlsx,.xls,.pdf,.png" onChange={(e) => setNewOrFiles(Array.from(e.target.files || []).slice(0, 2))} className="hidden" id="or-upload" />
+                                <label htmlFor="or-upload" className="text-[13px] font-semibold text-on-surface cursor-pointer w-full h-full flex items-center">{newOrFiles.length > 0 ? `เลือก ${newOrFiles.length} ไฟล์` : '+ เพิ่มไฟล์ OR'}</label>
                               </div>
                             </div>
-                          )}
-                        </div>
-
-                        {/* Labor and Grand Total Cost Summary (Only shown if canViewFinancialData) */}
-                        {canViewFinancialData && (
-                          <div className="bg-slate-100/50 rounded-xl border border-slate-200/50 p-4 space-y-2 text-sm font-bold text-slate-700">
-                            <div className="flex items-center justify-between text-xs text-slate-500">
-                              <span>ค่าแรงผู้ปฏิบัติงาน (Labor Cost)</span>
-                              <span className="font-mono">
-                                ฿{((Number(laborCount) || 0) * (Number(laborHours) || 0) * (Number(laborRate) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-slate-500">
-                              <span>ค่าวัสดุทั้งหมด (Material Cost)</span>
-                              <span className="font-mono">
-                                ฿{materials.reduce((sum, mat) => sum + ((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)), 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                            <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-slate-900">
-                              <span className="flex items-center gap-1">
-                                <Calculator size={15} className="text-accent" />
-                                <span>ราคารวมทั้งสิ้น (Grand Total)</span>
-                              </span>
-                              <span className="text-base font-black text-accent font-mono">
-                                ฿{((Number(laborCount) || 0) * (Number(laborHours) || 0) * (Number(laborRate) || 0) + materials.reduce((sum, mat) => sum + ((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)), 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            </div>
                           </div>
                         )}
                       </div>
-                    </div>
 
-                    {/* ===== MATERIAL RESOURCE MANAGEMENT SECTION ===== */}
-                    <div className="space-y-4 pt-6 border-t border-slate-100">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Package size={18} className="text-accent" />
-                          <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider">
-                            จัดการวัสดุ Rework (Material Resource Management)
-                          </label>
+                      {/* Item Details - Edit */}
+                      <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
+                        <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
+                          <FileText size={18} className="text-on-surface-variant" />
+                          <h3 className="text-[16px] font-semibold text-on-surface">Item Details ({editedItems.length})</h3>
                         </div>
-                        {canManageRows && (
-                          <button
-                            type="button"
-                            onClick={handleAddMaterial}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-accent text-white hover:bg-accent-dark shadow-sm hover:shadow active:scale-95 transition-all"
-                          >
-                            + เพิ่มวัสดุ
-                          </button>
-                        )}
+                        
+                        <div className="space-y-6">
+                          {editedItems.map((item, index) => {
+                            const images = item.imageUrls || [];
+                            return (
+                              <div key={item.id || index} className="p-5 border border-divider-color rounded-lg bg-surface-bright space-y-5">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="flex-1 space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div className="space-y-1.5">
+                                        <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ชื่อรายการ</label>
+                                        <input
+                                          value={item.itemName}
+                                          onChange={(e) => {
+                                            const newItems = [...editedItems];
+                                            newItems[index] = { ...newItems[index], itemName: e.target.value };
+                                            setEditedItems(newItems);
+                                          }}
+                                          className="apple-input w-full bg-system-background px-3 py-2 text-[15px] font-semibold text-on-surface"
+                                        />
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ลูกค้า</label>
+                                        <select
+                                          value={item.customerName || ''}
+                                          onChange={(e) => {
+                                            const newItems = [...editedItems];
+                                            newItems[index] = { ...newItems[index], customerName: e.target.value };
+                                            setEditedItems(newItems);
+                                          }}
+                                          className="apple-input w-full bg-system-background px-3 py-2 text-[15px] font-semibold text-on-surface"
+                                        >
+                                          <option value="">เลือกสีลูกค้า</option>
+                                          {CUSTOMER_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                        </select>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">อาการเสีย / รายละเอียด</label>
+                                      <textarea
+                                        value={item.details || ''}
+                                        onChange={(e) => {
+                                          const newItems = [...editedItems];
+                                          newItems[index] = { ...newItems[index], details: e.target.value };
+                                          setEditedItems(newItems);
+                                        }}
+                                        className="apple-input w-full bg-system-background p-3 min-h-[80px] text-[14px] font-medium text-on-surface"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-3 shrink-0">
+                                    <div className="space-y-1.5 text-right">
+                                      <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">จำนวน</label>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="number"
+                                          value={item.amount || ''}
+                                          onChange={(e) => {
+                                            const newItems = [...editedItems];
+                                            newItems[index] = { ...newItems[index], amount: Number(e.target.value) };
+                                            setEditedItems(newItems);
+                                          }}
+                                          className="apple-input w-20 bg-system-background px-2 py-2 text-center text-[15px] font-bold text-on-surface"
+                                        />
+                                        <span className="text-[13px] font-medium text-on-surface-variant">pcs</span>
+                                      </div>
+                                    </div>
+                                    <button onClick={() => handleRemoveItem(index)} className="p-2 text-error hover:bg-error-container/30 rounded-full transition-colors" title="ลบรายการ">
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
-                      <div className="bg-slate-50/50 rounded-2xl border border-slate-100 overflow-hidden">
-                        {materials.length > 0 ? (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="border-b border-slate-200/60 bg-slate-100/50 text-[10px] font-black text-muted uppercase tracking-wider">
-                                  <th className="px-4 py-3">ชื่อวัสดุ (Material Name)</th>
-                                  <th className="px-4 py-3 text-center w-24">จำนวน</th>
-                                  <th className="px-4 py-3 text-center w-16">หน่วย</th>
-                                  {canViewFinancialData && (
-                                    <>
-                                      <th className="px-4 py-3 text-right w-28">ราคาต่อหน่วย</th>
-                                      <th className="px-4 py-3 text-right w-28">ราคารวม</th>
-                                    </>
-                                  )}
-                                  {canManageRows && <th className="px-4 py-3 text-center w-12"></th>}
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 text-sm font-bold text-slate-700">
-                                {materials.map((mat) => (
-                                  <tr key={mat.id} className="hover:bg-white/40 transition-colors">
-                                    <td className="px-4 py-2.5">
-                                      {canEditMaterialNameQty ? (
+                      {/* Labor Management - Edit */}
+                      {(isOperator || isAdmin) && (
+                        <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
+                          <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
+                            <Clock size={18} className="text-[#0066cc]" />
+                            <h3 className="text-[16px] font-semibold text-on-surface">การจัดการเวลาทำงาน (Labor)</h3>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2">
+                              <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">จำนวนพนักงาน (คน)</label>
+                              <select
+                                value={laborCount}
+                                onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
+                                disabled={!canEditMaterialNameQty}
+                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-[15px] font-semibold rounded-lg"
+                              >
+                                <option value="">เลือกจำนวน</option>
+                                {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} คน</option>)}
+                              </select>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ชั่วโมงที่ใช้ (ชม.)</label>
+                              <input
+                                type="number"
+                                min="0" step="0.5"
+                                value={laborHours === undefined || laborHours === null || laborHours.toString() === 'NaN' ? '' : laborHours}
+                                onChange={(e) => setLaborHours(e.target.value === '' ? '' : Number(e.target.value))}
+                                disabled={!canEditMaterialNameQty}
+                                placeholder="0.0"
+                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-[15px] font-semibold rounded-lg"
+                              />
+                            </div>
+                            {canViewFinancialData && (
+                              <div className="space-y-2">
+                                <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">อัตราค่าแรง (บาท/ชม.)</label>
+                                <div className="relative">
+                                  <input
+                                    type="number" min="0" step="1"
+                                    value={laborRate === undefined || laborRate === null || laborRate.toString() === 'NaN' ? '' : laborRate}
+                                    onChange={(e) => setLaborRate(e.target.value === '' ? '' : Number(e.target.value))}
+                                    disabled={!canEditUnitPrice}
+                                    placeholder="0"
+                                    className="apple-input w-full bg-surface-secondary pl-8 pr-4 py-2.5 text-[15px] font-semibold rounded-lg"
+                                  />
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-on-surface-variant font-semibold">฿</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Material Management - Edit */}
+                      {(isOperator || isAdmin) && (
+                        <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
+                          <div className="flex items-center justify-between mb-4 border-b border-divider-color pb-3">
+                            <div className="flex items-center gap-2">
+                              <Package size={18} className="text-[#0066cc]" />
+                              <h3 className="text-[16px] font-semibold text-on-surface">รายการวัสดุที่ใช้ (Materials)</h3>
+                            </div>
+                            {canManageRows && (
+                              <button onClick={handleAddMaterial} className="apple-button text-[13px] bg-surface-secondary hover:bg-surface-variant text-[#0066cc]">
+                                + เพิ่มวัสดุ
+                              </button>
+                            )}
+                          </div>
+                          
+                          {materials.length > 0 ? (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left">
+                                <thead>
+                                  <tr className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider border-b border-divider-color">
+                                    <th className="pb-3 px-2">ชื่อวัสดุ</th>
+                                    <th className="pb-3 px-2 text-center w-24">จำนวน</th>
+                                    <th className="pb-3 px-2 text-center w-16">หน่วย</th>
+                                    {canViewFinancialData && <th className="pb-3 px-2 text-right w-32">ราคา/หน่วย</th>}
+                                    {canManageRows && <th className="pb-3 w-10"></th>}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {materials.map((mat) => (
+                                    <tr key={mat.id} className="border-b border-divider-color/50 last:border-0 group">
+                                      <td className="py-2 px-2">
                                         <select
                                           value={mat.name}
                                           onChange={(e) => handleMaterialChange(mat.id, 'name', e.target.value)}
-                                          className="w-full text-sm font-bold border border-slate-200 rounded-lg bg-white px-2.5 py-1.5 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                          disabled={!canEditMaterialNameQty}
+                                          className="apple-input w-full bg-surface-bright px-2 py-1.5 text-[14px] font-medium"
                                         >
-                                          {STANDARD_MATERIALS.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                          ))}
+                                          {STANDARD_MATERIALS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                         </select>
-                                      ) : (
-                                        <span className="px-2.5 py-1.5 block font-bold text-slate-800 bg-slate-100/50 rounded-lg border border-slate-200/40">
-                                          {mat.name}
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center">
-                                      {canEditMaterialNameQty ? (
+                                      </td>
+                                      <td className="py-2 px-2">
                                         <input
                                           type="number"
-                                          min="1"
-                                          value={mat.quantity === undefined || mat.quantity === null || mat.quantity.toString() === 'NaN' ? '' : mat.quantity}
-                                          onChange={(e) => handleMaterialChange(mat.id, 'quantity', e.target.value === '' ? '' as any : Number(e.target.value))}
-                                          className="w-20 px-2 py-1.5 text-center text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                                          value={mat.quantity || ''}
+                                          onChange={(e) => handleMaterialChange(mat.id, 'quantity', Number(e.target.value))}
+                                          disabled={!canEditMaterialNameQty}
+                                          className="apple-input w-full bg-surface-bright px-1 py-1.5 text-center text-[14px] font-medium"
                                         />
-                                      ) : (
-                                        <span className="font-mono text-slate-800">{mat.quantity}</span>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center">
-                                      <span className="text-xs text-slate-500 font-bold">{mat.unit || 'ชิ้น'}</span>
-                                    </td>
-                                    {canViewFinancialData && (
-                                      <>
-                                        <td className="px-4 py-2.5 text-right">
-                                          {canEditUnitPrice ? (
-                                            <div className="relative inline-block w-full">
-                                              <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={mat.unitPrice === undefined || mat.unitPrice === null || mat.unitPrice.toString() === 'NaN' ? '' : mat.unitPrice}
-                                                onChange={(e) => handleMaterialChange(mat.id, 'unitPrice', e.target.value === '' ? '' as any : Number(e.target.value))}
-                                                className="w-full pl-6 pr-2 py-1.5 text-right text-sm font-bold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                                              />
-                                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">฿</span>
-                                            </div>
-                                          ) : (
-                                            <span className="font-mono text-slate-800">฿{(Number(mat.unitPrice) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                          )}
-                                        </td>
-                                        <td className="px-4 py-2.5 text-right font-mono text-slate-900 bg-slate-100/10">
-                                          ฿{((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </td>
-                                      </>
-                                    )}
-                                    {canManageRows && (
-                                      <td className="px-4 py-2.5 text-center">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveMaterial(mat.id)}
-                                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                          title="ลบแถววัสดุ"
-                                        >
-                                          <Trash2 size={16} />
-                                        </button>
                                       </td>
-                                    )}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                      <td className="py-2 px-2 text-center text-[13px] text-on-surface-variant">{mat.unit}</td>
+                                      {canViewFinancialData && (
+                                        <td className="py-2 px-2">
+                                          <input
+                                            type="number"
+                                            value={mat.unitPrice || ''}
+                                            onChange={(e) => handleMaterialChange(mat.id, 'unitPrice', Number(e.target.value))}
+                                            disabled={!canEditUnitPrice}
+                                            className="apple-input w-full bg-surface-bright px-2 py-1.5 text-right text-[14px] font-medium"
+                                          />
+                                        </td>
+                                      )}
+                                      {canManageRows && (
+                                        <td className="py-2 text-right">
+                                          <button onClick={() => handleRemoveMaterial(mat.id)} className="p-1.5 text-error opacity-50 hover:opacity-100 hover:bg-error-container/30 rounded-full transition-all">
+                                            <Trash2 size={16} />
+                                          </button>
+                                        </td>
+                                      )}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <div className="py-6 text-center border border-dashed border-divider-color rounded-lg text-on-surface-variant">
+                              <p className="text-[13px] font-medium">ไม่มีรายการวัสดุ</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                            {/* Materials Cost Summary Card */}
-                            {canViewFinancialData && (
-                              <div className="bg-slate-100/60 border-t border-slate-200/80 px-6 py-4 flex items-center justify-between text-slate-800">
-                                <span className="text-[10px] font-black uppercase text-muted tracking-wider">
-                                  สรุปยอดวัสดุ Rework ทั้งหมด
-                                </span>
-                                <div className="flex items-center gap-1 font-black text-base text-accent">
-                                  <span className="text-xs">ราคารวมทั้งสิ้น:</span>
-                                  <span className="font-mono">
-                                    ฿{materials.reduce((sum, mat) => sum + ((Number(mat.quantity) || 0) * (Number(mat.unitPrice) || 0)), 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
+                      {/* Workflow / Resolution - Edit */}
+                      {(isOperator || isAdmin) && (
+                        <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <PenTool size={18} className="text-[#0066cc]" />
+                            <h3 className="text-[16px] font-semibold text-on-surface">วิธีแก้ไขปัญหา (Resolution Method)</h3>
                           </div>
-                        ) : (
-                          <div className="py-8 px-4 flex flex-col items-center justify-center text-center text-slate-400">
-                            <Package size={28} className="mb-2 opacity-25" />
-                            <p className="text-xs font-bold">ยังไม่มีข้อมูลรายการวัสดุสำหรับเคส Rework นี้</p>
-                            {canManageRows && (
-                              <p className="text-[10px] text-slate-400/80 mt-1">
-                                กรุณากดปุ่ม "+ เพิ่มวัสดุ" ด้านบนขวาเพื่อบันทึกรายการวัสดุมาตรฐาน
-                              </p>
-                            )}
-                          </div>
+                          <textarea
+                            value={resolutionMethod}
+                            onChange={(e) => setResolutionMethod(e.target.value)}
+                            placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
+                            className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-[14px] font-medium text-on-surface min-h-[100px] leading-relaxed"
+                          />
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                ) : (
+                  /* =========================================
+                     VIEW MODE SCREEN (Prototype Style)
+                     ========================================= */
+                  <div className="bg-system-background rounded-[16px] w-full max-w-5xl flex flex-col shadow-[0_24px_48px_rgba(0,0,0,0.12)] border border-[rgba(0,0,0,0.08)] overflow-hidden max-h-[90vh]">
+                    {/* Header */}
+                    <div className="flex justify-between items-start px-6 pt-10 pb-4 border-b border-divider-color bg-system-background z-10 shrink-0">
+                      <div>
+                        <h1 className="text-[32px] font-semibold tracking-tight text-on-surface">Update Status</h1>
+                        <p className="text-[15px] text-on-surface-variant mt-1">{previewCaseName || caseData?.id}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isAdmin && (
+                          <button
+                            onClick={handleDelete}
+                            disabled={isLoading}
+                            className="text-[13px] font-semibold text-[#ff3b30] bg-[#fff2f2] px-4 py-2 rounded-full hover:bg-[#ff3b30]/10 transition-all"
+                          >
+                            Delete
+                          </button>
                         )}
+                        <button onClick={handleRequestClose} className="text-on-surface-variant hover:bg-surface-secondary p-2 rounded-full transition-colors focus:outline-none">
+                          <X size={24} />
+                        </button>
                       </div>
                     </div>
 
-                    {/* ===== UPDATE WORKFLOW SECTION ===== */}
-                    <div className="space-y-6 pt-4">
-                      <div className="flex items-center gap-2">
-                        <Clock size={16} className="text-accent" />
-                        <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
-                          จัดการสถานะและขั้นตอนงาน
-                        </label>
+                    {/* Meta Info Bar */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-6 py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
+                          <span className="text-[13px] font-medium">Source</span>
+                        </div>
+                        <div className="text-[15px] font-medium text-on-surface">{caseData?.source}</div>
                       </div>
-
-                      {/* Status Selector */}
-                      <div className="grid grid-cols-4 gap-4">
-                        {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
-                          const isActive = caseStatus === status;
-                          const isAllowed = isAdmin || (
-                            isOperator && 
-                            (caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && 
-                            (status === 'Pending' || status === 'In-Progress')
-                          );
-                          return (
-                            <button
-                              key={status}
-                              type="button"
-                              disabled={!isAllowed}
-                              onClick={() => setCaseStatus(status)}
-                              className={`p-4 rounded-2xl border-2 font-bold text-center transition-all flex flex-col items-center justify-center gap-1 ${isActive
-                                ? 'border-accent bg-accent/5 text-accent shadow-lg shadow-accent/5'
-                                : isAllowed 
-                                  ? 'border-slate-100 bg-white text-slate-400 hover:border-slate-200 hover:text-slate-600'
-                                  : 'border-slate-100 bg-slate-50 text-slate-300 opacity-50 cursor-not-allowed'
-                                }`}
-                            >
-                              {getStatusIcon(status)}
-                              <span className="text-[10px] leading-tight">{getStatusLabel(status)}</span>
-                            </button>
-                          );
-                        })}
+                      <div>
+                        <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
+                          <span className="text-[13px] font-medium">Case Number</span>
+                        </div>
+                        <div className="text-[15px] font-medium text-on-surface">{getCaseNumber(caseData?.caseName, caseData?.id)}</div>
                       </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
+                          <span className="text-[13px] font-medium">Date</span>
+                        </div>
+                        <div className="text-[15px] font-medium text-on-surface">{formatThaiDate(caseData?.timestamp || caseData?.date)}</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
+                          <span className="text-[13px] font-medium">Quantity</span>
+                        </div>
+                        <div className="text-[15px] font-medium text-on-surface">{caseData?.items?.length} รายการ</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
+                          <span className="text-[13px] font-medium">Status</span>
+                        </div>
+                        {caseData && <StatusBadge status={caseStatus} />}
+                      </div>
+                    </div>
 
-                      {/* Input fields based on status */}
-                      <AnimatePresence mode="wait">
-                        {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isOperator && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="space-y-3 bg-blue-50/50 p-6 rounded-2xl border border-blue-100"
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <PenTool size={16} className="text-blue-600" />
-                              <label className="text-xs font-bold text-blue-900">วิธีแก้ไขปัญหา (Resolution Method) *</label>
-                            </div>
-                            <textarea
-                              value={resolutionMethod}
-                              onChange={(e) => setResolutionMethod(e.target.value)}
-                              placeholder="กรอกรายละเอียดการแก้ไขปัญหา..."
-                              className="w-full px-4 py-3 rounded-xl border border-blue-200 bg-white text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none min-h-[100px]"
-                            />
-                            <div className="flex flex-col gap-1">
-                              <p className="text-[10px] text-blue-600 font-bold">💡 สถานะปัจจุบัน: {getStatusLabel(caseData.status)}</p>
-                              <p className="text-[10px] text-blue-600 font-bold">⚠️ เมื่อกรอกวิธีแก้ไขและบันทึก สถานะจะเปลี่ยนเป็น "รอประเมินราคา" อัตโนมัติ</p>
-                            </div>
-                          </motion.div>
-                        )}
+                    {/* Section Header */}
+                    <div className="px-6 py-3 bg-surface-secondary/50 border-b border-divider-color shrink-0 flex items-center gap-2 text-on-surface">
+                      <FileText size={20} />
+                      <span className="text-[18px] font-semibold">Item Details</span>
+                    </div>
 
-                        {caseData?.status === 'Awaiting Valuation' && isFinance && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="space-y-5 bg-purple-50/50 p-6 rounded-2xl border border-purple-100"
-                          >
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <PenTool size={14} className="text-slate-400" />
-                                <label className="text-[10px] font-bold text-muted uppercase">วิธีแก้ไขปัญหา (Read-only)</label>
+                    {/* Scrollable Content */}
+                    <div className="overflow-y-auto flex-1 custom-scrollbar p-6 bg-surface-bright space-y-6">
+                      
+                      {caseData?.items.map((item, idx) => {
+                        const images = item.imageUrls || [];
+                        return (
+                          <div key={idx} className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-5 hover:border-[rgba(0,0,0,0.15)] transition-colors">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <h3 className="font-semibold text-on-surface text-[16px]">{item.itemName}</h3>
+                                <div className="text-[13px] text-on-surface-variant mt-1 flex gap-2 items-center">
+                                  <span className="bg-surface-secondary px-2 py-0.5 rounded-full font-medium">{item.customerName || 'N/A'}</span>
+                                  <span>SN: {item.itemNumber || '-'}</span>
+                                </div>
                               </div>
-                              <div className="bg-white/50 px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-600">
-                                {resolutionMethod || '-'}
+                              <div className="text-right">
+                                <div className="font-semibold text-on-surface text-[18px]">{item.amount} <span className="text-[13px] text-on-surface-variant font-normal">pcs</span></div>
                               </div>
                             </div>
-
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Calculator size={16} className="text-purple-600" />
-                                <label className="text-xs font-bold text-purple-900">ราคาประเมิน (Rework Cost) *</label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-4 border-t border-divider-color/50">
+                              <div>
+                                <h4 className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Details</h4>
+                                <p className="text-[14px] text-on-surface leading-relaxed whitespace-pre-wrap">{item.details || 'ไม่มีข้อมูล'}</p>
                               </div>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  value={reworkCost}
-                                  onChange={(e) => setReworkCost(e.target.value)}
-                                  disabled={userRole !== UserRole.FINANCE && !isAdmin}
-                                  placeholder="0.00"
-                                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-purple-200 bg-white text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all outline-none font-bold"
-                                />
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 font-bold">฿</span>
-                                {userRole !== UserRole.FINANCE && !isAdmin && (
-                                  <div className="mt-2 flex items-center gap-1.5 text-red-500">
-                                    <AlertCircle size={12} />
-                                    <span className="text-[10px] font-bold uppercase">เฉพาะฝ่ายการเงินเท่านั้นที่สามารถระบุราคาได้</span>
+                              <div>
+                                <h4 className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2 flex justify-between">
+                                  <span>Images ({images.length})</span>
+                                  {item.imageFolderUrl && <a href={item.imageFolderUrl} target="_blank" rel="noopener noreferrer" className="text-[#0066cc] hover:underline normal-case">Drive</a>}
+                                </h4>
+                                {images.length > 0 ? (
+                                  <div className="flex gap-2 overflow-x-auto pb-2">
+                                    {images.map((url, i) => (
+                                      <div key={i} onClick={() => setLightboxUrl(url)} className="w-16 h-16 rounded-lg overflow-hidden shrink-0 cursor-pointer border border-divider-color hover:opacity-80 transition-opacity">
+                                        <DriveImage src={url} alt="Item" className="w-full h-full object-cover" />
+                                      </div>
+                                    ))}
                                   </div>
+                                ) : (
+                                  <div className="text-[13px] text-on-surface-variant italic">ไม่มีรูปภาพ</div>
                                 )}
                               </div>
                             </div>
-                            <p className="text-[10px] text-purple-600 font-bold">⚠️ เมื่อบันทึก สถานะจะเปลี่ยนเป็น "เสร็จสิ้น" อัตโนมัติ</p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
+                          </div>
+                        );
+                      })}
 
-                  {/* Footer — ปุ่ม Export + ปุ่ม Action */}
-                  <div className="bg-slate-50 px-8 py-5 flex items-center justify-between border-t border-slate-200">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => caseData && exportPNG(caseData.id)}
-                        disabled={isExporting || !caseData}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40"
-                      >
-                        <FileImage size={14} /> PNG
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => caseData && exportPDF(caseData.id)}
-                        disabled={isExporting || !caseData}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-40"
-                      >
-                        <Download size={14} /> PDF
-                      </button>
-                    </div>
-
-                    <div className="flex gap-3 items-center">
-                      {!isSaving && isAdmin && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setIsEditMode(!isEditMode)}
-                            disabled={isLoading}
-                            className={`px-6 py-2.5 rounded-xl border text-sm font-semibold transition-colors disabled:opacity-50 ${
-                              isEditMode 
-                              ? 'bg-amber-50 border-amber-200 text-amber-700' 
-                              : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-                            }`}
-                          >
-                            {isEditMode ? 'ยกเลิกการแก้ไข' : 'แก้ไขข้อมูล'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleDelete}
-                            disabled={isLoading}
-                            className="px-6 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-50"
-                          >
-                            ลบรายการ
-                          </button>
-                        </>
-                      )}
-                      {!isSaving && (
-                        <button
-                          type="button"
-                          onClick={onClose}
-                          disabled={isLoading}
-                          className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-50"
-                        >
-                          ยกเลิก
-                        </button>
-                      )}
-                      {isSaving ? (
-                        <div className="w-72 flex items-center">
-                          <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
+                      {/* Display OR Files if exist */}
+                      {caseData?.orFilesUrls && caseData.orFilesUrls.length > 0 && (
+                        <div className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-5">
+                          <h4 className="text-[13px] font-semibold text-on-surface-variant uppercase tracking-wider mb-3">เอกสาร OR</h4>
+                          <div className="flex gap-3">
+                            {caseData.orFilesUrls.map((url, i) => (
+                              <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-surface-secondary rounded-full text-[#0066cc] text-[13px] font-semibold hover:bg-surface-variant transition-colors">
+                                <ExternalLink size={14} /> OR {i + 1}
+                              </a>
+                            ))}
+                          </div>
                         </div>
-                      ) : (
-                        <motion.button
-                          type="button"
-                          onClick={handleUpdate}
-                          disabled={(() => {
-                            if (isLoading || !caseData) return true;
-                            // Allow saving if user selected new OR files (retroactive OR upload)
-                            if (newOrFiles.length > 0 && (isOperator || isFinance || isAdmin)) return false;
-                            if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
-                            if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB && !isOperator) return true;
-                            if (caseData.status === 'Completed' && !isAdmin) return true;
-                            return false;
-                          })()}
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.99 }}
-                          className="px-8 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:bg-slate-900 active:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
-                        >
-                          {isLoading ? (
-                            <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> กำลังบันทึก...</>
-                          ) : 'ยืนยันการบันทึก'}
-                        </motion.button>
                       )}
+
+                      {/* Financial / Workflow Section in View Mode */}
+                      {(isOperator || isAdmin || isFinance) && (
+                        <div className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-5 space-y-6">
+                          <div className="flex items-center gap-2 mb-2 border-b border-divider-color pb-3">
+                            <Landmark size={18} className="text-[#0066cc]" />
+                            <h3 className="text-[16px] font-semibold text-on-surface">Workflow & Financials</h3>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                              {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
+                                const isActive = caseStatus === status;
+                                const isAllowed = isAdmin || (
+                                  isOperator &&
+                                  (caseData?.status === 'Pending' || caseData?.status === 'In-Progress') &&
+                                  (status === 'Pending' || status === 'In-Progress')
+                                );
+                                return (
+                                  <button
+                                    key={status}
+                                    type="button"
+                                    disabled={!isAllowed}
+                                    onClick={() => setCaseStatus(status)}
+                                    className={`px-4 py-1.5 rounded-full font-medium text-[13px] transition-all border ${isActive
+                                      ? 'bg-apple-blue-deep text-white border-apple-blue-deep shadow-sm'
+                                      : isAllowed
+                                        ? 'bg-surface-secondary text-on-surface border-divider-color hover:bg-surface-variant'
+                                        : 'bg-transparent text-on-surface-variant border-transparent cursor-not-allowed opacity-50'
+                                      }`}
+                                  >
+                                    {getStatusLabel(status)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Operator resolution text block */}
+                            {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isOperator && (
+                               <div className="space-y-2 mt-4">
+                                  <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">วิธีแก้ไขปัญหา (Resolution Method)</label>
+                                  <textarea
+                                    value={resolutionMethod}
+                                    onChange={(e) => setResolutionMethod(e.target.value)}
+                                    placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
+                                    className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-[14px] font-medium text-on-surface min-h-[80px]"
+                                  />
+                               </div>
+                            )}
+
+                            {/* Finance valuation input block */}
+                            {caseData?.status === 'Awaiting Valuation' && isFinance && (
+                              <div className="space-y-4 mt-4 bg-surface-bright p-4 rounded-lg border border-divider-color">
+                                <div className="space-y-1">
+                                  <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">วิธีแก้ไขปัญหา (Read-only)</label>
+                                  <p className="text-[14px] font-medium text-on-surface">{resolutionMethod || '-'}</p>
+                                </div>
+                                <div className="space-y-1 pt-3 border-t border-divider-color">
+                                  <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ราคาประเมินจริง (Actual Cost)</label>
+                                  <div className="relative max-w-xs">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-on-surface font-semibold">฿</span>
+                                    <input
+                                      type="number"
+                                      value={reworkCost}
+                                      onChange={(e) => setReworkCost(e.target.value)}
+                                      disabled={userRole !== UserRole.FINANCE && !isAdmin}
+                                      placeholder="0.00"
+                                      className="apple-input w-full bg-system-background pl-8 pr-4 py-2 text-[16px] font-semibold rounded-lg text-on-surface"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Grand Total display if available */}
+                            {canViewFinancialData && reworkCost !== '' && (
+                               <div className="flex justify-between items-center bg-surface-variant/50 p-4 rounded-lg mt-2">
+                                  <span className="text-[14px] font-semibold text-on-surface">Grand Total (Rework Cost)</span>
+                                  <span className="text-[18px] font-bold text-apple-blue-deep">฿{Number(reworkCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                               </div>
+                            )}
+
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-divider-color bg-system-background px-6 py-4 flex justify-between items-center shrink-0 rounded-b-[16px]">
+                      <div className="flex gap-4 items-center">
+                        <button onClick={() => caseData && exportPNG(caseData.id)} disabled={isExporting || !caseData} className="text-[13px] font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
+                          <FileImage size={16} /> PNG
+                        </button>
+                        <button onClick={() => caseData && exportPDF(caseData.id)} disabled={isExporting || !caseData} className="text-[13px] font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
+                          <Download size={16} /> PDF
+                        </button>
+                      </div>
+                      
+                      <div className="flex gap-3 items-center">
+                        {isAdmin && (
+                          <button onClick={handleToggleEditMode} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-[14px]">
+                            Edit Mode
+                          </button>
+                        )}
+                        {isSaving ? (
+                          <div className="w-48"><AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} /></div>
+                        ) : (
+                          <button
+                            onClick={handleSaveStatus}
+                            disabled={(() => {
+                              if (isLoading || !caseData) return true;
+                              if (newOrFiles.length > 0 && (isOperator || isFinance || isAdmin)) return false;
+                              if (caseData.status === 'Awaiting Valuation' && !isFinance) return true;
+                              if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB && !isOperator) return true;
+                              if (caseData.status === 'Completed' && !isAdmin) return true;
+                              return false;
+                            })()}
+                            className="apple-button apple-button-primary shadow-md text-[14px]"
+                          >
+                            Save Status
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </motion.div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* Lightbox component remains same */}
+
+            {/* Lightbox component remains same */}
       <AnimatePresence>
         {lightboxUrl && (
           <>

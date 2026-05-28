@@ -6,6 +6,7 @@ import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLef
 
 import type { ReworkCase, ReworkItem } from '../../services/api';
 import type { User } from '../../services/auth';
+import { PermissionsModal } from '../modals/PermissionsModal';
 
 const OverallTab = React.lazy(async () => {
   const mod = await import('../tabs/OverallTab');
@@ -147,6 +148,7 @@ export function MainLayout({
   onBackToPortal,
 }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = React.useState(false);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
@@ -246,16 +248,26 @@ export function MainLayout({
         )}
 
         <div className="mt-8 border-t border-white/20 pt-8">
-          <div className="flex cursor-pointer items-center justify-between rounded-lg bg-white/40 border border-white/30 px-3 py-3 text-sm transition-all hover:bg-white/60">
-            <span className="font-semibold text-slate-800">{userName || 'User'}</span>
-            <span className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase leading-none text-primary">
-              {String(userRole || 'Admin')}
-            </span>
+          <div 
+            onClick={() => setIsPermissionsModalOpen(true)}
+            className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-white/40 border border-white/30 px-3.5 py-3 text-sm transition-all hover:bg-white hover:border-primary/20 shadow-sm"
+            title="คลิกเพื่อดูสิทธิ์การใช้งาน"
+          >
+            {/* User Avatar Circle */}
+            <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-black text-xs group-hover:bg-primary group-hover:text-white transition-all uppercase">
+              {userName ? userName.charAt(0) : 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-slate-800 truncate leading-tight mb-0.5">{userName || 'User'}</p>
+              <span className="inline-flex rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none text-primary tracking-wider">
+                {String(userRole || 'Admin')}
+              </span>
+            </div>
           </div>
           <button
             type="button"
             onClick={onLogout}
-            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-on-surface-variant transition-all hover:bg-red-500/10 hover:text-red-600 active:scale-95"
+            className="mt-3 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant transition-all hover:bg-red-500/10 hover:text-red-600 active:scale-95"
           >
             <LogOut size={16} />
             Sign Out
@@ -271,16 +283,28 @@ export function MainLayout({
             <img src="/img/logo.png" alt="" className="h-8 object-contain" />
             <span className="text-sm font-bold">QSMS Rework</span>
           </div>
-          <button
-            onClick={toggleSidebar}
-            className="rounded-lg p-2 text-foreground hover:bg-slate-100"
-          >
-            {isSidebarOpen ? <X size={20} /> : <div className="space-y-1">
-              <div className="h-0.5 w-5 bg-foreground"></div>
-              <div className="h-0.5 w-5 bg-foreground"></div>
-              <div className="h-0.5 w-5 bg-foreground"></div>
-            </div>}
-          </button>
+          
+          <div className="flex items-center gap-3">
+            {/* Clickable Mobile Role Badge */}
+            <button
+              onClick={() => setIsPermissionsModalOpen(true)}
+              className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[9px] font-black uppercase leading-none text-primary tracking-wider transition-transform active:scale-95"
+              title="สิทธิ์การใช้งาน"
+            >
+              {String(userRole || 'Admin')}
+            </button>
+
+            <button
+              onClick={toggleSidebar}
+              className="rounded-lg p-2 text-foreground hover:bg-slate-100"
+            >
+              {isSidebarOpen ? <X size={20} /> : <div className="space-y-1">
+                <div className="h-0.5 w-5 bg-foreground"></div>
+                <div className="h-0.5 w-5 bg-foreground"></div>
+                <div className="h-0.5 w-5 bg-foreground"></div>
+              </div>}
+            </button>
+          </div>
         </div>
 
         <Suspense fallback={<TabFallback />}>
@@ -373,6 +397,13 @@ export function MainLayout({
           </AnimatePresence>
         </Suspense>
       </main>
+
+      <PermissionsModal
+        isOpen={isPermissionsModalOpen}
+        onClose={() => setIsPermissionsModalOpen(false)}
+        userName={userName}
+        userRole={userRole}
+      />
     </div>
   );
 }
