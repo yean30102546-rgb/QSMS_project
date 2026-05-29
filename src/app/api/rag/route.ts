@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { GoogleGenAI } from '@google/genai';
-import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { MarkdownTextSplitter } from '@langchain/textsplitters';
 import * as XLSX from 'xlsx';
 
 interface DocumentChunk {
@@ -85,16 +85,29 @@ export async function POST(request: Request) {
           throw docError;
         }
 
-        // 2. Parse file content (Gemini for PDF, xlsx parser for Excel)
+        // 2. Parse file content (Gemini for PDF/Images, xlsx parser for Excel)
         let parsedText = '';
 
-        if (fileType === 'pdf') {
-          const mimeType = 'application/pdf';
-          const parsePrompt = 'จงสกัดข้อมูลรายละเอียดทั้งหมดในเอกสารนี้ให้ออกมาเป็นข้อความโครงสร้าง JSON ที่ระบุค่าฟิลด์แต่ละหัวข้อ และตรวจดูว่ามีรูปภาพใดๆ (เช่น แกลลอน, ฝา, พาเลท) หรือไม่ พร้อมเขียนคำอธิบายรายละเอียดของรูปภาพเหล่านั้นอย่างลึกซึ้ง';
+        if (fileType === 'pdf' || fileType.startsWith('image/')) {
+          let mimeType = fileType === 'pdf' ? 'application/pdf' : fileType;
+          // Clean up generic image types if passed
+          if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+          
+          const parsePrompt = `วิเคราะห์เอกสาร/รูปภาพนี้อย่างละเอียด และแปลงเป็นรูปแบบ Markdown (ใช้ # หรือ ## ในการแบ่งหัวข้อ) 
+สิ่งที่ต้องทำ:
+1. วิเคราะห์หมวดหมู่ของเอกสาร (Document Category) และคำค้นหาหลัก (Keywords) แล้วใส่ไว้ในส่วนบนสุดของไฟล์เสมอ ในรูปแบบ:
+# Document Metadata
+- Category: [หมวดหมู่ เช่น คู่มือ, ฉลากสินค้า, แจ้งซ่อม]
+- Keywords: [คำค้นหาที่เกี่ยวข้อง คั่นด้วยลูกน้ำ]
 
-          console.log(`🤖 Requesting Gemma 4 26B parsing for PDF ${filename}...`);
+2. ถอดความข้อมูลทั้งหมดในเอกสารนี้ออกมาให้ครบถ้วน 
+3. หากมีรูปภาพหรือแผนผังแทรกอยู่ (เช่น แกลลอน, ฝา, พาเลท) ให้อธิบายรูปภาพนั้นอย่างละเอียดและเชื่อมโยงกับเนื้อหา
+
+จัดหน้าด้วย Markdown เสมอเพื่อให้แบ่ง Chunking ตามหัวข้อได้อย่างแม่นยำ`;
+
+          console.log(`🤖 Requesting Gemini 2.5 Flash parsing for ${filename} (${mimeType})...`);
           const parseResponse = await ai.models.generateContent({
-            model: 'gemma-4-26b-a4b-it',
+            model: 'gemini-2.5-flash',
             contents: [
               { inlineData: { mimeType, data: base64Data } },
               { text: parsePrompt }
@@ -102,12 +115,12 @@ export async function POST(request: Request) {
           });
 
           parsedText = parseResponse.text || '';
-        } else if (fileType === 'xlsx') {
+        } else if (fileType === 'xlsx' || fileType === 'xls') {
           console.log(`📊 Parsing Excel file server-side with SheetJS for ${filename}...`);
           try {
             const buffer = Buffer.from(base64Data, 'base64');
             const workbook = XLSX.read(buffer, { type: 'buffer' });
-            let excelText = '';
+            let excelText = `# Document Metadata\n- Category: Excel Data\n- Keywords: Spreadsheet, Data, ${filename.split('.')[0]}\n\n`;
 
             for (const sheetName of workbook.SheetNames) {
               const worksheet = workbook.Sheets[sheetName];
@@ -120,7 +133,7 @@ export async function POST(request: Request) {
                 .join('\n');
 
               if (sheetText.trim()) {
-                excelText += `### Sheet: ${sheetName}\n${sheetText}\n\n`;
+                excelText += `## Sheet: ${sheetName}\n${sheetText}\n\n`;
               }
             }
 
@@ -139,54 +152,69 @@ export async function POST(request: Request) {
 
         console.log(`📝 Parsing completed. Length: ${parsedText.length} characters.`);
 
-        // 3. Chunk the parsed text using LangChain
-        const splitter = new RecursiveCharacterTextSplitter({
-          chunkSize: 1000,
+        // 3. Chunk the parsed text using LangChain MarkdownTextSplitter (Semantic Chunking)
+        const splitter = new MarkdownTextSplitter({
+          chunkSize: 1200,
           chunkOverlap: 200,
         });
         const langChainDocs = await splitter.createDocuments([parsedText]);
         const chunks = langChainDocs.map(d => d.pageContent).filter(c => c.length > 30);
         console.log(`📦 Generated ${chunks.length} chunks for indexing.`);
 
-        // 4. Generate embeddings (Batch processing to avoid rate limit 429)
-        console.log(`✨ Generating embeddings in batches...`);
-        const BATCH_SIZE = 5;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // 4. Generate embeddings using Jina AI (768 dimensions to fit schema)
+        console.log(`✨ Generating embeddings using Jina AI...`);
         const allInsertRecords: any[] = [];
+        const jinaApiKey = process.env.JINA_API_KEY || '';
 
+        if (!jinaApiKey) {
+          throw new Error('JINA_API_KEY is not configured on the server. Please check your .env configuration.');
+        }
+
+        const BATCH_SIZE = 20;
         for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
           const batchChunks = chunks.slice(i, i + BATCH_SIZE);
-          console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(chunks.length / BATCH_SIZE)}...`);
+          console.log(`Processing Jina batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(chunks.length / BATCH_SIZE)}...`);
 
-          const embedPromises = batchChunks.map(async (chunk) => {
-            try {
-              const embedResponse = await ai.models.embedContent({
-                model: 'gemini-embedding-2',
-                contents: chunk,
-                config: { outputDimensionality: 768 }
-              });
-              return {
-                chunk,
-                embeddingValues: embedResponse.embeddings?.[0]?.values
-              };
-            } catch (err) {
-              console.error('Error embedding chunk:', err);
-              return { chunk, embeddingValues: null };
+          try {
+            const jinaRes = await fetch('https://api.jina.ai/v1/embeddings', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${jinaApiKey}`
+              },
+              body: JSON.stringify({
+                model: 'jina-embeddings-v5-text-small',
+                dimensions: 768,
+                normalized: true,
+                input: batchChunks
+              })
+            });
+
+            if (!jinaRes.ok) {
+              const errorText = await jinaRes.text();
+              throw new Error(`Jina API error (${jinaRes.status}): ${errorText}`);
             }
-          });
 
-          const results = await Promise.all(embedPromises);
+            const jinaData = await jinaRes.json();
+            const embeddingsList = jinaData.data || [];
 
-          results.forEach(res => {
-            if (res.embeddingValues) {
-              allInsertRecords.push({
-                document_id: docRecord.id,
-                content: res.chunk,
-                embedding: res.embeddingValues,
-                image_urls: imageUrls || []
-              });
-            }
-          });
+            batchChunks.forEach((chunk, index) => {
+              const embeddingValues = embeddingsList[index]?.embedding;
+              if (embeddingValues && embeddingValues.length === 768) {
+                allInsertRecords.push({
+                  document_id: docRecord.id,
+                  content: chunk,
+                  embedding: embeddingValues,
+                  image_urls: imageUrls || []
+                });
+              } else {
+                console.warn(`⚠️ Warning: Missing or invalid embedding at index ${index} in batch.`);
+              }
+            });
+          } catch (err) {
+            console.error('Error generating Jina embeddings for batch:', err);
+            throw err;
+          }
         }
 
         // 5. Bulk insert into Supabase
@@ -207,39 +235,78 @@ export async function POST(request: Request) {
       }
 
       case 'chat': {
-        const { message } = body;
+        const { message, messages = [] } = body;
         if (!message) {
           return NextResponse.json({ success: false, error: 'Missing query message' }, { status: 400 });
         }
 
         console.log(`💬 Processing chat query: "${message.substring(0, 50)}..."`);
 
-        // 1. Generate query embedding vector
-        const embedResponse = await ai.models.embedContent({
-          model: 'gemini-embedding-2',
-          contents: message,
-          config: { outputDimensionality: 768 }
-        });
-
-        const queryEmbedding = embedResponse.embeddings?.[0]?.values;
-        if (!queryEmbedding) {
-          throw new Error('Failed to generate embedding for the search query.');
+        // 1. Generate query embedding vector using Jina AI
+        const jinaApiKey = process.env.JINA_API_KEY || '';
+        if (!jinaApiKey) {
+          throw new Error('JINA_API_KEY is not configured on the server. Please check your .env configuration.');
         }
 
-        // 2. Search similarity using Supabase RPC function
-        console.log('🔍 Executing similarity search in database...');
-        const { data: matchedChunks, error: matchError } = await supabaseServer.rpc(
-          'match_document_chunks',
+        console.log('✨ Generating query embedding via Jina AI...');
+        const jinaRes = await fetch('https://api.jina.ai/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jinaApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'jina-embeddings-v5-text-small',
+            dimensions: 768,
+            normalized: true,
+            input: [message]
+          })
+        });
+
+        if (!jinaRes.ok) {
+          const errorText = await jinaRes.text();
+          throw new Error(`Jina API error (${jinaRes.status}): ${errorText}`);
+        }
+
+        const jinaData = await jinaRes.json();
+        const queryEmbedding = jinaData.data?.[0]?.embedding;
+
+        if (!queryEmbedding || queryEmbedding.length !== 768) {
+          throw new Error('Failed to generate embedding for the search query via Jina.');
+        }
+
+        // 2. Search similarity using Supabase RPC function (Hybrid Search)
+        console.log('🔍 Executing Hybrid Search in database...');
+        let matchedChunks: any = [];
+        
+        // Try hybrid search first
+        const { data: hybridData, error: hybridError } = await supabaseServer.rpc(
+          'hybrid_search_chunks',
           {
+            query_text: message,
             query_embedding: queryEmbedding,
-            match_threshold: 0.3,
             match_count: 5
           }
         );
 
-        if (matchError) {
-          console.error('❌ Error executing match_document_chunks RPC:', matchError);
-          throw matchError;
+        if (hybridError || !hybridData) {
+          console.warn('⚠️ Hybrid search failed or not available, falling back to pure vector search:', hybridError);
+          const { data: vectorData, error: matchError } = await supabaseServer.rpc(
+            'match_document_chunks',
+            {
+              query_embedding: queryEmbedding,
+              match_threshold: 0.3,
+              match_count: 5
+            }
+          );
+          
+          if (matchError) {
+            console.error('❌ Error executing match_document_chunks RPC:', matchError);
+            throw matchError;
+          }
+          matchedChunks = vectorData;
+        } else {
+          matchedChunks = hybridData;
         }
 
         console.log(`🎯 Found ${(matchedChunks as DocumentChunk[] | null)?.length || 0} matching document chunks.`);
@@ -252,37 +319,108 @@ export async function POST(request: Request) {
           .join('\n\n');
 
         // 4. Formulate System Prompt and request answer from Gemini
-        const systemPrompt = `You are the QSMS DocAI RAG assistant. Answer the user's questions about product packaging specifications, Master Small Packs, and Excel datasets based strictly on the retrieved context below.
+        const systemPrompt = `You are "น้องผึ้งพา" (Nong Beepa), the QSMS DocAI RAG assistant. 
+Persona: Friendly, Helpful, & Empathetic. You always communicate with a supportive, accessible tone to reduce user stress. You frequently use polite particles (ครับ/ค่ะ) and appropriate emojis (🐝✨😊👍). You are highly knowledgeable about product packaging specifications, Master Small Packs, and factory procedures.
 
 Retrieved Context:
 ${contextText}
 
 Instructions:
-1. Answer in the Thai language.
-2. Be precise and detail-oriented regarding numbers, revisions, item codes, and packaging details.
+1. Answer in the Thai language. Keep the tone friendly and encouraging.
+2. Be precise and detail-oriented regarding numbers, revisions, item codes, and packaging details from the Context.
 3. If the context contains image URLs in the image_urls list, you MUST reference them in your markdown response using standard markdown image syntax: ![description](url) so the UI can display them.
-4. If the information is not in the context, state politely that you do not have that specific document detail.
-5. DO NOT use markdown asterisks (* or **) for text formatting (like bolding or bullet points). Use plain text, numbers, or dashes (-) instead.`;
+4. If the information is not in the context, state politely that you do not have that specific document detail, and offer to help with something else.
+5. DO NOT use markdown asterisks (* or **) for text formatting (like bolding or bullet points). Use plain text, numbers, or dashes (-) instead.
+6. Suggestion Chips: At the very end of your response, you MUST append a hidden JSON block containing 3 suggested follow-up questions relevant to the topic. Format exactly like this: \`\`\`json\n{"suggested_questions": ["Question 1?", "Question 2?", "Question 3?"]}\n\`\`\`
+`;
 
-        console.log('🤖 Requesting response from Gemini chat model (using Gemma 4 26B for higher RPD)...');
-        const chatResponse = await ai.models.generateContent({
-          model: 'gemma-4-26b-a4b-it',
-          contents: [
-            { role: 'user', parts: [{ text: `${systemPrompt}\n\nUser Question: ${message}` }] }
-          ]
-        });
+        console.log('🤖 Requesting streaming response from Gemini chat model (using gemini-3.1-flash-lite)...');
+        
+        // Map conversation history
+        const historyContents = messages.map((m: any) => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }]
+        }));
 
-        return NextResponse.json({
-          success: true,
-          data: {
-            text: chatResponse.text || 'ขออภัยด้วยครับ ไม่สามารถประมวลผลคำตอบได้',
-            sources: chunks.map((c) => ({
-              content: c.content,
-              image_urls: c.image_urls,
-              similarity: c.similarity
-            }))
-          }
-        });
+        try {
+          const stream = await ai.models.generateContentStream({
+            model: 'gemini-3.1-flash-lite',
+            contents: [
+              { role: 'user', parts: [{ text: systemPrompt }] },
+              ...historyContents,
+              { role: 'user', parts: [{ text: `คำถามปัจจุบัน: ${message}` }] }
+            ]
+          });
+
+          const encoder = new TextEncoder();
+          const readableStream = new ReadableStream({
+            async start(controller) {
+              // Send metadata first (sources)
+              const metadata = { 
+                sources: chunks.map((c: any) => ({
+                  content: c.content,
+                  image_urls: c.image_urls,
+                  similarity: c.similarity
+                })) 
+              };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'metadata', data: metadata })}\n\n`));
+              
+              // Stream chunks
+              try {
+                for await (const chunk of stream) {
+                  if (chunk.text) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', data: chunk.text })}\n\n`));
+                  }
+                }
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+              } catch (err: any) {
+                console.error('Streaming error:', err);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', data: err.message || 'Stream failed' })}\n\n`));
+              } finally {
+                controller.close();
+              }
+            }
+          });
+
+          return new Response(readableStream, { 
+            headers: { 
+              'Content-Type': 'text/event-stream', 
+              'Cache-Control': 'no-cache', 
+              'Connection': 'keep-alive' 
+            } 
+          });
+
+        } catch (genErr: any) {
+          console.error('Gemini Generation Error:', genErr);
+          // If quota limit or model error occurs before stream starts, throw to be caught by main handler
+          throw genErr;
+        }
+      }
+
+      case 'feedback': {
+        const { query, response, context, is_positive } = body;
+        
+        if (!query || !response || is_positive === undefined) {
+          return NextResponse.json({ success: false, error: 'Missing required feedback fields' }, { status: 400 });
+        }
+
+        console.log(`📝 Saving RAG Feedback: ${is_positive ? '👍' : '👎'}`);
+        
+        const { error } = await supabaseServer
+          .from('rag_feedback')
+          .insert([{
+            query,
+            response,
+            context_used: context,
+            is_positive
+          }]);
+
+        if (error) {
+          // If table doesn't exist yet, we just log it and return success to not break UI
+          console.warn('⚠️ Could not save feedback (table might not exist):', error.message);
+        }
+
+        return NextResponse.json({ success: true });
       }
 
       default:
@@ -294,9 +432,13 @@ Instructions:
     let errMsg = error instanceof Error ? error.message : 'Internal Server Error';
     let statusCode = 500;
 
-    // Check for Rate Limit / Quota Exceeded from Gemini API
+    // Check for Rate Limit / Quota Exceeded from API
     if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('exceeded your current quota')) {
-      errMsg = 'โทเคนลิมิตเต็ม';
+      if (errMsg.includes('Jina API error')) {
+        errMsg = 'โควตา Jina Embeddings เต็ม (เกินจำนวน Token) โปรดตรวจสอบ API Key ของ Jina';
+      } else {
+        errMsg = 'โควตา Gemini AI เต็ม โปรดรอสักครู่หรือเปลี่ยน API Key';
+      }
       statusCode = 429;
     }
 

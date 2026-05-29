@@ -57,6 +57,27 @@ export function UpdateModal({
 
   // Materials Management
   const [materials, setMaterials] = useState<MaterialUsage[]>([]);
+  const [editExitIntent, setEditExitIntent] = useState(false);
+  const [editedCaseNumber, setEditedCaseNumber] = useState('');
+  const SOURCE_OPTIONS = ['LINE', 'Email', 'Phone', 'Other'];
+  const caseNamePrefix = 'RW-';
+  const caseNameYear = new Date().getFullYear().toString().slice(2);
+  const previewCaseName = caseData?.caseName || caseData?.id;
+  const getCaseNumber = (caseName?: string, id?: string) => caseName || id || 'Unknown';
+  const handleToggleEditMode = () => setIsEditMode(!isEditMode);
+  const handleSaveEdit = () => handleUpdate();
+  const handleSaveStatus = () => handleUpdate();
+
+  const handleRequestClose = () => {
+    if (isEditMode) {
+      if (window.confirm('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการปิดใช่หรือไม่?')) {
+        setIsEditMode(false);
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
 
   // Labor Management State
   const [laborCount, setLaborCount] = useState<number | string>('');

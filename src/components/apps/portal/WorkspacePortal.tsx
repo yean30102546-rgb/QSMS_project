@@ -1,17 +1,20 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { 
-  ArrowRight, 
-  Clock3, 
-  LayoutGrid, 
-  ShieldCheck, 
-  Sparkles, 
-  Users2, 
-  CalendarDays, 
-  Activity 
+import {
+  ArrowRight,
+  Clock3,
+  LayoutGrid,
+  ShieldCheck,
+  Sparkles,
+  Users2,
+  CalendarDays,
+  Activity
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import dynamic from 'next/dynamic';
+
+const RagApp = dynamic(() => import('../../../modules/rag/RagApp').then(mod => mod.RagApp), { ssr: false });
 
 import type { User } from '../../../services/auth';
 import type { PortalAppDefinition } from '../../../modules/platform/types';
@@ -35,7 +38,10 @@ export function WorkspacePortal({
 }: WorkspacePortalProps) {
   const isGuest = !user;
   const greetingName = user?.name || 'ผู้เยี่ยมชม';
-  
+  const [isRagOpen, setIsRagOpen] = useState(false);
+  const isDraggingMascot = React.useRef(false);
+  const [mascotState, setMascotState] = useState<'default' | 'happy' | 'drag'>('default');
+
   // Preview Stats State
   const [reworkStats, setReworkStats] = useState({
     total: 0,
@@ -109,7 +115,7 @@ export function WorkspacePortal({
           const awaitingValuation = data.filter(c => c.status === 'Awaiting Valuation').length;
           const completed = data.filter(c => c.status === 'Completed').length;
           const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-          
+
           setReworkStats({
             total,
             pending,
@@ -132,12 +138,12 @@ export function WorkspacePortal({
         if (response.success && response.data && response.data.employees) {
           const employees = response.data.employees;
           const leaves = response.data.leaves || [];
-          
+
           const today = new Date();
           const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-          
+
           const todayLeaves = leaves.filter(l => l.dateKey === todayKey);
-          
+
           const leaveSummary = { sick: 0, business: 0, vacation: 0 };
           todayLeaves.forEach(l => {
             if (l.leaveType === 'sick') leaveSummary.sick++;
@@ -148,11 +154,11 @@ export function WorkspacePortal({
           const totalEmployees = employees.length;
           const onLeaveCount = todayLeaves.length;
           const staffPresentCount = Math.max(0, totalEmployees - onLeaveCount);
-          
+
           const daysPassed = today.getDate();
           const totalLeaveDays = leaves.length;
           const expectedWorkingDays = totalEmployees * daysPassed;
-          const retentionRate = expectedWorkingDays > 0 
+          const retentionRate = expectedWorkingDays > 0
             ? Math.max(0, Math.round((1 - (totalLeaveDays / expectedWorkingDays)) * 100))
             : 100;
 
@@ -231,7 +237,7 @@ export function WorkspacePortal({
               สวัสดีคุณ{greetingName}, ยินดีต้อนรับสู่ระบบงานกลาง
             </h2>
             <p className="mt-5 max-w-2xl text-[17px] leading-7 text-[#515154]">
-              เลือกใช้งานโมดูลที่ต้องการผ่านศูนย์กลางควบคุมนี้ ระบบ Rework พร้อมใช้งานเต็มรูปแบบ 
+              เลือกใช้งานโมดูลที่ต้องการผ่านศูนย์กลางควบคุมนี้ ระบบ Rework พร้อมใช้งานเต็มรูปแบบ
               และ Roster กำลังถูกพัฒนาเป็นลำดับถัดไป เพื่อการบริหารจัดการที่ครบวงจร
             </p>
           </motion.div>
@@ -305,9 +311,8 @@ export function WorkspacePortal({
                     </h3>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-                      isActive ? 'bg-black/5 text-black' : 'bg-amber-100 text-amber-600'
-                    }`}
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${isActive ? 'bg-black/5 text-black' : 'bg-amber-100 text-amber-600'
+                      }`}
                   >
                     {isActive ? 'พร้อมใช้งาน' : 'เร็วๆ นี้'}
                   </span>
@@ -327,7 +332,7 @@ export function WorkspacePortal({
                         </span>
                         <span className="text-emerald-600 font-semibold">{reworkStats.hasData ? `${reworkStats.completionRate}%` : '--%'}</span>
                       </div>
-                      
+
                       {/* Proportional Segmented Progress Bar */}
                       <div className="relative flex h-3.5 w-full overflow-hidden rounded-full bg-slate-200/50 shadow-inner">
                         {!reworkStats.hasData ? (
@@ -339,30 +344,30 @@ export function WorkspacePortal({
                         ) : (
                           <>
                             {reworkStats.pending > 0 && (
-                              <div 
-                                style={{ width: `${(reworkStats.pending / reworkStats.total) * 100}%` }} 
-                                className="h-full bg-amber-400 transition-all duration-500 hover:brightness-95" 
+                              <div
+                                style={{ width: `${(reworkStats.pending / reworkStats.total) * 100}%` }}
+                                className="h-full bg-amber-400 transition-all duration-500 hover:brightness-95"
                                 title={`รอดำเนินการ: ${reworkStats.pending} เคส`}
                               />
                             )}
                             {reworkStats.inProgress > 0 && (
-                              <div 
-                                style={{ width: `${(reworkStats.inProgress / reworkStats.total) * 100}%` }} 
-                                className="h-full bg-sky-400 transition-all duration-500 hover:brightness-95" 
+                              <div
+                                style={{ width: `${(reworkStats.inProgress / reworkStats.total) * 100}%` }}
+                                className="h-full bg-sky-400 transition-all duration-500 hover:brightness-95"
                                 title={`กำลังดำเนินการ: ${reworkStats.inProgress} เคส`}
                               />
                             )}
                             {reworkStats.awaitingValuation > 0 && (
-                              <div 
-                                style={{ width: `${(reworkStats.awaitingValuation / reworkStats.total) * 100}%` }} 
-                                className="h-full bg-violet-400 transition-all duration-500 hover:brightness-95" 
+                              <div
+                                style={{ width: `${(reworkStats.awaitingValuation / reworkStats.total) * 100}%` }}
+                                className="h-full bg-violet-400 transition-all duration-500 hover:brightness-95"
                                 title={`รอประเมินราคา: ${reworkStats.awaitingValuation} เคส`}
                               />
                             )}
                             {reworkStats.completed > 0 && (
-                              <div 
-                                style={{ width: `${(reworkStats.completed / reworkStats.total) * 100}%` }} 
-                                className="h-full bg-emerald-500 transition-all duration-500 hover:brightness-95" 
+                              <div
+                                style={{ width: `${(reworkStats.completed / reworkStats.total) * 100}%` }}
+                                className="h-full bg-emerald-500 transition-all duration-500 hover:brightness-95"
                                 title={`เสร็จสิ้น: ${reworkStats.completed} เคส`}
                               />
                             )}
@@ -420,7 +425,7 @@ export function WorkspacePortal({
                             <CalendarDays size={14} />
                             <span className="text-[10px] font-semibold uppercase tracking-wider">ลาพักวันนี้</span>
                           </div>
-                          
+
                           {/* Leave Breakdown */}
                           {!rosterStats.hasData ? (
                             <div className="text-lg font-bold text-slate-400">--</div>
@@ -465,10 +470,10 @@ export function WorkspacePortal({
                             {rosterStats.hasData ? `${rosterStats.retentionRate}%` : '--%'}
                           </span>
                         </div>
-                        
+
                         <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-200/60 shadow-inner">
                           {rosterStats.hasData && (
-                            <div 
+                            <div
                               className="h-full bg-gradient-to-r from-sky-400 to-sky-500 transition-all duration-1000 ease-out"
                               style={{ width: `${rosterStats.retentionRate}%` }}
                             />
@@ -492,12 +497,17 @@ export function WorkspacePortal({
                     whileTap={isActive ? { scale: 0.98 } : {}}
                     type="button"
                     disabled={!isActive}
-                    onClick={() => onOpenApp(app.route)}
-                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition shadow-lg ${
-                      isActive
+                    onClick={() => {
+                      if (app.route === 'rag') {
+                        setIsRagOpen(true);
+                      } else {
+                        onOpenApp(app.route);
+                      }
+                    }}
+                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition shadow-lg ${isActive
                         ? 'bg-[#1d1d1f] text-white shadow-black/20 hover:bg-black'
                         : 'cursor-not-allowed bg-white/50 text-[#9d9da3] ring-1 ring-black/5'
-                    }`}
+                      }`}
                   >
                     {isActive ? 'เริ่มใช้งาน' : 'พรีวิว'}
                     <ArrowRight size={16} />
@@ -508,6 +518,54 @@ export function WorkspacePortal({
           })}
         </section>
       </div>
+
+      {/* Nong Bee Mascot */}
+      <motion.div
+        className="fixed bottom-6 right-6 z-50 cursor-pointer touch-none"
+        drag
+        dragMomentum={false}
+        onDragStart={() => {
+          isDraggingMascot.current = true;
+          setMascotState('drag');
+        }}
+        onDragEnd={() => {
+          setTimeout(() => {
+            isDraggingMascot.current = false;
+          }, 100);
+          setMascotState('default');
+        }}
+        onPointerDown={() => setMascotState('drag')}
+        onPointerUp={() => {
+          if (!isDraggingMascot.current) {
+            setMascotState('happy');
+          }
+        }}
+        onHoverStart={() => {
+          if (!isDraggingMascot.current) setMascotState('happy');
+        }}
+        onHoverEnd={() => {
+          if (!isDraggingMascot.current) setMascotState('default');
+        }}
+        whileHover={{ scale: 1.1 }}
+        whileDrag={{ scale: 1.15, cursor: 'grabbing' }}
+        transition={{ type: 'spring', stiffness: 300, bounce: 0.6 }}
+        onClick={() => {
+          if (!isDraggingMascot.current) {
+            setIsRagOpen(true);
+          }
+        }}
+        title="คุยกับน้องผึ้งพา (AI Assistant)"
+      >
+        <img
+          src={`/img/nongbeepa_${mascotState}.png`}
+          alt="Nong Bee Pa"
+          draggable={false}
+          className="w-24 h-24 md:w-32 md:h-32 drop-shadow-xl hover:drop-shadow-2xl transition-all object-contain pointer-events-none"
+        />
+      </motion.div>
+
+      {/* RAG Chat Modal */}
+      <RagApp user={user} open={isRagOpen} onOpenChange={setIsRagOpen} />
     </div>
   );
 }
