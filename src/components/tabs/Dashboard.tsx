@@ -299,7 +299,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
         {/* Quick Status Pills + Filter Toggle */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mr-1">สถานะ:</span>
+            <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-on-surface-variant mr-1">สถานะ:</span>
             {([
               { key: 'all', label: 'ทั้งหมด', color: 'bg-primary text-white shadow-lg shadow-primary/20' },
               { key: 'Pending', label: 'รอดำเนินการ', color: 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' },
@@ -312,9 +312,9 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               return (
                 <motion.button key={key} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                   onClick={() => isAll ? setStatusFilter([]) : toggleArrayFilter(statusFilter, key, setStatusFilter)}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 border border-white/5 ${isActive ? color : 'bg-white/5 text-on-surface-variant hover:bg-white/10 hover:text-foreground'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border border-white/5 ${isActive ? color : 'bg-white/5 text-on-surface-variant hover:bg-white/10 hover:text-foreground'}`}
                 >
-                  {label} <span className={`text-[10px] font-black ${isActive ? 'opacity-80' : 'opacity-50'}`}>{count}</span>
+                  {label} <span className={`text-xs font-black ${isActive ? 'opacity-80' : 'opacity-50'}`}>{count}</span>
                 </motion.button>
               );
             })}
@@ -324,7 +324,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all sm:w-auto border ${showFilters || hasActiveFilters ? 'bg-primary text-white border-primary/20 shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-on-surface-variant hover:bg-white/10 hover:text-foreground'}`}
           >
             <SlidersHorizontal size={14} /> ตัวกรอง
-            {activeFilterCount > 0 && <span className="bg-white/95 text-primary text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full ml-1">{activeFilterCount}</span>}
+            {activeFilterCount > 0 && <span className="bg-white/95 text-primary text-xs font-black w-5 h-5 flex items-center justify-center rounded-full ml-1">{activeFilterCount}</span>}
           </motion.button>
         </div>
 
@@ -339,7 +339,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><SlidersHorizontal size={15} className="text-primary" /></div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">ตัวกรองแดชบอร์ด</h4>
-                    <p className="text-[10px] text-on-surface-variant">เลือกเงื่อนไขเพื่อกรองข้อมูลในกราฟ</p>
+                    <p className="text-xs text-on-surface-variant">เลือกเงื่อนไขเพื่อกรองข้อมูลในกราฟ</p>
                   </div>
                 </div>
                 <button onClick={() => setShowFilters(false)} className="w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center text-on-surface-variant hover:text-foreground transition-colors"><X size={15} /></button>
@@ -348,7 +348,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Reason Filter */}
                 <div className="space-y-2.5">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">⚠️ ประเภทข้อบกพร่อง (Reason)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">⚠️ ประเภทข้อบกพร่อง (Reason)</label>
                   <div className="flex flex-wrap gap-1.5">
                     {uniqueReasons.map(reason => (
                       <motion.button key={reason} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
@@ -362,7 +362,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
 
                 {/* Responsible Filter */}
                 <div className="space-y-2.5">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">👤 ผู้รับผิดชอบ (Responsible)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">👤 ผู้รับผิดชอบ (Responsible)</label>
                   <div className="flex flex-wrap gap-1.5">
                     {uniqueResponsibles.map(responsible => (
                       <motion.button key={responsible} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
@@ -376,7 +376,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
 
                 {/* Customer Filter */}
                 <div className="space-y-2.5">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">🏢 ลูกค้า (Customer)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">🏢 ลูกค้า (Customer)</label>
                   <div className="flex flex-wrap gap-1.5">
                     {uniqueCustomers.map(customer => (
                       <motion.button key={customer} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
@@ -390,7 +390,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
 
                 {/* Status Filter */}
                 <div className="space-y-2.5">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">📊 สถานะ (Status)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">📊 สถานะ (Status)</label>
                   <div className="flex flex-wrap gap-1.5">
                     {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map(status => {
                       const isActive = statusFilter.includes(status);
@@ -412,18 +412,18 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
 
                 {/* Date Range */}
                 <div className="space-y-2.5">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5"><Calendar size={12} /> ช่วงเวลา (วันที่)</label>
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5"><Calendar size={12} /> ช่วงเวลา (วันที่)</label>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 relative">
                       <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
                         className="w-full px-4 py-2 border border-white/10 rounded-xl text-sm bg-white/5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" />
-                      <span className="absolute -top-1.5 left-3 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-on-surface-variant font-bold border border-white/5">เริ่มต้น</span>
+                      <span className="absolute -top-1.5 left-3 bg-white/10  px-1.5 py-0.5 rounded text-xs text-on-surface-variant font-bold border border-white/5">เริ่มต้น</span>
                     </div>
                     <span className="text-on-surface-variant text-xs font-bold">→</span>
                     <div className="flex-1 relative">
                       <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
                         className="w-full px-4 py-2 border border-white/10 rounded-xl text-sm bg-white/5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" />
-                      <span className="absolute -top-1.5 left-3 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-on-surface-variant font-bold border border-white/5">สิ้นสุด</span>
+                      <span className="absolute -top-1.5 left-3 bg-white/10  px-1.5 py-0.5 rounded text-xs text-on-surface-variant font-bold border border-white/5">สิ้นสุด</span>
                     </div>
                   </div>
                 </div>
@@ -446,38 +446,38 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
         <AnimatePresence>
           {hasActiveFilters && !showFilters && (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">กรอง:</span>
+              <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">กรอง:</span>
               {statusFilter.map(s => (
-                <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 text-on-surface border border-white/10 text-[10px] font-bold">
+                <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 text-on-surface border border-white/10 text-xs font-bold">
                   {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : s === 'Awaiting Valuation' ? 'รอประเมินราคา' : 'เสร็จสิ้น'}
                   <button onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-foreground text-on-surface-variant ml-0.5"><X size={10} /></button>
                 </span>
               ))}
               {reasonFilter.map(r => (
-                <span key={`t-r-${r}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold">
+                <span key={`t-r-${r}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-xs font-bold">
                   {r}
                   <button onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)} className="hover:text-orange-300 text-orange-400 ml-0.5"><X size={10} /></button>
                 </span>
               ))}
               {responsibleFilter.map(resp => (
-                <span key={`t-resp-${resp}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold">
+                <span key={`t-resp-${resp}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-bold">
                   {resp}
                   <button onClick={() => toggleArrayFilter(responsibleFilter, resp, setResponsibleFilter)} className="hover:text-cyan-300 text-cyan-400 ml-0.5"><X size={10} /></button>
                 </span>
               ))}
               {customerFilter.map(c => (
-                <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold">
+                <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold">
                   {c}
                   <button onClick={() => toggleArrayFilter(customerFilter, c, setCustomerFilter)} className="hover:text-indigo-300 text-indigo-400 ml-0.5"><X size={10} /></button>
                 </span>
               ))}
               {(dateFrom || dateTo) && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
                   📅 {dateFrom || '...'} → {dateTo || '...'}
                   <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="hover:text-emerald-300 text-emerald-400 ml-0.5"><X size={10} /></button>
                 </span>
               )}
-              <button onClick={clearAllFilters} className="text-[10px] text-rose-400 font-bold hover:text-rose-300 ml-1 underline underline-offset-2">ล้างทั้งหมด</button>
+              <button onClick={clearAllFilters} className="text-xs text-rose-400 font-bold hover:text-rose-300 ml-1 underline underline-offset-2">ล้างทั้งหมด</button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -528,7 +528,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                     ? `รายละเอียดงานของ: ${selectedMainResponsible}`
                     : analysisDimension === 'reason' ? 'วิเคราะห์สาเหตุข้อบกพร่อง' : 'วิเคราะห์ตามผู้รับผิดชอบ'}
                 </h3>
-                <p className="text-[10px] text-on-surface-variant font-medium">
+                <p className="text-xs text-on-surface-variant font-medium">
                   {selectedMainReason || selectedMainResponsible 
                     ? 'เจาะลึกรายละเอียดย่อย (Subtypes)' 
                     : 'ภาพรวมหลัก (Main Categories) - คลิกเพื่อเจาะลึก'}
@@ -543,13 +543,13 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                 <div className="flex bg-white/5 p-1 rounded-xl w-fit border border-white/5">
                   <button
                     onClick={() => setAnalysisDimension('reason')}
-                    className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${analysisDimension === 'reason' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                    className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${analysisDimension === 'reason' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
                   >
                     ดูตามสาเหตุ
                   </button>
                   <button
                     onClick={() => setAnalysisDimension('responsible')}
-                    className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${analysisDimension === 'responsible' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                    className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${analysisDimension === 'responsible' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
                   >
                     ดูตามผู้รับผิดชอบ
                   </button>
@@ -560,13 +560,13 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <div className="flex bg-white/5 p-1 rounded-xl w-fit border border-white/5">
                 <button
                   onClick={() => setViewMode('units')}
-                  className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'units' ? 'bg-indigo-500 text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'units' ? 'bg-indigo-500 text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
                 >
                   ปริมาณ (Units)
                 </button>
                 <button
                   onClick={() => setViewMode('defects')}
-                  className={`px-3.5 py-1 rounded-lg text-[10px] font-bold transition-all ${viewMode === 'defects' ? 'bg-indigo-500 text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'defects' ? 'bg-indigo-500 text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
                 >
                   ความถี่ (Defects)
                 </button>
@@ -632,11 +632,11 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
           <div className="mt-6 pt-5 border-t border-white/5 flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-              <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider">ปริมาณชิ้นงาน (Units)</span>
+              <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">ปริมาณชิ้นงาน (Units)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
-              <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider">ความถี่ของปัญหา (Defects)</span>
+              <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">ความถี่ของปัญหา (Defects)</span>
             </div>
           </div>
         </div>
@@ -648,7 +648,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <Package size={16} className="text-primary" />
               แหล่งที่มาของงาน
             </h3>
-            <p className="text-[10px] text-on-surface-variant mb-6 font-medium">สถิติจำนวนเคสแยกตามฝ่ายที่แจ้ง rework</p>
+            <p className="text-xs text-on-surface-variant mb-6 font-medium">สถิติจำนวนเคสแยกตามฝ่ายที่แจ้ง rework</p>
           </div>
           <div className="space-y-5 my-auto">
             {sourceEntries.length > 0 ? (
@@ -675,7 +675,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <p className="text-xs text-on-surface-variant text-center py-8 italic">ไม่มีข้อมูล</p>
             )}
           </div>
-          <div className="mt-6 pt-4 border-t border-white/5 text-[9px] text-on-surface-variant font-bold uppercase tracking-wider text-center">
+          <div className="mt-6 pt-4 border-t border-white/5 text-xs text-on-surface-variant font-bold uppercase tracking-wider text-center">
             Source Dispatch
           </div>
         </div>
@@ -690,7 +690,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <TrendingUp size={16} />
               สัดส่วนสถานะการจัดการ
             </h3>
-            <p className="text-[10px] text-on-surface-variant font-medium">วิเคราะห์ความก้าวหน้าและการกระจายตัวของเคส</p>
+            <p className="text-xs text-on-surface-variant font-medium">วิเคราะห์ความก้าวหน้าและการกระจายตัวของเคส</p>
           </div>
         </div>
         
@@ -726,14 +726,14 @@ function MetricCard({ label, value, icon, bgColor, trend, tooltip }: MetricCardP
         {icon}
       </div>
       
-      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5">{label}</p>
+      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1.5">{label}</p>
       
       <div className="flex items-baseline gap-2">
         <h3 className="text-2xl font-black text-foreground leading-none tracking-tight">{value}</h3>
       </div>
       
       {trend && (
-        <p className="text-[10px] font-bold text-on-surface-variant mt-3 flex items-center gap-1.5">
+        <p className="text-xs font-bold text-on-surface-variant mt-3 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
           {trend}
         </p>
@@ -743,7 +743,7 @@ function MetricCard({ label, value, icon, bgColor, trend, tooltip }: MetricCardP
         <div className="absolute top-4 right-4 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="relative group/tip">
             <AlertCircle size={13} className="cursor-help text-on-surface-variant/60 hover:text-foreground" />
-            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-950/95 backdrop-blur-md border border-white/10 text-white text-[10px] rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-950/95  border border-white/10 text-white text-xs rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
               {tooltip}
               <div className="absolute top-full right-2 border-4 border-transparent border-t-slate-950" />
             </div>
@@ -863,7 +863,7 @@ function StatusDistributionSection({ stats }: StatusDistributionSectionProps) {
                     const percent = total > 0 ? Math.round((activeItem.count / total) * 100) : 0;
                     return (
                       <>
-                        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-0.5">
+                        <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider block mb-0.5">
                           {activeItem.key === 'pending' ? 'รอดำเนินการ' :
                            activeItem.key === 'inProgress' ? 'กำลังทำ' :
                            activeItem.key === 'awaitingValuation' ? 'รอประเมิน' : 'เสร็จสิ้น'}
@@ -871,7 +871,7 @@ function StatusDistributionSection({ stats }: StatusDistributionSectionProps) {
                         <span className="text-2xl font-black text-foreground block leading-none mb-1">
                           {activeItem.count}
                         </span>
-                        <span className={`text-[10px] font-extrabold ${activeItem.textColor}`}>
+                        <span className={`text-xs font-extrabold ${activeItem.textColor}`}>
                           {percent}% ของทั้งหมด
                         </span>
                       </>
@@ -886,13 +886,13 @@ function StatusDistributionSection({ stats }: StatusDistributionSectionProps) {
                   exit={{ opacity: 0, y: -5 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-0.5">
+                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider block mb-0.5">
                     เคสทั้งหมด
                   </span>
                   <span className="text-3xl font-black text-foreground block leading-none mb-1">
                     {total}
                   </span>
-                  <span className="text-[9px] font-bold text-primary/70 uppercase tracking-widest">
+                  <span className="text-xs font-bold text-primary/70 uppercase tracking-widest">
                     QSMS REWORK
                   </span>
                 </motion.div>
@@ -981,7 +981,7 @@ function StatusDistributionSection({ stats }: StatusDistributionSectionProps) {
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider truncate">
+                <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider truncate">
                   {item.key === 'pending' ? 'รอดำเนินการ' :
                    item.key === 'inProgress' ? 'กำลังดำเนินการ' :
                    item.key === 'awaitingValuation' ? 'รอประเมินราคา' : 'เสร็จสมบูรณ์'}

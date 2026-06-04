@@ -17,7 +17,7 @@ export function DriveImage({ src, fallbackToDriveUrl = true, className, alt = ''
     return (
       <div className={`${className || ''} flex flex-col items-center justify-center gap-1 text-slate-300 bg-slate-50`}>
         <ImageOff size={22} />
-        <span className="text-[9px]">โหลดไม่ได้</span>
+        <span className="text-xs">โหลดไม่ได้</span>
       </div>
     );
   }

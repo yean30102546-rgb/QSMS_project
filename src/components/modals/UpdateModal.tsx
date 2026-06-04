@@ -344,7 +344,7 @@ export function UpdateModal({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={handleRequestClose}
-              className="fixed inset-0 bg-black/35 backdrop-blur-[2px] z-40 will-change-opacity"
+              className="fixed inset-0 bg-black/35  z-40 will-change-opacity"
             />
 
             {/* Modal Container */}
@@ -378,8 +378,8 @@ export function UpdateModal({
                         <div className="w-8 h-8 rounded-full bg-apple-blue-deep/10 flex items-center justify-center">
                           <PenTool size={16} className="text-apple-blue-deep" />
                         </div>
-                        <h2 className="text-[20px] font-semibold text-on-surface">Edit Mode</h2>
-                        <span className="text-[14px] text-on-surface-variant font-medium bg-surface-variant px-3 py-1 rounded-full">
+                        <h2 className="text-xl font-semibold text-on-surface">Edit Mode</h2>
+                        <span className="text-sm text-on-surface-variant font-medium bg-surface-variant px-3 py-1 rounded-full">
                           {previewCaseName || caseData?.id}
                         </span>
                       </div>
@@ -387,13 +387,13 @@ export function UpdateModal({
                         {isSaving && <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />}
                         {!isSaving && (
                           <>
-                            <button onClick={handleRequestClose} className="px-4 py-2 text-[14px] font-medium text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
+                            <button onClick={handleRequestClose} className="px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
                               Cancel
                             </button>
                             <button
                               onClick={handleSaveEdit}
                               disabled={isLoading || !isAdmin}
-                              className="px-5 py-2 text-[14px] font-semibold text-white bg-[#0066cc] hover:bg-[#0055aa] rounded-full shadow-sm transition-all disabled:opacity-50"
+                              className="px-5 py-2 text-sm font-semibold text-white bg-[#0066cc] hover:bg-[#0055aa] rounded-full shadow-sm transition-all disabled:opacity-50"
                             >
                               Save Changes
                             </button>
@@ -409,29 +409,29 @@ export function UpdateModal({
                       <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
                         <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
                           <AlertCircle size={18} className="text-on-surface-variant" />
-                          <h3 className="text-[16px] font-semibold text-on-surface">Case Information</h3>
+                          <h3 className="text-base font-semibold text-on-surface">Case Information</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">แหล่งที่มา</label>
+                            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">แหล่งที่มา</label>
                             <select
                               value={editedSource}
                               onChange={(e) => setEditedSource(e.target.value)}
-                              className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-[15px] font-semibold rounded-lg text-on-surface"
+                              className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg text-on-surface"
                             >
                               {SOURCE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">เลขที่เคส</label>
+                            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">เลขที่เคส</label>
                             <div className="flex items-center bg-surface-secondary rounded-lg border border-divider-color focus-within:ring-[3px] focus-within:ring-blue-500/30 transition-all overflow-hidden">
-                              <span className="pl-4 py-2.5 text-[15px] font-semibold text-on-surface-variant">{caseNamePrefix}</span>
+                              <span className="pl-4 py-2.5 text-base font-semibold text-on-surface-variant">{caseNamePrefix}</span>
                               <input
                                 value={editedCaseNumber}
                                 onChange={(e) => setEditedCaseNumber(enforceNumeric(e.target.value))}
-                                className="w-full bg-transparent px-2 py-2.5 text-[15px] font-bold text-center outline-none text-on-surface"
+                                className="w-full bg-transparent px-2 py-2.5 text-base font-bold text-center outline-none text-on-surface"
                               />
-                              <span className="pr-4 py-2.5 text-[15px] font-semibold text-on-surface-variant">-{caseNameYear}</span>
+                              <span className="pr-4 py-2.5 text-base font-semibold text-on-surface-variant">-{caseNameYear}</span>
                             </div>
                           </div>
                         </div>
@@ -439,16 +439,16 @@ export function UpdateModal({
                         {/* Files Section */}
                         {(editedItems.every(i => i.customerName === 'OR')) && (
                           <div className="pt-4 border-t border-divider-color space-y-3">
-                            <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">เอกสาร OR</label>
+                            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">เอกสาร OR</label>
                             <div className="flex flex-wrap items-center gap-3">
                               {caseData?.orFilesUrls?.map((url, i) => (
-                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-surface-secondary rounded-full text-[#0066cc] text-[13px] font-semibold hover:bg-surface-variant transition-colors">
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-surface-secondary rounded-full text-[#0066cc] text-sm font-semibold hover:bg-surface-variant transition-colors">
                                   <ExternalLink size={14} /> OR {i + 1}
                                 </a>
                               ))}
                               <div className="flex items-center gap-2 bg-surface-secondary rounded-full px-4 py-2 hover:bg-surface-variant transition-colors cursor-pointer border border-dashed border-divider-color">
                                 <input type="file" multiple accept=".xlsx,.xls,.pdf,.png" onChange={(e) => setNewOrFiles(Array.from(e.target.files || []).slice(0, 2))} className="hidden" id="or-upload" />
-                                <label htmlFor="or-upload" className="text-[13px] font-semibold text-on-surface cursor-pointer w-full h-full flex items-center">{newOrFiles.length > 0 ? `เลือก ${newOrFiles.length} ไฟล์` : '+ เพิ่มไฟล์ OR'}</label>
+                                <label htmlFor="or-upload" className="text-sm font-semibold text-on-surface cursor-pointer w-full h-full flex items-center">{newOrFiles.length > 0 ? `เลือก ${newOrFiles.length} ไฟล์` : '+ เพิ่มไฟล์ OR'}</label>
                               </div>
                             </div>
                           </div>
@@ -459,7 +459,7 @@ export function UpdateModal({
                       <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
                         <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
                           <FileText size={18} className="text-on-surface-variant" />
-                          <h3 className="text-[16px] font-semibold text-on-surface">Item Details ({editedItems.length})</h3>
+                          <h3 className="text-base font-semibold text-on-surface">Item Details ({editedItems.length})</h3>
                         </div>
                         
                         <div className="space-y-6">
@@ -471,7 +471,7 @@ export function UpdateModal({
                                   <div className="flex-1 space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                       <div className="space-y-1.5">
-                                        <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ชื่อรายการ</label>
+                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ชื่อรายการ</label>
                                         <input
                                           value={item.itemName}
                                           onChange={(e) => {
@@ -479,11 +479,11 @@ export function UpdateModal({
                                             newItems[index] = { ...newItems[index], itemName: e.target.value };
                                             setEditedItems(newItems);
                                           }}
-                                          className="apple-input w-full bg-system-background px-3 py-2 text-[15px] font-semibold text-on-surface"
+                                          className="apple-input w-full bg-system-background px-3 py-2 text-base font-semibold text-on-surface"
                                         />
                                       </div>
                                       <div className="space-y-1.5">
-                                        <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ลูกค้า</label>
+                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ลูกค้า</label>
                                         <select
                                           value={item.customerName || ''}
                                           onChange={(e) => {
@@ -491,7 +491,7 @@ export function UpdateModal({
                                             newItems[index] = { ...newItems[index], customerName: e.target.value };
                                             setEditedItems(newItems);
                                           }}
-                                          className="apple-input w-full bg-system-background px-3 py-2 text-[15px] font-semibold text-on-surface"
+                                          className="apple-input w-full bg-system-background px-3 py-2 text-base font-semibold text-on-surface"
                                         >
                                           <option value="">เลือกสีลูกค้า</option>
                                           {CUSTOMER_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -499,7 +499,7 @@ export function UpdateModal({
                                       </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                      <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">อาการเสีย / รายละเอียด</label>
+                                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">อาการเสีย / รายละเอียด</label>
                                       <textarea
                                         value={item.details || ''}
                                         onChange={(e) => {
@@ -507,13 +507,13 @@ export function UpdateModal({
                                           newItems[index] = { ...newItems[index], details: e.target.value };
                                           setEditedItems(newItems);
                                         }}
-                                        className="apple-input w-full bg-system-background p-3 min-h-[80px] text-[14px] font-medium text-on-surface"
+                                        className="apple-input w-full bg-system-background p-3 min-h-[80px] text-sm font-medium text-on-surface"
                                       />
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end gap-3 shrink-0">
                                     <div className="space-y-1.5 text-right">
-                                      <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">จำนวน</label>
+                                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">จำนวน</label>
                                       <div className="flex items-center gap-2">
                                         <input
                                           type="number"
@@ -523,9 +523,9 @@ export function UpdateModal({
                                             newItems[index] = { ...newItems[index], amount: Number(e.target.value) };
                                             setEditedItems(newItems);
                                           }}
-                                          className="apple-input w-20 bg-system-background px-2 py-2 text-center text-[15px] font-bold text-on-surface"
+                                          className="apple-input w-20 bg-system-background px-2 py-2 text-center text-base font-bold text-on-surface"
                                         />
-                                        <span className="text-[13px] font-medium text-on-surface-variant">pcs</span>
+                                        <span className="text-sm font-medium text-on-surface-variant">pcs</span>
                                       </div>
                                     </div>
                                     <button onClick={() => handleRemoveItem(index)} className="p-2 text-error hover:bg-error-container/30 rounded-full transition-colors" title="ลบรายการ">
@@ -544,23 +544,23 @@ export function UpdateModal({
                         <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
                           <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
                             <Clock size={18} className="text-[#0066cc]" />
-                            <h3 className="text-[16px] font-semibold text-on-surface">การจัดการเวลาทำงาน (Labor)</h3>
+                            <h3 className="text-base font-semibold text-on-surface">การจัดการเวลาทำงาน (Labor)</h3>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
-                              <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">จำนวนพนักงาน (คน)</label>
+                              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">จำนวนพนักงาน (คน)</label>
                               <select
                                 value={laborCount}
                                 onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
                                 disabled={!canEditMaterialNameQty}
-                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-[15px] font-semibold rounded-lg"
+                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg"
                               >
                                 <option value="">เลือกจำนวน</option>
                                 {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} คน</option>)}
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ชั่วโมงที่ใช้ (ชม.)</label>
+                              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ชั่วโมงที่ใช้ (ชม.)</label>
                               <input
                                 type="number"
                                 min="0" step="0.5"
@@ -568,12 +568,12 @@ export function UpdateModal({
                                 onChange={(e) => setLaborHours(e.target.value === '' ? '' : Number(e.target.value))}
                                 disabled={!canEditMaterialNameQty}
                                 placeholder="0.0"
-                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-[15px] font-semibold rounded-lg"
+                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg"
                               />
                             </div>
                             {canViewFinancialData && (
                               <div className="space-y-2">
-                                <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">อัตราค่าแรง (บาท/ชม.)</label>
+                                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">อัตราค่าแรง (บาท/ชม.)</label>
                                 <div className="relative">
                                   <input
                                     type="number" min="0" step="1"
@@ -581,9 +581,9 @@ export function UpdateModal({
                                     onChange={(e) => setLaborRate(e.target.value === '' ? '' : Number(e.target.value))}
                                     disabled={!canEditUnitPrice}
                                     placeholder="0"
-                                    className="apple-input w-full bg-surface-secondary pl-8 pr-4 py-2.5 text-[15px] font-semibold rounded-lg"
+                                    className="apple-input w-full bg-surface-secondary pl-8 pr-4 py-2.5 text-base font-semibold rounded-lg"
                                   />
-                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-on-surface-variant font-semibold">฿</span>
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-on-surface-variant font-semibold">฿</span>
                                 </div>
                               </div>
                             )}
@@ -597,10 +597,10 @@ export function UpdateModal({
                           <div className="flex items-center justify-between mb-4 border-b border-divider-color pb-3">
                             <div className="flex items-center gap-2">
                               <Package size={18} className="text-[#0066cc]" />
-                              <h3 className="text-[16px] font-semibold text-on-surface">รายการวัสดุที่ใช้ (Materials)</h3>
+                              <h3 className="text-base font-semibold text-on-surface">รายการวัสดุที่ใช้ (Materials)</h3>
                             </div>
                             {canManageRows && (
-                              <button onClick={handleAddMaterial} className="apple-button text-[13px] bg-surface-secondary hover:bg-surface-variant text-[#0066cc]">
+                              <button onClick={handleAddMaterial} className="apple-button text-sm bg-surface-secondary hover:bg-surface-variant text-[#0066cc]">
                                 + เพิ่มวัสดุ
                               </button>
                             )}
@@ -610,7 +610,7 @@ export function UpdateModal({
                             <div className="overflow-x-auto">
                               <table className="w-full text-left">
                                 <thead>
-                                  <tr className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider border-b border-divider-color">
+                                  <tr className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider border-b border-divider-color">
                                     <th className="pb-3 px-2">ชื่อวัสดุ</th>
                                     <th className="pb-3 px-2 text-center w-24">จำนวน</th>
                                     <th className="pb-3 px-2 text-center w-16">หน่วย</th>
@@ -626,7 +626,7 @@ export function UpdateModal({
                                           value={mat.name}
                                           onChange={(e) => handleMaterialChange(mat.id, 'name', e.target.value)}
                                           disabled={!canEditMaterialNameQty}
-                                          className="apple-input w-full bg-surface-bright px-2 py-1.5 text-[14px] font-medium"
+                                          className="apple-input w-full bg-surface-bright px-2 py-1.5 text-sm font-medium"
                                         >
                                           {STANDARD_MATERIALS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                         </select>
@@ -637,10 +637,10 @@ export function UpdateModal({
                                           value={mat.quantity || ''}
                                           onChange={(e) => handleMaterialChange(mat.id, 'quantity', Number(e.target.value))}
                                           disabled={!canEditMaterialNameQty}
-                                          className="apple-input w-full bg-surface-bright px-1 py-1.5 text-center text-[14px] font-medium"
+                                          className="apple-input w-full bg-surface-bright px-1 py-1.5 text-center text-sm font-medium"
                                         />
                                       </td>
-                                      <td className="py-2 px-2 text-center text-[13px] text-on-surface-variant">{mat.unit}</td>
+                                      <td className="py-2 px-2 text-center text-sm text-on-surface-variant">{mat.unit}</td>
                                       {canViewFinancialData && (
                                         <td className="py-2 px-2">
                                           <input
@@ -648,7 +648,7 @@ export function UpdateModal({
                                             value={mat.unitPrice || ''}
                                             onChange={(e) => handleMaterialChange(mat.id, 'unitPrice', Number(e.target.value))}
                                             disabled={!canEditUnitPrice}
-                                            className="apple-input w-full bg-surface-bright px-2 py-1.5 text-right text-[14px] font-medium"
+                                            className="apple-input w-full bg-surface-bright px-2 py-1.5 text-right text-sm font-medium"
                                           />
                                         </td>
                                       )}
@@ -666,7 +666,7 @@ export function UpdateModal({
                             </div>
                           ) : (
                             <div className="py-6 text-center border border-dashed border-divider-color rounded-lg text-on-surface-variant">
-                              <p className="text-[13px] font-medium">ไม่มีรายการวัสดุ</p>
+                              <p className="text-sm font-medium">ไม่มีรายการวัสดุ</p>
                             </div>
                           )}
                         </div>
@@ -677,13 +677,13 @@ export function UpdateModal({
                         <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-4">
                           <div className="flex items-center gap-2 mb-2">
                             <PenTool size={18} className="text-[#0066cc]" />
-                            <h3 className="text-[16px] font-semibold text-on-surface">วิธีแก้ไขปัญหา (Resolution Method)</h3>
+                            <h3 className="text-base font-semibold text-on-surface">วิธีแก้ไขปัญหา (Resolution Method)</h3>
                           </div>
                           <textarea
                             value={resolutionMethod}
                             onChange={(e) => setResolutionMethod(e.target.value)}
                             placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
-                            className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-[14px] font-medium text-on-surface min-h-[100px] leading-relaxed"
+                            className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-sm font-medium text-on-surface min-h-[100px] leading-relaxed"
                           />
                         </div>
                       )}
@@ -698,15 +698,15 @@ export function UpdateModal({
                     {/* Header */}
                     <div className="flex justify-between items-start px-6 pt-10 pb-4 border-b border-divider-color bg-system-background z-10 shrink-0">
                       <div>
-                        <h1 className="text-[32px] font-semibold tracking-tight text-on-surface">Update Status</h1>
-                        <p className="text-[15px] text-on-surface-variant mt-1">{previewCaseName || caseData?.id}</p>
+                        <h1 className="text-3xl font-semibold tracking-tight text-on-surface">Update Status</h1>
+                        <p className="text-base text-on-surface-variant mt-1">{previewCaseName || caseData?.id}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {isAdmin && (
                           <button
                             onClick={handleDelete}
                             disabled={isLoading}
-                            className="text-[13px] font-semibold text-[#ff3b30] bg-[#fff2f2] px-4 py-2 rounded-full hover:bg-[#ff3b30]/10 transition-all"
+                            className="text-sm font-semibold text-[#ff3b30] bg-[#fff2f2] px-4 py-2 rounded-full hover:bg-[#ff3b30]/10 transition-all"
                           >
                             Delete
                           </button>
@@ -721,31 +721,31 @@ export function UpdateModal({
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-6 py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0">
                       <div>
                         <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
-                          <span className="text-[13px] font-medium">Source</span>
+                          <span className="text-sm font-medium">Source</span>
                         </div>
-                        <div className="text-[15px] font-medium text-on-surface">{caseData?.source}</div>
+                        <div className="text-base font-medium text-on-surface">{caseData?.source}</div>
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
-                          <span className="text-[13px] font-medium">Case Number</span>
+                          <span className="text-sm font-medium">Case Number</span>
                         </div>
-                        <div className="text-[15px] font-medium text-on-surface">{getCaseNumber(caseData?.caseName, caseData?.id)}</div>
+                        <div className="text-base font-medium text-on-surface">{getCaseNumber(caseData?.caseName, caseData?.id)}</div>
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
-                          <span className="text-[13px] font-medium">Date</span>
+                          <span className="text-sm font-medium">Date</span>
                         </div>
-                        <div className="text-[15px] font-medium text-on-surface">{formatThaiDate(caseData?.timestamp || caseData?.date)}</div>
+                        <div className="text-base font-medium text-on-surface">{formatThaiDate(caseData?.timestamp || caseData?.date)}</div>
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
-                          <span className="text-[13px] font-medium">Quantity</span>
+                          <span className="text-sm font-medium">Quantity</span>
                         </div>
-                        <div className="text-[15px] font-medium text-on-surface">{caseData?.items?.length} รายการ</div>
+                        <div className="text-base font-medium text-on-surface">{caseData?.items?.length} รายการ</div>
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
-                          <span className="text-[13px] font-medium">Status</span>
+                          <span className="text-sm font-medium">Status</span>
                         </div>
                         {caseData && <StatusBadge status={caseStatus} />}
                       </div>
@@ -754,7 +754,7 @@ export function UpdateModal({
                     {/* Section Header */}
                     <div className="px-6 py-3 bg-surface-secondary/50 border-b border-divider-color shrink-0 flex items-center gap-2 text-on-surface">
                       <FileText size={20} />
-                      <span className="text-[18px] font-semibold">Item Details</span>
+                      <span className="text-lg font-semibold">Item Details</span>
                     </div>
 
                     {/* Scrollable Content */}
@@ -766,24 +766,24 @@ export function UpdateModal({
                           <div key={idx} className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-5 hover:border-[rgba(0,0,0,0.15)] transition-colors">
                             <div className="flex justify-between items-start mb-4">
                               <div>
-                                <h3 className="font-semibold text-on-surface text-[16px]">{item.itemName}</h3>
-                                <div className="text-[13px] text-on-surface-variant mt-1 flex gap-2 items-center">
+                                <h3 className="font-semibold text-on-surface text-base">{item.itemName}</h3>
+                                <div className="text-sm text-on-surface-variant mt-1 flex gap-2 items-center">
                                   <span className="bg-surface-secondary px-2 py-0.5 rounded-full font-medium">{item.customerName || 'N/A'}</span>
                                   <span>SN: {item.itemNumber || '-'}</span>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="font-semibold text-on-surface text-[18px]">{item.amount} <span className="text-[13px] text-on-surface-variant font-normal">pcs</span></div>
+                                <div className="font-semibold text-on-surface text-lg">{item.amount} <span className="text-sm text-on-surface-variant font-normal">pcs</span></div>
                               </div>
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-4 border-t border-divider-color/50">
                               <div>
-                                <h4 className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Details</h4>
-                                <p className="text-[14px] text-on-surface leading-relaxed whitespace-pre-wrap">{item.details || 'ไม่มีข้อมูล'}</p>
+                                <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Details</h4>
+                                <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{item.details || 'ไม่มีข้อมูล'}</p>
                               </div>
                               <div>
-                                <h4 className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2 flex justify-between">
+                                <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 flex justify-between">
                                   <span>Images ({images.length})</span>
                                   {item.imageFolderUrl && <a href={item.imageFolderUrl} target="_blank" rel="noopener noreferrer" className="text-[#0066cc] hover:underline normal-case">Drive</a>}
                                 </h4>
@@ -796,7 +796,7 @@ export function UpdateModal({
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-[13px] text-on-surface-variant italic">ไม่มีรูปภาพ</div>
+                                  <div className="text-sm text-on-surface-variant italic">ไม่มีรูปภาพ</div>
                                 )}
                               </div>
                             </div>
@@ -807,10 +807,10 @@ export function UpdateModal({
                       {/* Display OR Files if exist */}
                       {caseData?.orFilesUrls && caseData.orFilesUrls.length > 0 && (
                         <div className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-5">
-                          <h4 className="text-[13px] font-semibold text-on-surface-variant uppercase tracking-wider mb-3">เอกสาร OR</h4>
+                          <h4 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">เอกสาร OR</h4>
                           <div className="flex gap-3">
                             {caseData.orFilesUrls.map((url, i) => (
-                              <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-surface-secondary rounded-full text-[#0066cc] text-[13px] font-semibold hover:bg-surface-variant transition-colors">
+                              <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-surface-secondary rounded-full text-[#0066cc] text-sm font-semibold hover:bg-surface-variant transition-colors">
                                 <ExternalLink size={14} /> OR {i + 1}
                               </a>
                             ))}
@@ -823,7 +823,7 @@ export function UpdateModal({
                         <div className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-5 space-y-6">
                           <div className="flex items-center gap-2 mb-2 border-b border-divider-color pb-3">
                             <Landmark size={18} className="text-[#0066cc]" />
-                            <h3 className="text-[16px] font-semibold text-on-surface">Workflow & Financials</h3>
+                            <h3 className="text-base font-semibold text-on-surface">Workflow & Financials</h3>
                           </div>
 
                           <div className="space-y-4">
@@ -841,7 +841,7 @@ export function UpdateModal({
                                     type="button"
                                     disabled={!isAllowed}
                                     onClick={() => setCaseStatus(status)}
-                                    className={`px-4 py-1.5 rounded-full font-medium text-[13px] transition-all border ${isActive
+                                    className={`px-4 py-1.5 rounded-full font-medium text-sm transition-all border ${isActive
                                       ? 'bg-apple-blue-deep text-white border-apple-blue-deep shadow-sm'
                                       : isAllowed
                                         ? 'bg-surface-secondary text-on-surface border-divider-color hover:bg-surface-variant'
@@ -857,12 +857,12 @@ export function UpdateModal({
                             {/* Operator resolution text block */}
                             {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isOperator && (
                                <div className="space-y-2 mt-4">
-                                  <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">วิธีแก้ไขปัญหา (Resolution Method)</label>
+                                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">วิธีแก้ไขปัญหา (Resolution Method)</label>
                                   <textarea
                                     value={resolutionMethod}
                                     onChange={(e) => setResolutionMethod(e.target.value)}
                                     placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
-                                    className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-[14px] font-medium text-on-surface min-h-[80px]"
+                                    className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-sm font-medium text-on-surface min-h-[80px]"
                                   />
                                </div>
                             )}
@@ -871,20 +871,20 @@ export function UpdateModal({
                             {caseData?.status === 'Awaiting Valuation' && isFinance && (
                               <div className="space-y-4 mt-4 bg-surface-bright p-4 rounded-lg border border-divider-color">
                                 <div className="space-y-1">
-                                  <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">วิธีแก้ไขปัญหา (Read-only)</label>
-                                  <p className="text-[14px] font-medium text-on-surface">{resolutionMethod || '-'}</p>
+                                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">วิธีแก้ไขปัญหา (Read-only)</label>
+                                  <p className="text-sm font-medium text-on-surface">{resolutionMethod || '-'}</p>
                                 </div>
                                 <div className="space-y-1 pt-3 border-t border-divider-color">
-                                  <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">ราคาประเมินจริง (Actual Cost)</label>
+                                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ราคาประเมินจริง (Actual Cost)</label>
                                   <div className="relative max-w-xs">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-on-surface font-semibold">฿</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-on-surface font-semibold">฿</span>
                                     <input
                                       type="number"
                                       value={reworkCost}
                                       onChange={(e) => setReworkCost(e.target.value)}
                                       disabled={userRole !== UserRole.FINANCE && !isAdmin}
                                       placeholder="0.00"
-                                      className="apple-input w-full bg-system-background pl-8 pr-4 py-2 text-[16px] font-semibold rounded-lg text-on-surface"
+                                      className="apple-input w-full bg-system-background pl-8 pr-4 py-2 text-base font-semibold rounded-lg text-on-surface"
                                     />
                                   </div>
                                 </div>
@@ -894,8 +894,8 @@ export function UpdateModal({
                             {/* Grand Total display if available */}
                             {canViewFinancialData && reworkCost !== '' && (
                                <div className="flex justify-between items-center bg-surface-variant/50 p-4 rounded-lg mt-2">
-                                  <span className="text-[14px] font-semibold text-on-surface">Grand Total (Rework Cost)</span>
-                                  <span className="text-[18px] font-bold text-apple-blue-deep">฿{Number(reworkCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                                  <span className="text-sm font-semibold text-on-surface">Grand Total (Rework Cost)</span>
+                                  <span className="text-lg font-bold text-apple-blue-deep">฿{Number(reworkCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
                                </div>
                             )}
 
@@ -908,17 +908,17 @@ export function UpdateModal({
                     {/* Footer */}
                     <div className="border-t border-divider-color bg-system-background px-6 py-4 flex justify-between items-center shrink-0 rounded-b-[16px]">
                       <div className="flex gap-4 items-center">
-                        <button onClick={() => caseData && exportPNG(caseData.id)} disabled={isExporting || !caseData} className="text-[13px] font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
+                        <button onClick={() => caseData && exportPNG(caseData.id)} disabled={isExporting || !caseData} className="text-sm font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
                           <FileImage size={16} /> PNG
                         </button>
-                        <button onClick={() => caseData && exportPDF(caseData.id)} disabled={isExporting || !caseData} className="text-[13px] font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
+                        <button onClick={() => caseData && exportPDF(caseData.id)} disabled={isExporting || !caseData} className="text-sm font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
                           <Download size={16} /> PDF
                         </button>
                       </div>
                       
                       <div className="flex gap-3 items-center">
                         {isAdmin && (
-                          <button onClick={handleToggleEditMode} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-[14px]">
+                          <button onClick={handleToggleEditMode} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-sm">
                             Edit Mode
                           </button>
                         )}
@@ -935,7 +935,7 @@ export function UpdateModal({
                               if (caseData.status === 'Completed' && !isAdmin) return true;
                               return false;
                             })()}
-                            className="apple-button apple-button-primary shadow-md text-[14px]"
+                            className="apple-button apple-button-primary shadow-md text-sm"
                           >
                             Save Status
                           </button>
@@ -960,7 +960,7 @@ export function UpdateModal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setLightboxUrl(null)}
-              className="fixed inset-0 bg-black/90 z-[100] cursor-zoom-out backdrop-blur-sm"
+              className="fixed inset-0 bg-black/90 z-[100] cursor-zoom-out "
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -990,7 +990,7 @@ export function UpdateModal({
       {/* Export Overlay */}
       <AnimatePresence>
         {isExporting && (
-          <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-8">
+          <div className="fixed inset-0 z-[120] bg-slate-900/80  flex items-center justify-center p-8">
             <div className="bg-white rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full text-center">
               <div className="relative">
                 <div className="w-20 h-20 border-4 border-accent/10 border-t-accent rounded-full animate-spin" />
@@ -1036,7 +1036,7 @@ export function UpdateModal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsDeleteConfirmOpen(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] will-change-opacity"
+              className="fixed inset-0 bg-slate-900/60  z-[200] will-change-opacity"
             />
             <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pointer-events-none">
               <motion.div
@@ -1107,7 +1107,7 @@ function StatusBadge({ status }: { status: ReworkCase['status'] }) {
   };
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-wider ${styles[status]}`}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black border uppercase tracking-wider ${styles[status]}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse" />
       {thaiLabels[status]}
     </span>

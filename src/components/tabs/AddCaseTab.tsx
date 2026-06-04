@@ -197,12 +197,12 @@ export function AddCaseTab({
           <button
             type="button"
             onClick={clearAllForm}
-            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-red-600 hover:border-red-200 active:scale-95"
+            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-red-600 hover:border-red-200 active:scale-95"
             title="ล้างข้อมูลที่กรอกค้างไว้ทั้งหมดในหน้านี้"
           >
             <Trash2 size={12} /> ล้างฟอร์มทั้งหมด
           </button>
-          <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted">
+          <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-semibold text-slate-500">
             <Clock size={12} /> บันทึกข้อมูลสด
           </div>
         </div>
@@ -212,7 +212,7 @@ export function AddCaseTab({
         <div className="glass-card bg-white p-6">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">แหล่งที่มาของงาน (Source) *</label>
+              <label className="ml-1 text-xs font-semibold text-slate-500">แหล่งที่มาของงาน (Source) *</label>
               <select
                 value={caseSource}
                 onChange={(e) => setCaseSource(e.target.value)}
@@ -224,8 +224,8 @@ export function AddCaseTab({
             </div>
 
             <div className="space-y-2">
-              <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">หมายเลขเคส (Case ID) *</label>
-              <div className={`flex items-center w-fit overflow-hidden rounded-xl bg-white/80 backdrop-blur-md shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(59,130,246,0.15)] group ${!caseNumber.trim() ? 'border-red-400/60 focus-within:border-red-400/80 focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(239,68,68,0.15)]' : 'border-slate-200/60 focus-within:border-blue-400/30'}`}>
+              <label className="ml-1 text-xs font-semibold text-slate-500">หมายเลขเคส (Case ID) *</label>
+              <div className={`flex items-center w-fit overflow-hidden rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(59,130,246,0.15)] group ${!caseNumber.trim() ? 'border-red-400/60 focus-within:border-red-400/80 focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(239,68,68,0.15)]' : 'border-slate-200/60 focus-within:border-blue-400/30'}`}>
                 <span className={`inline-flex items-center pl-4 pr-1 py-2.5 text-[15px] font-medium select-none transition-colors duration-200 ${!caseNumber.trim() ? 'text-red-400 group-focus-within:text-red-500' : 'text-slate-400 group-focus-within:text-blue-500'}`}>
                   {caseSource === 'Customer' ? 'RT' : 'RW'}
                 </span>
@@ -242,18 +242,18 @@ export function AddCaseTab({
                 </span>
               </div>
               {!caseNumber.trim() ? (
-                <p className="ml-1 text-[10px] font-semibold text-red-600">
+                <p className="ml-1 text-xs font-semibold text-red-600">
                   ⚠️ จำเป็นต้องกรอกหมายเลขเคส
                 </p>
               ) : (() => {
                 const composedId = `${caseSource === 'Customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`;
                 const isDuplicate = existingCaseIds.includes(composedId);
                 return isDuplicate ? (
-                  <p className="ml-1 text-[10px] font-semibold text-red-600">
+                  <p className="ml-1 text-xs font-semibold text-red-600">
                     ⚠️ Case ID "{composedId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น
                   </p>
                 ) : (
-                  <p className="ml-1 text-[10px] font-semibold text-emerald-600">
+                  <p className="ml-1 text-xs font-semibold text-emerald-600">
                     ✓ Case ID: {composedId}
                   </p>
                 );
@@ -275,7 +275,7 @@ export function AddCaseTab({
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-amber-900">เอกสารสำหรับ OR (Optional)</h4>
-                    <p className="text-[11px] text-amber-700/80">แนบไฟล์ Excel, PDF หรือ PNG (สูงสุด 2 ไฟล์)</p>
+                    <p className="text-xs text-amber-700/80">แนบไฟล์ Excel, PDF หรือ PNG (สูงสุด 2 ไฟล์)</p>
                   </div>
                 </div>
 
@@ -330,27 +330,27 @@ export function AddCaseTab({
                 <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
                   <Plus size={16} /> รายการที่ {idx + 1}
                   {item.verificationStatus === 'verified' && (
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> พบในระบบ
                     </span>
                   )}
                   {item.verificationStatus === 'new' && (
-                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> สินค้าใหม่
                     </span>
                   )}
                   {item.verificationStatus === 'checking' && (
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
                     </span>
                   )}
                   {item.verificationStatus === 'updating' && (
-                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> กำลังอัพเดตข้อมูล...
                     </span>
                   )}
                   {item.verificationStatus === 'conflict' && (
-                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> ⚠️ รหัสซ้ำซ้อนในระบบ
                     </span>
                   )}
@@ -359,7 +359,7 @@ export function AddCaseTab({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div className="space-y-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">ชื่อลูกค้า (Customer Name) *</label>
+                  <label className="ml-1 text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
                   <select
                     value={item.customerName || ''}
                     onChange={(e) => updateFormItem(item.id, 'customerName', e.target.value)}
@@ -375,11 +375,11 @@ export function AddCaseTab({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 mb-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                    <label className="text-xs font-semibold text-slate-500">
                       หมายเลขบาร์โค้ด (Item Number)
                     </label>
                     {item.lastActiveField === 'itemNumber' && (
-                      <span className="text-[9px] font-bold text-black/40 bg-black/5 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
                         ลำดับความสำคัญหลัก
                       </span>
                     )}
@@ -411,11 +411,11 @@ export function AddCaseTab({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 mb-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                    <label className="text-xs font-semibold text-slate-500">
                       รหัสสินค้า (Item Code)
                     </label>
                     {item.lastActiveField === 'itemCode' && (
-                      <span className="text-[9px] font-bold text-black/40 bg-black/5 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
                         ลำดับความสำคัญหลัก
                       </span>
                     )}
@@ -510,7 +510,7 @@ export function AddCaseTab({
 
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">สาเหตุที่พบ *</label>
+                  <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ *</label>
                   <div className="space-y-2">
                     <div className="flex gap-2">
                       <select
@@ -575,18 +575,18 @@ export function AddCaseTab({
                     </AnimatePresence>
                     {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && item.reasonSubtype && (
                       <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
-                        <p className="mb-1 text-[10px] font-semibold text-muted">เลือก:</p>
+                        <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
                         <p className="text-sm font-semibold text-accent">{item.reasonSubtype}</p>
                       </div>
                     )}
                     {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !item.reasonSubtype && (
-                      <p className="text-[10px] font-medium text-amber-600">กรุณาเลือกรูปแบบ {item.reason}</p>
+                      <p className="text-xs font-medium text-amber-600">กรุณาเลือกรูปแบบ {item.reason}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">ผู้รับผิดชอบ *</label>
+                  <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ *</label>
                   <div className="space-y-2">
                     <div className="flex gap-2">
                       <select
@@ -641,7 +641,7 @@ export function AddCaseTab({
                     </AnimatePresence>
                     {(item.responsible === 'SFC' || item.responsible === 'Supplier') && item.responsibleSubtype && (
                       <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
-                        <p className="mb-1 text-[10px] font-semibold text-muted">เลือก:</p>
+                        <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
                         <p className="text-sm font-semibold text-accent">{item.responsibleSubtype}</p>
                       </div>
                     )}
@@ -694,7 +694,7 @@ export function AddCaseTab({
                             exit={{ opacity: 0, x: 10 }}
                             className="flex flex-col gap-1.5"
                           >
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-amber-900/60">ไอเทมต้นเหตุ *</label>
+                            <label className="text-xs font-semibold text-amber-900/60">ไอเทมต้นเหตุ *</label>
                             <select
                               value={item.linkedSourceId}
                               onChange={(e) => updateFormItem(item.id, 'linkedSourceId', e.target.value)}
@@ -720,7 +720,7 @@ export function AddCaseTab({
 
               <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                 <div className="space-y-2 md:col-span-2">
-                  <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">รายละเอียดเพิ่มเติม</label>
+                  <label className="ml-1 text-xs font-semibold text-slate-500">รายละเอียดเพิ่มเติม</label>
                   <textarea
                     rows={3}
                     value={item.details || ''}
@@ -790,7 +790,7 @@ export function AddCaseTab({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -15, scale: 0.98 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className="w-full rounded-2xl border border-slate-200/60 bg-white/90 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/90 dark:shadow-none"
+                className="w-full rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-zinc-800/80 dark:bg-zinc-950/90 dark:shadow-none"
               >
                 <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
               </motion.div>
@@ -814,7 +814,7 @@ export function AddCaseTab({
                             <li key={idx}>{lbl}</li>
                           ))}
                         </ul>
-                        <p className="mt-1 text-[10px] text-red-600/90 font-medium">
+                        <p className="mt-1 text-xs text-red-600/90 font-medium">
                           * กรุณาแก้ไข หรือระบุเลขกล่อง (Box Number), Mold หรือ Line ให้มีความแตกต่างกันในรายการที่ซ้ำ เพื่อให้ระบบแยกข้อมูลได้ถูกต้อง
                         </p>
                       </motion.div>
@@ -836,7 +836,7 @@ export function AddCaseTab({
                     whileHover={{ y: -2 }}
                     whileTap={{ y: 0 }}
                     transition={{ duration: 0.15 }}
-                    className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-xs font-bold uppercase tracking-widest text-muted hover:bg-slate-50 disabled:opacity-50 sm:h-auto"
+                    className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 sm:h-auto"
                   >
                     <Plus size={16} /> [ + ] เพิ่มรายการ
                   </motion.button>
@@ -878,7 +878,7 @@ export function AddCaseTab({
       <AnimatePresence>
         {selectionModal && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -891,7 +891,7 @@ export function AddCaseTab({
             >
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-muted">เลือกคำตอบ</p>
+                  <p className="mb-1 text-sm font-semibold text-slate-500">เลือกคำตอบ</p>
                   <h2 className="text-xl font-semibold text-foreground">{selectionModal.title}</h2>
                 </div>
                 <button onClick={() => setSelectionModal(null)} className="text-sm text-muted hover:text-foreground">
@@ -931,7 +931,7 @@ interface InputFieldProps {
 function InputField({ label, value, onChange, onBlur, placeholder, type = 'text', disabled = false }: InputFieldProps) {
   return (
     <div className="space-y-2">
-      <label className="ml-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">{label}</label>
+      <label className="ml-1 text-xs font-semibold text-slate-500">{label}</label>
       <input
         type={type}
         value={value}

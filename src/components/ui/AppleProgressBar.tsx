@@ -32,8 +32,8 @@ export function AppleProgressBar({ progress, label = 'Saving Rework Case', statu
               <CheckCircle2 size={24} strokeWidth={3} />
             </motion.div>
             <div className="text-center">
-              <h3 className="text-[16px] font-bold text-slate-900 dark:text-zinc-50 leading-none">Successfully Saved</h3>
-              <p className="text-[12px] text-slate-500 dark:text-zinc-400 mt-1.5 font-medium">Data is now live in Supabase and Sheets.</p>
+              <h3 className="text-base font-bold text-slate-900 dark:text-zinc-50 leading-none">Successfully Saved</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 font-medium">Data is now live in Supabase and Sheets.</p>
             </div>
           </motion.div>
         ) : (
@@ -47,10 +47,10 @@ export function AppleProgressBar({ progress, label = 'Saving Rework Case', statu
           >
             <div className="flex justify-between items-end px-0.5">
               <div className="space-y-0.5">
-                <span className="text-[13px] font-bold text-slate-800 dark:text-zinc-200 tracking-tight block">{label}</span>
-                <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 block">{statusText || 'Processing...'}</span>
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 tracking-tight block">{label}</span>
+                <span className="text-xs font-semibold text-slate-400 dark:text-zinc-500 block">{statusText || 'Processing...'}</span>
               </div>
-              <span className="text-[13px] font-mono font-bold text-blue-600 dark:text-blue-400">{Math.round(progress)}%</span>
+              <span className="text-sm font-mono font-bold text-blue-600 dark:text-blue-400">{Math.round(progress)}%</span>
             </div>
             <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800/80 shadow-[inset_0_1px_2.5px_rgba(0,0,0,0.08)] border border-slate-200/50 dark:border-zinc-700/20">
               <motion.div

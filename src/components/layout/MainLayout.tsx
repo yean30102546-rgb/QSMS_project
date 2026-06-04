@@ -185,7 +185,7 @@ export function MainLayout({
       </AnimatePresence>
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-white/20 bg-surface/40 backdrop-blur-2xl px-5 py-8 shadow-lg shadow-primary/5 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-slate-200 bg-white px-5 py-8 shadow-sm transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
         <motion.div
@@ -193,7 +193,7 @@ export function MainLayout({
           onClick={() => handleTabChange('overall')}
           whileHover={{ scale: 1.02 }}
         >
-          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-lg bg-white/60 border border-white/40 p-1 shadow-sm">
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-200 p-1">
             <img src="/img/logo.png" alt="Excellence Logo" className="w-full h-full object-contain" />
           </div>
           <div>
@@ -237,7 +237,7 @@ export function MainLayout({
         </nav>
 
         {String(userRole || '').toUpperCase() === 'QSMS' && (
-          <div className="mt-auto border-t border-white/20 pt-8">
+          <div className="mt-auto border-t border-slate-200 pt-8">
             <SidebarItem
               active={activeTab === 'dashboard'}
               onClick={() => handleTabChange('dashboard')}
@@ -247,10 +247,10 @@ export function MainLayout({
           </div>
         )}
 
-        <div className="mt-8 border-t border-white/20 pt-8">
+        <div className="mt-8 border-t border-slate-200 pt-8">
           <div 
             onClick={() => setIsPermissionsModalOpen(true)}
-            className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-white/40 border border-white/30 px-3.5 py-3 text-sm transition-all hover:bg-white hover:border-primary/20 shadow-sm"
+            className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 border border-slate-200 px-3.5 py-3 text-sm transition-all hover:bg-slate-100 hover:border-slate-300"
             title="คลิกเพื่อดูสิทธิ์การใช้งาน"
           >
             {/* User Avatar Circle */}
@@ -259,7 +259,7 @@ export function MainLayout({
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-slate-800 truncate leading-tight mb-0.5">{userName || 'User'}</p>
-              <span className="inline-flex rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none text-primary tracking-wider">
+              <span className="inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                 {String(userRole || 'Admin')}
               </span>
             </div>
@@ -277,7 +277,7 @@ export function MainLayout({
 
       <main className="relative flex flex-1 flex-col overflow-hidden bg-transparent">
         {/* Mobile Header */}
-        <div className="flex h-14 items-center justify-between border-b border-white/20 bg-white/50 backdrop-blur-md px-4 md:hidden">
+        <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
 
           <div className="flex items-center gap-2">
             <img src="/img/logo.png" alt="" className="h-8 object-contain" />
@@ -288,7 +288,7 @@ export function MainLayout({
             {/* Clickable Mobile Role Badge */}
             <button
               onClick={() => setIsPermissionsModalOpen(true)}
-              className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[9px] font-black uppercase leading-none text-primary tracking-wider transition-transform active:scale-95"
+              className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
               title="สิทธิ์การใช้งาน"
             >
               {String(userRole || 'Admin')}
@@ -425,9 +425,9 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
       }}
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.98 }}
-      className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200 ${active
-        ? 'border border-white/40 bg-primary/10 text-primary shadow-sm'
-        : 'text-on-surface-variant hover:bg-white/20 hover:text-primary'
+      className={`sidebar-item mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${active
+        ? 'bg-primary/10 text-primary'
+        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
         }`}
     >
       {icon && <span className={`transition-colors ${active ? 'text-primary' : 'text-on-surface-variant'}`}>{icon}</span>}

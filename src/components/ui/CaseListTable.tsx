@@ -62,8 +62,8 @@ export function CaseListTable({
 }: CaseListTableProps) {
   if (isLoading) {
     return (
-      <div className="glass-card border border-white/45 bg-white/40 backdrop-blur-md p-0" style={{ minHeight: '640px' }}>
-        <div className="divide-y divide-white/20 p-2">
+      <div className="rounded-2xl border border-slate-200 bg-white p-0 shadow-sm" style={{ minHeight: '640px' }}>
+        <div className="divide-y divide-slate-100 p-2">
           {[...Array(skeletonCount)].map((_, i) => (
             <div key={i} className="flex animate-pulse items-center gap-4 px-4 py-4">
               <div className="flex-1 space-y-2">
@@ -84,7 +84,7 @@ export function CaseListTable({
 
   if (error) {
     return (
-      <div className="glass-card border border-red-200/50 bg-red-50/50 backdrop-blur-md p-8 text-center">
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center shadow-sm">
         <AlertCircle className="mx-auto mb-3 text-red-500" size={40} />
         <p className="mb-1 text-lg font-semibold text-red-700">ไม่สามารถโหลดข้อมูลได้</p>
         <p className="mb-4 text-sm text-red-600/80">{error}</p>
@@ -100,8 +100,8 @@ export function CaseListTable({
 
   if (isEmpty) {
     return (
-      <div className="glass-card border border-white/45 bg-white/40 backdrop-blur-md p-16 text-center shadow-sm">
-        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-white/50 border border-white/60">
+      <div className="rounded-2xl border border-slate-200 bg-white p-16 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 border border-slate-100">
           <Package size={36} className="text-primary" />
         </div>
         <p className="mb-2 text-lg font-semibold text-primary">ไม่พบรายการงาน Rework ในขณะนี้</p>
@@ -116,8 +116,8 @@ export function CaseListTable({
 
   if (isFilterEmpty) {
     return (
-      <div className="glass-card border border-white/45 bg-white/40 backdrop-blur-md p-16 text-center shadow-sm">
-        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-white/50 border border-white/60">
+      <div className="rounded-2xl border border-slate-200 bg-white p-16 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 border border-slate-100">
           <Search size={36} className="text-primary" />
         </div>
         <p className="mb-2 text-lg font-semibold text-primary">ไม่พบรายการที่ตรงกับตัวกรอง</p>
@@ -137,9 +137,9 @@ export function CaseListTable({
   }
 
   return (
-    <div className="glass-card flex flex-1 flex-col border border-white/45 bg-white/40 backdrop-blur-md p-0 shadow-sm shadow-primary/5 overflow-hidden">
+    <div className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-0 shadow-sm overflow-hidden">
       <div className="flex-1">
-        <div className="divide-y divide-white/20 p-2">
+        <div className="divide-y divide-slate-100 p-2">
           {cases.map((item) => (
             <CaseRow key={item.id} caseItem={item} onClick={() => onRowClick(item)} />
           ))}
@@ -175,11 +175,11 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
   return (
     <div
       onClick={onClick}
-      className={`group flex cursor-pointer items-center rounded-lg px-4 py-4 transition-all duration-300 hover:bg-white/60 hover:shadow-sm active:scale-[0.99] ${
+      className={`group flex cursor-pointer items-center rounded-lg px-4 py-4 transition-all duration-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.99] ${
         deadlineStatus === 'warning'
-          ? 'border-l-4 border-tertiary bg-tertiary/10'
+          ? 'bg-amber-50/50'
           : deadlineStatus === 'danger'
-            ? 'border-l-4 border-red-500 bg-red-50/30'
+            ? 'bg-red-50/50'
             : ''
       }`}
     >
@@ -187,22 +187,22 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
         <div className="flex items-center gap-2">
           <div className="text-sm font-bold text-primary truncate max-w-[200px] md:max-w-[300px]">{caseItem.caseName || displayId}</div>
           {caseItem.caseName && (
-             <span className="inline-flex items-center rounded-md bg-slate-100/80 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 border border-slate-200/60 font-mono tracking-wide">{displayId}</span>
+             <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200 font-mono">{displayId}</span>
           )}
           {deadlineStatus === 'warning' && (
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-tertiary" title="งานค้างเกิน 7 วัน">
+            <div className="flex items-center gap-1 text-xs font-semibold text-amber-600" title="งานค้างเกิน 7 วัน">
               <Clock size={12} />
               <span>7 วัน</span>
             </div>
           )}
           {deadlineStatus === 'danger' && (
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-red-600" title="งานค้างเกิน 30 วัน">
+            <div className="flex items-center gap-1 text-xs font-semibold text-red-600" title="งานค้างเกิน 30 วัน">
               <AlertCircle size={12} />
               <span>เกิน 30 วัน</span>
             </div>
           )}
         </div>
-        <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-on-surface-variant/75">
+        <div className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-500">
           <span className="font-semibold text-primary/80 truncate max-w-[150px]">{itemNameDisplay}</span>
           <span>&bull;</span>
           <div className="flex items-center gap-1 text-primary/80">
@@ -224,8 +224,8 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
           )}
 
           {caseItem.items.every(i => i.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-semibold text-red-600 border border-red-200">
-              <AlertCircle size={10} />
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 border border-red-100">
+              <AlertCircle size={12} />
               ขาดไฟล์ OR
             </span>
           )}
@@ -233,8 +233,8 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
       </div>
 
       <div className="mr-8 text-right">
-        <p className="text-xs font-semibold text-primary">{totalAmount} กล่อง</p>
-        <p className="text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">{reasonsDisplay}</p>
+        <p className="text-sm font-semibold text-primary">{totalAmount} กล่อง</p>
+        <p className="text-xs font-medium text-slate-500 mt-0.5">{reasonsDisplay}</p>
       </div>
 
       <StatusPill status={caseItem.status} />
@@ -262,7 +262,7 @@ function StatusPill({ status }: StatusPillProps) {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] ${styles[status]}`}>
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${styles[status]}`}>
       {status === 'Awaiting Valuation' && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 mr-1.5 animate-pulse" />}
       {thaiLabels[status]}
     </span>

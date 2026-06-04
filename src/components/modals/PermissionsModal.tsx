@@ -105,7 +105,7 @@ export function PermissionsModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 bg-black/60 "
           />
 
           {/* Modal Container */}
@@ -114,7 +114,7 @@ export function PermissionsModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-6 md:p-8 shadow-2xl backdrop-blur-xl flex flex-col max-h-[85vh]"
+            className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-6 md:p-8 shadow-2xl  flex flex-col max-h-[85vh]"
           >
             {/* Close Button */}
             <button
@@ -132,7 +132,7 @@ export function PermissionsModal({
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h2 className="text-lg font-black text-slate-800 tracking-tight">{userName || 'ผู้ใช้งาน'}</h2>
-                  <span className={`inline-flex px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-wider ${details.colorClass}`}>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full border text-xs font-black uppercase tracking-wider ${details.colorClass}`}>
                     {roleUpper || 'UNKNOWN'}
                   </span>
                 </div>
@@ -146,7 +146,7 @@ export function PermissionsModal({
 
             {/* Permissions List */}
             <div className="flex-1 overflow-y-auto pr-1 space-y-3 scrollbar-thin">
-              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2">ขอบเขตการเข้าถึง (Permissions Detail)</h3>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2">ขอบเขตการเข้าถึง (Permissions Detail)</h3>
               {details.permissions.map((p, i) => (
                 <div
                   key={i}

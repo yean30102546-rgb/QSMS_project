@@ -331,11 +331,11 @@ export function ImageUpload({
       {/* Header with Apple Style Label */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-bold text-muted uppercase tracking-[0.1em]">
+          <label className="text-xs font-semibold text-slate-500">
             รูปภาพประกอบ
           </label>
           {imageItems.length > 0 && (
-             <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-[9px] font-black text-slate-500">
+             <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
                {imageItems.length} / {maxImages}
              </span>
           )}
@@ -366,10 +366,10 @@ export function ImageUpload({
           <div className={`p-2 rounded-full transition-colors duration-300 ${isDragging ? 'bg-accent/10 text-accent' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-500'}`}>
             <Upload size={18} />
           </div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-slate-500">
+          <p className="text-xs font-semibold text-slate-400 group-hover:text-slate-500">
             {isDragging ? 'Drop to upload' : 'Add Photos'}
           </p>
-          <p className="text-[8px] text-slate-400 font-medium">PNG, JPG up to {maxSizeMB}MB</p>
+          <p className="text-xs text-slate-400 font-medium">PNG, JPG up to {maxSizeMB}MB</p>
         </div>
       )}
 
@@ -398,7 +398,7 @@ export function ImageUpload({
               )}
 
               {/* Status & Actions Overlay */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
+              <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
                 {item.status === 'complete' && (
                   <div className="flex gap-2">
                     <button
@@ -428,14 +428,14 @@ export function ImageUpload({
                 {item.status === 'compressing' && (
                   <div className="flex flex-col items-center gap-1.5">
                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span className="text-[8px] text-white font-black uppercase tracking-tighter">Compressing</span>
+                    <span className="text-xs text-white font-semibold">Compressing</span>
                   </div>
                 )}
 
                 {item.status === 'error' && (
                   <div className="flex flex-col items-center gap-1">
                     <AlertCircle size={18} className="text-red-400" />
-                    <button onClick={() => removeImage(item.id)} className="text-[8px] text-white font-bold underline">Remove</button>
+                    <button onClick={() => removeImage(item.id)} className="text-xs text-white font-semibold underline">Remove</button>
                   </div>
                 )}
               </div>
@@ -453,7 +453,7 @@ export function ImageUpload({
 
               {/* Compression Success Tag */}
               {item.status === 'complete' && (
-                <div className="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-emerald-500/90 text-[7px] text-white font-black uppercase tracking-tighter pointer-events-none">
+                <div className="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-emerald-500/90 text-[10px] text-white font-semibold pointer-events-none">
                   -{calculateCompressionRatio(item.originalSize, item.compressedSize || 0)}%
                 </div>
               )}
@@ -469,7 +469,7 @@ export function ImageUpload({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-12"
+            className="fixed inset-0 z-[100] bg-slate-900/95 flex items-center justify-center p-4 md:p-12"
             onClick={() => setPreviewUrl(null)}
           >
             <motion.button

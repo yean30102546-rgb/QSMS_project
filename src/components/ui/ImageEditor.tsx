@@ -475,17 +475,17 @@ export function ImageEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex flex-col md:p-6 select-none">
+    <div className="fixed inset-0 z-[110] bg-slate-950 flex flex-col md:p-6 select-none">
       
       {/* Top Navbar */}
-      <div className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/10 bg-black/40 backdrop-blur-md">
+      <div className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/10 bg-slate-900">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-accent">
             <Hand size={18} />
           </div>
           <div>
             <h3 className="text-sm font-bold text-white">แก้ไขภาพหลักฐาน</h3>
-            <p className="text-[10px] text-white/40 font-medium truncate max-w-[200px] md:max-w-xs">{originalFileName}</p>
+            <p className="text-xs text-white/40 font-medium truncate max-w-[200px] md:max-w-xs">{originalFileName}</p>
           </div>
         </div>
 
@@ -570,15 +570,15 @@ export function ImageEditor({
       </div>
 
       {/* Bottom Tool bar - Canvas Controls & Customizations */}
-      <div className="p-6 border-t border-white/10 bg-black/60 backdrop-blur-md flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+      <div className="p-6 border-t border-white/10 bg-slate-900 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
         
         {/* Toggle Mode (Draw vs Pan vs Shapes) */}
         <div className="flex flex-col gap-2">
-          <span className="text-[9px] font-black text-white/40 uppercase tracking-widest text-center md:text-left">โหมดเครื่องมือ (ดึงปุ่มวาดเพื่อร่าง)</span>
+          <span className="text-xs font-semibold text-white/50 text-center md:text-left">โหมดเครื่องมือ (ดึงปุ่มวาดเพื่อร่าง)</span>
           <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 w-fit gap-1 flex-wrap justify-center">
             <button
               onClick={() => setEditorMode('pan')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'pan'
                   ? 'bg-accent text-white shadow-sm'
                   : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -588,7 +588,7 @@ export function ImageEditor({
             </button>
             <button
               onClick={() => setEditorMode('draw')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'draw'
                   ? 'bg-accent text-white shadow-sm'
                   : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -598,7 +598,7 @@ export function ImageEditor({
             </button>
             <button
               onClick={() => setEditorMode('rect')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'rect'
                   ? 'bg-accent text-white shadow-sm'
                   : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -608,7 +608,7 @@ export function ImageEditor({
             </button>
             <button
               onClick={() => setEditorMode('circle')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'circle'
                   ? 'bg-accent text-white shadow-sm'
                   : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -623,7 +623,7 @@ export function ImageEditor({
 
         {/* Zoom Controls */}
         <div className="flex flex-col gap-2">
-          <span className="text-[9px] font-black text-white/40 uppercase tracking-widest text-center md:text-left">การซูม (หรือใช้ลูกกลิ้งเมาส์)</span>
+          <span className="text-xs font-semibold text-white/50 text-center md:text-left">การซูม (หรือใช้ลูกกลิ้งเมาส์)</span>
           <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 w-fit items-center gap-1">
             <button
               onClick={() => handleZoomButton('out')}
@@ -633,7 +633,7 @@ export function ImageEditor({
             >
               <ZoomOut size={14} />
             </button>
-            <span className="text-[10px] font-bold text-white px-2.5 min-w-[54px] text-center">
+            <span className="text-xs font-bold text-white px-2.5 min-w-[54px] text-center">
               {Math.round(zoomScale * 100)}%
             </span>
             <button
@@ -647,7 +647,7 @@ export function ImageEditor({
             <div className="w-px h-4 bg-white/10 mx-1" />
             <button
               onClick={() => handleZoomButton('reset')}
-              className="p-1.5 rounded-lg text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-[9px] font-bold"
+              className="p-1.5 rounded-lg text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-xs font-semibold"
               title="พอดีหน้าจอ"
             >
               <Maximize size={12} />
@@ -660,7 +660,7 @@ export function ImageEditor({
         {/* Colors Selector */}
         {editorMode !== 'pan' && (
           <div className="flex flex-col gap-2 transition-all">
-            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest text-center md:text-left">เลือกสีร่าง</span>
+            <span className="text-xs font-semibold text-white/50 text-center md:text-left">เลือกสีร่าง</span>
             <div className="flex gap-3">
               {BRUSH_COLORS.map((c) => (
                 <button
@@ -687,13 +687,13 @@ export function ImageEditor({
         {/* Sizes Selector */}
         {editorMode !== 'pan' && (
           <div className="flex flex-col gap-2 transition-all">
-            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest text-center md:text-left">ขนาดลายเส้น</span>
+            <span className="text-xs font-semibold text-white/50 text-center md:text-left">ขนาดลายเส้น</span>
             <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 w-fit">
               {BRUSH_SIZES.map((sz) => (
                 <button
                   key={sz.value}
                   onClick={() => setBrushSize(sz.value)}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     brushSize === sz.value
                       ? 'bg-white text-black shadow-sm'
                       : 'text-white/60 hover:text-white'

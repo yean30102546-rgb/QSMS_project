@@ -49,7 +49,7 @@ export function Tooltip({ text, position = 'top', children }: TooltipProps) {
       {/* Tooltip bubble */}
       {isVisible && (
         <div
-          className={`absolute z-50 px-3 py-1.5 text-[11px] font-medium text-white bg-slate-800 rounded-lg whitespace-nowrap shadow-lg pointer-events-none ${positionStyles}`}
+          className={`absolute z-50 px-3 py-1.5 text-xs font-medium text-white bg-slate-800 rounded-lg whitespace-nowrap shadow-lg pointer-events-none ${positionStyles}`}
           role="tooltip"
         >
           {text}
