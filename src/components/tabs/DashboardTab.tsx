@@ -4,17 +4,10 @@ import { motion } from 'motion/react';
 import type { ReworkCase } from '../../services/api';
 import { Dashboard } from './Dashboard';
 
-interface DashboardTabProps {
-  cases: ReworkCase[];
-  isLoadingCases: boolean;
-  isLoadingMaster: boolean;
-}
+import { useReworkData } from '../../contexts/ReworkDataContext';
 
-export function DashboardTab({
-  cases,
-  isLoadingCases,
-  isLoadingMaster,
-}: DashboardTabProps) {
+export function DashboardTab() {
+  const { cases, isLoadingCases, isLoadingMaster } = useReworkData();
   return (
     <motion.div
       key="dashboard"

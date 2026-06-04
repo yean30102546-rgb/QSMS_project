@@ -13,11 +13,6 @@ const OverallTab = React.lazy(async () => {
   return { default: mod.OverallTab };
 });
 
-const AddCaseTab = React.lazy(async () => {
-  const mod = await import('../tabs/AddCaseTab');
-  return { default: mod.AddCaseTab };
-});
-
 const DashboardTab = React.lazy(async () => {
   const mod = await import('../tabs/DashboardTab');
   return { default: mod.DashboardTab };
@@ -43,64 +38,9 @@ interface MainLayoutProps {
   onLogout: () => void;
   userName: string;
   userRole?: User['role'] | '';
-  cases: ReworkCase[];
-  isLoadingCases: boolean;
-  caseError: string | null;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  loadCases: () => void;
-  openUpdateModal: (caseItem: ReworkCase) => void;
-  stats: {
-    total: number;
-    pending: number;
-    inProgress: number;
-    awaitingValuation: number;
-    completed: number;
-    completionRate: number;
-    linkedCount: number;
-  };
-  caseSource: string;
-  setCaseSource: (source: string) => void;
-  caseNumber: string;
-  setCaseNumber: (num: string) => void;
-  existingCaseIds: string[];
-  formItems: ReworkItem[];
-  addFormItem: () => void;
-  removeFormItem: (id: string) => void;
-  resetFormItem: (id: string) => void;
-  clearAllForm: () => void;
-  duplicateFormItem: (id: string) => void;
-  updateFormItem: (id: string, field: string, value: string | number) => void;
-  handleImagesSelected: (itemId: string, files: File[]) => void;
-  uploadedImages: Record<string, File[]>;
-  handleCheckItem: (id: string, field: 'itemNumber' | 'itemCode') => void;
-  handleSubmit: () => void;
-  orFiles: File[];
-  setOrFiles: (files: File[]) => void;
-  isSaving: boolean;
-  progress: number;
-  statusText?: string;
-  isComplete: boolean;
-  saveMessage: SaveMessage;
-  isSaveDisabled: (items: ReworkItem[]) => boolean;
-  autoFillTriggeredItem: string | null;
-  isLoadingMaster: boolean;
-  selectionModal: SelectionModalState;
-  setSelectionModal: (modal: SelectionModalState) => void;
   onOpenTutorial: () => void;
   onBackToPortal: () => void;
-}
-
-function TabFallback() {
-  return (
-    <div className="flex-1 p-4 md:p-8 lg:p-12">
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 w-48 rounded bg-slate-200" />
-        <div className="h-24 rounded-2xl bg-slate-100" />
-        <div className="h-24 rounded-2xl bg-slate-100" />
-      </div>
-    </div>
-  );
+  children: React.ReactNode;
 }
 
 export function MainLayout({
@@ -109,43 +49,9 @@ export function MainLayout({
   onLogout,
   userName,
   userRole = '',
-  cases,
-  isLoadingCases,
-  caseError,
-  searchQuery,
-  setSearchQuery,
-  loadCases,
-  openUpdateModal,
-  stats,
-  caseSource,
-  setCaseSource,
-  caseNumber,
-  setCaseNumber,
-  existingCaseIds,
-  formItems,
-  addFormItem,
-  removeFormItem,
-  resetFormItem,
-  clearAllForm,
-  duplicateFormItem,
-  updateFormItem,
-  handleImagesSelected,
-  uploadedImages,
-  orFiles,
-  setOrFiles,
-  handleCheckItem,
-  handleSubmit,
-  isSaving,
-  progress,
-  isComplete,
-  saveMessage,
-  isSaveDisabled,
-  autoFillTriggeredItem,
-  isLoadingMaster,
-  selectionModal,
-  setSelectionModal,
   onOpenTutorial,
   onBackToPortal,
+  children,
 }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = React.useState(false);
@@ -157,17 +63,6 @@ export function MainLayout({
     setActiveTab(tab);
     closeSidebar();
   };
-
-  // RBAC: Redirect to overall if accessing unauthorized tab
-  React.useEffect(() => {
-    const roleUpper = String(userRole || '').toUpperCase();
-    if (activeTab === 'dashboard' && roleUpper !== 'QSMS') {
-      setActiveTab('overall');
-    }
-    if (activeTab === 'add' && roleUpper === 'FINANCE') {
-      setActiveTab('overall');
-    }
-  }, [activeTab, userRole, setActiveTab]);
 
   return (
     <div className="flex min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans">
@@ -307,95 +202,7 @@ export function MainLayout({
           </div>
         </div>
 
-        <Suspense fallback={<TabFallback />}>
-          <AnimatePresence mode="wait">
-            {activeTab === 'overall' && (
-              <motion.div
-                key="overall"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-1 flex-col overflow-hidden"
-              >
-                <OverallTab
-                  cases={cases}
-                  isLoadingCases={isLoadingCases}
-                  caseError={caseError}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  loadCases={loadCases}
-                  openUpdateModal={openUpdateModal}
-                  stats={stats}
-                  userRole={userRole}
-                  userName={userName}
-                />
-              </motion.div>
-            )}
-
-            {activeTab === 'add' && String(userRole || '').toUpperCase() !== 'FINANCE' && (
-              <motion.div
-                key="add"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex-1 overflow-x-hidden overflow-y-auto"
-              >
-                <div className="p-8 md:p-10 lg:p-12">
-                  <AddCaseTab
-                    caseSource={caseSource}
-                    setCaseSource={setCaseSource}
-                    caseNumber={caseNumber}
-                    setCaseNumber={setCaseNumber}
-                    existingCaseIds={existingCaseIds}
-                    formItems={formItems}
-                    addFormItem={addFormItem}
-                    removeFormItem={removeFormItem}
-                    resetFormItem={resetFormItem}
-                    clearAllForm={clearAllForm}
-                    duplicateFormItem={duplicateFormItem}
-                    updateFormItem={updateFormItem}
-                    handleImagesSelected={handleImagesSelected}
-                    uploadedImages={uploadedImages}
-                    orFiles={orFiles}
-                    setOrFiles={setOrFiles}
-                    handleCheckItem={handleCheckItem}
-                    handleSubmit={handleSubmit}
-                    isSaving={isSaving}
-                    progress={progress}
-                    isComplete={isComplete}
-                    saveMessage={saveMessage}
-                    isSaveDisabled={isSaveDisabled}
-                    autoFillTriggeredItem={autoFillTriggeredItem}
-                    selectionModal={selectionModal}
-                    setSelectionModal={setSelectionModal}
-                    onOpenTutorial={onOpenTutorial}
-                  />
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'dashboard' && String(userRole || '').toUpperCase() === 'QSMS' && (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex-1 overflow-x-hidden overflow-y-auto"
-              >
-                <div className="p-8 md:p-10 lg:p-12">
-                  <DashboardTab
-                    cases={cases}
-                    isLoadingCases={isLoadingCases}
-                    isLoadingMaster={isLoadingMaster}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Suspense>
+        {children}
       </main>
 
       <PermissionsModal

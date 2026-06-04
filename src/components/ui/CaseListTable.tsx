@@ -183,9 +183,9 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
             : ''
       }`}
     >
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <div className="text-sm font-bold text-primary truncate max-w-[200px] md:max-w-[300px]">{caseItem.caseName || displayId}</div>
+      <div className="flex-1 min-w-0 pr-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-sm font-bold text-primary break-words whitespace-normal leading-snug">{caseItem.caseName || displayId}</div>
           {caseItem.caseName && (
              <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200 font-mono">{displayId}</span>
           )}
@@ -202,8 +202,8 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
             </div>
           )}
         </div>
-        <div className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-500">
-          <span className="font-semibold text-primary/80 truncate max-w-[150px]">{itemNameDisplay}</span>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-slate-500">
+          <span className="font-semibold text-primary/80 break-words whitespace-normal">{itemNameDisplay}</span>
           <span>&bull;</span>
           <div className="flex items-center gap-1 text-primary/80">
             <Calendar size={11} className="shrink-0" />
@@ -232,9 +232,9 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
         </div>
       </div>
 
-      <div className="mr-8 text-right">
+      <div className="mr-2 sm:mr-6 text-right shrink-0 max-w-[100px] sm:max-w-[150px]">
         <p className="text-sm font-semibold text-primary">{totalAmount} กล่อง</p>
-        <p className="text-xs font-medium text-slate-500 mt-0.5">{reasonsDisplay}</p>
+        <p className="text-[11px] font-medium text-slate-500 mt-0.5 break-words">{reasonsDisplay}</p>
       </div>
 
       <StatusPill status={caseItem.status} />

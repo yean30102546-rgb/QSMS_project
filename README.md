@@ -21,6 +21,12 @@
 - **Drag-and-Drop Schedule Shifts** - สลับกะการทำงานหรือกำหนดวันลาประเภทต่างๆ (Sick Leave, Business Leave, Holiday, OT) ได้สะดวกผ่านการลากวาง
 - **Shift Stats Summary** - แสดงสรุปผลรวมจำนวนวันทำงาน วันหยุด และชั่วโมงลารวมของพนักงานแต่ละคนโดยอัตโนมัติ
 
+### 🤖 DocAI RAG Module (ระบบถามตอบปัญญาประดิษฐ์จากคลังเอกสาร)
+- **Nong Beepa Persona** - แชทถามตอบข้อสงสัยภาษาไทยกับ "น้องผึ้งพา" ด้วยน้ำเสียงที่เป็นกันเอง สุภาพ และมีภาพลักษณ์แบรนด์ที่น่ารักเพื่อช่วยลดความตึงเครียดในโรงงาน
+- **Hybrid Search Engine** - ค้นหาคำตอบจากเอกสารอ้างอิงที่มีความแม่นยำสูง ด้วยการผสานกำลังระหว่าง Vector Search (Supabase pgvector + Jina Embeddings) และ Full-Text Search สำหรับจับคีย์เวิร์ดเฉพาะทาง
+- **Direct File Ingestion** - ระบบดึงข้อมูลและแยกวิเคราะห์จากไฟล์ PDF (ถอดข้อความแบบ Markdown และวิเคราะห์ OCR ภาพหน้าคู่มืออัตโนมัติด้วย Gemini 2.5 Flash), ไฟล์ Excel และภาพถ่ายชิ้นส่วนประกอบแกลลอนหรือพาเลท
+
+
 ### 🎨 Apple Premium UI/UX
 - **Frosted Glassmorphism** - ใช้เอฟเฟกต์กระจกเบลอระดับสูง (`.glass-panel`, `.glass-input` + `backdrop-blur-xl`) และขอบโปร่งแสงสะท้อนเงา
 - **Tactile Spring Micro-animations** - การกดปุ่มหรือเปลี่ยนหน้าต่างมาพร้อมการยุบตัวขยายตัวตามกฎฟิสิกส์สปริงที่ลื่นไหล
@@ -70,6 +76,7 @@ src/
 ├── modules/
 │   ├── rework/                # Rework app logic (Overall, AddCase, Dashboard)
 │   ├── roster/                # Roster calendar and shift management
+│   ├── rag/                   # DocAI RAG (Nong Beepa Chatbot & File Ingestion UI)
 │   └── platform/              # Workspace registries & types
 ├── services/
 │   ├── api.ts                 # Legacy / direct GAS api functions
@@ -344,11 +351,13 @@ updateCase(caseId: string, updates: Partial<ReworkCase>)
 ```
 Updates an existing case's status or details.
 
-### Dashboard Stats
-```typescript
-fetchDashboardStats()
-```
 Gets aggregated statistics for the dashboard.
+
+### RAG Ingestion & Chat APIs
+- `POST /api/rag` (action: `ingest`): เคลียร์ข้อมูลเดิม แยกชิ้นส่วนข้อความ (Chunking) ด้วย MarkdownTextSplitter, คำนวณเวกเตอร์ embeddings ผ่าน Jina AI และ Bulk insert ลง Supabase
+- `POST /api/rag` (action: `chat`): แปลงข้อความสืบค้นของผู้ใช้ และเรียกใช้ Supabase Hybrid Search ร่วมกับการจัดทำ Contextual System Prompt ส่งให้ Gemini (สตรีมคำตอบแบบ real-time)
+- `POST /api/rag` (action: `feedback`): จัดเก็บความพึงพอใจของคำตอบ (Thumbs Up/Down) เพื่อประเมินผลลัพธ์ของโมเดล RAG
+
 
 ---
 

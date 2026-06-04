@@ -1,7 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
+import React from 'react';
 
 import { fetchImageDataUrl } from '../services/api';
 import { toCorsProxyUrl, toDisplayImageUrl } from '../utils/imageUrls';
+import { ReworkCase } from '../services/api';
 
 const PNG_SCALE = 2;
 const PDF_SCALE = 2;
@@ -12,12 +14,13 @@ const CONTENT_WIDTH_MM = A4_WIDTH_MM - PDF_MARGIN_MM * 2;
 const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - PDF_MARGIN_MM * 2;
 
 async function loadExportLibraries() {
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import('html2canvas'),
+  const [{ jsPDF }, htmlToImage, XLSX] = await Promise.all([
     import('jspdf'),
+    import('html-to-image'),
+    import('xlsx')
   ]);
 
-  return { html2canvas, jsPDF };
+  return { jsPDF, htmlToImage, XLSX };
 }
 
 const IMAGE_TIMEOUT_MS = 5000; // 5 seconds per image
@@ -70,7 +73,7 @@ async function fetchImageAsBase64(url: string): Promise<string> {
     }
   }
 
-  return displayUrl;
+  return displayUrl; // fallback to URL if all base64 conversion fails
 }
 
 async function waitForImages(container: HTMLElement, onProgress?: (msg: string) => void): Promise<void> {
@@ -114,6 +117,48 @@ async function waitForImages(container: HTMLElement, onProgress?: (msg: string) 
   );
 }
 
+// Helper to preload images for React-PDF
+async function preloadImagesForCaseData(caseData: ReworkCase, onProgress?: (msg: string) => void): Promise<ReworkCase> {
+  const clonedData = JSON.parse(JSON.stringify(caseData)) as ReworkCase;
+  let totalImages = 0;
+  let loadedImages = 0;
+
+  clonedData.items.forEach(item => {
+    if (item.imageUrls) totalImages += item.imageUrls.length;
+  });
+
+  const updateProgress = () => {
+    if (onProgress) {
+      onProgress(`Loading PDF images... (${loadedImages}/${totalImages})`);
+    }
+  };
+  
+  updateProgress();
+
+  for (const item of clonedData.items) {
+    if (item.imageUrls && item.imageUrls.length > 0) {
+      const base64Urls = await Promise.all(
+        item.imageUrls.map(async (url) => {
+          try {
+            const base64 = await fetchImageAsBase64(url);
+            loadedImages++;
+            updateProgress();
+            return base64;
+          } catch (error) {
+            console.error('Error preloading image:', error);
+            loadedImages++;
+            updateProgress();
+            return url; // fallback to original
+          }
+        })
+      );
+      item.imageUrls = base64Urls;
+    }
+  }
+
+  return clonedData;
+}
+
 function prepareExportElement(el: HTMLDivElement) {
   el.style.display = 'block';
   el.style.position = 'absolute';
@@ -141,7 +186,7 @@ export function useExportReport() {
     setExportProgress('Preparing export...');
 
     try {
-      const { html2canvas } = await loadExportLibraries();
+      const { htmlToImage } = await loadExportLibraries();
 
       prepareExportElement(el);
       setExportProgress('Loading images...');
@@ -151,29 +196,31 @@ export function useExportReport() {
       await document.fonts.ready;
 
       setExportProgress('Rendering PNG...');
-      const canvas = await html2canvas(el, {
-        scale: PNG_SCALE,
-        useCORS: true,
-        allowTaint: false,
+      
+      const clonedEl = el.querySelector('[data-export-template="true"]') as HTMLElement | null;
+      if (clonedEl) {
+        clonedEl.style.display = 'block';
+        clonedEl.style.width = '1000px';
+      }
+
+      const dataUrl = await htmlToImage.toPng(el, {
+        pixelRatio: PNG_SCALE,
         backgroundColor: '#ffffff',
-        logging: false,
-        // @ts-ignore legacy option
-        letterRendering: true,
-        onclone: (clonedDoc) => {
-          const clonedEl = clonedDoc.querySelector('[data-export-template="true"]') as HTMLElement | null;
-          if (clonedEl) {
-            clonedEl.style.display = 'block';
-            clonedEl.style.width = '1000px';
-          }
-        },
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+        }
       });
 
+      if (clonedEl) {
+        clonedEl.style.display = '';
+        clonedEl.style.width = '';
+      }
+
       setExportProgress('Downloading PNG...');
-      const sanitizedId = caseId.replace(/[/\\?%*:|"<>]/g, '-');
+      const sanitizedId = caseId.replace(/[\/\\?%*:|"<>]/g, '-');
       const filename = `Rework_Report_${sanitizedId}.png`;
 
-      // Use toDataURL synchronously to maintain user activation for the 'download' attribute
-      const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = filename;
@@ -190,94 +237,101 @@ export function useExportReport() {
     }
   }, []);
 
-  const exportPDF = useCallback(async (caseId: string) => {
-    const el = exportRef.current;
-    if (!el) return;
-
+  const exportPDF = useCallback(async (caseData: ReworkCase) => {
     setIsExporting(true);
-    setExportProgress('Preparing export...');
+    setExportProgress('Preparing PDF...');
 
     try {
-      const { html2canvas, jsPDF } = await loadExportLibraries();
-
-      prepareExportElement(el);
-      setExportProgress('Loading images...');
-      await waitForImages(el, setExportProgress);
-
-      setExportProgress('Loading fonts...');
-      await document.fonts.ready;
+      // Preload images into Base64 to ensure reliable PDF rendering
+      const preloadedCaseData = await preloadImagesForCaseData(caseData, setExportProgress);
 
       setExportProgress('Rendering PDF...');
-      const canvas = await html2canvas(el, {
-        scale: PDF_SCALE,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        logging: false,
-        // @ts-ignore legacy option kept for compatibility
-        letterRendering: true,
-        onclone: (clonedDoc) => {
-          const clonedEl = clonedDoc.querySelector('[data-export-template="true"]') as HTMLElement | null;
-          if (clonedEl) {
-            clonedEl.style.display = 'block';
-            clonedEl.style.width = '1000px';
-          }
-        },
-      });
-
-      const imgWidthPx = canvas.width;
-      const imgHeightPx = canvas.height;
-      const pxPerMm = imgWidthPx / CONTENT_WIDTH_MM;
-      const totalHeightMm = imgHeightPx / pxPerMm;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-
-      let offsetMm = 0;
-      let pageNum = 0;
-
-      setExportProgress('Building PDF pages...');
-
-      while (offsetMm < totalHeightMm) {
-        if (pageNum > 0) {
-          pdf.addPage();
-        }
-
-        const sourceYPx = offsetMm * pxPerMm;
-        const sliceHeightPx = Math.min(CONTENT_HEIGHT_MM * pxPerMm, imgHeightPx - sourceYPx);
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = imgWidthPx;
-        pageCanvas.height = sliceHeightPx;
-
-        const ctx = pageCanvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(
-            canvas,
-            0,
-            sourceYPx,
-            imgWidthPx,
-            sliceHeightPx,
-            0,
-            0,
-            imgWidthPx,
-            sliceHeightPx,
-          );
-        }
-
-        const sliceHeightMm = sliceHeightPx / pxPerMm;
-        const pageImgData = pageCanvas.toDataURL('image/png');
-        pdf.addImage(pageImgData, 'PNG', PDF_MARGIN_MM, PDF_MARGIN_MM, CONTENT_WIDTH_MM, sliceHeightMm);
-
-        offsetMm += CONTENT_HEIGHT_MM;
-        pageNum++;
-      }
-
+      
+      const { pdf } = await import('@react-pdf/renderer');
+      const { ExportPDFTemplate } = await import('../components/ui/ExportPDFTemplate');
+      
+      const blob = await pdf(React.createElement(ExportPDFTemplate, { caseData: preloadedCaseData }) as React.ReactElement<any>).toBlob();
+      
       setExportProgress('Downloading PDF...');
-      const sanitizedId = caseId.replace(/[/\\?%*:|"<>]/g, '-');
-      pdf.save(`Rework_Report_${sanitizedId}.pdf`);
+      const sanitizedId = caseData.id.replace(/[/\\?%*:|"<>]/g, '-');
+      const filename = `Rework_Report_${sanitizedId}.pdf`;
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('PDF export failed:', error);
       alert('ไม่สามารถ Export PDF ได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
-      hideExportElement(exportRef.current);
+      setIsExporting(false);
+      setExportProgress('');
+    }
+  }, []);
+
+  const exportExcel = useCallback(async (caseData: ReworkCase) => {
+    setIsExporting(true);
+    setExportProgress('Preparing Excel...');
+
+    try {
+      const { XLSX } = await loadExportLibraries();
+
+      // Transform caseData into a flat structure for Excel
+      const rows = caseData.items.map(item => ({
+        'Case ID': caseData.id,
+        'Case Name': caseData.caseName || '',
+        'Source': caseData.source,
+        'Date': caseData.date,
+        'Status': caseData.status,
+        'Item Number': item.itemNumber,
+        'Item Code': item.itemCode,
+        'Item Name': item.itemName,
+        'Amount': item.amount,
+        'Customer Name': item.customerName || '',
+        'Reason': item.reason,
+        'Reason Subtype': item.reasonSubtype || '',
+        'Responsible': item.responsible || '',
+        'Responsible Subtype': item.responsibleSubtype || '',
+        'Details': item.details || ''
+      }));
+
+      // If no items, still export case info
+      if (rows.length === 0) {
+        rows.push({
+          'Case ID': caseData.id,
+          'Case Name': caseData.caseName || '',
+          'Source': caseData.source,
+          'Date': caseData.date,
+          'Status': caseData.status,
+          'Item Number': '',
+          'Item Code': '',
+          'Item Name': '',
+          'Amount': 0,
+          'Customer Name': '',
+          'Reason': '',
+          'Reason Subtype': '',
+          'Responsible': '',
+          'Responsible Subtype': '',
+          'Details': ''
+        });
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Rework Items');
+
+      setExportProgress('Downloading Excel...');
+      const sanitizedId = caseData.id.replace(/[\/\\?%*:|"<>]/g, '-');
+      const filename = `Rework_Report_${sanitizedId}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+    } catch (error) {
+      console.error('Excel export failed:', error);
+      alert('ไม่สามารถ Export Excel ได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
       setIsExporting(false);
       setExportProgress('');
     }
@@ -289,5 +343,6 @@ export function useExportReport() {
     exportProgress,
     exportPNG,
     exportPDF,
+    exportExcel,
   };
 }

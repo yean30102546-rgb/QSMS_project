@@ -157,45 +157,91 @@ export const ExportTemplate = React.forwardRef<HTMLDivElement, ExportTemplatePro
               <div style={{ ...accentBarStyle, backgroundColor: '#0071e3' }} />
               <h2 style={{ ...sectionTitleStyle, fontWeight: 700 }}>สรุปรายการสินค้า (Item Summary)</h2>
             </div>
-            <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid #e5e5ea' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#fafafc', color: '#86868b', borderBottom: '1px solid #e5e5ea' }}>
-                    <th style={{ ...thStyle, width: '40px', textAlign: 'center', fontWeight: 600 }}>#</th>
-                    <th style={{ ...thStyle, fontWeight: 600 }}>ชิ้นส่วน / Code</th>
-                    <th style={{ ...thStyle, fontWeight: 600 }}>Batch / เลขกล่อง</th>
-                    <th style={{ ...thStyle, fontWeight: 600 }}>Mold / Line</th>
-                    <th style={{ ...thStyle, fontWeight: 600 }}>สินค้า</th>
-                    <th style={{ ...thStyle, textAlign: 'center', fontWeight: 600 }}>จำนวน</th>
-                    <th style={{ ...thStyle, fontWeight: 600 }}>สาเหตุ/ผู้รับผิดชอบ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {caseData.items.map((item, idx) => (
-                    <tr key={idx} style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5ea' }}>
-                      <td style={{ ...tdStyle, textAlign: 'center', color: '#86868b', fontWeight: 600 }}>{idx + 1}</td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, fontFamily: 'monospace', color: '#0071e3' }}>{item.itemNumber}</div>
-                        <div style={{ fontSize: '10px', color: '#86868b' }}>{item.itemCode || '-'}</div>
-                      </td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 600 }}>{item.batchNo || '-'}</div>
-                        <div style={{ fontSize: '10px', color: '#86868b' }}>{formatThaiDateShort(item.packagingDate || '')}</div>
-                      </td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 600 }}>M: {item.mold || '-'}</div>
-                        <div style={{ fontSize: '10px', color: '#86868b' }}>L: {item.line || '-'}</div>
-                      </td>
-                      <td style={{ ...tdStyle, fontWeight: 600 }}>{item.itemName}</td>
-                      <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 700, fontSize: '14px' }}>{item.amount}</td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, color: '#ff3b30', fontSize: '11px' }}>{item.reason}</div>
-                        <div style={{ fontSize: '10px', color: '#86868b', fontWeight: 600 }}>{item.responsible} {item.responsibleSubtype ? `(${item.responsibleSubtype})` : ''}</div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {caseData.items.map((item, idx) => (
+                <div key={idx} style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  borderRadius: '16px', 
+                  overflow: 'hidden', 
+                  border: '1px solid #e5e5ea',
+                  backgroundColor: '#ffffff',
+                  pageBreakInside: 'avoid'
+                }}>
+                  {/* Header Row */}
+                  <div style={{ 
+                    display: 'flex', 
+                    padding: '16px 20px', 
+                    borderBottom: '1px solid #f1f5f9', 
+                    backgroundColor: '#fafafc',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{ 
+                      width: '28px', height: '28px', borderRadius: '6px', 
+                      backgroundColor: '#e2e8f0', color: '#475569', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                      fontWeight: 700, fontSize: '13px', marginRight: '15px', flexShrink: 0
+                    }}>{idx + 1}</div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 6px 0', color: '#1d1d1f' }}>{item.itemName}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ backgroundColor: '#eff6ff', padding: '3px 8px', borderRadius: '6px', color: '#0071e3', fontSize: '11px', fontWeight: 700 }}>
+                          {item.itemNumber}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#86868b' }}>
+                          Code: {item.itemCode || '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Details Row */}
+                  <div style={{ display: 'flex' }}>
+                    {/* Left: Specs (65%) */}
+                    <div style={{ flex: '0 0 65%', padding: '20px', borderRight: '1px solid #f1f5f9' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <div>
+                          <p style={{ ...infoLabelStyle, marginBottom: '2px' }}>Batch No.</p>
+                          <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#334155' }}>{item.batchNo || '-'}</p>
+                        </div>
+                        <div>
+                          <p style={{ ...infoLabelStyle, marginBottom: '2px' }}>วันที่ผลิตแกลลอน</p>
+                          <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#334155' }}>{item.gallonDate ? formatThaiDateShort(item.gallonDate) : '-'}</p>
+                        </div>
+                        <div>
+                          <p style={{ ...infoLabelStyle, marginBottom: '2px' }}>Box Number</p>
+                          <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#334155' }}>{item.boxNumber || '-'}</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '20px' }}>
+                          <div>
+                            <p style={{ ...infoLabelStyle, marginBottom: '2px' }}>Mold</p>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#334155' }}>{item.mold || '-'}</p>
+                          </div>
+                          <div>
+                            <p style={{ ...infoLabelStyle, marginBottom: '2px' }}>Line</p>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#334155' }}>{item.line || '-'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Reason & Amount (35%) */}
+                    <div style={{ flex: '0 0 35%', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <p style={{ ...infoLabelStyle, marginBottom: '4px' }}>สาเหตุ (Reason)</p>
+                        <p style={{ margin: '0 0 6px 0', fontSize: '14px', fontWeight: 700, color: '#ff3b30' }}>{item.reason}{item.reasonSubtype ? ` - ${item.reasonSubtype}` : ''}</p>
+                        <p style={{ margin: 0, fontSize: '11px', color: '#86868b', fontWeight: 600 }}>
+                          ผู้รับผิดชอบ: {item.responsible} {item.responsibleSubtype ? `(${item.responsibleSubtype})` : ''}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '12px' }}>
+                        <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#86868b' }}>จำนวน</p>
+                        <p style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1d1d1f' }}>{item.amount}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -250,7 +296,7 @@ export const ExportTemplate = React.forwardRef<HTMLDivElement, ExportTemplatePro
                   <div style={{ padding: '30px' }}>
                     <div style={{ marginBottom: '30px', backgroundColor: '#fafafc', padding: '20px', borderRadius: '16px', borderLeft: '4px solid #0071e3' }}>
                       <p style={{ ...metaLabelStyle, color: '#0071e3', marginBottom: '8px', fontWeight: 600 }}>ข้อมูลทางเทคนิค / สิ่งที่ตรวจพบ (Technical Description)</p>
-                      <p style={{ fontSize: '14px', color: '#1d1d1f', margin: 0, whiteSpace: 'pre-wrap', fontWeight: 500, lineHeight: '1.7' }}>{item.details || 'ไม่มีการระบุข้อมูลเพิ่มเติมสำหรับรายการนี้'}</p>
+                      <p style={{ fontSize: '14px', color: '#1d1d1f', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', fontWeight: 500, lineHeight: '1.7' }}>{item.details || 'ไม่มีการระบุข้อมูลเพิ่มเติมสำหรับรายการนี้'}</p>
                     </div>
 
                     <div>
@@ -347,12 +393,12 @@ const tdStyle: React.CSSProperties = {
 
 const infoBoxStyle: React.CSSProperties = {
   backgroundColor: '#ffffff',
-  padding: '24px',
+  padding: '16px',
   textAlign: 'center'
 };
 
 const infoLabelStyle: React.CSSProperties = {
-  fontSize: '9px',
+  fontSize: '8px',
   fontWeight: 800,
   color: '#94a3b8',
   textTransform: 'uppercase',

@@ -511,3 +511,26 @@ export function sanitizeString(input: string): string {
 export function findDuplicateItemNumbers(items: ReworkItem[]): { hasDuplicates: boolean; duplicates: string[] } {
   return validationService.findDuplicateItemNumbers(items);
 }
+
+/**
+ * Add zero-width spaces (\u200B) between characters to allow line breaks in @react-pdf/renderer
+ * for Thai language, which lacks natural word boundaries (spaces).
+ */
+export function addThaiWordBreaks(text: string | null | undefined): string {
+  if (!text) return '';
+  const str = String(text);
+  
+  // Use Intl.Segmenter if available
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    try {
+      const segmenter = new Intl.Segmenter('th', { granularity: 'word' });
+      const segments = segmenter.segment(str);
+      return Array.from(segments).map(s => s.segment).join('\u200B');
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  // Fallback: inject zero-width space after every Thai character
+  return str.replace(/([\u0E00-\u0E7F])/g, '$1\u200B');
+}

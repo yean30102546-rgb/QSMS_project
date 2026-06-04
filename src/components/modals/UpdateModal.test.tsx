@@ -21,8 +21,8 @@ vi.mock('../../hooks/useExportReport', () => ({
   useExportReport: () => ({
     isExporting: false,
     exportProgress: 0,
-    exportError: null as string | null,
-    exportCaseToPDF: vi.fn()
+    exportPNG: vi.fn(),
+    exportPDF: vi.fn()
   })
 }));
 

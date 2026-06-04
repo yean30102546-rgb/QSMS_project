@@ -46,6 +46,7 @@ export interface ReworkItem {
   imageFolderUrl?: string; // URL ของ folder ใน Google Drive ที่เก็บรูปทั้งหมดของ case นี้
   status?: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
   batchNo?: string;
+  gallonDate?: string;
   boxNumber?: string;
   packagingDate?: string;
   mold?: string;
@@ -56,13 +57,11 @@ export interface ReworkItem {
   uid?: string; // Stable unique ID from backend
   lastActiveField?: 'itemNumber' | 'itemCode'; // Tracks user priority
   verificationStatus?: 'idle' | 'checking' | 'verified' | 'new' | 'failed' | 'updating' | 'conflict';
-  newImages?: File[];
-  deletedImages?: string[];
 }
 
 export const CUSTOMER_OPTIONS = [
   'Eneos',
-  'Valvoline',
+  'Valvaline',
   'BCP',
   'OR',
   'Petronas',
@@ -158,13 +157,13 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
     const response = await fetch('/api/rework', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        ...payload, 
-        token, 
-        authProfile, 
+      body: JSON.stringify({
+        ...payload,
+        token,
+        authProfile,
         authEmail,
         userRole: currentUser?.role || '' // Include userRole for backend validation
-      }), 
+      }),
     });
 
     if (!response.ok) {
@@ -172,7 +171,7 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
       if (response.status === 401) {
         throw new Error('Session expired. Please login again.');
       }
-      
+
       try {
         const errorData = await response.json();
         throw new Error(errorData.error || `Network response was not ok (${response.status})`);
@@ -211,7 +210,7 @@ export async function insertCase(
     // แปลงไฟล์รูปภาพทั้งหมดเป็น Base64 ก่อนส่ง (เพื่อให้ GAS.txt รับได้)
     const processedItems = await Promise.all(items.map(async (item) => {
       const files = imageData && imageData[item.id] ? imageData[item.id] : [];
-      
+
       const base64Images = await Promise.all(files.map(async (file) => {
         const compression = await compressImage(file, { maxSizeMB: 0.3 }); // Target 300KB
         const fileToConvert = compression.success ? compression.compressedFile! : file;
@@ -258,7 +257,7 @@ export async function insertCase(
     });
 
     // Convert OR files to base64 if any
-    const processedOrFiles = orFiles 
+    const processedOrFiles = orFiles
       ? await Promise.all(orFiles.map(fileToBase64))
       : [];
 
@@ -331,13 +330,13 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
   const seenIds = new Map<string, number>();
 
   return sourceItems.map((item, index) => {
-    const rawItem = item as Record<string, unknown> & Partial<ReworkItem> & { 
-      urls?: string[]; 
-      url?: string; 
-      batch_no?: string; 
-      linked_source_id?: string; 
+    const rawItem = item as Record<string, unknown> & Partial<ReworkItem> & {
+      urls?: string[];
+      url?: string;
+      batch_no?: string;
+      linked_source_id?: string;
     };
-    
+
     const imageUrls = Array.isArray(rawItem.imageUrls)
       ? rawItem.imageUrls
       : Array.isArray(rawItem.urls)
@@ -443,31 +442,8 @@ export async function updateCase(
       }));
     }
 
-    // Process newImages in items if they exist
-    let processedItems = undefined;
-    if (updates.items && updates.items.length > 0) {
-      processedItems = await Promise.all(updates.items.map(async (item) => {
-        let base64Images: string[] = [];
-        if (item.newImages && item.newImages.length > 0) {
-          base64Images = await Promise.all(item.newImages.map(async (file) => {
-            const compression = await compressImage(file, { maxSizeMB: 0.3 });
-            const fileToConvert = compression.success ? compression.compressedFile! : file;
-            return await fileToBase64(fileToConvert);
-          }));
-        }
-        
-        // Remove File objects before sending to backend to prevent serialization issues
-        const { newImages, ...itemWithoutFiles } = item;
-        
-        return {
-          ...itemWithoutFiles,
-          newBase64Images: base64Images.length > 0 ? base64Images : undefined
-        };
-      }));
-    }
-
     // Prepare the payload, excluding the raw File objects
-    const { newOrFiles, items, ...restUpdates } = updates;
+    const { newOrFiles, ...restUpdates } = updates;
 
     const result = await postToGas({
       action: 'updateCaseStatus',
@@ -476,10 +452,7 @@ export async function updateCase(
       resolutionMethod: updates.resolutionMethod,
       reworkCost: updates.reworkCost,
       performedBy: getCurrentUser()?.name || 'User',
-      updates: {
-        ...restUpdates,
-        ...(processedItems && { items: processedItems })
-      },
+      updates: restUpdates,
       orFiles: processedOrFiles.length > 0 ? processedOrFiles : undefined
     });
 
@@ -519,10 +492,10 @@ export async function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>
  */
 export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: string, itemCode: string, itemName: string }[]>> {
   try {
-    const result = await postToGas<{ items: { itemNumber: string, itemCode: string, itemName: string }[] }>({ 
-      action: 'loadMasterData' 
+    const result = await postToGas<{ items: { itemNumber: string, itemCode: string, itemName: string }[] }>({
+      action: 'loadMasterData'
     });
-    
+
     const normalized = (result.data?.items || [])
       .map((item) => ({
         itemNumber: String(item?.itemNumber || '').trim(),
