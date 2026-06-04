@@ -7,6 +7,7 @@ import { ReworkCase, CUSTOMER_OPTIONS, MaterialUsage } from '../../services/api'
 import { formatThaiDate, formatThaiDateShort, enforceNumeric, convertDMYToYMD, convertYMDToDMY } from '../../utils/helpers';
 import { useExportReport } from '../../hooks/useExportReport';
 import { ExportTemplate } from '../ui/ExportTemplate';
+import { ImageUpload } from '../ui/ImageUpload';
 import { DriveImage } from '../ui/DriveImage';
 import { getCurrentUserRole } from '../../services/auth';
 import { UserRole } from '../../config/auth.config';
@@ -23,6 +24,16 @@ interface UpdateModalProps {
 }
 
 const STANDARD_MATERIALS = ['บรรจุภัณฑ์', 'แกลลอน', 'ฝา', 'สติ๊กเกอร์', 'ชริ้งค์ ลาเบล', 'ของแถม'];
+
+const REASON_MAIN_OPTIONS = ['รั่ว', 'เปื้อน', 'อื่นๆ'] as const;
+const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วขูดเจาะ', 'รั่วโดนเครื่องจักร', 'รั่วกระแทก', 'รั่วตะเข็บ', ' รั่วบุบแตก', 'รอยมีด'] as const;
+const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื้อน'] as const;
+const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
+const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
+  SFC: ['PDF', 'PDB', 'WPK', 'WFG', 'อื่นๆ'],
+  Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
+  Customer: ['Customer'],
+};
 
 export function UpdateModal({
   isOpen,
@@ -469,66 +480,325 @@ export function UpdateModal({
                               <div key={item.id || index} className="p-5 border border-divider-color rounded-lg bg-surface-bright space-y-5">
                                 <div className="flex justify-between items-start gap-4">
                                   <div className="flex-1 space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ชื่อรายการ</label>
-                                        <input
-                                          value={item.itemName}
-                                          onChange={(e) => {
-                                            const newItems = [...editedItems];
-                                            newItems[index] = { ...newItems[index], itemName: e.target.value };
-                                            setEditedItems(newItems);
-                                          }}
-                                          className="apple-input w-full bg-system-background px-3 py-2 text-base font-semibold text-on-surface"
-                                        />
+                                    <div className="space-y-6">
+                                      {/* Row 1: Item ID, Code, Name, Customer */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ลูกค้า</label>
+                                          <select
+                                            value={item.customerName || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], customerName: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          >
+                                            <option value="">เลือก</option>
+                                            {CUSTOMER_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                          </select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">หมายเลขบาร์โค้ด</label>
+                                          <input
+                                            value={item.itemNumber || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], itemNumber: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">รหัสสินค้า</label>
+                                          <input
+                                            value={item.itemCode || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], itemCode: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ชื่อรายการ</label>
+                                          <input
+                                            value={item.itemName || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], itemName: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
                                       </div>
-                                      <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ลูกค้า</label>
-                                        <select
-                                          value={item.customerName || ''}
-                                          onChange={(e) => {
-                                            const newItems = [...editedItems];
-                                            newItems[index] = { ...newItems[index], customerName: e.target.value };
-                                            setEditedItems(newItems);
-                                          }}
-                                          className="apple-input w-full bg-system-background px-3 py-2 text-base font-semibold text-on-surface"
-                                        >
-                                          <option value="">เลือกสีลูกค้า</option>
-                                          {CUSTOMER_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                        </select>
+
+                                      {/* Row 2: Batch, Box, Mold, Date, Line, Amount */}
+                                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 bg-surface-secondary/50 p-4 rounded-xl border border-divider-color">
+                                        <div className="space-y-1.5 col-span-2 md:col-span-1">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Batch No.</label>
+                                          <input
+                                            type="date"
+                                            value={convertDMYToYMD(item.batchNo || '')}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], batchNo: convertYMDToDMY(e.target.value) };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Box Number</label>
+                                          <input
+                                            value={item.boxNumber || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], boxNumber: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Mold</label>
+                                          <input
+                                            value={item.mold || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], mold: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">วันที่ผลิตแกลลอน</label>
+                                          <input
+                                            type="date"
+                                            value={convertDMYToYMD(item.packagingDate || '')}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], packagingDate: convertYMDToDMY(e.target.value) };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Line</label>
+                                          <input
+                                            value={item.line || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], line: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">จำนวน</label>
+                                          <div className="flex items-center gap-2">
+                                            <input
+                                              type="number"
+                                              value={item.amount || ''}
+                                              onChange={(e) => {
+                                                const newItems = [...editedItems];
+                                                newItems[index] = { ...newItems[index], amount: Number(e.target.value) };
+                                                setEditedItems(newItems);
+                                              }}
+                                              className="apple-input w-full bg-system-background px-3 py-2 text-sm font-bold text-on-surface"
+                                            />
+                                          </div>
+                                        </div>
                                       </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">อาการเสีย / รายละเอียด</label>
-                                      <textarea
-                                        value={item.details || ''}
-                                        onChange={(e) => {
-                                          const newItems = [...editedItems];
-                                          newItems[index] = { ...newItems[index], details: e.target.value };
-                                          setEditedItems(newItems);
-                                        }}
-                                        className="apple-input w-full bg-system-background p-3 min-h-[80px] text-sm font-medium text-on-surface"
-                                      />
+
+                                      {/* Row 3: Reason & Responsible */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">สาเหตุ</label>
+                                          <div className="flex gap-2">
+                                            <select
+                                              value={item.reason || ''}
+                                              onChange={(e) => {
+                                                const newItems = [...editedItems];
+                                                newItems[index] = { 
+                                                  ...newItems[index], 
+                                                  reason: e.target.value,
+                                                  reasonSubtype: '',
+                                                  linkedSourceId: ''
+                                                };
+                                                setEditedItems(newItems);
+                                              }}
+                                              className="apple-input flex-1 bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                            >
+                                              <option value="">เลือก</option>
+                                              {REASON_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                              {item.reason && !REASON_MAIN_OPTIONS.includes(item.reason as any) && (
+                                                <option value={item.reason}>{item.reason}</option>
+                                              )}
+                                            </select>
+                                            
+                                            {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && (
+                                              <select
+                                                value={item.reasonSubtype || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], reasonSubtype: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                className="apple-input flex-1 bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                              >
+                                                <option value="">เลือกชนิด</option>
+                                                {(item.reason === 'รั่ว' ? LEAK_SUBTYPES : STAIN_SUBTYPES).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                              </select>
+                                            )}
+                                          </div>
+                                          
+                                          {item.reason === 'เปื้อน' && editedItems.some(i => i.reason === 'รั่ว' && i.id !== item.id) && (
+                                            <div className="mt-2 p-3 bg-amber-50/50 border border-amber-200 rounded-lg flex items-center justify-between">
+                                              <label className="text-xs font-semibold text-amber-900 flex items-center gap-2">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={!!item.linkedSourceId}
+                                                  onChange={(e) => {
+                                                    const newItems = [...editedItems];
+                                                    if (!e.target.checked) {
+                                                      newItems[index] = { ...newItems[index], linkedSourceId: '' };
+                                                    } else {
+                                                      const leaks = editedItems.filter(i => i.reason === 'รั่ว' && i.id !== item.id);
+                                                      if (leaks.length === 1) {
+                                                        newItems[index] = { ...newItems[index], linkedSourceId: leaks[0].id };
+                                                      }
+                                                    }
+                                                    setEditedItems(newItems);
+                                                  }}
+                                                  className="rounded text-amber-600 focus:ring-amber-500"
+                                                />
+                                                โยงกับรายการที่รั่ว
+                                              </label>
+                                              {item.linkedSourceId !== undefined && item.linkedSourceId !== '' && (
+                                                <select
+                                                  value={item.linkedSourceId}
+                                                  onChange={(e) => {
+                                                    const newItems = [...editedItems];
+                                                    newItems[index] = { ...newItems[index], linkedSourceId: e.target.value };
+                                                    setEditedItems(newItems);
+                                                  }}
+                                                  className="bg-white border border-amber-200 rounded px-2 py-1 text-xs font-semibold"
+                                                >
+                                                  <option value="">เลือก</option>
+                                                  {editedItems.filter(i => i.reason === 'รั่ว' && i.id !== item.id).map(leak => (
+                                                    <option key={leak.id} value={leak.id}>{leak.itemNumber}</option>
+                                                  ))}
+                                                </select>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ผู้รับผิดชอบ</label>
+                                          <div className="flex gap-2">
+                                            <select
+                                              value={item.responsible || ''}
+                                              onChange={(e) => {
+                                                const newItems = [...editedItems];
+                                                newItems[index] = { 
+                                                  ...newItems[index], 
+                                                  responsible: e.target.value,
+                                                  responsibleSubtype: ''
+                                                };
+                                                setEditedItems(newItems);
+                                              }}
+                                              className="apple-input flex-1 bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                            >
+                                              <option value="">เลือก</option>
+                                              {RESPONSIBLE_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                              {item.responsible && !RESPONSIBLE_MAIN_OPTIONS.includes(item.responsible as any) && (
+                                                <option value={item.responsible}>{item.responsible}</option>
+                                              )}
+                                            </select>
+                                            
+                                            {(item.responsible === 'SFC' || item.responsible === 'Supplier') && (
+                                              <select
+                                                value={item.responsibleSubtype || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], responsibleSubtype: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                className="apple-input flex-1 bg-system-background px-3 py-2 text-sm font-semibold text-on-surface"
+                                              >
+                                                <option value="">เลือกชนิด</option>
+                                                {(RESPONSIBLE_SUBDIVISIONS[item.responsible] || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                              </select>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Row 4: Details & Images */}
+                                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <div className="lg:col-span-2 space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">อาการเสีย / รายละเอียด</label>
+                                          <textarea
+                                            value={item.details || ''}
+                                            onChange={(e) => {
+                                              const newItems = [...editedItems];
+                                              newItems[index] = { ...newItems[index], details: e.target.value };
+                                              setEditedItems(newItems);
+                                            }}
+                                            className="apple-input w-full bg-system-background p-3 min-h-[80px] text-sm font-medium text-on-surface"
+                                          />
+                                        </div>
+                                        <div className="lg:col-span-1 space-y-1.5">
+                                          <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">รูปภาพหลักฐาน</label>
+                                          <div className="bg-system-background p-2 rounded-xl border border-divider-color">
+                                            <div className="flex flex-wrap gap-2 mb-2">
+                                              {images.filter((imgUrl: string) => !(item.deletedImages || []).includes(imgUrl)).map((imgUrl: string, i: number) => (
+                                                <div key={i} className="relative group">
+                                                  <img src={imgUrl} alt="evidence" className="w-16 h-16 object-cover rounded-lg border border-divider-color" />
+                                                  <button
+                                                    onClick={() => {
+                                                      const newItems = [...editedItems];
+                                                      newItems[index] = { 
+                                                        ...newItems[index], 
+                                                        deletedImages: [...(newItems[index].deletedImages || []), imgUrl]
+                                                      };
+                                                      setEditedItems(newItems);
+                                                    }}
+                                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                            <ImageUpload
+                                              itemIndex={index}
+                                              onImagesSelected={(files) => {
+                                                const newItems = [...editedItems];
+                                                newItems[index] = {
+                                                  ...newItems[index],
+                                                  newImages: files
+                                                };
+                                                setEditedItems(newItems);
+                                              }}
+                                              currentImages={item.newImages || []}
+                                              maxImages={5}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col items-end gap-3 shrink-0">
-                                    <div className="space-y-1.5 text-right">
-                                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">จำนวน</label>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="number"
-                                          value={item.amount || ''}
-                                          onChange={(e) => {
-                                            const newItems = [...editedItems];
-                                            newItems[index] = { ...newItems[index], amount: Number(e.target.value) };
-                                            setEditedItems(newItems);
-                                          }}
-                                          className="apple-input w-20 bg-system-background px-2 py-2 text-center text-base font-bold text-on-surface"
-                                        />
-                                        <span className="text-sm font-medium text-on-surface-variant">pcs</span>
-                                      </div>
-                                    </div>
-                                    <button onClick={() => handleRemoveItem(index)} className="p-2 text-error hover:bg-error-container/30 rounded-full transition-colors" title="ลบรายการ">
+                                  <div className="flex flex-col gap-3 shrink-0">
+                                    <button onClick={() => handleRemoveItem(index)} className="p-2 text-error hover:bg-error-container/30 rounded-full transition-colors self-end" title="ลบรายการ">
                                       <Trash2 size={18} />
                                     </button>
                                   </div>

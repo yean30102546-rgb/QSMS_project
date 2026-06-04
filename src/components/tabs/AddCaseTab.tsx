@@ -456,7 +456,7 @@ export function AddCaseTab({
                 />
               </div>
 
-              <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+              <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                 <div className="col-span-2 sm:col-span-1">
                   <InputField
                     label="หมายเลขล็อต (Batch no.)"
@@ -484,6 +484,15 @@ export function AddCaseTab({
                     value={item.mold || ''}
                     onChange={(v) => updateFormItem(item.id, 'mold', v)}
                     placeholder="เลข Mold"
+                    disabled={isSaving}
+                  />
+                </div>
+                <div className="col-span-1">
+                  <InputField
+                    label="วันที่ผลิตแกลลอน"
+                    type="date"
+                    value={convertDMYToYMD(item.packagingDate || '')}
+                    onChange={(v) => updateFormItem(item.id, 'packagingDate', convertYMDToDMY(v))}
                     disabled={isSaving}
                   />
                 </div>

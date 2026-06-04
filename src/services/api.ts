@@ -56,11 +56,13 @@ export interface ReworkItem {
   uid?: string; // Stable unique ID from backend
   lastActiveField?: 'itemNumber' | 'itemCode'; // Tracks user priority
   verificationStatus?: 'idle' | 'checking' | 'verified' | 'new' | 'failed' | 'updating' | 'conflict';
+  newImages?: File[];
+  deletedImages?: string[];
 }
 
 export const CUSTOMER_OPTIONS = [
   'Eneos',
-  'Valvaline',
+  'Valvoline',
   'BCP',
   'OR',
   'Petronas',
@@ -441,8 +443,31 @@ export async function updateCase(
       }));
     }
 
+    // Process newImages in items if they exist
+    let processedItems = undefined;
+    if (updates.items && updates.items.length > 0) {
+      processedItems = await Promise.all(updates.items.map(async (item) => {
+        let base64Images: string[] = [];
+        if (item.newImages && item.newImages.length > 0) {
+          base64Images = await Promise.all(item.newImages.map(async (file) => {
+            const compression = await compressImage(file, { maxSizeMB: 0.3 });
+            const fileToConvert = compression.success ? compression.compressedFile! : file;
+            return await fileToBase64(fileToConvert);
+          }));
+        }
+        
+        // Remove File objects before sending to backend to prevent serialization issues
+        const { newImages, ...itemWithoutFiles } = item;
+        
+        return {
+          ...itemWithoutFiles,
+          newBase64Images: base64Images.length > 0 ? base64Images : undefined
+        };
+      }));
+    }
+
     // Prepare the payload, excluding the raw File objects
-    const { newOrFiles, ...restUpdates } = updates;
+    const { newOrFiles, items, ...restUpdates } = updates;
 
     const result = await postToGas({
       action: 'updateCaseStatus',
@@ -451,7 +476,10 @@ export async function updateCase(
       resolutionMethod: updates.resolutionMethod,
       reworkCost: updates.reworkCost,
       performedBy: getCurrentUser()?.name || 'User',
-      updates: restUpdates,
+      updates: {
+        ...restUpdates,
+        ...(processedItems && { items: processedItems })
+      },
       orFiles: processedOrFiles.length > 0 ? processedOrFiles : undefined
     });
 
