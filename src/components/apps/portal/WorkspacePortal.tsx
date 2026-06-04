@@ -39,8 +39,6 @@ export function WorkspacePortal({
   const isGuest = !user;
   const greetingName = user?.name || 'ผู้เยี่ยมชม';
   const [isRagOpen, setIsRagOpen] = useState(false);
-  const isDraggingMascot = React.useRef(false);
-  const [mascotState, setMascotState] = useState<'default' | 'happy' | 'drag'>('default');
 
   // Preview Stats State
   const [reworkStats, setReworkStats] = useState({
@@ -181,20 +179,15 @@ export function WorkspacePortal({
   }, [isGuest]);
 
   return (
-    <div className="apple-shell flex min-h-screen flex-col overflow-y-auto bg-gradient-to-br from-[#F0F7FF] via-[#FFFFFF] to-[#F5F9FF]">
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,102,204,0.1),transparent_70%)]" />
-        <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(61,89,124,0.1),transparent_70%)]" />
-      </div>
-
+    <div className="apple-shell flex min-h-screen flex-col overflow-y-auto bg-slate-50">
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col px-5 py-6 md:px-8 lg:px-12">
-        <header className="glass-panel mb-10 flex items-center justify-between rounded-[28px] px-5 py-4 shadow-xl shadow-black/5 md:px-7">
+        <header className="mb-10 flex items-center justify-between rounded-2xl bg-white px-5 py-4 shadow-sm border border-slate-200 md:px-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-[#1d1d1f]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-[#1d1d1f]">
               <LayoutGrid size={18} />
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/50">Central Control</p>
+              <h2 className="text-sm font-medium text-slate-500">Central Control</h2>
               <h1 className="text-lg font-semibold tracking-[-0.02em] text-[#1d1d1f]">ศูนย์ควบคุมกลาง</h1>
             </div>
           </div>
@@ -227,12 +220,12 @@ export function WorkspacePortal({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
-            className="glass-panel rounded-[36px] px-6 py-8 shadow-2xl shadow-black/5 md:px-10 md:py-12"
+            className="rounded-3xl bg-white px-6 py-8 shadow-sm border border-slate-200 md:px-10 md:py-12"
           >
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-black/60">
-              <Sparkles size={12} />
+            <div className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600">
+              <Sparkles size={16} className="text-blue-500" />
               Welcome to the Workspace
-            </p>
+            </div>
             <h2 className="max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.03em] text-[#1d1d1f] md:text-5xl">
               สวัสดีคุณ{greetingName}, ยินดีต้อนรับสู่ระบบงานกลาง
             </h2>
@@ -246,10 +239,10 @@ export function WorkspacePortal({
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.08, ease: 'easeOut' }}
-            className="glass-panel flex flex-col gap-4 rounded-[36px] p-5 shadow-2xl shadow-black/5"
+            className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-sm border border-slate-200"
           >
-            <div className="rounded-[28px] bg-black/5 p-5 backdrop-blur-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/50">โปรไฟล์ของคุณ</p>
+            <div className="rounded-2xl bg-slate-50 p-5 border border-slate-100">
+              <h3 className="text-sm font-medium text-slate-500">โปรไฟล์ของคุณ</h3>
               {isGuest ? (
                 <>
                   <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">GUEST (ผู้มาเยือน)</p>
@@ -263,15 +256,15 @@ export function WorkspacePortal({
               )}
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-              <div className="rounded-[28px] bg-white/40 p-5 border border-white/40">
-                <div className="mb-2 flex items-center gap-2 text-black/70">
+              <div className="rounded-2xl bg-slate-50 p-5 border border-slate-100">
+                <div className="mb-2 flex items-center gap-2 text-slate-700">
                   <ShieldCheck size={16} />
                   <span className="text-sm font-semibold">ความปลอดภัย</span>
                 </div>
                 <p className="text-sm leading-6 text-[#515154]">ระบบรักษาความปลอดภัยด้วย Token ชั่วคราว และการแยกสิทธิ์ตามบทบาท</p>
               </div>
-              <div className="rounded-[28px] bg-white/40 p-5 border border-white/40">
-                <div className="mb-2 flex items-center gap-2 text-black/70">
+              <div className="rounded-2xl bg-slate-50 p-5 border border-slate-100">
+                <div className="mb-2 flex items-center gap-2 text-slate-700">
                   <Clock3 size={16} />
                   <span className="text-sm font-semibold">สถานะระบบ</span>
                 </div>
@@ -289,21 +282,21 @@ export function WorkspacePortal({
             const isActive = app.status === 'active';
             const accentClasses =
               app.accent === 'blue'
-                ? 'bg-white/40 border-black/5 shadow-black/5'
-                : 'bg-amber-50/40 border-amber-200/50 shadow-amber-900/5';
+                ? 'bg-white border-slate-200 shadow-sm'
+                : 'bg-amber-50/50 border-amber-100 shadow-sm';
 
             return (
               <motion.article
                 key={app.id}
-                whileHover={isActive ? { y: -4, scale: 1.005 } : {}}
+                whileHover={isActive ? { y: -2 } : {}}
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.12 + index * 0.08 }}
-                className={`glass-panel relative flex flex-col overflow-hidden rounded-[32px] border p-7 shadow-xl transition-all ${accentClasses}`}
+                className={`relative flex flex-col overflow-hidden rounded-3xl border p-7 transition-all ${accentClasses}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${app.accent === 'blue' ? 'text-black/50' : app.accent === 'purple' ? 'text-purple-600/70' : 'text-amber-600/70'}`}>
+                    <p className={`text-sm font-medium ${app.accent === 'blue' ? 'text-slate-500' : app.accent === 'purple' ? 'text-purple-600' : 'text-amber-600'}`}>
                       {app.subtitle}
                     </p>
                     <h3 className="mt-3 text-[32px] font-semibold leading-[1.06] text-[#1d1d1f]">
@@ -311,7 +304,7 @@ export function WorkspacePortal({
                     </h3>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${isActive ? 'bg-black/5 text-black' : 'bg-amber-100 text-amber-600'
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${isActive ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700'
                       }`}
                   >
                     {isActive ? 'พร้อมใช้งาน' : 'เร็วๆ นี้'}
@@ -321,11 +314,10 @@ export function WorkspacePortal({
                 {/* App Preview Section */}
                 {isActive && (
                   app.id === 'rework' ? (
-                    <div className="mt-6 flex flex-col gap-4 rounded-[24px] bg-white/40 p-4 border border-white/30 backdrop-blur-md shadow-inner">
+                    <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
                       <div className="flex items-center justify-between text-xs font-semibold text-on-surface-variant/80 px-1">
                         <span className="font-medium text-slate-500 flex items-center gap-1.5">
                           <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                           </span>
                           ข้อมูลจริงล่าสุด (Live): คืบหน้า ({reworkStats.hasData ? `${reworkStats.completed}/${reworkStats.total}` : '--/--'} เสร็จ)
@@ -400,13 +392,13 @@ export function WorkspacePortal({
                       </div>
                     </div>
                   ) : app.id === 'roster' ? (
-                    <div className="mt-6 flex flex-col gap-4 rounded-[24px] bg-white/40 p-4 border border-white/30 backdrop-blur-md shadow-inner">
+                    <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
                       {/* Top Stats: Present vs Leave */}
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="flex flex-col justify-center rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-3.5 border border-emerald-200/50 shadow-sm">
+                        <div className="flex flex-col justify-center rounded-2xl bg-emerald-50 p-3.5 border border-emerald-100 shadow-sm">
                           <div className="flex items-center gap-1.5 text-emerald-700 mb-1">
                             <Users2 size={14} className="text-emerald-600" />
-                            <span className="text-[10px] font-semibold uppercase tracking-wider">บุคลากรพร้อมปฏิบัติงาน</span>
+                            <span className="text-xs font-medium">บุคลากรพร้อมปฏิบัติงาน</span>
                           </div>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-bold text-emerald-800 leading-none">
@@ -420,10 +412,10 @@ export function WorkspacePortal({
                           </div>
                         </div>
 
-                        <div className="flex flex-col justify-center rounded-2xl bg-white/60 p-3.5 border border-white/40 shadow-sm">
+                        <div className="flex flex-col justify-center rounded-2xl bg-white p-3.5 border border-slate-200 shadow-sm">
                           <div className="flex items-center gap-1.5 text-slate-500 mb-1.5">
                             <CalendarDays size={14} />
-                            <span className="text-[10px] font-semibold uppercase tracking-wider">ลาพักวันนี้</span>
+                            <span className="text-xs font-medium">ลาพักวันนี้</span>
                           </div>
 
                           {/* Leave Breakdown */}
@@ -457,14 +449,13 @@ export function WorkspacePortal({
                       </div>
 
                       {/* Retention Rate Bar */}
-                      <div className="mt-1 flex flex-col gap-2 rounded-2xl bg-white/50 p-3.5 border border-white/40">
+                      <div className="mt-1 flex flex-col gap-2 rounded-2xl bg-white p-3.5 border border-slate-200 shadow-sm">
                         <div className="flex justify-between items-center px-1">
                           <div className="flex items-center gap-1.5">
                             <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">อัตราการมาทำงานสะสม (Live)</span>
+                            <span className="text-xs font-medium text-slate-500">อัตราการมาทำงานสะสม (Live)</span>
                           </div>
                           <span className="text-xs font-bold text-slate-700">
                             {rosterStats.hasData ? `${rosterStats.retentionRate}%` : '--%'}
@@ -519,50 +510,6 @@ export function WorkspacePortal({
         </section>
       </div>
 
-      {/* Nong Bee Mascot */}
-      <motion.div
-        className="fixed bottom-6 right-6 z-50 cursor-pointer touch-none"
-        drag
-        dragMomentum={false}
-        onDragStart={() => {
-          isDraggingMascot.current = true;
-          setMascotState('drag');
-        }}
-        onDragEnd={() => {
-          setTimeout(() => {
-            isDraggingMascot.current = false;
-          }, 100);
-          setMascotState('default');
-        }}
-        onPointerDown={() => setMascotState('drag')}
-        onPointerUp={() => {
-          if (!isDraggingMascot.current) {
-            setMascotState('happy');
-          }
-        }}
-        onHoverStart={() => {
-          if (!isDraggingMascot.current) setMascotState('happy');
-        }}
-        onHoverEnd={() => {
-          if (!isDraggingMascot.current) setMascotState('default');
-        }}
-        whileHover={{ scale: 1.1 }}
-        whileDrag={{ scale: 1.15, cursor: 'grabbing' }}
-        transition={{ type: 'spring', stiffness: 300, bounce: 0.6 }}
-        onClick={() => {
-          if (!isDraggingMascot.current) {
-            setIsRagOpen(true);
-          }
-        }}
-        title="คุยกับน้องผึ้งพา (AI Assistant)"
-      >
-        <img
-          src={`/img/nongbeepa_${mascotState}.png`}
-          alt="Nong Bee Pa"
-          draggable={false}
-          className="w-24 h-24 md:w-32 md:h-32 drop-shadow-xl hover:drop-shadow-2xl transition-all object-contain pointer-events-none"
-        />
-      </motion.div>
 
       {/* RAG Chat Modal */}
       <RagApp user={user} open={isRagOpen} onOpenChange={setIsRagOpen} />
