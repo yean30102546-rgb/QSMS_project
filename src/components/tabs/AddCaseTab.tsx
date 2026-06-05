@@ -840,14 +840,19 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   );
 }
 
-const InputField = React.forwardRef<HTMLInputElement, any>(({ label, className, ...props }, ref) => (
-  <div className="space-y-2">
-    <label className="ml-1 text-xs font-semibold text-slate-500">{label}</label>
-    <input
-      ref={ref}
-      {...props}
-      className={`w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none ${className || ''}`}
-    />
-  </div>
-));
+const InputField = React.forwardRef<HTMLInputElement, any>(({ label, className, id: externalId, ...props }, ref) => {
+  const internalId = React.useId();
+  const id = externalId || internalId;
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="ml-1 text-xs font-semibold text-slate-500">{label}</label>
+      <input
+        id={id}
+        ref={ref}
+        {...props}
+        className={`w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none ${className || ''}`}
+      />
+    </div>
+  );
+});
 InputField.displayName = 'InputField';

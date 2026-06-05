@@ -439,6 +439,7 @@ export function UpdateModal({
                               <input
                                 value={editedCaseNumber}
                                 onChange={(e) => setEditedCaseNumber(enforceNumeric(e.target.value))}
+                                placeholder="เช่น 084"
                                 className="w-full bg-transparent px-2 py-2.5 text-base font-bold text-center outline-none text-on-surface"
                               />
                               <span className="pr-4 py-2.5 text-base font-semibold text-on-surface-variant">-{caseNameYear}</span>

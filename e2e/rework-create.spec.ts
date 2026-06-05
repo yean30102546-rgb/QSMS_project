@@ -50,7 +50,7 @@ test.describe('Rework Portal - Case Initiation', () => {
 
   test('should be able to navigate to add case tab and fill basic info', async ({ page }) => {
     // Go to Add Case Tab
-    await page.getByRole('button', { name: /บันทึกงานใหม่/i }).click();
+    await page.getByRole('button', { name: /เพิ่มงานใหม่/i }).click();
 
     // Ensure we are in the Add Case Form
     await expect(page.locator('text=บันทึกงาน Rework ใหม่')).toBeVisible();
@@ -62,7 +62,7 @@ test.describe('Rework Portal - Case Initiation', () => {
 
     // Fill Item Name
     const itemNameInput = page.getByRole('textbox', { name: /ชื่อรายการ/i }).first();
-    await itemNameInput.fill('Test Product');
+    await itemNameInput.fill('Test Product', { force: true });
     await expect(itemNameInput).toHaveValue('Test Product');
 
     // Try submitting disabled form

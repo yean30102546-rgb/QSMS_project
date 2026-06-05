@@ -75,11 +75,11 @@ test.describe('Rework Portal - Case Update', () => {
     await caseCard.click();
 
     // 2. Expect modal to open
-    await expect(page.locator('text=อัปเดตสถานะงาน')).toBeVisible();
+    await expect(page.locator('text=Update Status')).toBeVisible();
     await expect(page.locator('text=RT084-2026').first()).toBeVisible();
 
     // 3. Enter Edit Mode
-    await page.getByText('แก้ไขข้อมูล').click();
+    await page.getByRole('button', { name: 'แก้ไข' }).click();
 
     // 4. Check if dropdown for Source exists and change it to SFC
     const sourceDropdown = page.locator('select').first();
@@ -97,9 +97,9 @@ test.describe('Rework Portal - Case Update', () => {
     });
 
     // 7. Click save
-    await page.getByText('บันทึกการแก้ไข').click();
+    await page.getByRole('button', { name: 'บันทึก' }).click();
 
     // 8. The modal should close
-    await expect(page.locator('text=อัปเดตสถานะงาน')).not.toBeVisible();
+    await expect(page.locator('text=Update Status')).not.toBeVisible();
   });
 });
