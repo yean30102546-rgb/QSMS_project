@@ -363,7 +363,7 @@ export function UpdateModal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 pointer-events-none will-change-transform"
+              className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-3 md:p-6 pointer-events-none will-change-transform"
             >
               <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -375,15 +375,15 @@ export function UpdateModal({
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 aria-hidden={!!editExitIntent}
-                className="pointer-events-auto w-full max-w-5xl max-h-[90vh] will-change-transform flex"
+                className="pointer-events-auto w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[90vh] will-change-transform flex"
               >
                 {isEditMode ? (
                   /* =========================================
                      EDIT MODE SCREEN (Prototype Style)
                      ========================================= */
-                  <div className="relative bg-system-background w-full rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-divider-color flex flex-col max-h-[90vh] overflow-hidden">
+                  <div className="relative bg-system-background w-full rounded-none sm:rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] border-0 sm:border border-divider-color flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
                     {/* Header */}
-                    <div className="flex justify-between items-center px-6 py-4 border-b border-divider-color bg-surface-secondary/50 shrink-0">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 px-4 sm:px-6 py-4 border-b border-divider-color bg-surface-secondary/50 shrink-0">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-apple-blue-deep/10 flex items-center justify-center">
                           <PenTool size={16} className="text-apple-blue-deep" />
@@ -413,10 +413,10 @@ export function UpdateModal({
                     </div>
 
                     {/* Content Area */}
-                    <div className="overflow-y-auto flex-1 custom-scrollbar p-6 bg-surface-bright space-y-6">
+                    <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 bg-surface-bright space-y-4 sm:space-y-6">
 
                       {/* Case Info - Edit */}
-                      <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
+                      <div className="bg-system-background border border-divider-color rounded-xl p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                         <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
                           <AlertCircle size={18} className="text-on-surface-variant" />
                           <h3 className="text-base font-semibold text-on-surface">Case Information</h3>
@@ -467,8 +467,8 @@ export function UpdateModal({
 
                       
                       {/* Item Details - Edit */}
-                      <div className="bg-system-background border border-divider-color rounded-xl p-6 shadow-sm space-y-6">
-                        <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
+                      <div className="bg-system-background border border-divider-color rounded-xl p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-2 mb-2 sm:mb-4 border-b border-divider-color pb-3">
                           <FileText size={18} className="text-[#0066cc]" />
                           <h3 className="text-base font-semibold text-on-surface">รายการสินค้า ({editedItems.length})</h3>
                         </div>
@@ -840,8 +840,8 @@ export function UpdateModal({
                           </div>
 
                           {materials.length > 0 ? (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left">
+                            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                              <table className="w-full text-left min-w-[500px]">
                                 <thead>
                                   <tr className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider border-b border-divider-color">
                                     <th className="pb-3 px-2">ชื่อวัสดุ</th>
@@ -927,31 +927,31 @@ export function UpdateModal({
                   /* =========================================
                      VIEW MODE SCREEN (Prototype Style)
                      ========================================= */
-                  <div className="bg-system-background rounded-[16px] w-full max-w-5xl flex flex-col shadow-[0_24px_48px_rgba(0,0,0,0.12)] border border-[rgba(0,0,0,0.08)] overflow-hidden max-h-[90vh]">
+                  <div className="bg-system-background rounded-none sm:rounded-[16px] w-full max-w-5xl flex flex-col shadow-none sm:shadow-[0_24px_48px_rgba(0,0,0,0.12)] border-0 sm:border border-[rgba(0,0,0,0.08)] overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh]">
                     {/* Header */}
-                    <div className="flex justify-between items-start px-6 pt-10 pb-4 border-b border-divider-color bg-system-background z-10 shrink-0">
+                    <div className="flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b border-divider-color bg-system-background z-10 shrink-0">
                       <div>
-                        <h1 className="text-3xl font-semibold tracking-tight text-on-surface">Update Status</h1>
-                        <p className="text-base text-on-surface-variant mt-1">{previewCaseName || caseData?.id}</p>
+                        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface">Update Status</h1>
+                        <p className="text-sm sm:text-base text-on-surface-variant mt-1">{previewCaseName || caseData?.id}</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         {isAdmin && (
                           <button
                             onClick={handleDelete}
                             disabled={isLoading}
-                            className="text-sm font-semibold text-[#ff3b30] bg-[#fff2f2] px-4 py-2 rounded-full hover:bg-[#ff3b30]/10 transition-all"
+                            className="text-[13px] sm:text-sm font-semibold text-[#ff3b30] bg-[#fff2f2] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full hover:bg-[#ff3b30]/10 transition-all"
                           >
                             Delete
                           </button>
                         )}
-                        <button onClick={handleRequestClose} className="text-on-surface-variant hover:bg-surface-secondary p-2 rounded-full transition-colors focus:outline-none">
+                        <button onClick={handleRequestClose} className="text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full transition-colors focus:outline-none">
                           <X size={24} />
                         </button>
                       </div>
                     </div>
 
                     {/* Meta Info Bar */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-6 py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0">
                       <div>
                         <div className="flex items-center gap-1.5 text-on-surface-variant mb-1">
                           <span className="text-sm font-medium">Source</span>
@@ -985,18 +985,18 @@ export function UpdateModal({
                     </div>
 
                     {/* Section Header */}
-                    <div className="px-6 py-3 bg-surface-secondary/50 border-b border-divider-color shrink-0 flex items-center gap-2 text-on-surface">
+                    <div className="px-4 sm:px-6 py-3 bg-surface-secondary/50 border-b border-divider-color shrink-0 flex items-center gap-2 text-on-surface">
                       <FileText size={20} />
-                      <span className="text-lg font-semibold">Item Details</span>
+                      <span className="text-base sm:text-lg font-semibold">Item Details</span>
                     </div>
 
                     {/* Scrollable Content */}
-                    <div className="overflow-y-auto flex-1 custom-scrollbar p-6 bg-surface-bright space-y-6">
+                    <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 bg-surface-bright space-y-4 sm:space-y-6">
 
                       {caseData?.items.map((item, idx) => {
                         const images = item.imageUrls || [];
                         return (
-                          <div key={idx} className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-5 hover:border-[rgba(0,0,0,0.15)] transition-colors">
+                          <div key={idx} className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-4 sm:p-5 hover:border-[rgba(0,0,0,0.15)] transition-colors">
                             <div className="flex justify-between items-start mb-4">
                               <div>
                                 <h3 className="font-semibold text-on-surface text-base">{item.itemName}</h3>
@@ -1010,7 +1010,7 @@ export function UpdateModal({
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2 mb-4 bg-surface-secondary/30 p-4 rounded-xl border border-divider-color/50">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-3 gap-x-2 sm:gap-4 mt-2 mb-4 bg-surface-secondary/30 p-3 sm:p-4 rounded-xl border border-divider-color/50">
                               <div>
                                 <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Batch No.</div>
                                 <div className="text-sm font-medium text-on-surface">{item.batchNo || '-'}</div>
@@ -1174,13 +1174,13 @@ export function UpdateModal({
                     </div>
 
                     {/* Footer */}
-                    <div className="border-t border-divider-color bg-system-background px-6 py-4 flex justify-between items-center shrink-0 rounded-b-[16px]">
-                      <div className="flex gap-4 items-center">
+                    <div className="border-t border-divider-color bg-system-background px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 shrink-0 rounded-b-none sm:rounded-b-[16px]">
+                      <div className="flex gap-4 items-center w-full sm:w-auto justify-center sm:justify-start order-2 sm:order-1">
                         <button onClick={() => caseData && exportPNG(caseData.id)} disabled={isExporting || !caseData} className="text-sm font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
-                          <FileImage size={16} /> PNG
+                          <FileImage size={16} /> <span className="hidden sm:inline">PNG</span>
                         </button>
                         <button onClick={() => caseData && exportExcel(caseData)} disabled={isExporting || !caseData} className="text-sm font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
-                          <FileSpreadsheet size={16} /> Excel
+                          <FileSpreadsheet size={16} /> <span className="hidden sm:inline">Excel</span>
                         </button>
                         <button onClick={() => {
                           if (caseData) {
@@ -1194,11 +1194,11 @@ export function UpdateModal({
                             });
                           }
                         }} disabled={isExporting || !caseData} className="text-sm font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors">
-                          <Download size={16} /> PDF
+                          <Download size={16} /> <span className="hidden sm:inline">PDF</span>
                         </button>
                       </div>
 
-                      <div className="flex gap-3 items-center">
+                      <div className="flex gap-2 sm:gap-3 items-center w-full sm:w-auto justify-between sm:justify-end order-1 sm:order-2">
                         {/* Quick Status Update (Sticky in Footer) */}
                         {(isOperator || isAdmin || isFinance) && (
                           <div className="hidden lg:flex bg-surface-secondary rounded-full p-1 border border-divider-color mr-2">
@@ -1229,15 +1229,15 @@ export function UpdateModal({
                           </div>
                         )}
                         {isAdmin && (
-                          <button onClick={handleToggleEditMode} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-sm">
-                            {isEditMode ? 'ออกจากโหมดแก้ไข' : 'แก้ไขข้อมูล'}
+                          <button onClick={handleToggleEditMode} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-3 sm:px-4 py-2">
+                            {isEditMode ? 'ยกเลิกแก้' : 'แก้ไข'}
                           </button>
                         )}
-                        <button onClick={onClose} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-sm">
-                          ยกเลิก
+                        <button onClick={onClose} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-3 sm:px-4 py-2">
+                          ปิด
                         </button>
                         {isSaving ? (
-                          <div className="w-48"><AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} /></div>
+                          <div className="w-32 sm:w-48"><AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} /></div>
                         ) : (
                           <button
                             onClick={handleSaveStatus}
@@ -1249,9 +1249,9 @@ export function UpdateModal({
                               if (caseData.status === 'Completed' && !isAdmin) return true;
                               return false;
                             })()}
-                            className="apple-button apple-button-primary shadow-md text-sm"
+                            className="apple-button apple-button-primary shadow-md text-[13px] sm:text-sm px-4 sm:px-6 py-2 flex-1 sm:flex-none justify-center whitespace-nowrap"
                           >
-                            {isEditMode ? 'บันทึกการแก้ไข' : 'อัปเดตสถานะ'}
+                            {isEditMode ? 'บันทึก' : 'อัปเดต'}
                           </button>
                         )}
                       </div>

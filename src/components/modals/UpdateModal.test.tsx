@@ -83,7 +83,7 @@ describe('UpdateModal Component', () => {
     );
     
     // Find the edit button
-    const editModeBtn = screen.getByText('แก้ไขข้อมูล');
+    const editModeBtn = screen.getByText('แก้ไข');
     fireEvent.click(editModeBtn);
 
     // Should reveal source dropdown and editable case number input
@@ -112,7 +112,7 @@ describe('UpdateModal Component', () => {
       />
     );
     
-    fireEvent.click(screen.getByText('แก้ไขข้อมูล'));
+    fireEvent.click(screen.getByText('แก้ไข'));
     
     const caseNameInput = screen.getByDisplayValue('001');
     fireEvent.change(caseNameInput, { target: { value: '999' } });
@@ -132,8 +132,7 @@ describe('UpdateModal Component', () => {
         onUpdate={mockOnUpdate}
       />
     );
-    
-    fireEvent.click(screen.getByText('แก้ไขข้อมูล'));
+    fireEvent.click(screen.getByText('แก้ไข'));
     
     const caseNameInput = screen.getByDisplayValue('001');
     fireEvent.change(caseNameInput, { target: { value: '999' } });
@@ -163,7 +162,7 @@ describe('UpdateModal Component', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('แก้ไขข้อมูล'));
+    fireEvent.click(screen.getByText('แก้ไข'));
 
     const sourceSelect = screen.getAllByRole('combobox')[0];
     fireEvent.change(sourceSelect, { target: { value: 'SFC' } });
@@ -193,7 +192,7 @@ describe('UpdateModal Component', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('แก้ไขข้อมูล'));
+    fireEvent.click(screen.getByText('แก้ไข'));
     expect(screen.getByText('โหมดแก้ไข')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('ยกเลิก'));
@@ -216,7 +215,7 @@ describe('UpdateModal Component', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('แก้ไขข้อมูล'));
+    fireEvent.click(screen.getByText('แก้ไข'));
     fireEvent.click(screen.getByText('ยกเลิก'));
 
     expect(confirmMock).toHaveBeenCalledWith('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการปิดใช่หรือไม่?');
