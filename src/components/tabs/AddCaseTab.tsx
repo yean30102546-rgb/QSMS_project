@@ -217,7 +217,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       return;
     }
 
-    const prefix = data.caseSource === 'Customer' ? 'RT' : 'RW';
+    const prefix = String(data.caseSource).toLowerCase() === 'customer' ? 'RT' : 'RW';
     const currentYear = new Date().getFullYear();
     const composedCaseId = `${prefix}${trimmedNumber}-${currentYear}`;
 
@@ -308,8 +308,8 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                   {...register('caseSource')}
                   className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
                 >
-                  <option>SFC</option>
-                  <option>Customer</option>
+                  <option value="SFC">SFC</option>
+                  <option value="Customer">Customer</option>
                 </select>
               </div>
 
@@ -317,7 +317,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 <label className="ml-1 text-xs font-semibold text-slate-500">หมายเลขเคส (Case ID) *</label>
                 <div className={`flex items-center w-fit overflow-hidden rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(59,130,246,0.15)] group ${!caseNumber.trim() ? 'border-red-400/60 focus-within:border-red-400/80' : 'border-slate-200/60 focus-within:border-blue-400/30'}`}>
                   <span className={`inline-flex items-center pl-4 pr-1 py-2.5 text-[15px] font-medium select-none transition-colors duration-200 ${!caseNumber.trim() ? 'text-red-400' : 'text-slate-400'}`}>
-                    {caseSource === 'Customer' ? 'RT' : 'RW'}
+                    {String(caseSource).toLowerCase() === 'customer' ? 'RT' : 'RW'}
                   </span>
                   <input
                     type="text"
@@ -337,7 +337,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 {!caseNumber.trim() ? (
                   <p className="ml-1 text-xs font-semibold text-red-600">⚠️ จำเป็นต้องกรอกหมายเลขเคส</p>
                 ) : (() => {
-                  const composedId = `${caseSource === 'Customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`;
+                  const composedId = `${String(caseSource).toLowerCase() === 'customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`;
                   const isDuplicate = existingCaseIds.includes(composedId);
                   return isDuplicate ? (
                     <p className="ml-1 text-xs font-semibold text-red-600">⚠️ Case ID "{composedId}" มีอยู่ในระบบแล้ว</p>

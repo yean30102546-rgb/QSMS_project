@@ -62,7 +62,7 @@ export function UpdateModal({
   const [editExitIntent, setEditExitIntent] = useState(false);
   const [editedCaseNumber, setEditedCaseNumber] = useState('');
   const SOURCE_OPTIONS = ['SFC', 'Customer'];
-  const caseNamePrefix = editedSource === 'Customer' ? 'RT' : 'RW';
+  const caseNamePrefix = String(editedSource).toLowerCase() === 'customer' ? 'RT' : 'RW';
   const caseNameYear = new Date().getFullYear().toString().slice(2);
   const previewCaseName = caseData?.caseName || caseData?.id;
   const getCaseNumber = (caseName?: string, id?: string) => caseName || id || 'Unknown';
@@ -354,7 +354,7 @@ export function UpdateModal({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={handleRequestClose}
-              className="fixed inset-0 bg-black/35  z-40 will-change-opacity"
+              className="fixed inset-0 bg-black/35 z-40 will-change-opacity"
             />
 
             {/* Modal Container */}
@@ -375,13 +375,13 @@ export function UpdateModal({
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 aria-hidden={!!editExitIntent}
-                className="pointer-events-auto w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[90vh] will-change-transform flex"
+                className="pointer-events-auto w-full max-w-5xl h-full max-h-[100dvh] sm:h-auto sm:max-h-[90vh] will-change-transform flex rounded-[24px] sm:rounded-[16px] overflow-hidden"
               >
                 {isEditMode ? (
                   /* =========================================
                      EDIT MODE SCREEN (Prototype Style)
                      ========================================= */
-                  <div className="relative bg-system-background w-full rounded-none sm:rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] border-0 sm:border border-divider-color flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+                  <div className="relative bg-system-background w-full rounded-[24px] sm:rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] border-0 sm:border border-divider-color flex flex-col h-full sm:h-auto sm:max-h-[90vh] overflow-hidden">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 px-4 sm:px-6 py-4 border-b border-divider-color bg-surface-secondary/50 shrink-0">
                       <div className="flex items-center gap-3">
