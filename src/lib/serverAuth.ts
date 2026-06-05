@@ -1,3 +1,5 @@
+import { cookies } from 'next/headers';
+
 const AUTH_SECRET = (
   process.env.AUTH_TOKEN_SECRET ||
   process.env.GAS_AUTH_TOKEN_SECRET ||
@@ -78,7 +80,7 @@ function safeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
-async function signToken(unsignedToken: string): Promise<string> {
+export async function signToken(unsignedToken: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(AUTH_SECRET),
@@ -90,7 +92,24 @@ async function signToken(unsignedToken: string): Promise<string> {
   return Buffer.from(signature).toString('base64url');
 }
 
-async function verifyToken(token: string): Promise<TokenPayload> {
+export async function generateToken(profileLower: string, role: string): Promise<string> {
+  const headerObj = { alg: 'HS256', typ: 'JWT' };
+  const payloadObj = {
+    sub: profileLower,
+    profile: role,
+    exp: Math.floor(Date.now() / 1000) + (8 * 3600),
+    type: 'auth_token'
+  };
+
+  const headerStr = Buffer.from(JSON.stringify(headerObj)).toString('base64url');
+  const payloadStr = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+  const unsignedToken = `${headerStr}.${payloadStr}`;
+  const signatureStr = await signToken(unsignedToken);
+  
+  return `${unsignedToken}.${signatureStr}`;
+}
+
+export async function verifyToken(token: string): Promise<TokenPayload> {
   if (!AUTH_SECRET) {
     throw new AuthError('AUTH_TOKEN_SECRET is not configured on the Next.js server.', 500);
   }
@@ -118,8 +137,14 @@ async function verifyToken(token: string): Promise<TokenPayload> {
   return payload;
 }
 
-export async function requireServerAuth(body: Record<string, unknown>): Promise<AuthContext> {
-  const payload = await verifyToken(String(body.token || ''));
+export async function requireServerAuth(body: Record<string, unknown> = {}): Promise<AuthContext> {
+  let token = String(body.token || '');
+  if (!token) {
+    const cookieStore = await cookies();
+    token = cookieStore.get('auth_token')?.value || '';
+  }
+
+  const payload = await verifyToken(token);
   const tokenEmail = String(payload.sub || '').trim().toLowerCase();
   const tokenProfile = normalizeProfile(payload.profile);
   const requestEmail = String(body.authEmail || '').trim().toLowerCase();
