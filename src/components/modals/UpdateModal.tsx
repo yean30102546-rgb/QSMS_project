@@ -363,7 +363,7 @@ export function UpdateModal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-3 md:p-6 pointer-events-none will-change-transform"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none will-change-transform"
             >
               <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -375,13 +375,13 @@ export function UpdateModal({
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 aria-hidden={!!editExitIntent}
-                className="pointer-events-auto w-full max-w-5xl h-auto max-h-[95dvh] sm:max-h-[90vh] will-change-transform flex rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
+                className="pointer-events-auto w-full max-w-5xl flex flex-col max-h-full will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
               >
                 {isEditMode ? (
                   /* =========================================
                      EDIT MODE SCREEN (Prototype Style)
                      ========================================= */
-                  <div className="relative bg-system-background w-full rounded-[24px] sm:rounded-[16px] border-0 sm:border border-divider-color flex flex-col h-full overflow-hidden">
+                  <div className="relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 px-4 sm:px-6 py-4 border-b border-divider-color bg-surface-secondary/50 shrink-0">
                       <div className="flex items-center gap-3">
@@ -927,7 +927,7 @@ export function UpdateModal({
                   /* =========================================
                      VIEW MODE SCREEN (Prototype Style)
                      ========================================= */
-                  <div className="bg-system-background w-full flex flex-col border-0 sm:border border-[rgba(0,0,0,0.08)] overflow-hidden h-full">
+                  <div className="relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden">
                     {/* Header */}
                     <div className="flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b border-divider-color bg-system-background z-10 shrink-0">
                       <div>
