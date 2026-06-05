@@ -10,5 +10,4 @@
 
 ## Architecture & System Design
 - [Next.js RAG Module Architecture](architecture/rag-module-nextjs.md) - สรุปสถาปัตยกรรมโมดูล RAG ของระบบ Next.js Portal ที่ใช้ Gemini API ร่วมกับ Supabase pgvector สำหรับเก็บและสืบค้นเอกสาร
-
-
+- [Next.js + Supabase Auth & Storage](architecture/nextjs-supabase-auth-storage.md) - สรุปสถาปัตยกรรมการย้ายระบบ Auth เป็น Server-State ด้วย HTTP-Only Cookie และการเชื่อมต่อ Storage โดยตรงแทน GAS
