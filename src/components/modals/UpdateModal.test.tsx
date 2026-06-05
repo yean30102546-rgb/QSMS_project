@@ -67,7 +67,7 @@ describe('UpdateModal Component', () => {
         onUpdate={vi.fn()}
       />
     );
-    expect(screen.getByText('อัปเดตสถานะงาน')).toBeInTheDocument();
+    expect(screen.getByText('Update Status')).toBeInTheDocument();
     expect(screen.getAllByText('RT001-2026')[0]).toBeInTheDocument();
   });
 
@@ -180,7 +180,9 @@ describe('UpdateModal Component', () => {
     });
   });
 
-  it('warns before leaving edit mode without saving', async () => {
+  it('exits edit mode when clicking cancel and confirming', async () => {
+    const confirmMock = vi.spyOn(window, 'confirm').mockImplementation(() => true);
+
     render(
       <UpdateModal
         isOpen={true}
@@ -192,15 +194,17 @@ describe('UpdateModal Component', () => {
     );
 
     fireEvent.click(screen.getByText('แก้ไขข้อมูล'));
-    fireEvent.click(screen.getByText('ออกจากโหมดแก้ไข'));
+    expect(screen.getByText('โหมดแก้ไข')).toBeInTheDocument();
 
-    expect(screen.getByText('ออกจากโหมดแก้ไข?')).toBeInTheDocument();
-    expect(screen.getByText('กลับไปแก้ไขต่อ')).toBeInTheDocument();
-    expect(screen.getByText('ออกโดยไม่บันทึก')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('ยกเลิก'));
+    expect(screen.getByText('Update Status')).toBeInTheDocument();
+
+    confirmMock.mockRestore();
   });
 
   it('warns before closing the modal while editing', async () => {
     const onClose = vi.fn();
+    const confirmMock = vi.spyOn(window, 'confirm').mockImplementation(() => false);
 
     render(
       <UpdateModal
@@ -215,10 +219,13 @@ describe('UpdateModal Component', () => {
     fireEvent.click(screen.getByText('แก้ไขข้อมูล'));
     fireEvent.click(screen.getByText('ยกเลิก'));
 
-    expect(screen.getByText('ปิดหน้าต่างโดยยังไม่บันทึก?')).toBeInTheDocument();
+    expect(confirmMock).toHaveBeenCalledWith('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการปิดใช่หรือไม่?');
     expect(onClose).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByText('ปิดโดยไม่บันทึก'));
+    confirmMock.mockImplementation(() => true);
+    fireEvent.click(screen.getByText('ยกเลิก'));
     expect(onClose).toHaveBeenCalledTimes(1);
+
+    confirmMock.mockRestore();
   });
 });

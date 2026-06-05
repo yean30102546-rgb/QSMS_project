@@ -64,6 +64,9 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
   const [cooldown, setCooldown] = useState(0);
   const [previewImage, setPreviewImage] = useState<{url: string, alt: string} | null>(null);
   const [imageRotation, setImageRotation] = useState(0);
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -98,6 +101,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
       const result = await res.json();
       if (result.success) {
         setDocuments(result.data || []);
+        setSelectedDocs(new Set());
       }
     } catch (err) {
       console.error('Error fetching documents:', err);
@@ -120,6 +124,45 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
       }
     } catch (err) {
       console.error('Delete error:', err);
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    const newSet = new Set(selectedDocs);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedDocs(newSet);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDocs.size === documents.length && documents.length > 0) {
+      setSelectedDocs(new Set());
+    } else {
+      setSelectedDocs(new Set(documents.map(d => d.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDocs.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch('/api/rag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'bulk_delete_documents', ids: Array.from(selectedDocs) })
+      });
+      const result = await res.json();
+      if (result.success) {
+        setDocuments(prev => prev.filter(d => !selectedDocs.has(d.id)));
+        setSelectedDocs(new Set());
+        setShowDeleteModal(false);
+      } else {
+        alert('เกิดข้อผิดพลาดในการลบเอกสาร: ' + result.error);
+      }
+    } catch (err) {
+      console.error('Bulk delete error:', err);
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -432,7 +475,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-[6px]"
               />
             </DialogPrimitive.Overlay>
@@ -440,10 +483,9 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
             {/* Content */}
             <DialogPrimitive.Content asChild forceMount onOpenAutoFocus={(e) => e.preventDefault()}>
               <motion.div
-                initial={{ opacity: 0, scale: 0.85, y: 40 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }}
+                exit={{ opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
                 className="fixed inset-4 sm:inset-auto sm:bottom-8 sm:right-8 sm:top-auto sm:left-auto sm:w-[420px] sm:h-[600px] md:w-[480px] md:h-[680px] z-[101] flex flex-col rounded-2xl bg-white border border-slate-200/80 shadow-2xl shadow-black/10 overflow-hidden font-quicksand dark:bg-[#1c1c1e] dark:border-slate-700/60"
               >
                 {/* Header */}
@@ -463,25 +505,31 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
 
                   <div className="flex items-center gap-1.5">
                     {/* Tab Switcher */}
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg relative">
                       <button
                         onClick={() => setActiveTab('chat')}
-                        className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                        className={`relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors z-10 ${
                           activeTab === 'chat'
-                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                            ? 'text-slate-900 dark:text-white'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                         }`}
                       >
+                        {activeTab === 'chat' && (
+                          <motion.div layoutId="rag-tab-indicator" className="absolute inset-0 bg-white dark:bg-slate-700 shadow-sm rounded-md -z-10" transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} />
+                        )}
                         <Bot className="h-3.5 w-3.5" /> แชท
                       </button>
                       <button
                         onClick={() => setActiveTab('documents')}
-                        className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                        className={`relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors z-10 ${
                           activeTab === 'documents'
-                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                            ? 'text-slate-900 dark:text-white'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                         }`}
                       >
+                        {activeTab === 'documents' && (
+                          <motion.div layoutId="rag-tab-indicator" className="absolute inset-0 bg-white dark:bg-slate-700 shadow-sm rounded-md -z-10" transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} />
+                        )}
                         <FileText className="h-3.5 w-3.5" /> เอกสาร
                       </button>
                     </div>
@@ -507,10 +555,10 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                         {messages.map((m, idx) => (
                           <motion.div
                             key={idx}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-                            className="flex flex-col w-full"
+                            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                            className="flex flex-col w-full origin-bottom"
                           >
                             <div className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                               {m.role === 'model' && (
@@ -554,7 +602,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                               <motion.div 
                                 initial={{ opacity: 0, y: 5 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 }}
+                                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
                                 className="flex flex-wrap gap-2 mt-3 ml-9"
                               >
                                 {m.suggestions.map((chip, cIdx) => (
@@ -573,10 +621,11 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
 
                         {loading && (
                           <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            className="flex justify-start"
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                            className="flex justify-start origin-bottom"
                           >
                             <div className="shrink-0 mt-auto mr-2">
                               <div className="flex items-center justify-center w-7 h-7 rounded-full overflow-hidden border border-amber-200/50 bg-amber-50 dark:bg-amber-900/30">
@@ -616,7 +665,8 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                         />
                         <motion.button
                           whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.92 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ duration: 0.15, ease: 'easeOut' }}
                           type="submit"
                           disabled={loading || !query.trim() || cooldown > 0}
                           className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm transition-all disabled:opacity-40 disabled:shadow-none hover:bg-amber-600"
@@ -660,11 +710,12 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                           {uploadQueue.map(q => (
                             <motion.div
                               key={q.id}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
+                              layout
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, height: 0, marginTop: 0, marginBottom: 0, padding: 0, overflow: 'hidden' }}
-                              transition={{ duration: 0.2 }}
-                              className="rounded-lg border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-[#1c1c1e] space-y-1.5"
+                              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                              className="rounded-lg border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-[#1c1c1e] space-y-1.5 origin-top"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -695,34 +746,85 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
 
                     {/* Document List */}
                     <div className="space-y-2">
-                      <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">เอกสารที่พร้อมใช้ ({documents.length})</h3>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">เอกสารที่พร้อมใช้ ({documents.length})</h3>
+                        {documents.length > 0 && (
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-1.5 cursor-pointer group">
+                              <div className="relative flex items-center justify-center">
+                                <input
+                                  type="checkbox"
+                                  className="peer appearance-none w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1c1c1e] checked:bg-amber-500 checked:border-amber-500 transition-colors cursor-pointer"
+                                  checked={documents.length > 0 && selectedDocs.size === documents.length}
+                                  onChange={handleSelectAll}
+                                />
+                                <CheckCircle2 className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none stroke-[3]" />
+                              </div>
+                              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">เลือกทั้งหมด</span>
+                            </label>
+                            {selectedDocs.size > 0 && (
+                              <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 text-xs font-bold transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> ลบที่เลือก ({selectedDocs.size})
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       {documents.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400">
+                        <motion.div 
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }}
+                          className="flex flex-col items-center justify-center py-12 text-center text-slate-400"
+                        >
                           <HelpCircle className="h-8 w-8 stroke-[1.5] text-slate-300 mb-2" />
                           <p className="text-xs">ยังไม่มีเอกสารในคลังข้อมูล</p>
-                        </div>
+                        </motion.div>
                       ) : (
-                        documents.map(doc => (
-                          <div key={doc.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-[#1c1c1e] hover:border-amber-200 hover:shadow-sm transition">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="rounded-lg bg-amber-50 p-2 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:border-amber-800/30 shrink-0">
-                                <FileText className="h-4 w-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{doc.filename}</p>
-                                <p className="text-xs text-slate-400 mt-0.5 font-medium">
-                                  {doc.file_type.toUpperCase()} • {formatDate(doc.created_at)}
-                                </p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleDeleteDocument(doc.id)}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 transition shrink-0"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))
+                        <div className="space-y-2 relative">
+                          <AnimatePresence mode="popLayout">
+                            {documents.map((doc, idx) => (
+                              <motion.label 
+                                layout
+                                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95, filter: 'blur(2px)' }}
+                                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1], delay: Math.min(idx * 0.03, 0.3) }}
+                                key={doc.id} 
+                                className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-[#1c1c1e] hover:border-amber-200 hover:shadow-sm transition cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="relative flex items-center justify-center shrink-0">
+                                    <input
+                                      type="checkbox"
+                                      className="peer appearance-none w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1c1c1e] checked:bg-amber-500 checked:border-amber-500 transition-colors cursor-pointer"
+                                      checked={selectedDocs.has(doc.id)}
+                                      onChange={() => handleToggleSelect(doc.id)}
+                                    />
+                                    <CheckCircle2 className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none stroke-[3]" />
+                                  </div>
+                                  <div className="rounded-lg bg-amber-50 p-2 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:border-amber-800/30 shrink-0 transition-colors group-hover:bg-amber-100 group-hover:border-amber-200 dark:group-hover:bg-amber-900/50">
+                                    <FileText className="h-4 w-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{doc.filename}</p>
+                                    <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                                      {doc.file_type.toUpperCase()} • {formatDate(doc.created_at)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteDocument(doc.id); }}
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 transition shrink-0"
+                                  title="ลบเอกสารนี้"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </motion.label>
+                            ))}
+                          </AnimatePresence>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -749,10 +851,9 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
               </DialogPrimitive.Overlay>
               <DialogPrimitive.Content asChild forceMount>
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
                   className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-10 pointer-events-none"
                 >
                   <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-auto">
@@ -779,7 +880,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                       src={previewImage.url}
                       alt={previewImage.alt}
                       animate={{ rotate: imageRotation }}
-                      transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                       className="max-w-full max-h-full object-contain rounded-lg drop-shadow-2xl"
                     />
                     {previewImage.alt && (
@@ -787,6 +888,69 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                         {previewImage.alt}
                       </div>
                     )}
+                  </div>
+                </motion.div>
+              </DialogPrimitive.Content>
+            </DialogPrimitive.Portal>
+          </DialogPrimitive.Root>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <DialogPrimitive.Root open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+            <DialogPrimitive.Portal forceMount>
+              <DialogPrimitive.Overlay asChild forceMount>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm"
+                />
+              </DialogPrimitive.Overlay>
+              <DialogPrimitive.Content asChild forceMount>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[120] w-[90vw] max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#1c1c1e] dark:border dark:border-slate-800"
+                >
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                      <AlertCircle className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <DialogPrimitive.Title className="text-lg font-bold text-slate-900 dark:text-white">
+                        ยืนยันการลบ
+                      </DialogPrimitive.Title>
+                      <DialogPrimitive.Description className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                        คุณกำลังจะลบเอกสารจำนวน <span className="font-bold text-red-600 dark:text-red-400">{selectedDocs.size} ไฟล์</span> <br/> ข้อมูลเวกเตอร์ที่เกี่ยวข้องทั้งหมดจะถูกลบถาวร
+                      </DialogPrimitive.Description>
+                    </div>
+                    <div className="flex w-full gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteModal(false)}
+                        disabled={isBulkDeleting}
+                        className="flex-1 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                      >
+                        ยกเลิก
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBulkDelete}
+                        disabled={isBulkDeleting}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition disabled:opacity-50"
+                      >
+                        {isBulkDeleting ? (
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        ) : (
+                          'ลบเอกสาร'
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               </DialogPrimitive.Content>

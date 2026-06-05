@@ -10,20 +10,9 @@ import { ReworkDataProvider } from '../../contexts/ReworkDataContext';
 import { setGasWebAppUrl } from '../../services/api';
 import type { User } from '../../services/auth';
 
-const OverallTab = React.lazy(async () => {
-  const mod = await import('../../components/tabs/OverallTab');
-  return { default: mod.OverallTab };
-});
-
-const AddCaseTab = React.lazy(async () => {
-  const mod = await import('../../components/tabs/AddCaseTab');
-  return { default: mod.AddCaseTab };
-});
-
-const DashboardTab = React.lazy(async () => {
-  const mod = await import('../../components/tabs/DashboardTab');
-  return { default: mod.DashboardTab };
-});
+import { OverallTab } from '../../components/tabs/OverallTab';
+import { AddCaseTab } from '../../components/tabs/AddCaseTab';
+import { DashboardTab } from '../../components/tabs/DashboardTab';
 
 type Tab = 'overall' | 'add' | 'dashboard';
 
@@ -65,52 +54,53 @@ function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         userRole={user?.role || ''}
         onOpenTutorial={() => setIsTutorialOpen(true)}
       >
-        <Suspense fallback={<TabFallback />}>
-          <AnimatePresence mode="wait">
-            {activeTab === 'overall' && (
-              <motion.div
-                key="overall"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-1 flex-col overflow-hidden"
-              >
-                <OverallTab userRole={user?.role || ''} userName={user?.name || ''} />
-              </motion.div>
-            )}
+        <AnimatePresence mode="wait" initial={false}>
+          {activeTab === 'overall' && (
+            <motion.div
+              key="overall"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              style={{ willChange: 'opacity, transform' }}
+              className="flex flex-1 flex-col overflow-hidden"
+            >
+              <OverallTab userRole={user?.role || ''} userName={user?.name || ''} />
+            </motion.div>
+          )}
 
-            {activeTab === 'add' && String(user?.role || '').toUpperCase() !== 'FINANCE' && (
-              <motion.div
-                key="add"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex-1 overflow-x-hidden overflow-y-auto"
-              >
-                <div className="p-8 md:p-10 lg:p-12">
-                  <AddCaseTab />
-                </div>
-              </motion.div>
-            )}
+          {activeTab === 'add' && String(user?.role || '').toUpperCase() !== 'FINANCE' && (
+            <motion.div
+              key="add"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              style={{ willChange: 'opacity, transform' }}
+              className="flex-1 overflow-x-hidden overflow-y-auto"
+            >
+              <div className="p-8 md:p-10 lg:p-12">
+                <AddCaseTab />
+              </div>
+            </motion.div>
+          )}
 
-            {activeTab === 'dashboard' && String(user?.role || '').toUpperCase() === 'QSMS' && (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex-1 overflow-x-hidden overflow-y-auto"
-              >
-                <div className="p-8 md:p-10 lg:p-12">
-                  <DashboardTab />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Suspense>
+          {activeTab === 'dashboard' && String(user?.role || '').toUpperCase() === 'QSMS' && (
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              style={{ willChange: 'opacity, transform' }}
+              className="flex-1 overflow-x-hidden overflow-y-auto"
+            >
+              <div className="p-8 md:p-10 lg:p-12">
+                <DashboardTab />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </MainLayout>
 
       <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />

@@ -129,6 +129,10 @@ export function UpdateModal({
       setLaborCount(caseData.laborCount !== undefined && caseData.laborCount !== null ? caseData.laborCount : '');
       setLaborHours(caseData.laborHours !== undefined && caseData.laborHours !== null ? caseData.laborHours : '');
       setLaborRate(caseData.laborRate !== undefined && caseData.laborRate !== null ? caseData.laborRate : '');
+      
+      const idStr = caseData.caseName || caseData.id || '';
+      const match = idStr.match(/^(?:RT|RW)(\d+)/);
+      setEditedCaseNumber(match ? match[1] : '');
     }
   }, [caseData]);
 
@@ -224,6 +228,10 @@ export function UpdateModal({
       }
       if (isAdmin) {
         updates.source = editedSource;
+        if (isEditMode) {
+          const currentYear = new Date().getFullYear();
+          updates.caseName = `${caseNamePrefix}${editedCaseNumber}-${currentYear}`;
+        }
       }
 
       if (reworkCost !== '' && (isFinance || isAdmin)) {
@@ -380,7 +388,7 @@ export function UpdateModal({
                         <div className="w-8 h-8 rounded-full bg-apple-blue-deep/10 flex items-center justify-center">
                           <PenTool size={16} className="text-apple-blue-deep" />
                         </div>
-                        <h2 className="text-xl font-semibold text-on-surface">Edit Mode</h2>
+                        <h2 className="text-xl font-semibold text-on-surface">โหมดแก้ไข</h2>
                         <span className="text-sm text-on-surface-variant font-medium bg-surface-variant px-3 py-1 rounded-full">
                           {previewCaseName || caseData?.id}
                         </span>
@@ -390,14 +398,14 @@ export function UpdateModal({
                         {!isSaving && (
                           <>
                             <button onClick={handleRequestClose} className="px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
-                              Cancel
+                              ยกเลิก
                             </button>
                             <button
                               onClick={handleSaveEdit}
                               disabled={isLoading || !isAdmin}
                               className="px-5 py-2 text-sm font-semibold text-white bg-[#0066cc] hover:bg-[#0055aa] rounded-full shadow-sm transition-all disabled:opacity-50"
                             >
-                              Save Changes
+                              บันทึกการแก้ไข
                             </button>
                           </>
                         )}
@@ -466,12 +474,20 @@ export function UpdateModal({
                         </div>
 
                         <div className="space-y-4">
+                          <AnimatePresence initial={false}>
                           {editedItems.map((item, index) => {
                             const isExpanded = expandedItemId === item.id || (expandedItemId === index.toString());
                             const toggleExpand = () => setExpandedItemId(isExpanded ? null : (item.id || index.toString()));
 
                             return (
-                              <div key={item.id || index} className="border border-divider-color rounded-xl bg-surface-bright overflow-hidden transition-all duration-300">
+                              <motion.div 
+                                key={item.id || index} 
+                                initial={{ opacity: 0, height: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                                className="border border-divider-color rounded-xl bg-surface-bright overflow-hidden transition-all duration-300"
+                              >
                                 
                                 {/* Always Visible Summary */}
                                 <div className="p-5 flex flex-col md:flex-row gap-4 items-start md:items-stretch">
@@ -611,12 +627,13 @@ export function UpdateModal({
                                 </div>
 
                                 {/* Collapsible Complex Fields */}
-                                <AnimatePresence>
+                                <AnimatePresence initial={false}>
                                   {isExpanded && (
                                     <motion.div
                                       initial={{ height: 0, opacity: 0 }}
                                       animate={{ height: 'auto', opacity: 1 }}
                                       exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                                       className="border-t border-divider-color bg-surface-secondary/40 overflow-hidden"
                                     >
                                       <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -748,9 +765,10 @@ export function UpdateModal({
                                   )}
                                 </AnimatePresence>
 
-                              </div>
+                              </motion.div>
                             );
                           })}
+                          </AnimatePresence>
                         </div>
                       </div>
 
@@ -992,7 +1010,42 @@ export function UpdateModal({
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-4 border-t border-divider-color/50">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2 mb-4 bg-surface-secondary/30 p-4 rounded-xl border border-divider-color/50">
+                              <div>
+                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Batch No.</div>
+                                <div className="text-sm font-medium text-on-surface">{item.batchNo || '-'}</div>
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">วันที่ผลิตแกลลอน</div>
+                                <div className="text-sm font-medium text-on-surface">{item.gallonDate || '-'}</div>
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Box Number</div>
+                                <div className="text-sm font-medium text-on-surface">{item.boxNumber || '-'}</div>
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Mold</div>
+                                <div className="text-sm font-medium text-on-surface">{item.mold || '-'}</div>
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Line</div>
+                                <div className="text-sm font-medium text-on-surface">{item.line || '-'}</div>
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">สาเหตุ (Reason)</div>
+                                <div className="text-sm font-medium text-on-surface">
+                                  {item.reason || '-'} {item.reasonSubtype ? `(${item.reasonSubtype})` : ''}
+                                </div>
+                              </div>
+                              <div className="col-span-2 sm:col-span-3 md:col-span-2">
+                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">ผู้รับผิดชอบ (Responsible)</div>
+                                <div className="text-sm font-medium text-on-surface">
+                                  {item.responsible || '-'} {item.responsibleSubtype ? `(${item.responsibleSubtype})` : ''}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-divider-color/50">
                               <div>
                                 <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Details</h4>
                                 <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap break-words">{item.details || 'ไม่มีข้อมูล'}</p>
@@ -1146,11 +1199,43 @@ export function UpdateModal({
                       </div>
 
                       <div className="flex gap-3 items-center">
+                        {/* Quick Status Update (Sticky in Footer) */}
+                        {(isOperator || isAdmin || isFinance) && (
+                          <div className="hidden lg:flex bg-surface-secondary rounded-full p-1 border border-divider-color mr-2">
+                            {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
+                              const isActive = caseStatus === status;
+                              const isAllowed = isAdmin || (
+                                isOperator &&
+                                (caseData?.status === 'Pending' || caseData?.status === 'In-Progress') &&
+                                (status === 'Pending' || status === 'In-Progress')
+                              );
+                              return (
+                                <button
+                                  key={status}
+                                  type="button"
+                                  disabled={!isAllowed}
+                                  onClick={() => setCaseStatus(status)}
+                                  className={`px-3 py-1.5 rounded-full font-semibold text-[12px] transition-all border ${isActive
+                                    ? 'bg-apple-blue-deep text-white border-apple-blue-deep shadow-sm'
+                                    : isAllowed
+                                      ? 'bg-transparent text-on-surface border-transparent hover:bg-surface-variant'
+                                      : 'bg-transparent text-on-surface-variant border-transparent cursor-not-allowed opacity-40'
+                                    }`}
+                                >
+                                  {getStatusLabel(status)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                         {isAdmin && (
                           <button onClick={handleToggleEditMode} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-sm">
-                            Edit Mode
+                            {isEditMode ? 'ออกจากโหมดแก้ไข' : 'แก้ไขข้อมูล'}
                           </button>
                         )}
+                        <button onClick={onClose} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-sm">
+                          ยกเลิก
+                        </button>
                         {isSaving ? (
                           <div className="w-48"><AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} /></div>
                         ) : (
@@ -1166,7 +1251,7 @@ export function UpdateModal({
                             })()}
                             className="apple-button apple-button-primary shadow-md text-sm"
                           >
-                            Save Status
+                            {isEditMode ? 'บันทึกการแก้ไข' : 'อัปเดตสถานะ'}
                           </button>
                         )}
                       </div>
@@ -1336,9 +1421,13 @@ function StatusBadge({ status }: { status: ReworkCase['status'] }) {
   };
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black border uppercase tracking-wider ${styles[status]}`}>
+    <motion.span 
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black border uppercase tracking-wider ${styles[status]}`}
+    >
       <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse" />
       {thaiLabels[status]}
-    </span>
+    </motion.span>
   );
 }

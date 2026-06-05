@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { AlertCircle, Calendar, Clock, Package, Search } from 'lucide-react';
 
 import type { ReworkCase } from '../../services/api';
@@ -140,8 +141,15 @@ export function CaseListTable({
     <div className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-0 shadow-sm overflow-hidden">
       <div className="flex-1">
         <div className="divide-y divide-slate-100 p-2">
-          {cases.map((item) => (
-            <CaseRow key={item.id} caseItem={item} onClick={() => onRowClick(item)} />
+          {cases.map((item, index) => (
+            <motion.div
+               key={item.id}
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.3), ease: [0.22, 1, 0.36, 1] }}
+            >
+              <CaseRow caseItem={item} onClick={() => onRowClick(item)} />
+            </motion.div>
           ))}
         </div>
       </div>
@@ -262,9 +270,13 @@ function StatusPill({ status }: StatusPillProps) {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${styles[status]}`}>
+    <motion.span 
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${styles[status]}`}
+    >
       {status === 'Awaiting Valuation' && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 mr-1.5 animate-pulse" />}
       {thaiLabels[status]}
-    </span>
+    </motion.span>
   );
 }

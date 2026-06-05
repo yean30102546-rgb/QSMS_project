@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start --port 3000",
     "clean": "rm -rf .next dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@google/genai": "^1.52.0",
@@ -28,6 +30,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",

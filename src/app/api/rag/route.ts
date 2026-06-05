@@ -62,6 +62,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true });
       }
 
+      case 'bulk_delete_documents': {
+        const { ids } = body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+          return NextResponse.json({ success: false, error: 'Missing or invalid document IDs.' }, { status: 400 });
+        }
+
+        console.log(`🗑️ Bulk deleting documents for ${ids.length} IDs`);
+        const { error } = await supabaseServer
+          .from('rag_documents')
+          .delete()
+          .in('id', ids);
+
+        if (error) {
+          console.error('❌ Error bulk deleting documents:', error);
+          throw error;
+        }
+        return NextResponse.json({ success: true });
+      }
+
       case 'ingest': {
         const { filename, fileType, base64Data, imageUrls } = body;
         if (!filename || !fileType || !base64Data) {

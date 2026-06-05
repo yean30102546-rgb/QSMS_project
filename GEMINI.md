@@ -11,13 +11,14 @@
   - การดึงข้อมูลอัตโนมัติและการตรวจสอบความถูกต้องของสินค้าจากฐานข้อมูลกลาง (Item Master)
   - การอัปโหลดรูปภาพหลักฐานและการยืนยันความสมบูรณ์ของข้อมูล (Evidence & Transaction Integrity)
   - การแบ่งสิทธิการทำงาน (Role-Based Access Control) ระหว่าง Admin, Operator, Finance, และ PDB
+  - ระบบถามตอบคู่มือเทคนิคและแนวทาง Rework อัจฉริยะ (DocAI RAG) ที่มีบุคลิกภาพน่ารักเป็นมิตร
 
 ---
 
 ## 2. Architecture (สถาปัตยกรรม)
 ระบบถูกออกแบบด้วยสถาปัตยกรรมแบบ **Hybrid Next.js + React SPA** ควบคู่กับระบบ Backend แบบ Serverless:
 - **Next.js API Boundary (`src/app/api/*/route.ts`):** 
-  ทำหน้าที่เป็น Server Boundary สำหรับจัดการความปลอดภัย, Authentication, ควบคุมการเชื่อมต่อกับ Supabase, รวมถึงการซ่อน Secrets ต่างๆ
+  ทำหน้าที่เป็น Server Boundary สำหรับจัดการความปลอดภัย, Authentication, ควบคุมการเชื่อมต่อกับ Supabase, รวมถึงการซ่อน Secrets ต่างๆ และ Proxy คำสั่งไปยังระบบ Google Apps Script (GAS)
 - **React Client Shell (`src/App.tsx` & Frontend Modules):** 
   ทำงานบนฝั่ง Client เป็นหลัก ดูแลเรื่อง View, Session Restore, Role-based Routing และจัดการ State ภายใน UI อย่างลื่นไหล 
 - **Operational Database (Supabase):** 
@@ -25,7 +26,9 @@
 - **Media/Compatibility Sidecar (Google Apps Script - GAS):** 
   ทำงานเป็นระบบเบื้องหลังสำหรับงานเฉพาะทาง เช่น การทำงานร่วมกับ Google Drive, Google Sheets หรือ Legacy System บางส่วน
 - **DocAI RAG Engine (Gemini & Jina AI):**
-  โมดูลสืบค้นปัญญาประดิษฐ์ (Retrieval-Augmented Generation) ค้นหาคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ทำงานโดยใช้ Supabase pgvector ร่วมกับ Jina AI Embeddings และ Gemini ในการสร้างคำตอบที่เป็นธรรมชาติ
+  โมดูลสืบค้นปัญญาประดิษฐ์ (Retrieval-Augmented Generation) ค้นหาคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ทำงานโดยใช้ Supabase pgvector ร่วมกับ Jina AI Embeddings (`jina-embeddings-v5-text-small` ขนาด 768 มิติ) และ Gemini ในการสร้างคำตอบที่เป็นธรรมชาติ
+  - **Parsing Ingestion:** ใช้ `gemini-2.5-flash` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown
+  - **Chat Interface:** ใช้ `gemini-3.1-flash-lite` ในการตอบคำถามผู้ใช้งานผ่าน SSE Stream
 
 ---
 
@@ -33,41 +36,51 @@
 การทำงานหลักของระบบผ่าน Lifecycle ดังนี้:
 
 1. **Case Initiation (เริ่มสร้างงาน):**
-   - นำเข้าข้อมูลอ้างอิงจากเอกสาร RT/RW 
-   - ระบบจะจ่าย **Case ID** (Hybrid Assignment) ซึ่งไม่สามารถซ้ำหรือแก้ไขได้ (Immutable)
+   - นำเข้าข้อมูลอ้างอิงจากเอกสาร RT/RW
+   - ระบบจะจ่าย **Case ID** (Hybrid Assignment) ซึ่งไม่สามารถซ้ำหรือแก้ไขได้ (Immutable) เช่น `RW012-2026` (สำหรับ SFC) หรือ `RT012-2026` (สำหรับ Customer)
 2. **Two-Way Autofill & Verification (ตรวจสอบสินค้า):**
    - เมื่อกรอกรหัส Item Number หรือ Item Code ระบบจะสืบค้นข้อมูลจาก Item Master ทันที
    - **Verification Lifecycle:** สถานะจะเปลี่ยนจาก `Idle` -> `Checking` -> `Verified` (พบข้อมูล) / `New` (สินค้าใหม่) / `Conflict` (ข้อมูลขัดแย้ง)
-3. **Smart Master Upsert (บันทึกฐานข้อมูลกลาง):**
+   - **Rework Item Granular Fields:** นอกจากรหัสสินค้าแล้ว เคส Rework แต่ละรายการจะเก็บข้อมูลฟิลด์ล็อตเพิ่มเติม ได้แก่ หมายเลขล็อต (Batch No), วันที่ผลิตแกลลอน (gallonDate), เลขกล่อง (boxNumber), หมายเลขแม่พิมพ์ (mold) และสายการผลิต (line)
+3. **Cross-Item Linking & Document Validation (เงื่อนไขและประเภทงานเฉพาะ):**
+   - **Cross-Item Link:** หากตรวจพบสินค้าเปื้อน ('เปื้อน') และในเคสเดียวกันมีสินค้าที่รั่ว ('รั่ว') ระบบจะเปิดตัวเลือกให้เชื่อมโยงสาเหตุสินค้าเปื้อนไปยังไอเทมที่รั่วได้ (บันทึกลงฟิลด์ `linkedSourceId`)
+   - **PTT OR Documents:** เคสที่ลูกค้าระบุเป็น "OR" จะเปิดช่องพิเศษให้แนบไฟล์เอกสารอ้างอิงสำหรับ OR ได้สูงสุด 2 ไฟล์ (.xlsx, .xls, .pdf, .png) หากไม่มีการอัปโหลด หน้าเว็บจะแสดง Badge เตือน "ขาดไฟล์ OR" สีแดงบนตารางภาพรวม
+4. **Smart Master Upsert (บันทึกฐานข้อมูลกลาง):**
    - หากเป็นสินค้าใหม่ หรือ Incomplete Item (ข้อมูลไม่ครบ) ระบบจะทำการอัปเดตหรือเพิ่มข้อมูลเข้า Item Master ทันทีในพื้นหลัง
-4. **Transaction Integrity (ยืนยันรูปภาพ):**
-   - ทุกรายการต้องมีรูปภาพหลักฐาน (Evidence Integrity)
+5. **Transaction & Evidence Integrity (ยืนยันรูปภาพ):**
+   - ทุกรายการ rework ต้องมีรูปภาพหลักฐานอย่างน้อย 1 ภาพ (Evidence Integrity) โดยใช้การบีบอัดรูปภาพฝั่ง Client ก่อนอัปโหลด (target 300KB)
    - หากเกิดข้อผิดพลาดในการอัปโหลดรูป ระบบจะ Rollback ธุรกรรมทั้งหมดทันทีเพื่อป้องกันข้อมูลขยะ
-5. **Rework Updates (การจัดการสถานะ & ค่าใช้จ่าย):**
+6. **Rework Updates (การจัดการสถานะ & ค่าใช้จ่าย):**
    - **Operator / Admin:** เพิ่มวิธีแก้ปัญหา (Resolution Method), เบิกวัสดุ (Materials), จับเวลาทำงาน (Labor Hours)
-   - **Finance:** ประเมินและกรอกราคาจริง (Actual Cost) 
+   - **Finance:** ประเมินและกรอกราคาจริง (Actual Cost) และอัตราค่าแรง (Labor Rate) 
    - **Status Lifecycle:** `Pending` -> `In-Progress` -> `Awaiting Valuation` -> `Completed`
+7. **Excel Export with Images (การส่งออกไฟล์ข้อมูล):**
+   - ระบบรองรับการ Export ตารางรายงานเคสออกมาเป็นไฟล์ Excel (.xlsx) ที่มีรูปหลักฐานฝังอยู่ด้านในโดยตรง (ผ่านไลบรารี `exceljs`) โดยปรับความสูงแถวเป็น 120px และตกแต่งสีหัวตารางสวยงาม
+8. **RAG Ingestion Pipeline (การนำเข้าคู่มือ):**
+   - การอัปโหลดไฟล์ PDF ในแท็บเอกสารของ DocAI จะทำการแปลงหน้า PDF เป็นรูปภาพ JPEG (ผ่าน `pdfjs-dist`) อัปโหลดไป Supabase Storage แล้วส่งให้ Gemini Vision ทำการแปลงเนื้อหาพร้อมแผนภาพเป็น Markdown จากนั้นจึงคำนวณเวกเตอร์ embeddings ผ่าน Jina AI และบันทึกลง Supabase
+   - **RAG Bulk Deletion:** ผู้ดูแลสามารถเลือกเอกสารหลายรายการใน Checklist เพื่อสั่งลบเอกสารและข้อมูลเวกเตอร์ชิ้นส่วนที่เกี่ยวข้องพร้อมกันผ่าน API (`bulk_delete_documents`)
 
 ---
 
 ## 4. Tech Stack (เทคโนโลยีที่ใช้งาน)
 เทคโนโลยีหลักที่ใช้ในโปรเจกต์อ้างอิงจาก `package.json` ล่าสุด:
 
-- **Core Framework:** Next.js (v16), React (v19)
+- **Core Framework:** Next.js (v16.2), React (v19) - จัดการ Routing และโครงสร้างเว็บหลัก
 - **Styling & UI:** Tailwind CSS (v4), Framer Motion (`motion/react`), Radix UI Primitives, Lucide React (Icons)
 - **Database & Auth:** Supabase (`@supabase/supabase-js`)
 - **Language & Typings:** TypeScript (v5.8)
-- **Build Tool:** Vite (ทำงานร่วมกันใน Client Shell / Tooling)
-- **Testing:** Playwright (E2E Testing), Vitest (Unit Testing)
-- **Utilities:** PDF Generation (`jspdf`, `html2canvas`), Image Compression (`browser-image-compression`)
+- **Build Tool:** Next.js Compiler (Vite ถูกจำกัดบทบาทไว้ใช้เฉพาะสำหรับการรัน Vitest เท่านั้น)
+- **Testing:** Playwright (E2E Testing ในโฟลเดอร์ `/e2e`), Vitest (Unit Testing ทั่วระบบ)
+- **Utilities:** Excel Generation (`exceljs`), PDF Generation (`jspdf`, `html2canvas`), Image Compression (`browser-image-compression`), PDF Rendering (`pdfjs-dist`)
 
 ---
 
 ## 5. กฎข้อบังคับสำหรับ Agent (Agent Protocols)
 อ้างอิงจาก `AGENTS.md` - กฎการทำงานสำคัญที่ AI ทุกตัวต้องปฏิบัติตาม:
 - **ห้ามเดา (No Guessing):** ต้องสำรวจ Source Code, อ่าน `.llm-wiki/2_wiki/index.md` ก่อนลงมือแก้ไข
-- **ห้ามใช้ Any:** ให้ใช้ `unknown` หรือปล่อยให้ Type inference จัดการแทน
+- **ห้ามใช้ Any:** ให้ใช้ `unknown` หรือปล่อยให้ Type inference จัดการแทน (มีกฎเข้มงวด `"noImplicitAny": true` ใน `tsconfig.json`)
 - **จัดการ Wiki เสมอ:** ถ้าแก้บั๊กหรือพัฒนาฟีเจอร์สำคัญเสร็จ ให้พิจารณาว่าต้องอัปเดต `.llm-wiki/2_wiki` เพื่อส่งต่อความรู้ให้ AI รอบถัดไปหรือไม่
 - **Scope การแก้ไข:** ให้แก้ไขใน Scope ที่เล็กที่สุดและกระทบโค้ดเดิมน้อยที่สุด เคารพการออกแบบของเดิม
+- **Accessibility & UX:** ต้องรองรับ reduced motion เสมอโดยอิงตาม `@media (prefers-reduced-motion: reduce)` และรักษาความเสถียรของหน้าจอด้วย `scrollbar-gutter: stable`
 
 > **Guideline:** ควรอ่าน `CONTEXT.md` (สำหรับคำศัพท์เฉพาะ) และ `AGENTS.md` เพิ่มเติมเพื่อตรวจสอบ Best Practice ของโปรเจกต์ก่อนเริ่มเขียนโค้ดเสมอ

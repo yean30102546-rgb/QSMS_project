@@ -27,7 +27,22 @@ const mockCase: ReworkCase = {
 describe('CaseListTable', () => {
   it('renders a list of cases', () => {
     const mockOnRowClick = vi.fn();
-    render(<CaseListTable cases={[mockCase]} onRowClick={mockOnRowClick} />);
+    const mockOnRetry = vi.fn();
+    const mockOnClearFilters = vi.fn();
+    render(
+      <CaseListTable 
+        cases={[mockCase]} 
+        onRowClick={mockOnRowClick}
+        isLoading={false}
+        error={null}
+        isEmpty={false}
+        isFilterEmpty={false}
+        searchQuery=""
+        hasActiveFilters={false}
+        onRetry={mockOnRetry}
+        onClearFilters={mockOnClearFilters}
+      />
+    );
 
     // Check case id
     expect(screen.getByText('RW123-2024')).toBeInTheDocument();
@@ -39,12 +54,12 @@ describe('CaseListTable', () => {
     expect(screen.getByText('รอดำเนินการ')).toBeInTheDocument();
 
     // Check reason and subtype
-    expect(screen.getByText('รั่ว (รั่วซึม)')).toBeInTheDocument();
+    expect(screen.getByText('รั่ว')).toBeInTheDocument();
   });
 
   it('renders correctly when items array is empty', () => {
-    const emptyCase = { ...mockCase, items: [] };
-    render(<CaseListTable cases={[emptyCase]} onRowClick={vi.fn()} />);
+    const emptyCase = { ...mockCase, items: [] as any[] };
+    render(<CaseListTable cases={[emptyCase]} onRowClick={vi.fn()} isLoading={false} isEmpty={false} isFilterEmpty={false} onRetry={vi.fn()} onClearFilters={vi.fn()} />);
     
     expect(screen.getByText('N/A')).toBeInTheDocument();
   });
@@ -66,13 +81,13 @@ describe('CaseListTable', () => {
       ]
     };
 
-    render(<CaseListTable cases={[multipleItemsCase]} onRowClick={vi.fn()} />);
+    render(<CaseListTable cases={[multipleItemsCase]} onRowClick={vi.fn()} isLoading={false} isEmpty={false} isFilterEmpty={false} onRetry={vi.fn()} onClearFilters={vi.fn()} />);
 
     // Should show first item name + (+1 รายการ)
     expect(screen.getByText('Test Item 1 (+1 รายการ)')).toBeInTheDocument();
     
     // Should show both reasons combined
-    expect(screen.getByText('รั่ว (รั่วซึม), เปื้อน')).toBeInTheDocument();
+    expect(screen.getByText('รั่ว, เปื้อน')).toBeInTheDocument();
     
     // Total amount should be 15
     expect(screen.getByText('15 กล่อง')).toBeInTheDocument();

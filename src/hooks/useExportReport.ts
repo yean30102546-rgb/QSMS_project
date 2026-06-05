@@ -14,13 +14,13 @@ const CONTENT_WIDTH_MM = A4_WIDTH_MM - PDF_MARGIN_MM * 2;
 const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - PDF_MARGIN_MM * 2;
 
 async function loadExportLibraries() {
-  const [{ jsPDF }, htmlToImage, XLSX] = await Promise.all([
+  const [{ jsPDF }, htmlToImage, ExcelJS] = await Promise.all([
     import('jspdf'),
     import('html-to-image'),
-    import('xlsx')
+    import('exceljs')
   ]);
 
-  return { jsPDF, htmlToImage, XLSX };
+  return { jsPDF, htmlToImage, ExcelJS: ExcelJS.default || ExcelJS };
 }
 
 const IMAGE_TIMEOUT_MS = 5000; // 5 seconds per image
@@ -253,7 +253,7 @@ export function useExportReport() {
       const blob = await pdf(React.createElement(ExportPDFTemplate, { caseData: preloadedCaseData }) as React.ReactElement<any>).toBlob();
       
       setExportProgress('Downloading PDF...');
-      const sanitizedId = caseData.id.replace(/[/\\?%*:|"<>]/g, '-');
+      const sanitizedId = caseData.id.replace(/[\/\\?%*:|"<>]/g, '-');
       const filename = `Rework_Report_${sanitizedId}.pdf`;
       
       const url = URL.createObjectURL(blob);
@@ -278,56 +278,131 @@ export function useExportReport() {
     setExportProgress('Preparing Excel...');
 
     try {
-      const { XLSX } = await loadExportLibraries();
+      const { ExcelJS } = await loadExportLibraries();
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Rework Items', {
+        pageSetup: { paperSize: 9, orientation: 'landscape' }
+      });
 
-      // Transform caseData into a flat structure for Excel
-      const rows = caseData.items.map(item => ({
-        'Case ID': caseData.id,
-        'Case Name': caseData.caseName || '',
-        'Source': caseData.source,
-        'Date': caseData.date,
-        'Status': caseData.status,
-        'Item Number': item.itemNumber,
-        'Item Code': item.itemCode,
-        'Item Name': item.itemName,
-        'Amount': item.amount,
-        'Customer Name': item.customerName || '',
-        'Reason': item.reason,
-        'Reason Subtype': item.reasonSubtype || '',
-        'Responsible': item.responsible || '',
-        'Responsible Subtype': item.responsibleSubtype || '',
-        'Details': item.details || ''
-      }));
+      // Define columns
+      worksheet.columns = [
+        { header: 'Case ID', key: 'caseId', width: 15 },
+        { header: 'Case Name', key: 'caseName', width: 20 },
+        { header: 'Source', key: 'source', width: 15 },
+        { header: 'Date', key: 'date', width: 12 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Item Number', key: 'itemNumber', width: 20 },
+        { header: 'Item Code', key: 'itemCode', width: 15 },
+        { header: 'Item Name', key: 'itemName', width: 30 },
+        { header: 'Amount', key: 'amount', width: 10 },
+        { header: 'Customer Name', key: 'customerName', width: 20 },
+        { header: 'Reason', key: 'reason', width: 20 },
+        { header: 'Reason Subtype', key: 'reasonSubtype', width: 15 },
+        { header: 'Responsible', key: 'responsible', width: 20 },
+        { header: 'Responsible Subtype', key: 'responsibleSubtype', width: 15 },
+        { header: 'Details', key: 'details', width: 30 },
+        { header: 'Images', key: 'images', width: 60 }
+      ];
 
-      // If no items, still export case info
-      if (rows.length === 0) {
-        rows.push({
-          'Case ID': caseData.id,
-          'Case Name': caseData.caseName || '',
-          'Source': caseData.source,
-          'Date': caseData.date,
-          'Status': caseData.status,
-          'Item Number': '',
-          'Item Code': '',
-          'Item Name': '',
-          'Amount': 0,
-          'Customer Name': '',
-          'Reason': '',
-          'Reason Subtype': '',
-          'Responsible': '',
-          'Responsible Subtype': '',
-          'Details': ''
+      // Style header
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0066CC' } };
+      worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+      // Make sure there is at least one item, otherwise push a blank row for the case
+      const items = caseData.items && caseData.items.length > 0 
+        ? caseData.items 
+        : [{ itemNumber: '', itemCode: '', itemName: '', amount: 0, customerName: '', reason: '', reasonSubtype: '', responsible: '', responsibleSubtype: '', details: '', imageUrls: [] as string[] }];
+
+      let rowNumber = 2; // Starting after header
+
+      for (const item of items) {
+        worksheet.addRow({
+          caseId: caseData.id,
+          caseName: caseData.caseName || '',
+          source: caseData.source,
+          date: caseData.date,
+          status: caseData.status,
+          itemNumber: item.itemNumber || '',
+          itemCode: item.itemCode || '',
+          itemName: item.itemName || '',
+          amount: item.amount || 0,
+          customerName: item.customerName || '',
+          reason: item.reason || '',
+          reasonSubtype: item.reasonSubtype || '',
+          responsible: item.responsible || '',
+          responsibleSubtype: item.responsibleSubtype || '',
+          details: item.details || ''
         });
+
+        const currentRow = worksheet.getRow(rowNumber);
+        currentRow.alignment = { vertical: 'middle', wrapText: true };
+
+        // Process images
+        if (item.imageUrls && item.imageUrls.length > 0) {
+          currentRow.height = 120; // Set taller row height to accommodate images
+          
+          let colOffset = 15; // Image column is index 15 (0-indexed logic)
+          
+          setExportProgress(`Loading images for Excel (Row ${rowNumber - 1})...`);
+          
+          for (let i = 0; i < Math.min(item.imageUrls.length, 3); i++) {
+            const url = item.imageUrls[i];
+            try {
+              let base64 = await fetchImageAsBase64(url);
+              
+              // Base64 from fetchImageAsBase64 might be prefixed with "data:image/jpeg;base64,"
+              let extension = 'png';
+              let base64Data = base64;
+              
+              if (base64.startsWith('data:')) {
+                const match = base64.match(/data:image\/(.*?);base64,(.*)/);
+                if (match) {
+                   extension = match[1] === 'jpeg' ? 'jpeg' : 'png';
+                   base64Data = match[2];
+                }
+              }
+
+              const imageId = workbook.addImage({
+                base64: base64Data,
+                extension: extension as 'png'|'jpeg'|'gif',
+              });
+
+              // Calculate image placement within the cell
+              // Instead of overlapping, we use a simple horizontal offset approach inside the Image column
+              // In ExcelJS, an image can span cells or just float. To float it nicely, we use fractions.
+              worksheet.addImage(imageId, {
+                tl: { col: colOffset + (i * 1.8), row: rowNumber - 1 + 0.1 }, 
+                ext: { width: 100, height: 100 }
+              });
+              
+            } catch (error) {
+              console.error('Failed to load image for Excel export', error);
+            }
+          }
+        } else {
+          currentRow.height = 30;
+        }
+        
+        rowNumber++;
       }
 
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Rework Items');
-
       setExportProgress('Downloading Excel...');
-      const sanitizedId = caseData.id.replace(/[\/\\?%*:|"<>]/g, '-');
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const sanitizedId = caseData.id.replace(/[\\/\\\\?%*:|"<>]/g, '-');
       const filename = `Rework_Report_${sanitizedId}.xlsx`;
-      XLSX.writeFile(workbook, filename);
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
     } catch (error) {
       console.error('Excel export failed:', error);
       alert('ไม่สามารถ Export Excel ได้ กรุณาลองใหม่อีกครั้ง');

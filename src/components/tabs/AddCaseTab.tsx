@@ -112,6 +112,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
   const [expandedReasonSelection, setExpandedReasonSelection] = useState<number | null>(null);
   const [expandedResponsibleSelection, setExpandedResponsibleSelection] = useState<number | null>(null);
+  const [isRestoring, setIsRestoring] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -159,6 +160,11 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           }
         } catch(e) {}
       }
+      
+      // Allow DOM to update with restored state before enabling animations
+      requestAnimationFrame(() => {
+        setTimeout(() => setIsRestoring(false), 10);
+      });
     }
   }, [setValue]);
 
@@ -271,11 +277,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
   return (
     <FormProvider {...methods}>
-      <motion.div
-        key="add"
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
+      <div
         className="mx-auto max-w-5xl space-y-10 pb-20"
       >
         <div className="flex items-end justify-between">
@@ -347,7 +349,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             </div>
             
             {formItems.length > 0 && formItems.every(item => item.customerName === 'OR') && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 border-t border-slate-100 pt-6">
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mt-6 border-t border-slate-100 pt-6">
                 <div className="rounded-2xl bg-amber-50 p-6 border border-amber-100">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
@@ -390,7 +392,8 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="flex flex-col">
+            <AnimatePresence initial={false}>
             {fields.map((field, idx) => {
               const item = formItems[idx];
               if (!item) return null;
@@ -398,13 +401,19 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
               return (
               <motion.div
                 key={field.id}
-                id={`form-card-${item.id}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
+                id={`form-card-wrapper-${item.id}`}
+                initial={isRestoring ? false : { opacity: 0, height: 0, scale: 0.98, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', scale: 1, marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, scale: 0.95, marginBottom: 0 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="relative overflow-hidden"
               >
-                <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
-                <div className="mb-8 flex items-center justify-between">
+                <div 
+                  id={`form-card-${item.id}`}
+                  className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
+                >
+                  <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
+                  <div className="mb-8 flex items-center justify-between">
                   <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
                     <Plus size={16} /> รายการที่ {idx + 1}
                     {item.verificationStatus === 'verified' && (
@@ -559,7 +568,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                       </div>
                       <AnimatePresence>
                         {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && expandedReasonSelection === idx && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-1 gap-2">
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
                             {(item.reason === 'รั่ว' ? LEAK_SUBTYPES : STAIN_SUBTYPES).map(subtype => {
                               const isSelected = item.reason === 'รั่ว' ? item.reasonSubtype === subtype : (item.reasonSubtype || '').split(', ').includes(subtype);
                               return (
@@ -622,7 +631,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                       </div>
                       <AnimatePresence>
                         {(item.responsible === 'SFC' || item.responsible === 'Supplier') && expandedResponsibleSelection === idx && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-1 gap-2">
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
                             {(RESPONSIBLE_SUBDIVISIONS[item.responsible] || []).map(subtype => (
                               <button
                                 key={subtype}
@@ -648,7 +657,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 </div>
 
                 {item.reason === 'เปื้อน' && formItems.some((i, iidx) => i.reason === 'รั่ว' && iidx !== idx) && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-8 overflow-hidden">
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-8 overflow-hidden">
                     <div className="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-5 transition-all">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
@@ -677,7 +686,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
                         <AnimatePresence>
                           {item.linkedSourceId && (
-                            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="flex flex-col gap-1.5">
+                            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1.5">
                               <label className="text-xs font-semibold text-amber-900/60">ไอเทมต้นเหตุ *</label>
                               <select
                                 {...register(`items.${idx}.linkedSourceId`)}
@@ -722,86 +731,110 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
                   <motion.button
                     type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.12 }}
                     onClick={() => {
                       const dup = { ...item, id: `form-${Date.now()}` };
                       insert(idx + 1, dup);
                     }}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition-colors"
                   >
                     <Copy size={16} /> คัดลอกรายการ
                   </motion.button>
                   {fields.length > 1 ? (
                     <motion.button
                       type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ duration: 0.12 }}
                       onClick={() => {
                         remove(idx);
                         setUploadedImages(prev => { const n = {...prev}; delete n[item.id]; return n; });
                       }}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100"
+                      className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors"
                     >
                       <Trash2 size={16} /> ลบรายการ
                     </motion.button>
                   ) : (
                     <motion.button
                       type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ duration: 0.12 }}
                       onClick={() => {
                         update(idx, { ...initialFormItem, id: item.id });
                         setUploadedImages(prev => { const n = {...prev}; delete n[item.id]; return n; });
                       }}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                      className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
                     >
                       <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
                     </motion.button>
                   )}
+                  </div>
                 </div>
               </motion.div>
             );})}
+            </AnimatePresence>
 
             <AnimatePresence mode="wait">
               {isSaving ? (
                 <motion.div
                   key="saving-card"
-                  initial={{ opacity: 0, y: 15 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                   className="w-full rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
                 >
                   <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
                 </motion.div>
               ) : (
                 <div className="flex flex-col w-full gap-4">
-                  <motion.div className="flex flex-col gap-4 sm:flex-row w-full">
+                  <div className="flex flex-col gap-4 sm:flex-row w-full">
                     <motion.button
                       type="button"
+                      whileHover={{ scale: 1.01, backgroundColor: 'rgba(241,245,249,1)' }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.12 }}
                       onClick={() => append({ ...initialFormItem, id: `form-${Date.now()}` })}
                       disabled={isSaving}
-                      className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 sm:h-auto"
+                      className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-semibold text-slate-500 disabled:opacity-50 sm:h-auto"
                     >
                       <Plus size={16} /> [ + ] เพิ่มรายการ
                     </motion.button>
                     <motion.button
                       type="button"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ duration: 0.12 }}
                       onClick={handleSubmit(onSubmit)}
                       disabled={isSaveDisabled(formItems) || isSaving || !caseNumber.trim()}
-                      className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto"
+                      className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto transition-colors"
                     >
                       บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />
                     </motion.button>
-                  </motion.div>
+                  </div>
                 </div>
               )}
             </AnimatePresence>
 
             <AnimatePresence>
               {saveMessage && (
-                <motion.div className={`rounded-lg border p-4 text-sm font-semibold ${saveMessage.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  className={`rounded-lg border p-4 text-sm font-semibold ${saveMessage.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                >
                   {saveMessage.text}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
-      </motion.div>
+      </div>
       <ConflictModal isOpen={isConflictModalOpen} onClose={() => setIsConflictModalOpen(false)} />
     </FormProvider>
   );
