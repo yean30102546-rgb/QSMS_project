@@ -278,14 +278,14 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   return (
     <FormProvider {...methods}>
       <div
-        className="mx-auto max-w-5xl space-y-10 pb-20"
+        className="mx-auto max-w-5xl space-y-6 md:space-y-10 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]"
       >
-        <div className="flex items-end justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between px-2 sm:px-0">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground">บันทึกงาน Rework ใหม่</h2>
-            <p className="mt-1 text-sm text-muted">เพิ่มข้อมูลล็อตสินค้าที่พบคราบหรือความเสียหายเพื่อบันทึกเข้าสู่ระบบ</p>
+            <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">บันทึกงาน Rework ใหม่</h2>
+            <p className="mt-1 text-xs md:text-sm text-muted">เพิ่มข้อมูลล็อตสินค้าที่พบคราบหรือความเสียหายเพื่อบันทึกเข้าสู่ระบบ</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={clearAllForm}
@@ -845,12 +845,12 @@ const InputField = React.forwardRef<HTMLInputElement, any>(({ label, className, 
   const id = externalId || internalId;
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="ml-1 text-xs font-semibold text-slate-500">{label}</label>
+      <label htmlFor={id} className="block ml-1 text-xs font-semibold text-slate-500">{label}</label>
       <input
         id={id}
         ref={ref}
         {...props}
-        className={`w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none ${className || ''}`}
+        className={`block w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none ${className || ''}`}
       />
     </div>
   );

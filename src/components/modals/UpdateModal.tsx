@@ -992,7 +992,7 @@ export function UpdateModal({
                     </div>
 
                     {/* Scrollable Content */}
-                    <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 bg-surface-bright space-y-4 sm:space-y-6">
+                    <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))] bg-surface-bright space-y-4 sm:space-y-6">
 
                       {caseData?.items.map((item, idx) => {
                         const images = item.imageUrls || [];

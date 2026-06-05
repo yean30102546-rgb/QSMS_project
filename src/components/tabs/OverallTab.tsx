@@ -193,7 +193,7 @@ export function OverallTab({
                       <input
                         type="text"
                         placeholder="ค้นหา..."
-                        className="w-full rounded-xl border border-white/45 bg-white/45 backdrop-blur-sm py-2.5 pl-9 pr-4 text-xs font-medium text-primary transition-all placeholder:text-on-surface-variant/60 focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+                        className="w-full appearance-none rounded-xl border border-white/45 bg-white/45 backdrop-blur-sm py-2.5 pl-9 pr-4 text-xs font-medium text-primary transition-all placeholder:text-on-surface-variant/60 focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
@@ -258,7 +258,7 @@ export function OverallTab({
                             toggleStatusFilter(status);
                           }
                         }}
-                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all border border-transparent shadow-sm ${
+                        className={`flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all border border-transparent shadow-sm ${
                           isActive
                             ? activeColors
                             : 'border-white/45 bg-white/45 text-on-surface-variant hover:bg-white/60 hover:text-primary'
