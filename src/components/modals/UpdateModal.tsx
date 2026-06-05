@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2, Package, Plus, FileSpreadsheet } from 'lucide-react';
 import { ReworkCase, CUSTOMER_OPTIONS, MaterialUsage } from '../../services/api';
@@ -342,7 +343,9 @@ export function UpdateModal({
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
       <AnimatePresence mode="wait">
         {isOpen && (
@@ -1402,7 +1405,8 @@ export function UpdateModal({
           </>
         )}
       </AnimatePresence>
-    </>
+    </>,
+    document.body
   );
 }
 

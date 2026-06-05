@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, CheckCircle2, XCircle, Shield, User, Landmark, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserRole } from '../../config/auth.config';
@@ -94,7 +95,9 @@ export function PermissionsModal({
 
   const details = getRoleDetails();
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
@@ -181,6 +184,7 @@ export function PermissionsModal({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

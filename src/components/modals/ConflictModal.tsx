@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { AlertTriangle } from 'lucide-react';
 
@@ -8,7 +9,9 @@ interface ConflictModalProps {
 }
 
 export const ConflictModal: React.FC<ConflictModalProps> = ({ isOpen, onClose }) => {
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -56,6 +59,7 @@ export const ConflictModal: React.FC<ConflictModalProps> = ({ isOpen, onClose })
           </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
