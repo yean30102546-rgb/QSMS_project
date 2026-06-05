@@ -375,13 +375,13 @@ export function UpdateModal({
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 aria-hidden={!!editExitIntent}
-                className="pointer-events-auto w-full max-w-5xl h-full max-h-[100dvh] sm:h-auto sm:max-h-[90vh] will-change-transform flex rounded-[24px] sm:rounded-[16px] overflow-hidden"
+                className="pointer-events-auto w-full max-w-5xl h-auto max-h-[95dvh] sm:max-h-[90vh] will-change-transform flex rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
               >
                 {isEditMode ? (
                   /* =========================================
                      EDIT MODE SCREEN (Prototype Style)
                      ========================================= */
-                  <div className="relative bg-system-background w-full rounded-[24px] sm:rounded-[16px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] border-0 sm:border border-divider-color flex flex-col h-full sm:h-auto sm:max-h-[90vh] overflow-hidden">
+                  <div className="relative bg-system-background w-full rounded-[24px] sm:rounded-[16px] border-0 sm:border border-divider-color flex flex-col h-full overflow-hidden">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 px-4 sm:px-6 py-4 border-b border-divider-color bg-surface-secondary/50 shrink-0">
                       <div className="flex items-center gap-3">
@@ -927,7 +927,7 @@ export function UpdateModal({
                   /* =========================================
                      VIEW MODE SCREEN (Prototype Style)
                      ========================================= */
-                  <div className="bg-system-background rounded-none sm:rounded-[16px] w-full max-w-5xl flex flex-col shadow-none sm:shadow-[0_24px_48px_rgba(0,0,0,0.12)] border-0 sm:border border-[rgba(0,0,0,0.08)] overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh]">
+                  <div className="bg-system-background w-full flex flex-col border-0 sm:border border-[rgba(0,0,0,0.08)] overflow-hidden h-full">
                     {/* Header */}
                     <div className="flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b border-divider-color bg-system-background z-10 shrink-0">
                       <div>
