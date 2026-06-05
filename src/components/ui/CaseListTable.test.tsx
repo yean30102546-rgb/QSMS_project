@@ -59,7 +59,7 @@ describe('CaseListTable', () => {
 
   it('renders correctly when items array is empty', () => {
     const emptyCase = { ...mockCase, items: [] as any[] };
-    render(<CaseListTable cases={[emptyCase]} onRowClick={vi.fn()} isLoading={false} isEmpty={false} isFilterEmpty={false} onRetry={vi.fn()} onClearFilters={vi.fn()} />);
+    render(<CaseListTable cases={[emptyCase]} onRowClick={vi.fn()} isLoading={false} isEmpty={false} isFilterEmpty={false} onRetry={vi.fn()} onClearFilters={vi.fn()} error={null} searchQuery="" hasActiveFilters={false} />);
     
     expect(screen.getByText('N/A')).toBeInTheDocument();
   });
@@ -81,7 +81,7 @@ describe('CaseListTable', () => {
       ]
     };
 
-    render(<CaseListTable cases={[multipleItemsCase]} onRowClick={vi.fn()} isLoading={false} isEmpty={false} isFilterEmpty={false} onRetry={vi.fn()} onClearFilters={vi.fn()} />);
+    render(<CaseListTable cases={[multipleItemsCase]} onRowClick={vi.fn()} isLoading={false} isEmpty={false} isFilterEmpty={false} onRetry={vi.fn()} onClearFilters={vi.fn()} error={null} searchQuery="" hasActiveFilters={false} />);
 
     // Should show first item name + (+1 รายการ)
     expect(screen.getByText('Test Item 1 (+1 รายการ)')).toBeInTheDocument();
