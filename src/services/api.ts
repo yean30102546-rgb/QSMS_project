@@ -531,24 +531,7 @@ export async function saveItemToMaster(itemNumber: string, itemCode: string, ite
 }
 
 export async function fetchImageDataUrl(imageUrl: string): Promise<string> {
-  const normalizedUrl = String(imageUrl || '').trim();
-  if (!normalizedUrl) return '';
-  if (normalizedUrl.startsWith('data:')) return normalizedUrl;
-
-  const cached = imageDataUrlCache.get(normalizedUrl);
-  if (cached) return cached;
-
-  const result = await postToGas<{ dataUrl: string }>({
-    action: 'getImageDataUrl',
-    imageUrl: normalizedUrl,
-  });
-
-  if (!result.success || !result.data?.dataUrl) {
-    throw new Error(result.error || 'Failed to load image');
-  }
-
-  imageDataUrlCache.set(normalizedUrl, result.data.dataUrl);
-  return result.data.dataUrl;
+  return imageUrl;
 }
 
 /**

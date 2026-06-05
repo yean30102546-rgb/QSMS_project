@@ -813,12 +813,41 @@ export async function POST(request: Request) {
         );
       }
 
-      case 'uploadImage':
-      case 'fetchImageDataUrl': {
-        const result = await proxyToGAS(body);
-        return NextResponse.json(result, {
-          headers: { 'Content-Type': 'application/json; charset=utf-8' }
-        });
+      case 'uploadImage': {
+        const { fileName, base64Data, contentType } = body;
+        
+        if (!fileName || !base64Data) {
+          throw new Error('Missing fileName or base64Data');
+        }
+
+        const base64Clean = typeof base64Data === 'string' ? base64Data.replace(/^data:image\/\w+;base64,/, '') : base64Data;
+        const buffer = Buffer.from(base64Clean, 'base64');
+        const uniqueFileName = `${Date.now()}-${fileName}`;
+
+        const { data, error } = await supabaseServer
+          .storage
+          .from('rework_images')
+          .upload(uniqueFileName, buffer, {
+            contentType: contentType || 'image/jpeg',
+            upsert: false
+          });
+
+        if (error) {
+          throw new Error(`Supabase Storage upload failed: ${error.message}`);
+        }
+
+        const { data: publicUrlData } = supabaseServer
+          .storage
+          .from('rework_images')
+          .getPublicUrl(uniqueFileName);
+
+        return NextResponse.json(
+          { 
+            success: true, 
+            data: { url: publicUrlData.publicUrl } 
+          },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        );
       }
 
       case 'loginWithPassword': {
