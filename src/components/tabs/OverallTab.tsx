@@ -193,7 +193,7 @@ export function OverallTab({
                       <input
                         type="text"
                         placeholder="ค้นหา..."
-                        className="w-full appearance-none rounded-xl border border-white/45 bg-white/45 backdrop-blur-sm py-2.5 pl-9 pr-4 text-xs font-medium text-primary transition-all placeholder:text-on-surface-variant/60 focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+                        className="w-full appearance-none rounded-xl border border-white/60 bg-white/90 py-2.5 pl-9 pr-4 text-xs font-medium text-primary transition-all placeholder:text-on-surface-variant/60 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
