@@ -3,7 +3,7 @@
  * Includes authentication and authorization
  */
 
-import { getCurrentUser, getToken } from './auth';
+import { getCurrentUser, isAuthenticated } from './auth';
 import { compressImage } from '../utils/imageCompressionUtils';
 
 // GAS URL is managed securely server-side, local wrapper handles backward-compatibility
@@ -139,27 +139,22 @@ function parseTokenPayload(token: string): Record<string, unknown> | null {
 
 async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiResponse<T>> {
   // Verify user is authenticated
-  const token = getToken();
-  if (!token) {
+  if (!isAuthenticated()) {
     throw new Error('Authentication required. Please login again.');
   }
 
   try {
     const currentUser = getCurrentUser();
-    const tokenPayload = parseTokenPayload(token);
-    // CRITICAL: Must use ROLE (ADMIN, PDB, etc.) not Name for authProfile
-    const authProfile = String(tokenPayload?.profile || currentUser?.role || '').trim().toUpperCase();
-    const authEmail = currentUser?.email
-      ? String(currentUser.email).trim()
-      : String(tokenPayload?.sub || '').trim();
+    const authProfile = String(currentUser?.role || '').trim().toUpperCase();
+    const authEmail = currentUser?.email ? String(currentUser.email).trim() : '';
 
     // Call our server-side Next.js secure API Proxy
+    // Note: token is automatically sent via HTTP-Only cookie 'auth_token'
     const response = await fetch('/api/rework', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...payload,
-        token,
         authProfile,
         authEmail,
         userRole: currentUser?.role || '' // Include userRole for backend validation

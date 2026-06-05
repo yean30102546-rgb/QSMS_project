@@ -51,54 +51,54 @@ interface GoogleCredentialResponse {
   credential?: string;
 }
 
-/**
- * Get current authenticated user
- */
-export function getCurrentUser(): User | null {
+let cachedUser: User | null = null;
+let cachedIsAuth: boolean = false;
+
+export async function restoreSession(): Promise<boolean> {
   try {
-    const userJson = sessionStorage.getItem(USER_KEY);
-    return userJson ? JSON.parse(userJson) : null;
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) {
+      cachedUser = null;
+      cachedIsAuth = false;
+      return false;
+    }
+    const result = await res.json();
+    if (result.success && result.data?.user) {
+      const rawRole = result.data.user.role || UserRole.OPERATOR;
+      cachedUser = {
+        ...result.data.user,
+        role: rawRole.toUpperCase() as UserRole,
+      };
+      cachedIsAuth = true;
+      return true;
+    }
+    cachedUser = null;
+    cachedIsAuth = false;
+    return false;
   } catch {
-    return null;
-  }
-}
-
-/**
- * Get current user's role
- */
-export function getCurrentUserRole(): UserRole | null {
-  try {
-    return (sessionStorage.getItem(ROLE_KEY) as UserRole) || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Get stored JWT token
- */
-export function getToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY);
-}
-
-/**
- * Check if user is authenticated and token is valid
- */
-export function isAuthenticated(): boolean {
-  const token = getToken();
-  const expiryStr = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
-
-  if (!token || !expiryStr) {
+    cachedUser = null;
+    cachedIsAuth = false;
     return false;
   }
-
-  const expiry = parseInt(expiryStr, 10);
-  return Date.now() < expiry;
 }
 
-/**
- * Check if user has specific permission
- */
+export function getCurrentUser(): User | null {
+  return cachedUser;
+}
+
+export function getCurrentUserRole(): UserRole | null {
+  return cachedUser?.role || null;
+}
+
+export function getToken(): string | null {
+  // Token is HTTP-Only, frontend cannot access it
+  return null;
+}
+
+export function isAuthenticated(): boolean {
+  return cachedIsAuth;
+}
+
 export function hasPermission(permission: string): PermissionCheckResponse {
   const role = getCurrentUserRole();
 
@@ -121,95 +121,49 @@ export function hasPermission(permission: string): PermissionCheckResponse {
   return { hasPermission: true };
 }
 
-/**
- * Login with Google OAuth (Recommended for small organizations)
- * Requires Firebase setup or Google OAuth credentials
- * @param credentialResponse - Response from Google OAuth library
- */
 export async function loginWithGoogle(credentialResponse: GoogleCredentialResponse): Promise<AuthResponse> {
   void credentialResponse;
   return {
     success: false,
-    error: 'Google login is disabled until tokens are verified by the GAS backend.',
+    error: 'Google login is disabled.',
   };
 }
 
-/**
- * Login with a password for an allowed user profile
- */
 export async function loginWithPassword(userId: string, password: string): Promise<AuthResponse> {
   try {
-    const response = await fetch('/api/rework', {
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'loginWithPassword',
         profile: userId,
         password,
       }),
     });
 
     if (!response.ok) {
-      return {
-        success: false,
-        error: 'Cannot connect to authentication service',
-      };
+      return { success: false, error: 'Cannot connect to authentication service' };
     }
 
-    const result = (await response.json()) as AuthResponse;
+    const result = await response.json();
     if (!result.success || !result.data) {
-      return {
-        success: false,
-        error: result.error || 'Password invalid',
-      };
+      return { success: false, error: result.error || 'Password invalid' };
     }
 
     const rawRole = result.data.user.role || UserRole.OPERATOR;
-    const user: User = {
+    cachedUser = {
       ...result.data.user,
       role: rawRole.toUpperCase() as UserRole,
     };
+    cachedIsAuth = true;
 
-    storeAuthData(result.data.token, user, result.data.expiresIn);
     return {
       success: true,
       data: {
-        token: result.data.token,
-        user,
+        token: '', // No token needed client side
+        user: cachedUser,
         expiresIn: result.data.expiresIn,
       },
     };
-
-    /*
-     * Legacy local PIN auth removed. GAS now owns PIN validation and token issuing.
-    if (pin !== account.pin) {
-      return {
-        success: false,
-        error: 'PIN ไม่ถูกต้อง',
-      };
-    }
-
-    const user: User = {
-      email: account.email,
-      name: account.name,
-      role: account.role,
-      department: account.department,
-    };
-
-    const token = generateSecureToken(account.email, userId);
-    const expiresIn = AUTH_CONFIG.tokenExpiryHours * 3600;
-
-    storeAuthData(token, user, expiresIn);
-
-    return {
-      success: true,
-      data: {
-        token,
-        user,
-        expiresIn,
-      },
-    };
-     */
   } catch (error) {
     return {
       success: false,
@@ -218,10 +172,6 @@ export async function loginWithPassword(userId: string, password: string): Promi
   }
 }
 
-/**
- * Traditional login with email + password
- * Email/password login is currently disabled in favor of secure PIN login.
- */
 export async function loginWithEmail(email: string, password: string): Promise<AuthResponse> {
   return {
     success: false,
@@ -229,10 +179,16 @@ export async function loginWithEmail(email: string, password: string): Promise<A
   };
 }
 
-/**
- * Logout user and clear session
- */
-export function logout(): void {
+export async function logout(): Promise<void> {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch (err) {
+    console.error('Logout error:', err);
+  }
+  cachedUser = null;
+  cachedIsAuth = false;
+  
+  // Clear any legacy storage just in case
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(USER_KEY);
   sessionStorage.removeItem(ROLE_KEY);
@@ -240,80 +196,14 @@ export function logout(): void {
   sessionStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-/**
- * Generate a secure JWT-like token
- * In production: This should come from backend
- */
-function generateSecureToken(email: string, profile?: string): string {
-  void email;
-  void profile;
-  throw new Error('Client-side token signing is disabled. Use GAS-issued tokens only.');
-}
-
-/**
- * Store authentication data securely
- */
-function storeAuthData(token: string, user: User, expiresInSeconds: number): void {
-  const expiryTime = Date.now() + (expiresInSeconds * 1000);
-
-  sessionStorage.setItem(TOKEN_KEY, token);
-  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
-  sessionStorage.setItem(ROLE_KEY, user.role);
-  sessionStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-}
-
-/**
- * Validate token on backend (call before making API requests)
- * Returns user info if valid, null if expired or invalid
- * In production: verify with backend API
- */
 export async function validateToken(token: string): Promise<ValidateTokenResponse> {
-  try {
-    if (!token) {
-      return {
-        success: false,
-        valid: false,
-        error: 'No token provided',
-      };
-    }
-
-    // Basic JWT validation (check format)
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return {
-        success: false,
-        valid: false,
-        error: 'Invalid token format',
-      };
-    }
-
-    const payload = JSON.parse(
-      atob(parts[1].replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (parts[1].length % 4)) % 4))
-    );
-    if (payload.exp && Date.now() >= Number(payload.exp) * 1000) {
-      return {
-        success: false,
-        valid: false,
-        error: AUTH_ERROR_MESSAGES.SESSION_EXPIRED,
-      };
-    }
-
-    return {
-      success: true,
-      valid: true,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      valid: false,
-      error: error instanceof Error ? error.message : 'Validation failed',
-    };
-  }
+  // Always true if we reach here and isAuthenticated is true
+  return {
+    success: true,
+    valid: cachedIsAuth,
+  };
 }
 
-/**
- * Refresh token before expiry
- */
 export async function refreshToken(): Promise<AuthResponse> {
   return {
     success: false,
@@ -321,13 +211,8 @@ export async function refreshToken(): Promise<AuthResponse> {
   };
 }
 
-/**
- * Add token to request headers for API calls
- */
 export function getAuthHeaders(): Record<string, string> {
-  const token = getToken();
   return {
     'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 }

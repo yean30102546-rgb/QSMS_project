@@ -11,7 +11,7 @@ import dynamic from 'next/dynamic';
 
 import { portalAppRegistry } from './modules/platform/appRegistry';
 import type { AppView } from './modules/platform/types';
-import { getCurrentUser, isAuthenticated as authIsAuthenticated, logout as authLogout, type User } from './services/auth';
+import { getCurrentUser, isAuthenticated as authIsAuthenticated, logout as authLogout, restoreSession, type User } from './services/auth';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
 const Login = dynamic(() => import('./components/Login').then(mod => mod.Login), { ssr: false });
@@ -35,27 +35,32 @@ function AuthWrapper() {
   };
 
   useEffect(() => {
-    const authenticated = authIsAuthenticated();
-    const currentUser = getCurrentUser();
+    const initAuth = async () => {
+      await restoreSession();
+      const authenticated = authIsAuthenticated();
+      const currentUser = getCurrentUser();
 
-    setIsAuthenticated(authenticated);
-    setAppUser(currentUser);
-    
-    if (typeof window !== 'undefined') {
-      const savedView = sessionStorage.getItem('currentView') as AppView | null;
-      if (savedView && savedView !== 'login' && authenticated) {
-        if (savedView === 'roster' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
-          setCurrentView('portal');
+      setIsAuthenticated(authenticated);
+      setAppUser(currentUser);
+      
+      if (typeof window !== 'undefined') {
+        const savedView = sessionStorage.getItem('currentView') as AppView | null;
+        if (savedView && savedView !== 'login' && authenticated) {
+          if (savedView === 'roster' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
+            setCurrentView('portal');
+          } else {
+            setCurrentView(savedView);
+          }
         } else {
-          setCurrentView(savedView);
+          setCurrentView('portal');
         }
       } else {
         setCurrentView('portal');
       }
-    } else {
-      setCurrentView('portal');
-    }
-    setAuthLoading(false);
+      setAuthLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const refreshAuth = (authenticated = false) => {
