@@ -18,8 +18,6 @@ const RagApp = dynamic(() => import('../../../modules/rag/RagApp').then(mod => m
 
 import type { User } from '../../../services/auth';
 import type { PortalAppDefinition } from '../../../modules/platform/types';
-import { fetchAllCases } from '../../../services/api';
-import { fetchRosterMonth } from '../../../services/rosterApi';
 
 interface WorkspacePortalProps {
   user: User | null;
@@ -60,123 +58,40 @@ export function WorkspacePortal({
   });
 
   useEffect(() => {
-    if (isGuest) {
-      const fetchPublic = async () => {
-        try {
-          const response = await fetch('/api/rework', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'fetchPublicOverview' })
-          });
-          const resJson = await response.json();
-          if (resJson.success && resJson.data) {
-            const { rework, roster } = resJson.data;
-            setReworkStats({
-              total: rework.total,
-              pending: rework.pending,
-              inProgress: rework.inProgress,
-              awaitingValuation: rework.awaitingValuation,
-              completed: rework.completed,
-              completionRate: rework.completionRate,
-              hasData: true
-            });
-            setRosterStats({
-              totalEmployees: roster.totalEmployees,
-              staffPresentCount: roster.staffPresentCount,
-              onLeaveCount: roster.onLeaveCount,
-              leaveSummary: roster.leaveSummary,
-              retentionRate: roster.retentionRate,
-              hasData: true
-            });
-          }
-        } catch (err) {
-          console.error('Failed to fetch public stats overview:', err);
-        }
-      };
-      fetchPublic();
-      return;
-    }
-
-    // Current Month Key for Roster (YYYY-MM)
-    const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-    // Fetch Rework Stats Preview
-    const fetchRework = async () => {
+    const fetchOverview = async () => {
       try {
-        const response = await fetchAllCases();
-        if (response.success && response.data) {
-          const data = response.data;
-          const total = data.length;
-          const pending = data.filter(c => c.status === 'Pending').length;
-          const inProgress = data.filter(c => c.status === 'In-Progress').length;
-          const awaitingValuation = data.filter(c => c.status === 'Awaiting Valuation').length;
-          const completed = data.filter(c => c.status === 'Completed').length;
-          const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-
+        const response = await fetch('/api/rework', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'fetchPublicOverview' })
+        });
+        const resJson = await response.json();
+        if (resJson.success && resJson.data) {
+          const { rework, roster } = resJson.data;
           setReworkStats({
-            total,
-            pending,
-            inProgress,
-            awaitingValuation,
-            completed,
-            completionRate,
-            hasData: true,
+            total: rework.total,
+            pending: rework.pending,
+            inProgress: rework.inProgress,
+            awaitingValuation: rework.awaitingValuation,
+            completed: rework.completed,
+            completionRate: rework.completionRate,
+            hasData: true
           });
-        }
-      } catch (err) {
-        console.error('Failed to fetch rework preview:', err);
-      }
-    };
-
-    // Fetch Roster Stats Preview
-    const fetchRoster = async () => {
-      try {
-        const response = await fetchRosterMonth(monthKey);
-        if (response.success && response.data && response.data.employees) {
-          const employees = response.data.employees;
-          const leaves = response.data.leaves || [];
-
-          const today = new Date();
-          const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-          const todayLeaves = leaves.filter(l => l.dateKey === todayKey);
-
-          const leaveSummary = { sick: 0, business: 0, vacation: 0 };
-          todayLeaves.forEach(l => {
-            if (l.leaveType === 'sick') leaveSummary.sick++;
-            else if (l.leaveType === 'business') leaveSummary.business++;
-            else if (l.leaveType === 'vacation') leaveSummary.vacation++;
-          });
-
-          const totalEmployees = employees.length;
-          const onLeaveCount = todayLeaves.length;
-          const staffPresentCount = Math.max(0, totalEmployees - onLeaveCount);
-
-          const daysPassed = today.getDate();
-          const totalLeaveDays = leaves.length;
-          const expectedWorkingDays = totalEmployees * daysPassed;
-          const retentionRate = expectedWorkingDays > 0
-            ? Math.max(0, Math.round((1 - (totalLeaveDays / expectedWorkingDays)) * 100))
-            : 100;
-
           setRosterStats({
-            totalEmployees,
-            staffPresentCount,
-            onLeaveCount,
-            leaveSummary,
-            retentionRate,
-            hasData: true,
+            totalEmployees: roster.totalEmployees,
+            staffPresentCount: roster.staffPresentCount,
+            onLeaveCount: roster.onLeaveCount,
+            leaveSummary: roster.leaveSummary,
+            retentionRate: roster.retentionRate,
+            hasData: true
           });
         }
       } catch (err) {
-        console.error('Failed to fetch roster preview:', err);
+        console.error('Failed to fetch public stats overview:', err);
       }
     };
-
-    fetchRework();
-    fetchRoster();
-  }, [isGuest]);
+    fetchOverview();
+  }, []);
 
   return (
     <div className="apple-shell flex min-h-screen flex-col overflow-y-auto bg-slate-50">

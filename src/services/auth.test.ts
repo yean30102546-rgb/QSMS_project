@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   getCurrentUser,
   getCurrentUserRole,
@@ -8,113 +8,130 @@ import {
   logout,
   loginWithPassword,
   validateToken,
-} from './auth'
-import { UserRole } from '../config/auth.config'
+  restoreSession,
+} from './auth';
+import { UserRole } from '../config/auth.config';
 
 describe('Auth Service', () => {
-  beforeEach(() => {
-    sessionStorage.clear()
-    vi.restoreAllMocks()
-  })
+  beforeEach(async () => {
+    vi.restoreAllMocks();
+    // Reset internal state of the module by logging out
+    // Stub fetch in case logout calls it
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true })
+    }));
+    await logout();
+    vi.restoreAllMocks();
+  });
 
   afterEach(() => {
-    sessionStorage.clear()
-  })
+    vi.restoreAllMocks();
+  });
 
-  describe('getCurrentUser', () => {
-    it('should return null if no user stored', () => {
-      expect(getCurrentUser()).toBeNull()
-    })
+  describe('getCurrentUser & restoreSession', () => {
+    it('should return null if not logged in / restoreSession fails', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false
+      }));
+      const restored = await restoreSession();
+      expect(restored).toBe(false);
+      expect(getCurrentUser()).toBeNull();
+    });
 
-    it('should return user object if stored in sessionStorage', () => {
-      const mockUser = { email: 'test@example.com', name: 'Test User', role: UserRole.OPERATOR }
-      sessionStorage.setItem('qsms_user', JSON.stringify(mockUser))
-      expect(getCurrentUser()).toEqual(mockUser)
-    })
-  })
+    it('should return user object if restoreSession succeeds', async () => {
+      const mockUser = { email: 'test@example.com', name: 'Test User', role: 'operator' };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { user: mockUser } })
+      }));
+      const restored = await restoreSession();
+      expect(restored).toBe(true);
+      expect(getCurrentUser()).toEqual({
+        email: 'test@example.com',
+        name: 'Test User',
+        role: UserRole.OPERATOR,
+      });
+    });
+  });
 
   describe('getCurrentUserRole', () => {
     it('should return null if no role stored', () => {
-      expect(getCurrentUserRole()).toBeNull()
-    })
+      expect(getCurrentUserRole()).toBeNull();
+    });
 
-    it('should return role if stored', () => {
-      sessionStorage.setItem('qsms_role', 'operator')
-      expect(getCurrentUserRole()).toBe('operator')
-    })
-  })
+    it('should return role if logged in', async () => {
+      const mockUser = { email: 'test@example.com', name: 'Test User', role: 'finance' };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { user: mockUser } })
+      }));
+      await restoreSession();
+      expect(getCurrentUserRole()).toBe(UserRole.FINANCE);
+    });
+  });
 
   describe('isAuthenticated', () => {
-    it('should return false if token is missing', () => {
-      expect(isAuthenticated()).toBe(false)
-    })
+    it('should return false if not authenticated', () => {
+      expect(isAuthenticated()).toBe(false);
+    });
 
-    it('should return false if token is expired', () => {
-      sessionStorage.setItem('qsms_token', 'mock_token')
-      sessionStorage.setItem('qsms_token_expiry', (Date.now() - 1000).toString()) // Expired 1s ago
-      expect(isAuthenticated()).toBe(false)
-    })
-
-    it('should return true if token is not expired', () => {
-      sessionStorage.setItem('qsms_token', 'mock_token')
-      sessionStorage.setItem('qsms_token_expiry', (Date.now() + 10000).toString()) // Expired in 10s
-      expect(isAuthenticated()).toBe(true)
-    })
-  })
+    it('should return true if restoreSession succeeded', async () => {
+      const mockUser = { email: 'test@example.com', name: 'Test User', role: 'operator' };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { user: mockUser } })
+      }));
+      await restoreSession();
+      expect(isAuthenticated()).toBe(true);
+    });
+  });
 
   describe('hasPermission', () => {
     it('should return false if not logged in', () => {
-      const result = hasPermission('rework:create')
-      expect(result.hasPermission).toBe(false)
-      expect(result.reason).toContain('session has expired')
-    })
+      const result = hasPermission('view_dashboard');
+      expect(result.hasPermission).toBe(false);
+      expect(result.reason).toContain('session has expired');
+    });
 
-    it('should check role permissions correctly', () => {
-      // Mock operator role which might only have view permissions
-      sessionStorage.setItem('qsms_role', 'operator')
-      const result = hasPermission('rework:edit_cost')
-      expect(result.hasPermission).toBe(false)
-    })
-  })
+    it('should check role permissions correctly', async () => {
+      const mockUser = { email: 'test@example.com', name: 'Test User', role: 'operator' };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { user: mockUser } })
+      }));
+      await restoreSession();
+      // Operator should have view_overall but NOT fill_valuation
+      expect(hasPermission('view_overall').hasPermission).toBe(true);
+      expect(hasPermission('fill_valuation').hasPermission).toBe(false);
+    });
+  });
 
   describe('logout', () => {
-    it('should clear all storage keys', () => {
-      sessionStorage.setItem('qsms_token', 'tok')
-      sessionStorage.setItem('qsms_user', '{}')
-      sessionStorage.setItem('qsms_role', 'operator')
-      
-      logout()
-      
-      expect(sessionStorage.getItem('qsms_token')).toBeNull()
-      expect(sessionStorage.getItem('qsms_user')).toBeNull()
-      expect(sessionStorage.getItem('qsms_role')).toBeNull()
-    })
-  })
+    it('should clear cached state', async () => {
+      const mockUser = { email: 'test@example.com', name: 'Test User', role: 'operator' };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { user: mockUser } })
+      }));
+      await restoreSession();
+      expect(isAuthenticated()).toBe(true);
 
-  describe('validateToken', () => {
-    it('should fail validation for empty token', async () => {
-      const result = await validateToken('')
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('No token provided')
-    })
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', fetchMock);
+      await logout();
 
-    it('should validate correctly formatted non-expired token', async () => {
-      // Create a mock base64 token payload
-      const mockPayload = { exp: Math.floor(Date.now() / 1000) + 3600 }
-      const base64Payload = btoa(JSON.stringify(mockPayload))
-      const token = `header.${base64Payload}.signature`
-
-      const result = await validateToken(token)
-      expect(result.valid).toBe(true)
-    })
-  })
+      expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' });
+      expect(isAuthenticated()).toBe(false);
+      expect(getCurrentUser()).toBeNull();
+    });
+  });
 
   describe('loginWithPassword', () => {
     it('should call fetch and store auth data on success', async () => {
       const mockResponse = {
         success: true,
         data: {
-          token: 'header.payload.signature',
           expiresIn: 3600,
           user: {
             email: 'qsms@example.com',
@@ -122,38 +139,37 @@ describe('Auth Service', () => {
             role: 'operator'
           }
         }
-      }
+      };
 
-      // Mock global fetch
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockResponse
-      })
-      vi.stubGlobal('fetch', mockFetch)
+      });
+      vi.stubGlobal('fetch', mockFetch);
 
-      const result = await loginWithPassword('QSMS', '123456')
-      expect(result.success).toBe(true)
-      expect(result.data?.token).toBe('header.payload.signature')
-      expect(sessionStorage.getItem('qsms_token')).toBe('header.payload.signature')
-      expect(sessionStorage.getItem('qsms_role')).toBe('OPERATOR')
-    })
+      const result = await loginWithPassword('qsms', 'Qsms123');
+      expect(result.success).toBe(true);
+      expect(result.data?.user.role).toBe(UserRole.OPERATOR);
+      expect(isAuthenticated()).toBe(true);
+      expect(getCurrentUser()?.name).toBe('QSMS Operator');
+    });
 
     it('should return failure if credentials invalid', async () => {
       const mockResponse = {
         success: false,
         error: 'Invalid credentials'
-      }
+      };
 
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockResponse
-      })
-      vi.stubGlobal('fetch', mockFetch)
+      });
+      vi.stubGlobal('fetch', mockFetch);
 
-      const result = await loginWithPassword('INVALID', 'wrong')
-      expect(result.success).toBe(false)
-      expect(result.error).toBe('Invalid credentials')
-      expect(sessionStorage.getItem('qsms_token')).toBeNull()
-    })
-  })
-})
+      const result = await loginWithPassword('INVALID', 'wrong');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Invalid credentials');
+      expect(isAuthenticated()).toBe(false);
+    });
+  });
+});

@@ -65,7 +65,7 @@ export function MainLayout({
   };
 
   return (
-    <div className="flex min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans">
+    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans">
       {/* Mobile Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (

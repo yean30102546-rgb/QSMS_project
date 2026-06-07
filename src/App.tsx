@@ -161,7 +161,7 @@ function AuthWrapper() {
   } else if (currentView === 'roster') {
     content = <RosterApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else if (currentView === 'guide') {
-    content = <GuideApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
+    content = <GuideApp onBackToPortal={() => setCurrentView('portal')} />;
   } else {
     content = <ReworkApp user={appUser} onLogout={handleLogout} onBackToPortal={() => setCurrentView('portal')} />;
   }

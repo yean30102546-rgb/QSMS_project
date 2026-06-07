@@ -68,7 +68,30 @@ function normalizeProfile(profile: unknown): string {
 function decodeBase64Url(value: string): string {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-  return Buffer.from(padded, 'base64').toString('utf8');
+  const binaryString = atob(padded);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+function encodeBase64Url(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let binaryString = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binaryString += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binaryString).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function encodeBase64UrlFromBytes(bytes: ArrayBuffer): string {
+  const uint8Array = new Uint8Array(bytes);
+  let binaryString = '';
+  for (let i = 0; i < uint8Array.byteLength; i++) {
+    binaryString += String.fromCharCode(uint8Array[i]);
+  }
+  return btoa(binaryString).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 function safeEqual(a: Uint8Array, b: Uint8Array): boolean {
@@ -89,7 +112,7 @@ export async function signToken(unsignedToken: string): Promise<string> {
     ['sign'],
   );
   const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(unsignedToken));
-  return Buffer.from(signature).toString('base64url');
+  return encodeBase64UrlFromBytes(signature);
 }
 
 export async function generateToken(profileLower: string, role: string): Promise<string> {
@@ -101,8 +124,8 @@ export async function generateToken(profileLower: string, role: string): Promise
     type: 'auth_token'
   };
 
-  const headerStr = Buffer.from(JSON.stringify(headerObj)).toString('base64url');
-  const payloadStr = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+  const headerStr = encodeBase64Url(JSON.stringify(headerObj));
+  const payloadStr = encodeBase64Url(JSON.stringify(payloadObj));
   const unsignedToken = `${headerStr}.${payloadStr}`;
   const signatureStr = await signToken(unsignedToken);
   
@@ -121,7 +144,9 @@ export async function verifyToken(token: string): Promise<TokenPayload> {
 
   const payload = JSON.parse(decodeBase64Url(parts[1])) as TokenPayload;
   const expectedSignature = await signToken(`${parts[0]}.${parts[1]}`);
-  if (!safeEqual(Buffer.from(parts[2]), Buffer.from(expectedSignature))) {
+  const a = new TextEncoder().encode(parts[2]);
+  const b = new TextEncoder().encode(expectedSignature);
+  if (!safeEqual(a, b)) {
     throw new AuthError('Invalid token signature');
   }
 

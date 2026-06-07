@@ -21,6 +21,8 @@ interface UpdateModalProps {
   onClose: () => void;
   onUpdate: (caseId: string, updates: Partial<ReworkCase>) => Promise<void>;
   onDelete?: (caseId: string) => Promise<void>;
+  inline?: boolean;
+  userRoleOverride?: UserRole;
 }
 
 const STANDARD_MATERIALS = ['บรรจุภัณฑ์', 'แกลลอน', 'ฝา', 'สติ๊กเกอร์', 'ชริ้งค์ ลาเบล', 'ของแถม'];
@@ -32,6 +34,8 @@ export function UpdateModal({
   onClose,
   onUpdate,
   onDelete,
+  inline = false,
+  userRoleOverride,
 }: UpdateModalProps) {
   const { progress, isSaving, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
   const [caseStatus, setCaseStatus] = useState<ReworkCase['status']>(
@@ -82,12 +86,45 @@ export function UpdateModal({
     }
   };
 
+  const handleDownloadImages = async (imageUrls: string[], itemName: string) => {
+    if (!imageUrls || imageUrls.length === 0) return;
+    for (let i = 0; i < imageUrls.length; i++) {
+      const url = imageUrls[i];
+      
+      // Legacy Google Drive links strictly block CORS, skip fetch and open directly
+      if (url.includes('drive.google.com')) {
+        window.open(url, '_blank');
+        continue;
+      }
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        const ext = url.split('.').pop()?.split('?')[0] || 'jpg';
+        a.download = `${itemName.replace(/\s+/g, '_')}_image_${i + 1}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (err) {
+        // Fallback for CORS issues (e.g. Supabase Storage bucket missing CORS policy)
+        console.warn(`[Download Fallback] Could not fetch image as blob due to CORS. Opening in new tab: ${url}`);
+        window.open(url, '_blank');
+      }
+    }
+  };
+
   // Labor Management State
   const [laborCount, setLaborCount] = useState<number | string>('');
   const [laborHours, setLaborHours] = useState<number | string>('');
   const [laborRate, setLaborRate] = useState<number | string>('');
 
-  const userRole = getCurrentUserRole();
+  const userRole = userRoleOverride || getCurrentUserRole();
   const isAdmin = userRole === UserRole.QSMS;
   const isFinance = userRole === UserRole.FINANCE || isAdmin;
   const isOperator = userRole === UserRole.OPERATOR || isAdmin;
@@ -104,7 +141,7 @@ export function UpdateModal({
 
   // Fix layout shift by managing body overflow
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !inline) {
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
       if (scrollbarWidth > 0) {
@@ -345,7 +382,7 @@ export function UpdateModal({
 
   if (typeof document === 'undefined') return null;
 
-  return createPortal(
+  const content = (
     <>
       <AnimatePresence mode="wait">
         {isOpen && (
@@ -357,7 +394,7 @@ export function UpdateModal({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={handleRequestClose}
-              className="fixed inset-0 bg-black/35 z-40 will-change-opacity"
+              className={`${inline ? 'absolute' : 'fixed'} inset-0 bg-black/35 z-40 will-change-opacity`}
             />
 
             {/* Modal Container */}
@@ -366,7 +403,7 @@ export function UpdateModal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-0 left-0 w-full h-[100dvh] z-50 flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform"
+              className={`${inline ? 'absolute' : 'fixed'} top-0 left-0 w-full ${inline ? 'h-full' : 'h-[100dvh]'} z-50 flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform`}
             >
               <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -1055,9 +1092,16 @@ export function UpdateModal({
                                 <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap break-words">{item.details || 'ไม่มีข้อมูล'}</p>
                               </div>
                               <div>
-                                <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 flex justify-between">
+                                <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 flex justify-between items-center">
                                   <span>Images ({images.length})</span>
-                                  {item.imageFolderUrl && <a href={item.imageFolderUrl} target="_blank" rel="noopener noreferrer" className="text-[#0066cc] hover:underline normal-case">Drive</a>}
+                                  {images.length > 0 && (
+                                    <button
+                                      onClick={() => handleDownloadImages(images, item.itemName)}
+                                      className="text-[#0066cc] hover:underline normal-case text-xs font-semibold flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                                    >
+                                      <Download size={12} /> ดาวน์โหลดรูปภาพ
+                                    </button>
+                                  )}
                                 </h4>
                                 {images.length > 0 ? (
                                   <div className="flex gap-2 overflow-x-auto pb-2">
@@ -1126,16 +1170,143 @@ export function UpdateModal({
                               })}
                             </div>
 
-                            {/* Operator resolution text block */}
-                            {(caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isOperator && (
-                              <div className="space-y-2 mt-4">
-                                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">วิธีแก้ไขปัญหา (Resolution Method)</label>
-                                <textarea
-                                  value={resolutionMethod}
-                                  onChange={(e) => setResolutionMethod(e.target.value)}
-                                  placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
-                                  className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-sm font-medium text-on-surface min-h-[80px]"
-                                />
+                            {/* --- Resource Management in View Mode --- */}
+                            {(isOperator || isAdmin || isFinance) && (
+                              <div className="space-y-6 mt-6 pt-4 border-t border-divider-color">
+                                {/* Labor Management */}
+                                <div className="space-y-4">
+                                  <h4 className="text-sm font-semibold text-on-surface flex items-center gap-2"><Clock size={16} className="text-[#0066cc]" /> การจัดการเวลาทำงาน (Labor)</h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-1.5">
+                                      <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">จำนวนพนักงาน (คน)</label>
+                                      <select
+                                        value={laborCount}
+                                        onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
+                                        disabled={!canEditMaterialNameQty}
+                                        className="apple-input w-full bg-surface-bright border border-divider-color px-3 py-2 text-sm font-semibold rounded-lg"
+                                      >
+                                        <option value="">เลือกจำนวน</option>
+                                        {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} คน</option>)}
+                                      </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">ชั่วโมงที่ใช้ (ชม.)</label>
+                                      <input
+                                        type="number" min="0" step="0.5"
+                                        value={laborHours === undefined || laborHours === null || laborHours.toString() === 'NaN' ? '' : laborHours}
+                                        onChange={(e) => setLaborHours(e.target.value === '' ? '' : Number(e.target.value))}
+                                        disabled={!canEditMaterialNameQty}
+                                        placeholder="0.0"
+                                        className="apple-input w-full bg-surface-bright border border-divider-color px-3 py-2 text-sm font-semibold rounded-lg"
+                                      />
+                                    </div>
+                                    {canViewFinancialData && (
+                                      <div className="space-y-1.5">
+                                        <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">อัตราค่าแรง (บาท/ชม.)</label>
+                                        <div className="relative">
+                                          <input
+                                            type="number" min="0" step="1"
+                                            value={laborRate === undefined || laborRate === null || laborRate.toString() === 'NaN' ? '' : laborRate}
+                                            onChange={(e) => setLaborRate(e.target.value === '' ? '' : Number(e.target.value))}
+                                            disabled={!canEditUnitPrice}
+                                            placeholder="0"
+                                            className="apple-input w-full bg-surface-bright border border-divider-color pl-7 pr-3 py-2 text-sm font-semibold rounded-lg"
+                                          />
+                                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant font-semibold">฿</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Material Management */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-semibold text-on-surface flex items-center gap-2"><Package size={16} className="text-[#0066cc]" /> รายการวัสดุที่ใช้ (Materials)</h4>
+                                    {canManageRows && (
+                                      <button onClick={handleAddMaterial} className="text-xs font-semibold text-[#0066cc] bg-[#0066cc]/10 hover:bg-[#0066cc]/20 px-3 py-1.5 rounded-full transition-colors">
+                                        + เพิ่มวัสดุ
+                                      </button>
+                                    )}
+                                  </div>
+                                  
+                                  {materials.length > 0 ? (
+                                    <div className="overflow-hidden border border-divider-color rounded-lg">
+                                      <table className="w-full text-left bg-surface-bright">
+                                        <thead className="bg-surface-secondary/50">
+                                          <tr className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider border-b border-divider-color">
+                                            <th className="py-2 px-3">ชื่อวัสดุ</th>
+                                            <th className="py-2 px-3 text-center w-20">จำนวน</th>
+                                            <th className="py-2 px-3 text-center w-16">หน่วย</th>
+                                            {canViewFinancialData && <th className="py-2 px-3 text-right w-28">ราคา/หน่วย</th>}
+                                            {canManageRows && <th className="py-2 w-10"></th>}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {materials.map((mat) => (
+                                            <tr key={mat.id} className="border-b border-divider-color/50 last:border-0">
+                                              <td className="p-2">
+                                                <select
+                                                  value={mat.name}
+                                                  onChange={(e) => handleMaterialChange(mat.id, 'name', e.target.value)}
+                                                  disabled={!canEditMaterialNameQty}
+                                                  className="apple-input w-full bg-system-background px-2 py-1.5 text-xs font-medium border border-divider-color rounded"
+                                                >
+                                                  {STANDARD_MATERIALS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                </select>
+                                              </td>
+                                              <td className="p-2">
+                                                <input
+                                                  type="number"
+                                                  value={mat.quantity || ''}
+                                                  onChange={(e) => handleMaterialChange(mat.id, 'quantity', Number(e.target.value))}
+                                                  disabled={!canEditMaterialNameQty}
+                                                  className="apple-input w-full bg-system-background px-1 py-1.5 text-center text-xs font-medium border border-divider-color rounded"
+                                                />
+                                              </td>
+                                              <td className="p-2 text-center text-xs text-on-surface-variant">{mat.unit}</td>
+                                              {canViewFinancialData && (
+                                                <td className="p-2">
+                                                  <input
+                                                    type="number"
+                                                    value={mat.unitPrice || ''}
+                                                    onChange={(e) => handleMaterialChange(mat.id, 'unitPrice', Number(e.target.value))}
+                                                    disabled={!canEditUnitPrice}
+                                                    className="apple-input w-full bg-system-background px-2 py-1.5 text-right text-xs font-medium border border-divider-color rounded"
+                                                  />
+                                                </td>
+                                              )}
+                                              {canManageRows && (
+                                                <td className="p-2 text-right">
+                                                  <button onClick={() => handleRemoveMaterial(mat.id)} className="p-1 text-error/70 hover:text-error hover:bg-error/10 rounded transition-colors">
+                                                    <Trash2 size={14} />
+                                                  </button>
+                                                </td>
+                                              )}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <div className="py-4 text-center border border-dashed border-divider-color rounded-lg text-on-surface-variant bg-surface-bright/50">
+                                      <p className="text-xs font-medium">ไม่มีรายการวัสดุ</p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Resolution Method */}
+                                {((caseData?.status === 'Pending' || caseData?.status === 'In-Progress') && isOperator) || isAdmin ? (
+                                  <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold text-on-surface flex items-center gap-2"><PenTool size={16} className="text-[#0066cc]" /> วิธีแก้ไขปัญหา (Resolution Method)</h4>
+                                    <textarea
+                                      value={resolutionMethod}
+                                      onChange={(e) => setResolutionMethod(e.target.value)}
+                                      placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
+                                      className="apple-input w-full bg-surface-bright border border-divider-color p-3 rounded-lg text-sm font-medium text-on-surface min-h-[80px]"
+                                    />
+                                  </div>
+                                ) : null}
                               </div>
                             )}
 
@@ -1405,9 +1576,11 @@ export function UpdateModal({
           </>
         )}
       </AnimatePresence>
-    </>,
-    document.body
+    </>
   );
+
+  if (inline) return content;
+  return createPortal(content, document.body);
 }
 
 function StatusBadge({ status }: { status: ReworkCase['status'] }) {

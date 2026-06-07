@@ -146,3 +146,12 @@ An accessibility design pattern implemented in `index.css` that detects OS-level
 
 ### Layout Shift Prevention
 A layout optimization utilizing the CSS property `scrollbar-gutter: stable` to reserve space for scrollbars, preventing sudden page layout shifts when modals appear or disappear.
+
+### Server-State Authentication (Cookie-Based Auth)
+The session management architecture where JWT tokens are stored in HTTP-Only, Secure cookies (`auth_token`) and validated server-side by Next.js Route Handlers, replacing client-side `sessionStorage` storage.
+
+### Supabase Image Download
+The client-side download utility (`handleDownloadImages`) that fetches item evidence images from Supabase Storage as Blobs and triggers browser-native downloads, replacing legacy Google Drive folder redirects.
+
+### Production Security Posture
+The deployment standard prioritizing environment variables for all secrets over hardcoded credentials, and the strict enforcement of Row Level Security (RLS) on Supabase databases to protect against unauthorized access via public `anon` keys.

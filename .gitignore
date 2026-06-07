@@ -12,5 +12,6 @@ coverage/
 # AI Agent & Impeccable Tooling
 .gemini/
 .agents/
+.cursor/
 .impeccable/
 scratch/

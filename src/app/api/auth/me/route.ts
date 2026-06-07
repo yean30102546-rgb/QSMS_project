@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyToken, AuthError } from '@/lib/serverAuth';
+import { verifyToken, AuthError } from '../../../../lib/serverAuth';
 import { cookies } from 'next/headers';
 
 export async function GET() {
@@ -17,11 +17,10 @@ export async function GET() {
     const payload = await verifyToken(token);
     const profileLower = String(payload.sub || '').toLowerCase();
     
-    // MOCK ACCOUNTS to get name
     const mockAccounts: Record<string, { pass: string, role: string, name: string }> = {
-      'qsms': { pass: 'Qsms123', role: 'qsms', name: 'QSMS Test' },
-      'operator': { pass: 'Operator123', role: 'operator', name: 'Operator Test' },
-      'finance': { pass: 'Finance123', role: 'finance', name: 'Finance Test' }
+      'qsms': { pass: process.env.MOCK_PASS_QSMS || 'Qsms123', role: 'qsms', name: 'QSMS Test' },
+      'operator': { pass: process.env.MOCK_PASS_OPERATOR || 'Operator123', role: 'operator', name: 'Operator Test' },
+      'finance': { pass: process.env.MOCK_PASS_FINANCE || 'Finance123', role: 'finance', name: 'Finance Test' }
     };
 
     const name = mockAccounts[profileLower]?.name || profileLower.toUpperCase();
@@ -39,8 +38,9 @@ export async function GET() {
 
   } catch (error: unknown) {
     if (error instanceof AuthError) {
+      const authError = error as AuthError;
       return NextResponse.json(
-        { success: false, error: error.message, statusCode: 401 },
+        { success: false, error: authError.message, statusCode: 401 },
         { status: 401 }
       );
     }

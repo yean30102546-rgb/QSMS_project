@@ -10,7 +10,6 @@ export default function GuidePage() {
 
   return (
     <GuideApp 
-      user={user} 
       onBackToPortal={() => router.push("/")} 
     />
   );

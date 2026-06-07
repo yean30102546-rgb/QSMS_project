@@ -278,12 +278,29 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-05-27*: เพิ่ม BUG-014 (หน้า Overall แสดงสาเหตุหลักทั้งหมด) และ BUG-015 (เพิ่มตัวแจ้งเตือนและระบบบล็อกรายการซ้ำซ้อนในฟอร์ม)
+## BUG-016: Next.js API Path Mapping (Alias @/*) Resolution Failure & Mock Auth Test Failures
+**Status**: ✅ FIXED (2026-06-05)
+- *Problem*: 
+  1. ไฟล์ API Route `/api/auth/login` และ `/api/auth/me` เกิดคอมไพล์เลอร์เออร์เรอร์จากการใช้ Path Alias (`@/lib/serverAuth`) เนื่องจาก `tsconfig.json` ไม่สามารถแมพพาทของ root folder ได้ถูกต้องภายใต้สภาพแวดล้อม build ของ Next.js
+  2. ชุดทดสอบ unit test ของ `auth.test.ts` เกิดล้มเหลวหลายสิบเคส เนื่องจากโครงสร้างระบบ Auth ถูกย้ายมาใช้ Server-State Session ผ่าน HTTP-Only cookie แล้ว แต่ตัวเทสยังพยายามใช้ Mocking และ assertion บน `sessionStorage` แบบ Legacy
+- *Solution*:
+  1. เปลี่ยนแปลงการนำเข้า (Imports) ใน API Route `/api/auth/login` และ `/api/auth/me` ไปใช้แบบ Relative Path (`../../../../lib/serverAuth`) แทน
+  2. แก้ไขการแคสติ้ง Error Type `unknown` ใน catch block เพื่อปิดปัญหาระบบหา property `.message` ไม่เจอ
+  3. ปรับปรุงการทดสอบใน `auth.test.ts` ทั้งหมดมาจำลอง fetch endpoint `/api/auth/me`, `/api/auth/login`, และ `/api/auth/logout` แทน พร้อมปรับโค้ดให้อิงการตรวจสอบกับสถานะในหน่วยความจำ (`cachedUser` / `cachedIsAuth`)
 
+---
 
+## BUG-017: Legacy Google Drive link reference in UpdateModal causing confusion
+**Status**: ✅ FIXED (2026-06-05)
+- *Problem*: หน้าต่าง `UpdateModal` (โหมด View Mode) แสดงผลปุ่ม "Drive" แบบ text anchor ลิงก์ตรงไปยังโฟลเดอร์เก็บข้อมูลใน Google Drive ซึ่งเป็นระบบแบบเก่าที่ถูกปลดออกไปแล้ว ทำให้ผู้ใช้สับสนและไม่สามารถเข้าถึงไฟล์ภาพที่อัปโหลดเข้า Supabase Storage ได้จริง
+- *Solution*:
+  1. เอาตัวเรนเดอร์ลิงก์ "Drive" ออกทั้งหมดจาก `UpdateModal.tsx`
+  2. พัฒนาฟังก์ชันดาวน์โหลดแบบ Blob-native (`handleDownloadImages`) สำหรับวนดาวน์โหลดภาพหลักฐานประกอบไอเทมจาก Supabase Storage ทีละไฟล์โดยอัตโนมัติพร้อมกับการหน่วงเวลาเพื่อความปลอดภัย ป้องกันไม่ให้เบราว์เซอร์สกัดกั้นการดาวน์โหลดหลายรายการ
+  3. ออกแบบปุ่ม **"ดาวน์โหลดรูปภาพ"** โทนสีน้ำเงินพร้อมไอคอน `Download` ของ Lucide สไตล์ Apple UI ใส่ในตำแหน่งที่เหมาะสมใน Header ส่วนของพรีวิวรูปภาพ
 
+---
 
-
+> 🔄 *อัปเดตเมื่อ 2026-06-05*: เพิ่ม BUG-016 (แก้ไข Path Alias compilation และการเปลี่ยนผ่านเทสของ Auth) และ BUG-017 (เอาลิงก์ Drive ออกและทดแทนด้วยระบบปุ่มดาวน์โหลดรูปภาพ)
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]

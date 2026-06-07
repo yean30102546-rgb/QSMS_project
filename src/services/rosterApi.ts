@@ -1,4 +1,4 @@
-import { getCurrentUser, getToken } from './auth';
+import { getCurrentUser, isAuthenticated } from './auth';
 import type { Employee, LeaveRecord, RosterOverride } from '../modules/roster/types';
 
 interface RosterApiResponse<T = unknown> {
@@ -14,37 +14,20 @@ interface MonthPayload {
   leaves: LeaveRecord[];
 }
 
-function parseTokenPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = String(token || '').split('.');
-    if (parts.length !== 3) return null;
-    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const decoded = atob(payload + '='.repeat((4 - (payload.length % 4)) % 4));
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
-}
-
 async function postToRoster<T>(payload: Record<string, unknown>): Promise<RosterApiResponse<T>> {
-  const token = getToken();
-  if (!token) {
+  if (!isAuthenticated()) {
     return { success: false, error: 'Authentication required. Please login again.' };
   }
 
   const currentUser = getCurrentUser();
-  const tokenPayload = parseTokenPayload(token);
-  const authProfile = String(tokenPayload?.profile || currentUser?.role || '').trim().toUpperCase();
-  const authEmail = currentUser?.email
-    ? String(currentUser.email).trim()
-    : String(tokenPayload?.sub || '').trim();
+  const authProfile = String(currentUser?.role || '').trim().toUpperCase();
+  const authEmail = currentUser?.email ? String(currentUser.email).trim() : '';
 
   const response = await fetch('/api/roster', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ...payload,
-      token,
       authProfile,
       authEmail,
       userRole: currentUser?.role || '',
