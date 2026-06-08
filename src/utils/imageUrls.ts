@@ -30,3 +30,12 @@ export function toCorsProxyUrl(url: string): string {
   }
   return `https://corsproxy.io/?${encodeURIComponent(normalizedUrl)}`;
 }
+
+export function toInternalProxyUrl(url: string): string {
+  const normalizedUrl = String(url || '').trim();
+  if (normalizedUrl.startsWith('/api/proxy-image')) {
+    return normalizedUrl;
+  }
+  return `/api/proxy-image?url=${encodeURIComponent(normalizedUrl)}`;
+}
+

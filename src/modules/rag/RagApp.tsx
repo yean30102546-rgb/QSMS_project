@@ -28,10 +28,17 @@ interface RagAppProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface MessageSource {
+  content: string;
+  image_urls?: string[];
+  similarity: number;
+}
+
 interface Message {
   role: 'user' | 'model';
   text: string;
   suggestions?: string[];
+  sources?: MessageSource[];
 }
 
 interface DocFile {
@@ -49,8 +56,7 @@ interface UploadQueueItem {
   error?: string;
 }
 
-// น้องผึ้งพา — ผู้ชาย พูดจาน่ารักไพเราะ อยากช่วยเหลือทุกคน
-const WELCOME_MESSAGE = 'สวัสดีครับ ผมน้องผึ้งพาเองครับ ผู้ช่วยประจำโรงงาน QSMS ยินดีให้บริการทุกท่านเลยครับ! 🐝✨ ผมพูดจาไพเราะเป็นพิเศษ เพราะอยากให้ทุกคนรู้สึกดีเวลาคุยกับผมนะครับ คุณสามารถถามเรื่องสเปกขวด, ข้อมูลเอกสาร PDF หรือ Excel ที่อัปโหลดไว้ได้เลยครับ ผมพร้อมช่วยเสมอครับ!';
+const WELCOME_MESSAGE = 'สวัสดีครับ ผมคือ QSMS AI Assistant ยินดีให้บริการครับ \n\nผมสามารถช่วยคุณค้นหาข้อมูลจากคู่มือ (PDF/Excel) หรือตรวจสอบสถิติข้อมูลจริงในระบบได้ พิมพ์คำถามของคุณได้เลยครับ';
 
 export function RagApp({ user, open, onOpenChange }: RagAppProps) {
   const [activeTab, setActiveTab] = useState<'chat' | 'documents'>('chat');
@@ -346,7 +352,13 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
           if (line.startsWith('data: ')) {
             try {
               const payload = JSON.parse(line.replace('data: ', ''));
-              if (payload.type === 'text') {
+              if (payload.type === 'metadata') {
+                setMessages(prev => {
+                  const newMsgs = [...prev];
+                  newMsgs[newMsgs.length - 1].sources = payload.data?.sources;
+                  return newMsgs;
+                });
+              } else if (payload.type === 'text') {
                 responseText += payload.data;
                 // Update the last message in state
                 setMessages(prev => {
@@ -483,23 +495,23 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
             {/* Content */}
             <DialogPrimitive.Content asChild forceMount onOpenAutoFocus={(e) => e.preventDefault()}>
               <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }}
-                exit={{ opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
-                className="fixed inset-4 sm:inset-auto sm:bottom-8 sm:right-8 sm:top-auto sm:left-auto sm:w-[420px] sm:h-[600px] md:w-[480px] md:h-[680px] z-[101] flex flex-col rounded-2xl bg-white border border-slate-200/80 shadow-2xl shadow-black/10 overflow-hidden font-quicksand dark:bg-[#1c1c1e] dark:border-slate-700/60"
+                initial={{ x: '100%' }}
+                animate={{ x: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } }}
+                exit={{ x: '100%', transition: { duration: 0.3, ease: 'easeIn' } }}
+                className="fixed top-0 right-0 bottom-0 w-[420px] max-w-[100vw] z-[101] flex flex-col bg-white border-l border-slate-200/80 shadow-2xl overflow-hidden font-quicksand dark:bg-[#1c1c1e] dark:border-slate-700/60"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-amber-200/60 bg-amber-50 dark:bg-amber-900/30 dark:border-amber-700/40">
-                        <img src="/img/nongbeepa_default.png" alt="น้องผึ้งพา" className="w-full h-full object-cover" />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-blue-200/60 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-700/40 text-blue-600 dark:text-blue-400">
+                        <Bot size={20} />
                       </div>
                       <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#1c1c1e] rounded-full" />
                     </div>
                     <div>
-                      <DialogPrimitive.Title className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">น้องผึ้งพา</DialogPrimitive.Title>
-                      <DialogPrimitive.Description className="text-xs text-amber-600 dark:text-amber-400 font-medium">Always Busy Helping • Online</DialogPrimitive.Description>
+                      <DialogPrimitive.Title className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">QSMS Assistant</DialogPrimitive.Title>
+                      <DialogPrimitive.Description className="text-xs text-blue-600 dark:text-blue-400 font-medium">DocAI & Data Analyst</DialogPrimitive.Description>
                     </div>
                   </div>
 
@@ -534,15 +546,31 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                       </button>
                     </div>
 
+                    {activeTab === 'chat' && (
+                      <button 
+                        onClick={() => { 
+                          if(confirm('ต้องการล้างประวัติการแชทหรือไม่?')) {
+                            setMessages([{ role: 'model', text: WELCOME_MESSAGE }]);
+                          }
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                        title="ล้างประวัติการแชท"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+
                     <DialogPrimitive.Close className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors">
                       <X className="h-4 w-4" />
                     </DialogPrimitive.Close>
                   </div>
                 </div>
 
-                {/* Main Area */}
-                {activeTab === 'chat' ? (
-                  <div className="flex flex-1 flex-col overflow-hidden">
+                {/* Main Area Container */}
+                <div className="relative flex-1 overflow-hidden">
+                  
+                  {/* Chat Tab */}
+                  <div className={`absolute inset-0 flex-col overflow-hidden ${activeTab === 'chat' ? 'flex z-10' : 'hidden z-0'}`}>
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                       <div className="flex justify-center">
@@ -555,16 +583,16 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                         {messages.map((m, idx) => (
                           <motion.div
                             key={idx}
-                            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                             className="flex flex-col w-full origin-bottom"
                           >
                             <div className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                               {m.role === 'model' && (
                                 <div className="shrink-0 mt-auto mr-2">
-                                  <div className="flex items-center justify-center w-7 h-7 rounded-full overflow-hidden border border-amber-200/50 bg-amber-50 dark:bg-amber-900/30">
-                                    <img src="/img/nongbeepa_default.png" alt="น้องผึ้งพา" className="w-full h-full object-cover" />
+                                  <div className="flex items-center justify-center w-7 h-7 rounded-full border border-blue-200/50 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                    <Bot size={14} />
                                   </div>
                                 </div>
                               )}
@@ -597,6 +625,29 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                               </div>
                             </div>
                             
+                            {/* Sources Accordion */}
+                            {m.role === 'model' && m.sources && m.sources.length > 0 && (
+                              <div className="mt-2 ml-9">
+                                <details className="group [&_summary::-webkit-details-marker]:hidden">
+                                  <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors dark:text-slate-400">
+                                    <FileText size={12} />
+                                    <span>อ้างอิงจาก {m.sources.length} แหล่งข้อมูล</span>
+                                    <span className="transition duration-300 group-open:-rotate-180">
+                                      <svg fill="none" height="12" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="12"><path d="M6 9l6 6 6-6"></path></svg>
+                                    </span>
+                                  </summary>
+                                  <div className="mt-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+                                    {m.sources.map((src, sIdx) => (
+                                      <div key={sIdx} className="text-[11px] text-slate-600 dark:text-slate-300 bg-white dark:bg-[#1c1c1e] p-2 rounded border border-slate-100 dark:border-slate-700/50 shadow-sm leading-relaxed whitespace-pre-wrap">
+                                        <div className="font-semibold text-blue-600 dark:text-blue-400 mb-1">ส่วนที่ {sIdx + 1}</div>
+                                        {src.content.length > 200 ? src.content.substring(0, 200) + '...' : src.content}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </details>
+                              </div>
+                            )}
+                            
                             {/* Suggestion Chips */}
                             {m.role === 'model' && m.suggestions && m.suggestions.length > 0 && idx === messages.length - 1 && (
                               <motion.div 
@@ -609,7 +660,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                                   <button
                                     key={cIdx}
                                     onClick={() => handleSendMessage(undefined, chip)}
-                                    className="px-3 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors shadow-sm"
+                                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/80 transition-colors shadow-sm"
                                   >
                                     {chip}
                                   </button>
@@ -621,23 +672,21 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
 
                         {loading && (
                           <motion.div
-                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
                             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                             className="flex justify-start origin-bottom"
                           >
                             <div className="shrink-0 mt-auto mr-2">
-                              <div className="flex items-center justify-center w-7 h-7 rounded-full overflow-hidden border border-amber-200/50 bg-amber-50 dark:bg-amber-900/30">
-                                <img src="/img/nongbeepa_default.png" alt="น้องผึ้งพา" className="w-full h-full object-cover" />
+                              <div className="flex items-center justify-center w-7 h-7 rounded-full border border-blue-200/50 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                <Bot size={14} />
                               </div>
                             </div>
                             <div className="rounded-2xl rounded-bl-md bg-slate-100 dark:bg-slate-800 px-4 py-3">
                               <span className="flex items-center gap-1.5">
-                                <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} className="h-2 w-2 rounded-full bg-amber-500" />
-                                <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.3 }} className="h-2 w-2 rounded-full bg-amber-400" />
-                                <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.6 }} className="h-2 w-2 rounded-full bg-amber-300" />
-                                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 ml-1">น้องผึ้งพากำลังหาคำตอบให้ครับ...</span>
+                                <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.6 }} className="h-2 w-2 rounded-full bg-blue-400" />
+                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 ml-1">กำลังค้นหาข้อมูลและสรุปคำตอบ...</span>
                               </span>
                             </div>
                           </motion.div>
@@ -649,19 +698,19 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                     {/* Input */}
                     <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-[#1c1c1e]">
                       {cooldown > 0 && (
-                        <div className="flex items-center justify-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-700/30">
-                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">⏳ กรุณารอสักครู่ ({cooldown} วินาที) โควตาเต็มครับ</span>
+                        <div className="flex items-center justify-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">⏳ กรุณารอสักครู่ ({cooldown} วินาที) โควตาเต็มครับ</span>
                         </div>
                       )}
                       <form onSubmit={handleSendMessage} className="relative flex items-center">
                         <input
                           ref={inputRef}
                           type="text"
-                          placeholder="พิมพ์ข้อความถึงน้องผึ้งพา..."
+                          placeholder="พิมพ์ข้อความถึง QSMS Assistant..."
                           value={query}
                           onChange={(e) => setQuery(e.target.value)}
                           disabled={loading || cooldown > 0}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-12 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-12 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         <motion.button
                           whileHover={{ scale: 1.05 }}
@@ -669,27 +718,27 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                           transition={{ duration: 0.15, ease: 'easeOut' }}
                           type="submit"
                           disabled={loading || !query.trim() || cooldown > 0}
-                          className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm transition-all disabled:opacity-40 disabled:shadow-none hover:bg-amber-600"
+                          className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-[#1d1d1f] text-white shadow-sm transition-all disabled:opacity-40 disabled:shadow-none hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600"
                         >
                           <Send className="h-3.5 w-3.5" />
                         </motion.button>
                       </form>
                       <p className="text-center mt-2 text-xs text-slate-400 font-medium flex items-center justify-center gap-1">
-                        <Sparkles className="h-3 w-3 text-amber-400" /> Powered by QSMS DocAI
+                        <Sparkles className="h-3 w-3 text-blue-500" /> Powered by QSMS DocAI
                       </p>
                     </div>
                   </div>
-                ) : (
-                  /* Documents Tab */
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+                  {/* Documents Tab */}
+                  <div className={`absolute inset-0 flex-col overflow-y-auto p-4 space-y-4 ${activeTab === 'documents' ? 'flex z-10' : 'hidden z-0'}`}>
                     {/* Upload */}
                     <div className="space-y-3">
                       <div>
                         <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">นำเข้าเอกสาร</h2>
                         <p className="text-xs text-slate-400 mt-0.5">อัปโหลด PDF หรือ Excel เพื่อสร้างชุดข้อมูล RAG</p>
                       </div>
-                      <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-800/80">
-                        <UploadCloud className="h-7 w-7 text-amber-500" />
+                      <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 text-center cursor-pointer hover:border-slate-400 hover:bg-slate-100 transition dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-500">
+                        <UploadCloud className="h-7 w-7 text-slate-600 dark:text-slate-400" />
                         <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">เลือกไฟล์ (.pdf, .xlsx, .jpg, .png)</span>
                         <span className="text-xs text-slate-400 mt-1">PDF ≤ 2MB | Excel ≤ 5MB | Image ≤ 5MB</span>
                         <input
@@ -722,8 +771,8 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                                   <span className="truncate text-xs font-medium text-slate-700 dark:text-slate-300">{q.file.name}</span>
                                   {q.status === 'success' && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />}
                                   {q.status === 'failed' && <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />}
-                                  {q.status === 'uploading' && <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />}
-                                  {q.status === 'processing' && <span className="h-3 w-3 animate-ping rounded-full bg-amber-400" />}
+                                  {q.status === 'uploading' && <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />}
+                                  {q.status === 'processing' && <span className="h-3 w-3 animate-ping rounded-full bg-blue-400" />}
                                 </div>
                                 {(q.status === 'failed' || q.status === 'success') && (
                                   <button onClick={() => setUploadQueue(prev => prev.filter(item => item.id !== q.id))} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shrink-0 transition-colors">
@@ -733,7 +782,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                               </div>
                               <div className="h-1 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                                 <div
-                                  className={`h-full rounded-full transition-all duration-300 ${q.status === 'failed' ? 'bg-red-500' : 'bg-amber-500'}`}
+                                  className={`h-full rounded-full transition-all duration-300 ${q.status === 'failed' ? 'bg-red-500' : 'bg-blue-500'}`}
                                   style={{ width: `${q.progress}%` }}
                                 />
                               </div>
@@ -754,7 +803,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                               <div className="relative flex items-center justify-center">
                                 <input
                                   type="checkbox"
-                                  className="peer appearance-none w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1c1c1e] checked:bg-amber-500 checked:border-amber-500 transition-colors cursor-pointer"
+                                  className="peer appearance-none w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1c1c1e] checked:bg-blue-600 checked:border-blue-600 transition-colors cursor-pointer"
                                   checked={documents.length > 0 && selectedDocs.size === documents.length}
                                   onChange={handleSelectAll}
                                 />
@@ -792,19 +841,19 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                                 exit={{ opacity: 0, scale: 0.95, filter: 'blur(2px)' }}
                                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1], delay: Math.min(idx * 0.03, 0.3) }}
                                 key={doc.id} 
-                                className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-[#1c1c1e] hover:border-amber-200 hover:shadow-sm transition cursor-pointer group"
+                                className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-[#1c1c1e] hover:border-blue-200 hover:shadow-sm transition cursor-pointer group"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
                                   <div className="relative flex items-center justify-center shrink-0">
                                     <input
                                       type="checkbox"
-                                      className="peer appearance-none w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1c1c1e] checked:bg-amber-500 checked:border-amber-500 transition-colors cursor-pointer"
+                                      className="peer appearance-none w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1c1c1e] checked:bg-blue-600 checked:border-blue-600 transition-colors cursor-pointer"
                                       checked={selectedDocs.has(doc.id)}
                                       onChange={() => handleToggleSelect(doc.id)}
                                     />
                                     <CheckCircle2 className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none stroke-[3]" />
                                   </div>
-                                  <div className="rounded-lg bg-amber-50 p-2 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:border-amber-800/30 shrink-0 transition-colors group-hover:bg-amber-100 group-hover:border-amber-200 dark:group-hover:bg-amber-900/50">
+                                  <div className="rounded-lg bg-blue-50 p-2 text-blue-600 border border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/30 shrink-0 transition-colors group-hover:bg-blue-100 group-hover:border-blue-200 dark:group-hover:bg-blue-900/50">
                                     <FileText className="h-4 w-4" />
                                   </div>
                                   <div className="min-w-0">
@@ -828,7 +877,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                       )}
                     </div>
                   </div>
-                )}
+                </div>
               </motion.div>
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>

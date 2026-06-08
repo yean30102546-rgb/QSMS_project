@@ -30,10 +30,10 @@ type SelectionModalState = {
 
 interface AddCaseTabProps {
   onOpenTutorial?: () => void;
-  preset?: 'empty' | 'ptt-or' | 'cross-link';
+  preset?: 'empty' | 'ptt-or' | 'cross-link' | 'with-item';
 }
 
-const Hotspot = ({ top, left, title, content, targetId }: any) => {
+export const Hotspot = ({ top, left, right, bottom, title, content, targetId, align = 'center' }: any) => {
   const [isHovered, setIsHovered] = useState(false);
   
   useEffect(() => {
@@ -57,7 +57,7 @@ const Hotspot = ({ top, left, title, content, targetId }: any) => {
   return (
     <div 
       className="absolute z-50 flex items-center justify-center cursor-pointer"
-      style={{ top, left }}
+      style={{ top, left, right, bottom }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -73,9 +73,13 @@ const Hotspot = ({ top, left, title, content, targetId }: any) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute left-1/2 top-full mt-3 w-64 -translate-x-1/2 rounded-2xl bg-white p-4 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-100/60 backdrop-blur-sm pointer-events-none"
+            className={`absolute top-full mt-3 w-64 rounded-2xl bg-white p-4 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-100/60 backdrop-blur-sm pointer-events-none ${
+              align === 'left' ? 'left-0' : align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'
+            }`}
           >
-            <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-slate-100 bg-white"></div>
+            <div className={`absolute -top-1.5 h-3 w-3 rotate-45 border-l border-t border-slate-100 bg-white ${
+              align === 'left' ? 'left-4' : align === 'right' ? 'right-4' : 'left-1/2 -translate-x-1/2'
+            }`}></div>
             <h4 className="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><HelpCircle size={14} className="text-blue-500" /> {title}</h4>
             <p className="text-[13px] text-slate-600 leading-relaxed font-medium">{content}</p>
           </motion.div>
@@ -128,7 +132,7 @@ const reworkItemSchema = z.object({
   boxNumber: z.string().optional().nullable(),
   mold: z.string().optional().nullable(),
   line: z.string().optional().nullable(),
-  amount: z.number().min(0),
+  amount: z.union([z.number().min(0), z.nan()]).optional().nullable(),
   reason: z.string(),
   reasonSubtype: z.string().optional().nullable(),
   responsible: z.string(),
@@ -174,15 +178,9 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
       return {
         caseSource: 'Customer',
         caseNumber: '999',
-        items: [{ ...initialFormItem, id: `form-${Date.now()}`, customerName: 'OR', itemNumber: '60001234A', verificationStatus: 'verified' as any }]
-      };
-    } else if (preset === 'cross-link') {
-      return {
-        caseSource: 'SFC',
-        caseNumber: '888',
         items: [
-          { ...initialFormItem, id: `form-1`, reason: 'รั่ว', reasonSubtype: 'รั่วซึม' },
-          { ...initialFormItem, id: `form-2`, reason: 'เปื้อน', reasonSubtype: 'ขวดเปื้อน' }
+          { ...initialFormItem, id: `form-1`, customerName: 'OR', itemNumber: '60001234A', verificationStatus: 'verified' as any, reason: 'รั่ว', reasonSubtype: 'รั่วซึม' },
+          { ...initialFormItem, id: `form-2`, customerName: 'OR', itemNumber: '60001234B', verificationStatus: 'verified' as any, reason: 'เปื้อน', reasonSubtype: 'ขวดเปื้อน', linkedSourceId: 'form-1' }
         ]
       };
     }
@@ -243,12 +241,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
 
   // Auto-scroll for presets
   useEffect(() => {
-    if (preset === 'cross-link') {
-      setTimeout(() => {
-        const el = document.getElementById('cross-link-container-1');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 600);
-    } else if (preset === 'ptt-or') {
+    if (preset === 'ptt-or') {
       setTimeout(() => {
         const el = document.getElementById('or-upload-container');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -378,12 +371,14 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
                 <>
                   <Hotspot 
                     top="180px" left="-20px" 
+                    align="left"
                     title="ระบบจ่าย Case ID อัตโนมัติ" 
                     content="ระบบจะสร้างรหัสเคสโดยอัตโนมัติตามแหล่งที่มา เช่น RT สำหรับ Customer และ RW สำหรับ SFC เพื่อป้องกันการซ้ำซ้อน" 
                     targetId="case-id-container" 
                   />
                   <Hotspot 
                     top="550px" left="-20px" 
+                    align="left"
                     title="Autofill System" 
                     content="เมื่อกรอก Barcode หรือ Item Code ระบบจะค้นหาและเติมข้อมูลที่เหลือให้อัตโนมัติ" 
                     targetId="barcode-container" 
@@ -391,20 +386,22 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
                 </>
               )}
               {preset === 'ptt-or' && (
-                <Hotspot 
-                  top="160px" left="-20px" 
-                  title="การแนบไฟล์อ้างอิง PTT OR" 
-                  content="เมื่อระบุลูกค้าเป็น PTT OR (OR) ระบบจะบังคับให้แนบไฟล์เอกสารอ้างอิง (เช่น Excel, PDF) เพื่อความสมบูรณ์ของข้อมูล" 
-                  targetId="or-upload-container" 
-                />
-              )}
-              {preset === 'cross-link' && (
-                <Hotspot 
-                  top="950px" left="-20px" 
-                  title="Cross-Item Link" 
-                  content="เนื่องจากรายการที่ 2 เป็นสินค้า 'เปื้อน' ระบบจึงเปิดเมนูให้เลือกว่า เปื้อนมาจากสินค้ารั่วรายการใดในเคสเดียวกัน" 
-                  targetId="cross-link-container-1" 
-                />
+                <>
+                  <Hotspot 
+                    top="160px" left="-20px" 
+                    align="left"
+                    title="การแนบไฟล์อ้างอิง PTT OR" 
+                    content="เมื่อระบุลูกค้าเป็น PTT OR (OR) ระบบจะบังคับให้แนบไฟล์เอกสารอ้างอิง (เช่น Excel, PDF) เพื่อความสมบูรณ์ของข้อมูล" 
+                    targetId="or-upload-container" 
+                  />
+                  <Hotspot 
+                    top="950px" left="-20px" 
+                    align="left"
+                    title="Cross-Item Link" 
+                    content="เนื่องจากรายการที่ 2 เป็นสินค้า 'เปื้อน' ระบบจึงเปิดเมนูให้เลือกว่า เปื้อนมาจากสินค้ารั่วรายการใดในเคสเดียวกัน" 
+                    targetId="cross-link-container-1" 
+                  />
+                </>
               )}
             </div>
           </div>
@@ -583,7 +580,15 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
                     <div className="flex items-center justify-between ml-1 mb-1.5">
                       <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
                     </div>
-                    <div id="barcode-container" className="relative flex items-center">
+                    <div id={`barcode-container-${idx}`} className="relative flex items-center">
+                      {(preset === 'with-item' && idx === 0) && (
+                        <Hotspot 
+                          top="-10px" left="-10px" align="left"
+                          title="Smart Auto-fill"
+                          content="พิมพ์บาร์โค้ดแล้วระบบจะเชื่อมต่อ Item Master ดึงข้อมูลให้อัตโนมัติ"
+                          targetId={`barcode-container-${idx}`}
+                        />
+                      )}
                       <input
                         type="text"
                         autoComplete="off"
@@ -663,10 +668,10 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
                       )}
                     />
                   </div>
-                  <div className="col-span-1"><InputField label="เลขกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
                   <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
                   <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="จำนวน (Amount)" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
+                  <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
+                  <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
                 </div>
 
                 <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -848,7 +853,15 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
                     />
                   </div>
 
-                  <div className="md:col-span-1">
+                  <div className="md:col-span-1 relative" id={`mock-evidence-zone-${idx}`}>
+                    {(preset === 'with-item' && idx === 0) && (
+                      <Hotspot 
+                        top="-10px" right="-10px" align="right"
+                        title="Evidence Integrity"
+                        content="บังคับแนบรูปภาพทุกครั้ง พร้อมระบบบีบอัดไฟล์ภาพอัตโนมัติก่อนส่งขึ้น Cloud"
+                        targetId={`mock-evidence-zone-${idx}`}
+                      />
+                    )}
                     <ImageUpload
                       itemIndex={idx}
                       onImagesSelected={(files) => setUploadedImages(prev => ({ ...prev, [item.id]: files }))}

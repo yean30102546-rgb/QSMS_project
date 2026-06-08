@@ -124,14 +124,26 @@ export async function POST(request: Request) {
 
 จัดหน้าด้วย Markdown เสมอเพื่อให้แบ่ง Chunking ตามหัวข้อได้อย่างแม่นยำ`;
 
-          console.log(`🤖 Requesting Gemini 2.5 Flash parsing for ${filename} (${mimeType})...`);
-          const parseResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [
-              { inlineData: { mimeType, data: base64Data } },
-              { text: parsePrompt }
-            ]
-          });
+          let parseResponse;
+          try {
+            console.log(`🤖 Requesting Gemini 2.5 Flash parsing for ${filename} (${mimeType})...`);
+            parseResponse = await ai.models.generateContent({
+              model: 'gemini-2.5-flash',
+              contents: [
+                { inlineData: { mimeType, data: base64Data } },
+                { text: parsePrompt }
+              ]
+            });
+          } catch (error: any) {
+            console.warn(`⚠️ Gemini 2.5 Flash failed (possibly 503 high demand). Falling back to gemini-2.0-flash:`, error.message);
+            parseResponse = await ai.models.generateContent({
+              model: 'gemini-2.0-flash',
+              contents: [
+                { inlineData: { mimeType, data: base64Data } },
+                { text: parsePrompt }
+              ]
+            });
+          }
 
           parsedText = parseResponse.text || '';
         } else if (fileType === 'xlsx' || fileType === 'xls') {
@@ -338,17 +350,17 @@ export async function POST(request: Request) {
           .join('\n\n');
 
         // 4. Formulate System Prompt and request answer from Gemini
-        const systemPrompt = `You are "น้องผึ้งพา" (Nong Beepa), the QSMS DocAI RAG assistant. 
-Persona: Friendly, Helpful, & Empathetic. You always communicate with a supportive, accessible tone to reduce user stress. You frequently use polite particles (ครับ/ค่ะ) and appropriate emojis (🐝✨😊👍). You are highly knowledgeable about product packaging specifications, Master Small Packs, and factory procedures.
+        const systemPrompt = `You are the "QSMS AI Assistant", the DocAI RAG assistant and Data Analyst for QSMS.
+Persona: Professional, concise, highly knowledgeable, and helpful. You communicate in a clear, supportive tone suitable for an enterprise environment. Use polite particles (ครับ/ค่ะ) appropriately but avoid excessive emojis. You are an expert on product packaging specifications, Master Small Packs, factory procedures, and real-time rework statistics.
 
 Retrieved Context:
 ${contextText}
 
 Instructions:
-1. Answer in the Thai language. Keep the tone friendly and encouraging.
-2. Be precise and detail-oriented regarding numbers, revisions, item codes, and packaging details from the Context.
+1. Answer in the Thai language. Keep the tone professional and concise.
+2. Be precise and detail-oriented regarding numbers, revisions, item codes, and packaging details from the Context or System Data.
 3. If the context contains image URLs in the image_urls list, you MUST reference them in your markdown response using standard markdown image syntax: ![description](url) so the UI can display them.
-4. If the information is not in the context, state politely that you do not have that specific document detail, and offer to help with something else.
+4. If the information is not in the context or system data, state politely that you do not have that specific detail, and offer to help with something else.
 5. DO NOT use markdown asterisks (* or **) for text formatting (like bolding or bullet points). Use plain text, numbers, or dashes (-) instead.
 6. Suggestion Chips: At the very end of your response, you MUST append a hidden JSON block containing 3 suggested follow-up questions relevant to the topic. Format exactly like this: \`\`\`json\n{"suggested_questions": ["Question 1?", "Question 2?", "Question 3?"]}\n\`\`\`
 `;
@@ -361,11 +373,53 @@ Instructions:
           parts: [{ text: m.text }]
         }));
 
+        let functionResponseContext = '';
+        try {
+          // Pre-flight Agentic Tool Check
+          console.log('🔍 Checking if query requires system data tools...');
+          const toolResponse = await ai.models.generateContent({
+            model: 'gemini-3.1-flash-lite',
+            contents: [
+              ...historyContents,
+              { role: 'user', parts: [{ text: `คำถามปัจจุบัน: ${message}` }] }
+            ],
+            config: {
+              tools: [{
+                functionDeclarations: [
+                  {
+                    name: 'get_rework_statistics',
+                    description: 'Fetch real-time statistics about rework cases from the system database (e.g., total rework items, counts of defects like leak (รั่ว) or stain (เปื้อน)). Call this ONLY when the user specifically asks for statistics, data, or counts.'
+                  }
+                ]
+              }]
+            }
+          });
+
+          if (toolResponse.functionCalls && toolResponse.functionCalls.length > 0) {
+            const call = toolResponse.functionCalls[0];
+            if (call.name === 'get_rework_statistics') {
+              console.log('🔧 Model requested get_rework_statistics tool. Executing query...');
+              const { data: statsData, error: statsError } = await supabaseServer.from('rework_items').select('defect_reason');
+              if (!statsError && statsData) {
+                const total = statsData.length;
+                const leaks = statsData.filter(d => d.defect_reason === 'รั่ว').length;
+                const stains = statsData.filter(d => d.defect_reason === 'เปื้อน').length;
+                functionResponseContext = `\n\n[System Data (Real-time)]:\n- Total Rework Items: ${total}\n- Leaks (รั่ว): ${leaks}\n- Stains (เปื้อน): ${stains}\n`;
+                console.log(`📊 Tool executed. Total: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
+              } else {
+                console.error('Failed to fetch statistics:', statsError);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Tool check failed, proceeding normally', e);
+        }
+
         try {
           const stream = await ai.models.generateContentStream({
             model: 'gemini-3.1-flash-lite',
             contents: [
-              { role: 'user', parts: [{ text: systemPrompt }] },
+              { role: 'user', parts: [{ text: systemPrompt + functionResponseContext }] },
               ...historyContents,
               { role: 'user', parts: [{ text: `คำถามปัจจุบัน: ${message}` }] }
             ]

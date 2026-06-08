@@ -12,9 +12,6 @@ import {
   Activity
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import dynamic from 'next/dynamic';
-
-const RagApp = dynamic(() => import('../../../modules/rag/RagApp').then(mod => mod.RagApp), { ssr: false });
 
 import type { User } from '../../../services/auth';
 import type { PortalAppDefinition } from '../../../modules/platform/types';
@@ -25,6 +22,7 @@ interface WorkspacePortalProps {
   onOpenApp: (route: PortalAppDefinition['route']) => void;
   onLogout: () => void;
   onLogin?: () => void;
+  onOpenRag?: () => void;
 }
 
 export function WorkspacePortal({
@@ -33,10 +31,10 @@ export function WorkspacePortal({
   onOpenApp,
   onLogout,
   onLogin,
+  onOpenRag,
 }: WorkspacePortalProps) {
   const isGuest = !user;
   const greetingName = user?.name || 'ผู้เยี่ยมชม';
-  const [isRagOpen, setIsRagOpen] = useState(false);
 
   // Preview Stats State
   const [reworkStats, setReworkStats] = useState({
@@ -405,7 +403,7 @@ export function WorkspacePortal({
                     disabled={!isActive}
                     onClick={() => {
                       if (app.route === 'rag') {
-                        setIsRagOpen(true);
+                        onOpenRag?.();
                       } else {
                         onOpenApp(app.route);
                       }
@@ -424,10 +422,6 @@ export function WorkspacePortal({
           })}
         </section>
       </div>
-
-
-      {/* RAG Chat Modal */}
-      <RagApp user={user} open={isRagOpen} onOpenChange={setIsRagOpen} />
     </div>
   );
 }

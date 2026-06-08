@@ -654,8 +654,25 @@ export async function POST(request: Request) {
           supabaseServer.from('rework_master_defects').select('*')
         ]);
 
-        if (itemsRes.error) throw itemsRes.error;
-        if (defectsRes.error) throw defectsRes.error;
+        if (itemsRes.error) {
+          if (itemsRes.error.code === 'PGRST205') {
+            console.warn('⚠️ Table rework_master_items not found, defaulting to empty.');
+            itemsRes.data = [];
+            itemsRes.error = null as any;
+          } else {
+            throw itemsRes.error;
+          }
+        }
+        
+        if (defectsRes.error) {
+          if (defectsRes.error.code === 'PGRST205') {
+            console.warn('⚠️ Table rework_master_defects not found, defaulting to empty.');
+            defectsRes.data = [];
+            defectsRes.error = null as any;
+          } else {
+            throw defectsRes.error;
+          }
+        }
 
         return NextResponse.json(
           {
@@ -947,7 +964,7 @@ export async function POST(request: Request) {
         { status: error.status, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       );
     }
-    const errMsg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดภายในระบบ';
+    const errMsg = error instanceof Error ? error.message : ((error as any)?.message || 'เกิดข้อผิดพลาดภายในระบบ');
     return NextResponse.json(
       { success: false, error: errMsg },
       { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }

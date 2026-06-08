@@ -192,11 +192,11 @@ describe('Validation Services', () => {
       expect(isSaveDisabled(items)).toBe(true)
     })
 
-    it('should return true if any item is missing images', () => {
+    it('should return false if any item is missing images (images are optional)', () => {
       const items = [
         { itemNumber: 'ITEM1', itemName: 'Name', itemCode: '123', amount: 10, reason: 'Reason', responsible: 'QA', customerName: 'Customer', batchNo: 'B01', boxNumber: '001', imageCount: 0 },
       ]
-      expect(isSaveDisabled(items)).toBe(true)
+      expect(isSaveDisabled(items)).toBe(false)
     })
 
     it('should return true if any item is duplicate', () => {

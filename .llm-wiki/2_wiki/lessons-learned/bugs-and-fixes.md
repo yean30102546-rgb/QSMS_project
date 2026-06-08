@@ -300,7 +300,16 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-06-05*: เพิ่ม BUG-016 (แก้ไข Path Alias compilation และการเปลี่ยนผ่านเทสของ Auth) และ BUG-017 (เอาลิงก์ Drive ออกและทดแทนด้วยระบบปุ่มดาวน์โหลดรูปภาพ)
+## BUG-018: "เกิดข้อผิดพลาดภายในระบบ" from Masked Supabase PGRST205 Error
+**Status**: ✅ FIXED (2026-06-08)
+- *Problem*: ผู้ใช้พบข้อความแสดงข้อผิดพลาด `เกิดข้อผิดพลาดภายในระบบ` ขณะพยายามโหลดหน้าที่มีการเรียก `fetchItemMaster` สาเหตุเกิดจากตาราง `rework_master_defects` ยังไม่มีอยู่ใน schema cache ของ Supabase (ทำให้เกิด error code: `PGRST205`) แต่โค้ดใน `route.ts` ส่วน error catching มีการเช็ค `error instanceof Error` เท่านั้น ซึ่ง `PostgrestError` ของ Supabase อาจไม่ใช่ instance ของ `Error` ทำให้ระบบ mask ข้อความ error จริงและ fallback กลับไปแสดงข้อความทั่วไปที่อ่านไม่รู้เรื่อง
+- *Solution*:
+  1. แก้ไข Handler ของ `loadMasterData` ให้จับข้อผิดพลาดรหัส `PGRST205` และพ่นค่า warning log ออกมาแทนการโยนข้อผิดพลาด โดยจะตั้งค่า fallback เป็นอาร์เรย์ว่าง `[]` เสมอ เพื่อให้การทำงานหน้าบ้านส่วนอื่นๆ สามารถไปต่อได้แม้ schema ไม่สมบูรณ์
+  2. แก้ไข Global Catch block ใน `route.ts` ให้ทำการ parse ข้อความโดยใช้ `(error as any)?.message` ควบคู่ไปด้วยเสมอ เพื่อไม่ให้หน้าต่างแจ้งเตือนพ่นแค่คำว่าเกิดข้อผิดพลาดภายในระบบ
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-06-08*: เพิ่ม BUG-018 (แก้ปัญหาการบัง Error ของ Supabase PGRST205 และ fallback ตาราง defects)
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]

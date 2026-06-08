@@ -4,7 +4,8 @@ import {
   CheckCircle2, Clock, LayoutGrid, ShieldCheck, Sparkles,
   ArrowRight, Search, Plus, Filter, AlertCircle, FileText,
   Package, Trash2, PenTool, ExternalLink, X, Users2, CalendarDays, Clock3,
-  LayoutDashboard, ArrowLeft, HelpCircle, RefreshCw, SlidersHorizontal, Calendar
+  LayoutDashboard, ArrowLeft, HelpCircle, RefreshCw, SlidersHorizontal, Calendar,
+  Eye, EyeOff, Lock, UserCircle2, ChevronLeft
 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
@@ -13,6 +14,8 @@ import { Card, CardContent } from '@/src/components/ui/card';
 import { MainLayout } from '../../../components/layout/MainLayout';
 import { ReworkDataProvider } from '../../../contexts/ReworkDataContext';
 import { MockAddCaseTab } from './MockAddCaseTab';
+import { DashboardTab } from '../../../components/tabs/DashboardTab';
+
 // Apple Progress Bar Mock (From UpdateModal)
 function AppleProgressBar({ progress, statusText, isComplete }: { progress: number, statusText: string, isComplete: boolean }) {
   return (
@@ -22,6 +25,138 @@ function AppleProgressBar({ progress, statusText, isComplete }: { progress: numb
         <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${progress}%` }} />
       </div>
       {isComplete && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+    </div>
+  );
+}
+
+// 0.5 Mock Login (Simplified clone of Login.tsx)
+export function MockLogin({ onNavigate }: { onNavigate?: () => void }) {
+  const [username, setUsername] = useState('OPERATOR_DEMO');
+  const [password, setPassword] = useState('••••••••');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      if (onNavigate) onNavigate();
+    }, 800);
+  };
+
+  return (
+    <div className="w-full h-full relative overflow-y-auto bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] flex items-center justify-center p-8 pointer-events-auto">
+      <div className="pointer-events-none absolute inset-0 opacity-30">
+        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.05),transparent_70%)]" />
+        <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.04),transparent_70%)]" />
+      </div>
+
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-[980px] overflow-hidden rounded-[36px] bg-white/30 backdrop-blur-md shadow-2xl shadow-blue-900/5 border border-white/40"
+      >
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="border-b border-white/60 bg-white/40 backdrop-blur-xl px-7 py-10 text-[#1d1d1f] md:px-10 lg:border-b-0 lg:border-r lg:border-r-black/5">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-sm flex items-center justify-center text-white font-bold text-xl">
+                Q
+              </div>
+              <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#1d1d1f]/70">Central Workspace</div>
+            </div>
+            <h1 className="max-w-lg text-4xl font-semibold leading-[1.04] tracking-[-0.03em] md:text-5xl text-[#1d1d1f]">
+              One login for Rework and upcoming Roster operations.
+            </h1>
+            <p className="mt-5 max-w-md text-[16px] leading-7 text-[#515154]">
+              เข้าสู่ระบบครั้งเดียว แล้วเลือกใช้งานแต่ละ webapp ผ่าน Central Control ได้ทันที
+              โดยรักษา workflow เดิมของ Rework ให้ทำงานต่อเนื่อง
+            </p>
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-black/60">
+              Platform session secured
+            </div>
+          </div>
+
+          <div className="bg-white/80 px-6 py-8 md:px-9 md:py-10">
+            <button
+              type="button"
+              className="mb-6 inline-flex items-center gap-1 text-xs font-semibold text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+            >
+              <ChevronLeft size={14} />
+              ย้อนกลับสู่หน้าหลัก
+            </button>
+
+            <div className="mb-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6e6e73]">Sign in</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">เข้าสู่ Central Control</h2>
+              <p className="mt-2 text-sm leading-6 text-[#5d5d63]">
+                ใช้ profile และ password เดิมของระบบเพื่อเข้าสู่ Portal
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative group">
+                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Username"
+                  className="w-full rounded-2xl py-3.5 pl-11 pr-4 text-[15px] bg-white border border-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                />
+              </div>
+
+              <div className="relative group">
+                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full rounded-2xl py-3.5 pl-11 pr-11 text-[15px] bg-white border border-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7a7a80] hover:text-[#1d1d1f] transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 pb-4">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className="relative flex items-center justify-center w-5 h-5 rounded border border-slate-300 bg-white group-hover:border-blue-400 transition-colors">
+                    <CheckCircle2 size={12} className="text-white opacity-0 transition-opacity" />
+                  </div>
+                  <span className="text-sm text-[#515154] group-hover:text-[#1d1d1f] transition-colors">จดจำฉันไว้ในระบบ</span>
+                </label>
+                <button type="button" className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                  ลืมรหัสผ่าน?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-[#0071e3] px-4 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-[#0077ED] active:scale-[0.98] disabled:opacity-70 disabled:hover:bg-[#0071e3]"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  {isLoading ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  ) : (
+                    <>
+                      เข้าสู่ระบบ
+                      <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </motion.section>
     </div>
   );
 }
@@ -535,8 +670,13 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
 import { UpdateModal } from '../../../components/modals/UpdateModal';
 import { UserRole } from '../../../config/auth.config';
 
-export function MockUpdateModal() {
-  const [isOpen, setIsOpen] = useState(true);
+export function MockUpdateModal({ onNavigate }: { onNavigate?: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setIsOpen(true), 100);
+    return () => clearTimeout(t);
+  }, []);
 
   // Provide mock case data based on the original hardcoded mock
   const mockCaseData: any = {
@@ -565,7 +705,7 @@ export function MockUpdateModal() {
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-transparent">
+    <div className="w-full h-full relative overflow-hidden bg-transparent pointer-events-auto">
       <UpdateModal
         isOpen={isOpen}
         caseData={mockCaseData}
@@ -574,6 +714,7 @@ export function MockUpdateModal() {
         onUpdate={async () => {
           // Simulate network delay for realistic presentation
           await new Promise(r => setTimeout(r, 1500));
+          if (onNavigate) onNavigate();
         }}
         inline={true}
         userRoleOverride={UserRole.QSMS} // Admin role to enable all edit features
@@ -583,7 +724,7 @@ export function MockUpdateModal() {
 }
 
 // 4. Mock Add Case (Exact Clone of MainLayout + AddCaseTab)
-export function MockAddCase({ onNavigate, preset }: { onNavigate?: () => void; preset?: 'empty' | 'ptt-or' | 'cross-link' }) {
+export function MockAddCase({ onNavigate, preset }: { onNavigate?: () => void; preset?: 'empty' | 'ptt-or' | 'cross-link' | 'with-item' }) {
   const [activeTab, setActiveTab] = useState<'overall'|'add'|'dashboard'>('add');
   
   return (
@@ -613,49 +754,31 @@ export function MockAddCase({ onNavigate, preset }: { onNavigate?: () => void; p
 }
 
 // 5. Mock Dashboard
-export function MockDashboard() {
-  return (
-    <div className="w-full h-full bg-[#F8FAFC] text-slate-800 flex flex-col font-sans p-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-2xl font-bold">Rework Analytics</h2>
-          <p className="text-sm text-slate-500">รายงานสรุปข้อมูลแบบเรียลไทม์</p>
-        </div>
-        <button className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50">
-          ส่งออกรายงาน (Excel)
-        </button>
-      </div>
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-slate-500 text-xs font-bold uppercase mb-2">Total Cases</p>
-            <p className="text-4xl font-black text-slate-800">124</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200 shadow-sm border-t-4 border-t-blue-500">
-          <CardContent className="p-6">
-            <p className="text-slate-500 text-xs font-bold uppercase mb-2">Avg Cost / Case</p>
-            <p className="text-4xl font-black text-slate-800">฿ 452</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200 shadow-sm border-t-4 border-t-emerald-500">
-          <CardContent className="p-6">
-            <p className="text-slate-500 text-xs font-bold uppercase mb-2">Completion</p>
-            <p className="text-4xl font-black text-emerald-600">85%</p>
-          </CardContent>
-        </Card>
-      </div>
+export function MockDashboard({ onNavigate }: { onNavigate?: () => void }) {
+  const [activeTab, setActiveTab] = useState<'overall'|'add'|'dashboard'>('dashboard');
 
-      <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-xl p-6 flex flex-col">
-        <p className="text-slate-500 text-xs font-bold uppercase mb-6">Cost Trend</p>
-        <div className="flex-1 flex items-end gap-2">
-          {[40, 65, 45, 90, 55, 75, 60, 80, 50, 70, 85, 95].map((h, i) => (
-            <div key={i} className="flex-1 bg-blue-100 hover:bg-blue-200 transition-colors rounded-t-sm relative group" style={{ height: `${h}%` }}>
-              <div className="absolute bottom-0 w-full bg-blue-500 rounded-t-sm" style={{ height: `${h * 0.6}%` }} />
+  return (
+    <div className="h-full w-full relative pointer-events-auto">
+      <ReworkDataProvider>
+        <MainLayout
+          activeTab={activeTab}
+          setActiveTab={(tab) => {
+            if (tab === 'overall' && onNavigate) onNavigate();
+            else setActiveTab(tab as any);
+          }}
+          onLogout={() => {}}
+          onBackToPortal={() => {}}
+          userName="สมชาย (แดชบอร์ด)"
+          userRole={"QSMS" as any}
+          onOpenTutorial={() => {}}
+        >
+          <div className="flex-1 overflow-x-hidden overflow-y-auto w-full h-full">
+            <div className="p-8 md:p-10 lg:p-12 w-full max-w-[1400px] mx-auto">
+              <DashboardTab />
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </MainLayout>
+      </ReworkDataProvider>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import React from 'react';
 
 import { fetchImageDataUrl } from '../services/api';
-import { toCorsProxyUrl, toDisplayImageUrl } from '../utils/imageUrls';
+import { toCorsProxyUrl, toDisplayImageUrl, toInternalProxyUrl } from '../utils/imageUrls';
 import { ReworkCase } from '../services/api';
 
 const PNG_SCALE = 2;
@@ -26,17 +26,36 @@ async function loadExportLibraries() {
 const IMAGE_TIMEOUT_MS = 5000; // 5 seconds per image
 
 async function fetchImageAsBase64(url: string): Promise<string> {
+  if (url.startsWith('data:')) return url;
+
   const decodedUrl = url.includes('corsproxy.io/?')
     ? decodeURIComponent(url.split('corsproxy.io/?')[1] || '')
     : url;
 
-  // Don't try to fetch local paths through remote proxy or GAS
-  if (decodedUrl.startsWith('/') || decodedUrl.startsWith('./') || !decodedUrl.startsWith('http')) {
+  // Handle local public paths (like /images/foo.png) by fetching them relative to current origin
+  if (decodedUrl.startsWith('/') || decodedUrl.startsWith('./')) {
+    try {
+      const response = await fetch(decodedUrl);
+      const blob = await response.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.warn(`Local fetch failed for ${decodedUrl}:`, err);
+      return decodedUrl;
+    }
+  }
+
+  // Don't try to fetch invalid non-http paths through proxy
+  if (!decodedUrl.startsWith('http')) {
     return decodedUrl;
   }
 
   const displayUrl = toDisplayImageUrl(decodedUrl, 1600);
-  const urlsToTry = [displayUrl, toCorsProxyUrl(displayUrl)];
+  const urlsToTry = [toInternalProxyUrl(displayUrl), displayUrl, toCorsProxyUrl(displayUrl)];
 
   try {
     // Add a timeout to the GAS fetch
@@ -44,7 +63,13 @@ async function fetchImageAsBase64(url: string): Promise<string> {
     const timeoutPromise = new Promise<never>((_, reject) => 
       setTimeout(() => reject(new Error('Image fetch timeout')), IMAGE_TIMEOUT_MS)
     );
-    return await Promise.race([fetchPromise, timeoutPromise]);
+    const result = await Promise.race([fetchPromise, timeoutPromise]);
+    if (result && result.startsWith('data:')) {
+      return result;
+    } else {
+      console.warn(`GAS image fetch returned a raw URL, falling back to Blob download: ${result}`);
+      throw new Error('GAS fetch did not return base64');
+    }
   } catch (err) {
     console.warn(`GAS image fetch failed for ${decodedUrl}:`, err);
   }
@@ -351,16 +376,22 @@ export function useExportReport() {
             try {
               let base64 = await fetchImageAsBase64(url);
               
-              // Base64 from fetchImageAsBase64 might be prefixed with "data:image/jpeg;base64,"
+              if (!base64.startsWith('data:')) {
+                console.warn('Could not convert image to base64, skipping Excel embed:', url);
+                continue;
+              }
+              
               let extension = 'png';
               let base64Data = base64;
               
-              if (base64.startsWith('data:')) {
-                const match = base64.match(/data:image\/(.*?);base64,(.*)/);
-                if (match) {
-                   extension = match[1] === 'jpeg' ? 'jpeg' : 'png';
-                   base64Data = match[2];
-                }
+              const match = base64.match(/data:(.*?);base64,(.*)/);
+              if (match) {
+                 const mimeType = match[1].toLowerCase();
+                 extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpeg' : mimeType.includes('gif') ? 'gif' : 'png';
+                 base64Data = match[2];
+              } else {
+                console.warn('Invalid base64 data format:', url);
+                continue;
               }
 
               const imageId = workbook.addImage({

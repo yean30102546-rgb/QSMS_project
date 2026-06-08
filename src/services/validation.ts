@@ -158,9 +158,8 @@ export function validateReworkItem(item: ReworkItemValidationInput): ValidationR
       ? { field: 'responsibleSubtype', message: 'กรุณาระบุหน่วยงานที่รับผิดชอบ' } : null,
     !String(item.customerName || '').trim()
       ? { field: 'customerName', message: 'Customer Name is required' } : null,
-    // Image Validation (Mandatory Evidence)
-    (item.imageCount ?? 0) < 1
-      ? { field: 'images', message: 'กรุณาแนบรูปภาพอย่างน้อย 1 รูป' } : null,
+    // Image Validation (Mandatory Evidence) - Removed per user request
+    null,
   ].filter((error): error is ValidationError => Boolean(error));
 
   return {

@@ -1,5 +1,5 @@
-# Title: RAG Streaming UI & Hybrid Search Lessons Learned
-[Updated: 2026-05-29]
+# Title: RAG Streaming, Function Calling & Impeccable UI Lessons
+[Updated: 2026-06-08]
 
 ## 1. Summary & Current Implementation
 During the implementation of Phase 2 and 3 upgrades for QSMS DocAI, we added true streaming responses (SSE), hybrid search (combining pgvector and full-text search), chat session memory, suggestion chips, and user feedback logs. This document captures the architectural insights, gotchas, and solutions.
@@ -57,6 +57,18 @@ During the implementation of Phase 2 and 3 upgrades for QSMS DocAI, we added tru
 - **Issue**: Storing complete long-running histories in memory accumulates high token costs and risks hitting model context limits.
 - **Solution**: We implemented a client-side sliding window in `RagApp.tsx`, sending only the last 5 messages to the API. This maintains sufficient context for follow-up questions while capping token overhead.
 
-## 3. Knowledge Relationships
+## 3. Gemini Function Calling within SSE Streams
+- **Issue**: Standard Gemini Function Calling returns a tool call response that interrupts normal text streaming.
+- **Solution**: We implemented the `@google/genai` SDK `tools` and `systemInstruction` options. When the LLM decides to call `get_rework_statistics`, it returns a `functionCall`. The backend natively executes the query against Supabase, formats the JSON string, and then pushes the `functionResponse` back into `generateContentStream` history to resume the generation flow without breaking the SSE structure.
+- **Gotcha**: The SSE parser must be able to ignore or properly handle intermediate function call metadata so the frontend doesn't render raw JSON tools.
+
+## 4. Impeccable UI & Product-Grade Animation
+- **Issue**: Default AI UI elements often feel "slop-like" or "playful" (e.g., bouncy spring animations, chat bubbles scaling up).
+- **Solution**: Adopted the Impeccable Design guidelines for the `RagApp`. 
+  - Converted the interface from a centered modal to a robust **Slide-in Sidebar Overlay**.
+  - Replaced `type: 'spring'` with exponential `ease: [0.16, 1, 0.3, 1]` for solid, professional transitions.
+  - Added global hotkey (`Ctrl+K` at `App.tsx` level) for power-user accessibility across all modules without having to navigate back to the Portal.
+
+## 5. Knowledge Relationships
 - Depends On (must read): [[../architecture/rag-module-nextjs.md]]
 - Impacted By (changes affect): `src/modules/rag/RagApp.tsx`, `src/app/api/rag/route.ts`

@@ -18,6 +18,7 @@ const Login = dynamic(() => import('./components/Login').then(mod => mod.Login),
 const RosterApp = dynamic(() => import('./modules/roster/RosterApp').then(mod => mod.RosterApp), { ssr: false });
 const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
 const GuideApp = dynamic(() => import('./modules/guide/GuideApp').then(mod => mod.GuideApp), { ssr: false });
+const RagApp = dynamic(() => import('./modules/rag/RagApp').then(mod => mod.RagApp), { ssr: false });
 
 function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,6 +27,7 @@ function AuthWrapper() {
   const [currentView, _setCurrentView] = useState<AppView>('portal');
   const [redirectAfterLogin, setRedirectAfterLogin] = useState<AppView | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isRagOpen, setIsRagOpen] = useState(false);
 
   const setCurrentView = (view: AppView) => {
     _setCurrentView(view);
@@ -61,6 +63,18 @@ function AuthWrapper() {
     };
 
     initAuth();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Toggle RagApp with Ctrl+K or Cmd+K
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsRagOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const refreshAuth = (authenticated = false) => {
@@ -156,6 +170,7 @@ function AuthWrapper() {
         }}
         onLogout={handleLogout}
         onLogin={() => setCurrentView('login')}
+        onOpenRag={() => setIsRagOpen(true)}
       />
     );
   } else if (currentView === 'roster') {
@@ -195,6 +210,9 @@ function AuthWrapper() {
       >
         {content}
       </motion.div>
+
+      {/* Global RAG Chat Modal */}
+      <RagApp user={appUser} open={isRagOpen} onOpenChange={setIsRagOpen} />
 
       {/* Premium Apple-Style Glassmorphic Logout Overlay */}
       <AnimatePresence>

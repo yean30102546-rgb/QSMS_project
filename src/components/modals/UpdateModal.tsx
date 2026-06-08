@@ -415,7 +415,7 @@ export function UpdateModal({
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 aria-hidden={!!editExitIntent}
-                className="pointer-events-auto w-full max-w-5xl flex flex-col max-h-full will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
+                className="pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
               >
                 {isEditMode ? (
                   /* =========================================
@@ -452,10 +452,11 @@ export function UpdateModal({
                       </div>
                     </div>
 
-                    {/* Content Area */}
-                    <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 bg-surface-bright space-y-4 sm:space-y-6">
+                    <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden bg-surface-bright">
+                      {/* Left Column (Items) */}
+                      <div className="w-full lg:w-1/2 overflow-y-auto custom-scrollbar p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-divider-color space-y-4 sm:space-y-6">
 
-                      {/* Case Info - Edit */}
+                        {/* Case Info - Edit */}
                       <div className="bg-system-background border border-divider-color rounded-xl p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                         <div className="flex items-center gap-2 mb-4 border-b border-divider-color pb-3">
                           <AlertCircle size={18} className="text-on-surface-variant" />
@@ -812,6 +813,10 @@ export function UpdateModal({
                           </AnimatePresence>
                         </div>
                       </div>
+                      </div> {/* End of Left Column */}
+
+                      {/* Right Column (Workflow / Resources) */}
+                      <div className="w-full lg:w-1/2 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-surface-secondary/10 space-y-4 sm:space-y-6">
 
                       {/* Labor Management - Edit */}
                       {(isOperator || isAdmin) && (
@@ -962,6 +967,7 @@ export function UpdateModal({
                         </div>
                       )}
 
+                      </div> {/* End of Right Column */}
                     </div>
                   </div>
                 ) : (
@@ -1025,16 +1031,19 @@ export function UpdateModal({
                       </div>
                     </div>
 
-                    {/* Section Header */}
-                    <div className="px-4 sm:px-6 py-3 bg-surface-secondary/50 border-b border-divider-color shrink-0 flex items-center gap-2 text-on-surface">
-                      <FileText size={20} />
-                      <span className="text-base sm:text-lg font-semibold">Item Details</span>
-                    </div>
+                    <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+                      {/* Left Column (Items) */}
+                      <div className="w-full md:w-1/2 flex flex-col min-h-0 border-b md:border-b-0 md:border-r border-divider-color bg-surface-bright">
+                        {/* Section Header */}
+                        <div className="px-4 sm:px-6 py-3 bg-surface-secondary/50 border-b border-divider-color shrink-0 flex items-center gap-2 text-on-surface">
+                          <FileText size={20} />
+                          <span className="text-base sm:text-lg font-semibold">Item Details</span>
+                        </div>
 
-                    {/* Scrollable Content */}
-                    <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))] bg-surface-bright space-y-4 sm:space-y-6">
+                        {/* Scrollable Content (Left) */}
+                        <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 space-y-4 sm:space-y-6">
 
-                      {caseData?.items.map((item, idx) => {
+                          {caseData?.items.map((item, idx) => {
                         const images = item.imageUrls || [];
                         return (
                           <div key={idx} className="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl p-4 sm:p-5 hover:border-[rgba(0,0,0,0.15)] transition-colors">
@@ -1133,6 +1142,13 @@ export function UpdateModal({
                           </div>
                         </div>
                       )}
+
+                        </div> {/* End of Scrollable Left */}
+                      </div> {/* End of Left Column */}
+
+                      {/* Right Column (Workflow / Financials) */}
+                      <div className="w-full lg:w-1/2 flex flex-col min-h-0 bg-surface-secondary/20">
+                        <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 space-y-6">
 
                       {/* Financial / Workflow Section in View Mode */}
                       {(isOperator || isAdmin || isFinance) && (
@@ -1346,6 +1362,8 @@ export function UpdateModal({
                         </div>
                       )}
 
+                        </div>
+                      </div> {/* End of Right Column */}
                     </div>
 
                     {/* Footer */}
@@ -1376,7 +1394,7 @@ export function UpdateModal({
                       <div className="flex gap-2 sm:gap-3 items-center w-full sm:w-auto justify-between sm:justify-end order-1 sm:order-2">
                         {/* Quick Status Update (Sticky in Footer) */}
                         {(isOperator || isAdmin || isFinance) && (
-                          <div className="hidden lg:flex bg-surface-secondary rounded-full p-1 border border-divider-color mr-2">
+                          <div className="hidden md:flex bg-surface-secondary rounded-full p-1 border border-divider-color mr-2">
                             {(['Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
                               const isActive = caseStatus === status;
                               const isAllowed = isAdmin || (

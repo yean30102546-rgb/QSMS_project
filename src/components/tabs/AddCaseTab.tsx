@@ -75,7 +75,7 @@ const reworkItemSchema = z.object({
   boxNumber: z.string().optional().nullable(),
   mold: z.string().optional().nullable(),
   line: z.string().optional().nullable(),
-  amount: z.number().min(0),
+  amount: z.union([z.number().min(0), z.nan()]).optional().nullable(),
   reason: z.string(),
   reasonSubtype: z.string().optional().nullable(),
   responsible: z.string(),
@@ -181,6 +181,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   const isSaveDisabled = (items: typeof formItems) => {
     return items.some((item) => {
       const imgCount = (uploadedImages[item.id] || []).length;
+      const isZeroBox = String(item.boxNumber).trim() === '0';
+      const isZeroAmount = item.amount === 0;
+
       return (
         !item.customerName ||
         !item.reason ||
@@ -188,6 +191,8 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
         (!item.itemNumber && !item.itemCode) ||
         !item.itemName ||
         imgCount === 0 ||
+        isZeroBox ||
+        isZeroAmount ||
         ((item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !item.reasonSubtype)
       );
     });
@@ -207,7 +212,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
   const onSubmit = async (data: FormValues) => {
     if (isSaveDisabled(data.items)) {
-      alert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ต้องระบุรหัสสินค้า, บาร์โค้ด, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)');
+      alert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ห้ามใส่จำนวนเป็น 0, ต้องระบุรหัสสินค้า, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)');
       return;
     }
 
@@ -533,10 +538,10 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                       )}
                     />
                   </div>
-                  <div className="col-span-1"><InputField label="เลขกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
                   <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
                   <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="จำนวน (Amount)" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
+                  <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
+                  <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
                 </div>
 
                 <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
