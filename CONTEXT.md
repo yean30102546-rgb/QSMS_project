@@ -105,7 +105,7 @@ The text embedding model (`jina-embeddings-v5-text-small`) used by the RAG modul
 
 ### Gemini Ingestion & Chat Models
 The server-side Google Gemini models:
-- **Ingestion (Parsing)**: Uses `gemini-2.5-flash` with vision capabilities to parse documents into Markdown.
+- **Ingestion (Parsing)**: Uses `gemini-2.5-flash` with vision capabilities to parse documents into Markdown, falling back to `gemini-2.0-flash` on server-side 503 errors.
 - **Chat Interface**: Uses `gemini-3.1-flash-lite` to stream responses in real-time.
 
 ### Hybrid Search
@@ -120,11 +120,11 @@ Context-aware, clickable buttons containing suggested follow-up questions genera
 ### RAG Feedback Loop
 A continuous improvement mechanism where users can rate AI responses (Thumbs Up/Down). Feedback triggers an automated log entry in the `rag_feedback` table capturing the query, retrieved context, and the AI's response, allowing administrators to identify knowledge gaps or hallucination patterns.
 
-### Nong Beepa Persona (AI Behavior)
-The official persona for the QSMS DocAI. Nong Beepa is designed to be "Friendly, Helpful, & Empathetic." He communicates with a supportive, polite tone, frequently using polite particles (ครับ/ค่ะ) and emojis (🐝✨😊) to reduce user stress on the factory floor while delivering highly accurate technical assistance.
+### QSMS AI Assistant Persona (AI Behavior)
+The official persona for the QSMS DocAI. The assistant is designed to be professional, concise, highly knowledgeable, and helpful. It communicates in a clear, supportive tone suitable for an enterprise environment, using polite particles (ครับ/ค่ะ) appropriately but avoiding excessive emojis or playful avatars, delivering highly accurate technical assistance and real-time statistics.
 
-### Micro-Animations (Nong Beepa UI)
-The standard for UI/UX interaction within the QSMS DocAI chat interface. The system leverages `framer-motion` (imported from `motion/react`) to provide smooth scrolling, bouncy typing indicators, and playful avatar hover effects. These animations are designed to make the AI feel alive, premium, and highly responsive.
+### UI & Animation Standards (Impeccable Design)
+The standard for UI/UX interaction within the QSMS DocAI chat interface. The system leverages `framer-motion` (imported from `motion/react`) to provide smooth scrolling and transitions, utilizing exponential easing (`ease: [0.16, 1, 0.3, 1]`) instead of bouncy spring animations to maintain a solid, premium, and professional feel. It also integrates accessibility features and is launched as a Slide-in Sidebar Overlay.
 
 ### DocAI Deep Analysis
 The analytical phase of QSMS DocAI that focuses on discovering patterns, summarizing common rework issues, and generating insights from ingested documents and operator feedback, rather than executing automated actions on the user's behalf. This approach optimizes token consumption by utilizing direct, single-turn LLM reasoning and structured search context instead of multi-turn agentic reasoning loops.
@@ -133,7 +133,7 @@ The analytical phase of QSMS DocAI that focuses on discovering patterns, summari
 The mechanism of attaching precise metadata references (such as document name, page number, section title, or original text snippet) directly to the generated AI response. This allows operators to instantly cross-reference and verify the validity of the technical rework instructions with the source files, eliminating guesswork and ensuring safety on the shop floor.
 
 ### React Hook Form & Zod Validation
-The unified form validation layer implemented on the Rework module (Add Case tab). It replaces complex manual state tracking with schema-based verification, enforcing structural constraints (e.g. required fields, valid quantities, date formats) before submission.
+The unified form validation layer implemented on the Rework module (Add Case tab). It replaces complex manual state tracking with schema-based verification, enforcing structural constraints (e.g., required fields, valid quantities, date formats) before submission. Explicitly, it prevents users from entering `0` for `amount` (quantity of bottles/gallons) and `boxNumber` (quantity of boxes) to maintain data validity.
 
 ### Zero-Width Space (\u200B) Word Wrapping
 A formatting technique used in PDF/HTML layouts to resolve clipping of Thai text. Because Thai lacks spaces between words, rendering engines often fail to wrap lines correctly. Inserting zero-width spaces (`\u200B`) after characters provides the layout engine with artificial break points, preventing text truncation.
@@ -145,7 +145,10 @@ A data export format implemented via `exceljs` that compiles rework cases into a
 An accessibility design pattern implemented in `index.css` that detects OS-level reduced motion preferences using `@media (prefers-reduced-motion: reduce)` and forces transition and animation durations to 0.01ms, ensuring safety for users with vestibular disorders.
 
 ### Layout Shift Prevention
-A layout optimization utilizing the CSS property `scrollbar-gutter: stable` to reserve space for scrollbars, preventing sudden page layout shifts when modals appear or disappear.
+A layout optimization utilizing the CSS property `scrollbar-gutter: stable` to reserve space for scrollbars, preventing sudden page layout shifts when modals appear or disappear. Additionally, in the RAG Sidebar, active and inactive tabs are rendered simultaneously using absolute positioning (`absolute inset-0` with `flex` or `hidden` toggles depending on active state) within a relative parent container, ensuring the layout remains perfectly stable when switching tabs.
+
+### Gemini Function Calling (Rework Statistics)
+A system data integration within the RAG Chat Interface. When a user asks for statistics, data, or counts of rework cases, the Gemini model triggers a `get_rework_statistics` function call. The route handler catches this request, queries Supabase, and appends real-time data to the context before streaming the response to the user.
 
 ### Server-State Authentication (Cookie-Based Auth)
 The session management architecture where JWT tokens are stored in HTTP-Only, Secure cookies (`auth_token`) and validated server-side by Next.js Route Handlers, replacing client-side `sessionStorage` storage.

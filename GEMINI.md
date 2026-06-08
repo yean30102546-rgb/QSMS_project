@@ -11,7 +11,7 @@
   - การดึงข้อมูลอัตโนมัติและการตรวจสอบความถูกต้องของสินค้าจากฐานข้อมูลกลาง (Item Master)
   - การอัปโหลดรูปภาพหลักฐานและการยืนยันความสมบูรณ์ของข้อมูล (Evidence & Transaction Integrity)
   - การแบ่งสิทธิการทำงาน (Role-Based Access Control) ระหว่าง Admin, Operator, Finance, และ PDB
-  - ระบบถามตอบคู่มือเทคนิคและแนวทาง Rework อัจฉริยะ (DocAI RAG) ที่มีบุคลิกภาพน่ารักเป็นมิตร
+  - ระบบถามตอบคู่มือเทคนิคและแนวทาง Rework อัจฉริยะ (DocAI RAG) ที่มีบุคลิกภาพแบบเป็นมืออาชีพและเพียบพร้อมด้วยข้อมูลสถิติ
 
 ---
 
@@ -27,8 +27,8 @@
   ทำงานเป็นระบบเบื้องหลังสำหรับงานเฉพาะทาง เช่น การทำงานร่วมกับ Google Drive, Google Sheets หรือ Legacy System บางส่วน
 - **DocAI RAG Engine (Gemini & Jina AI):**
   โมดูลสืบค้นปัญญาประดิษฐ์ (Retrieval-Augmented Generation) ค้นหาคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ทำงานโดยใช้ Supabase pgvector ร่วมกับ Jina AI Embeddings (`jina-embeddings-v5-text-small` ขนาด 768 มิติ) และ Gemini ในการสร้างคำตอบที่เป็นธรรมชาติ
-  - **Parsing Ingestion:** ใช้ `gemini-2.5-flash` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown
-  - **Chat Interface:** ใช้ `gemini-3.1-flash-lite` ในการตอบคำถามผู้ใช้งานผ่าน SSE Stream
+  - **Parsing Ingestion:** ใช้ `gemini-2.5-flash` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown โดยมีระบบ Fallback ไปยัง `gemini-2.0-flash` เมื่อเจอปัญหา 503 ในช่วงการทำงานที่มีโหลดสูง
+  - **Chat Interface:** ใช้ `gemini-3.1-flash-lite` ในการตอบคำถามผู้ใช้งานผ่าน SSE Stream ร่วมกับระบบ Function Calling (`get_rework_statistics`) สำหรับเรียกดูสถิติสดย้อนหลัง
 
 ---
 
@@ -41,7 +41,8 @@
 2. **Two-Way Autofill & Verification (ตรวจสอบสินค้า):**
    - เมื่อกรอกรหัส Item Number หรือ Item Code ระบบจะสืบค้นข้อมูลจาก Item Master ทันที
    - **Verification Lifecycle:** สถานะจะเปลี่ยนจาก `Idle` -> `Checking` -> `Verified` (พบข้อมูล) / `New` (สินค้าใหม่) / `Conflict` (ข้อมูลขัดแย้ง)
-   - **Rework Item Granular Fields:** นอกจากรหัสสินค้าแล้ว เคส Rework แต่ละรายการจะเก็บข้อมูลฟิลด์ล็อตเพิ่มเติม ได้แก่ หมายเลขล็อต (Batch No), วันที่ผลิตแกลลอน (gallonDate), เลขกล่อง (boxNumber), หมายเลขแม่พิมพ์ (mold) และสายการผลิต (line)
+   - **Rework Item Granular Fields:** นอกจากรหัสสินค้าแล้ว เคส Rework แต่ละรายการจะเก็บข้อมูลฟิลด์ล็อตเพิ่มเติม ได้แก่ หมายเลขล็อต (Batch No), วันที่ผลิตแกลลอน (gallonDate), เลขกล่อง (boxNumber / จำนวนกล่อง), หมายเลขแม่พิมพ์ (mold) และสายการผลิต (line)
+   - **Zero-Value Restriction:** ระบบตรวจเช็คและล็อกไม่ให้ผู้ใช้งานระบุจำนวนสินค้า (`amount`) หรือจำนวนกล่อง (`boxNumber`) เป็น 0 เพื่อป้องกันข้อมูลผิดพลาดในระบบ
 3. **Cross-Item Linking & Document Validation (เงื่อนไขและประเภทงานเฉพาะ):**
    - **Cross-Item Link:** หากตรวจพบสินค้าเปื้อน ('เปื้อน') และในเคสเดียวกันมีสินค้าที่รั่ว ('รั่ว') ระบบจะเปิดตัวเลือกให้เชื่อมโยงสาเหตุสินค้าเปื้อนไปยังไอเทมที่รั่วได้ (บันทึกลงฟิลด์ `linkedSourceId`)
    - **PTT OR Documents:** เคสที่ลูกค้าระบุเป็น "OR" จะเปิดช่องพิเศษให้แนบไฟล์เอกสารอ้างอิงสำหรับ OR ได้สูงสุด 2 ไฟล์ (.xlsx, .xls, .pdf, .png) หากไม่มีการอัปโหลด หน้าเว็บจะแสดง Badge เตือน "ขาดไฟล์ OR" สีแดงบนตารางภาพรวม
