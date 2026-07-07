@@ -4,6 +4,7 @@ import { Calendar, Filter, RefreshCw, Search, SlidersHorizontal, X } from 'lucid
 
 import { useOverallFilters } from '../../hooks/useOverallFilters';
 import { useReworkData } from '../../contexts/ReworkDataContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { updateCase, deleteCase, type ReworkCase } from '../../services/api';
 import { CaseListTable } from '../ui/CaseListTable';
 import { Pagination } from '../ui/Pagination';
@@ -17,8 +18,8 @@ interface OverallTabProps {
 
 export function OverallTab({
   userRole = 'Admin',
-  userName = 'User',
 }: OverallTabProps) {
+  const { showToast, showAlert } = useNotification();
   const {
     cases,
     isLoadingCases,
@@ -102,7 +103,7 @@ export function OverallTab({
         loadCases(); // Trigger background sync
       } else {
         console.error('Update failed:', result.error);
-        alert(`บันทึกไม่สำเร็จ: ${result.error}`);
+        showAlert(`บันทึกไม่สำเร็จ: ${result.error}`, 'error');
       }
     } finally {
       setIsModalLoading(false);
@@ -117,12 +118,12 @@ export function OverallTab({
         updateCasesLocally((prevCases) => prevCases.filter((c) => c.id !== caseId));
         setIsModalOpen(false);
         setSelectedCase(null);
-        alert('ลบรายการเรียบร้อยแล้ว');
+        showToast('ลบรายการเรียบร้อยแล้ว', 'success');
       } else {
-        alert(`ไม่สามารถลบรายการได้: ${result.error || 'Unknown error'}`);
+        showAlert(`ไม่สามารถลบรายการได้: ${result.error || 'Unknown error'}`, 'error');
       }
     } catch (error) {
-      alert(`เกิดข้อผิดพลาดในการลบ: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showAlert(`เกิดข้อผิดพลาดในการลบ: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     } finally {
       setIsModalLoading(false);
     }

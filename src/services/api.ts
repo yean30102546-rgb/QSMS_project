@@ -5,6 +5,7 @@
 
 import { getCurrentUser, isAuthenticated } from './auth';
 import { compressImage } from '../utils/imageCompressionUtils';
+import { uploadImageToCloudinary } from './imageUploadService';
 
 // GAS URL is managed securely server-side, local wrapper handles backward-compatibility
 let GAS_WEB_APP_URL = '';
@@ -61,7 +62,7 @@ export interface ReworkItem {
 
 export const CUSTOMER_OPTIONS = [
   'Eneos',
-  'Valvaline',
+  'Valvoline',
   'BCP',
   'OR',
   'Petronas',
@@ -153,6 +154,7 @@ async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiRespon
     const response = await fetch('/api/rework', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({
         ...payload,
         authProfile,
@@ -199,24 +201,31 @@ export async function insertCase(
   items: ReworkItem[],
   imageData?: Record<string, File[]>,
   orFiles?: File[],
-  customCaseId?: string
+  customCaseId?: string,
+  isFastTrack?: boolean
 ): Promise<ApiResponse<{ caseId: string; itemIds: string[] }>> {
   try {
-    // แปลงไฟล์รูปภาพทั้งหมดเป็น Base64 ก่อนส่ง (เพื่อให้ GAS.txt รับได้)
     const processedItems = await Promise.all(items.map(async (item) => {
       const files = imageData && imageData[item.id] ? imageData[item.id] : [];
 
-      const base64Images = await Promise.all(files.map(async (file) => {
+      const newUrls: string[] = [];
+      for (const file of files) {
         const compression = await compressImage(file, { maxSizeMB: 0.3 }); // Target 300KB
-        const fileToConvert = compression.success ? compression.compressedFile! : file;
-        return await fileToBase64(fileToConvert);
-      }));
+        const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
+        
+        const uploadResult = await uploadImageToCloudinary(fileToUpload);
+        if (uploadResult.success && uploadResult.url) {
+          newUrls.push(uploadResult.url);
+        } else {
+          console.error(`Failed to upload image to Cloudinary for item ${item.itemNumber}:`, uploadResult.error);
+        }
+      }
 
       console.log(`📸 Processing images for ${item.itemNumber}:`, {
         itemId: item.id,
         fileCount: files.length,
-        base64Count: base64Images.length,
-        sampleBase64: base64Images[0]?.substring(0, 50) || 'none'
+        uploadedCount: newUrls.length,
+        hasExistingUrls: !!item.imageUrls?.length
       });
 
       return {
@@ -236,7 +245,8 @@ export async function insertCase(
         line: item.line || '',
         linkedSourceId: item.linkedSourceId || '',
         customerName: item.customerName || '',
-        images: base64Images // ส่งเป็น Array ของ string (base64)
+        imageUrls: [...(item.imageUrls || []), ...newUrls],
+        images: [] as string[] // ไม่ต้องส่ง base64 แล้ว
       };
     }));
 
@@ -247,14 +257,23 @@ export async function insertCase(
       source,
       caseId,
       itemCount: processedItems.length,
-      totalImages: processedItems.reduce((sum, item) => sum + item.images.length, 0),
+      isFastTrack,
+      totalImages: processedItems.reduce((sum, item) => sum + (item.images?.length || 0), 0),
       orFilesCount: orFiles?.length || 0
     });
 
-    // Convert OR files to base64 if any
-    const processedOrFiles = orFiles
-      ? await Promise.all(orFiles.map(fileToBase64))
-      : [];
+    // Upload OR files to Cloudinary if any
+    const processedOrFilesUrls: string[] = [];
+    if (orFiles && orFiles.length > 0) {
+      for (const file of orFiles) {
+        const compression = await compressImage(file, { maxSizeMB: 0.3 });
+        const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
+        const uploadResult = await uploadImageToCloudinary(fileToUpload);
+        if (uploadResult.success && uploadResult.url) {
+          processedOrFilesUrls.push(uploadResult.url);
+        }
+      }
+    }
 
     const result = await postToGas<{ caseId: string; itemIds: string[] }>({
       action: 'insertCase',
@@ -264,7 +283,8 @@ export async function insertCase(
         source,
         profileId: getCurrentUser()?.name || 'User',
         items: processedItems,
-        orFiles: processedOrFiles
+        orFilesUrls: processedOrFilesUrls,
+        isFastTrack
       }
     });
 
@@ -428,13 +448,16 @@ export async function updateCase(
 ): Promise<ApiResponse> {
   try {
     // Process OR files if they exist in updates
-    let processedOrFiles: string[] = [];
+    let processedOrFilesUrls: string[] = [];
     if (updates.newOrFiles && updates.newOrFiles.length > 0) {
-      processedOrFiles = await Promise.all(updates.newOrFiles.map(async (file) => {
+      for (const file of updates.newOrFiles) {
         const compression = await compressImage(file, { maxSizeMB: 0.3 });
-        const fileToConvert = compression.success ? compression.compressedFile! : file;
-        return await fileToBase64(fileToConvert);
-      }));
+        const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
+        const uploadResult = await uploadImageToCloudinary(fileToUpload);
+        if (uploadResult.success && uploadResult.url) {
+          processedOrFilesUrls.push(uploadResult.url);
+        }
+      }
     }
 
     // Prepare the payload, excluding the raw File objects
@@ -448,7 +471,7 @@ export async function updateCase(
       reworkCost: updates.reworkCost,
       performedBy: getCurrentUser()?.name || 'User',
       updates: restUpdates,
-      orFiles: processedOrFiles.length > 0 ? processedOrFiles : undefined
+      orFilesUrls: processedOrFilesUrls.length > 0 ? processedOrFilesUrls : undefined
     });
 
     return {
@@ -521,6 +544,57 @@ export async function saveItemToMaster(itemNumber: string, itemCode: string, ite
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to save item master',
+    };
+  }
+}
+
+/**
+ * 8. Upload a single image to storage
+ */
+export async function uploadItemImage(fileName: string, base64Data: string): Promise<ApiResponse<{ url: string }>> {
+  try {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+       return {
+         success: false,
+         error: 'Cloudinary configuration missing'
+       };
+    }
+    
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    
+    // Ensure base64Data includes data prefix if it doesn't already
+    const prefix = base64Data.startsWith('data:') ? '' : 'data:image/jpeg;base64,';
+    const uploadData = prefix + base64Data;
+
+    const formData = new FormData();
+    formData.append('file', uploadData);
+    formData.append('upload_preset', uploadPreset);
+    formData.append('folder', 'qsms_rework_evidence');
+    formData.append('public_id', fileName.split('.')[0]); // Use filename without extension as public_id
+
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+       const errorData = await response.json().catch(() => ({}));
+       throw new Error(errorData.error?.message || `Upload failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    return {
+      success: true,
+      data: { url: result.secure_url }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Image upload failed',
     };
   }
 }

@@ -106,6 +106,96 @@ export async function uploadMultipleImagesToGAS(
 }
 
 /**
+ * Upload a single image file to Cloudinary using unsigned upload
+ * @param file - The file to upload
+ * @param cloudName - Cloudinary cloud name
+ * @param uploadPreset - Cloudinary upload preset for unsigned uploads
+ * @param onProgress - Callback for progress updates
+ * @returns Upload result
+ */
+export async function uploadImageToCloudinary(
+  file: File,
+  cloudName?: string,
+  uploadPreset?: string,
+  onProgress?: (progress: UploadProgress) => void
+): Promise<UploadResult> {
+  try {
+    const cName = cloudName || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const preset = uploadPreset || process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cName || !preset) {
+      return {
+        success: false,
+        error: 'Cloudinary configuration missing (cloud name or upload preset)',
+      };
+    }
+
+    const url = `https://api.cloudinary.com/v1_1/${cName}/image/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', preset);
+    formData.append('folder', 'qsms_rework_evidence'); // Optional folder
+
+    // Fetch doesn't support upload progress natively in browser without XMLHttpRequest
+    // For simplicity, we just trigger progress 0 and 100 for fetch, or 50% when sent.
+    onProgress?.({ loaded: 0, total: file.size, percentage: 10 });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errorData.error?.message || `Upload failed with status ${response.status}`,
+      };
+    }
+
+    const result = await response.json();
+
+    onProgress?.({ loaded: file.size, total: file.size, percentage: 100 });
+
+    return {
+      success: true,
+      url: result.secure_url,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error during Cloudinary upload',
+    };
+  }
+}
+
+/**
+ * Upload multiple images to Cloudinary
+ * @param files - Array of files to upload
+ * @param cloudName - Cloudinary cloud name
+ * @param uploadPreset - Cloudinary upload preset
+ * @param onProgress - Callback for overall progress updates
+ * @returns Array of upload results
+ */
+export async function uploadMultipleImagesToCloudinary(
+  files: File[],
+  cloudName?: string,
+  uploadPreset?: string,
+  onProgress?: (progress: { fileIndex: number; percentage: number }) => void
+): Promise<UploadResult[]> {
+  const results: UploadResult[] = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const result = await uploadImageToCloudinary(files[i], cloudName, uploadPreset, () => {
+      onProgress?.({ fileIndex: i, percentage: Math.floor(((i + 1) / files.length) * 100) });
+    });
+    results.push(result);
+  }
+
+  return results;
+}
+
+/**
  * Convert file to base64 with progress tracking
  * @param file - The file to convert
  * @param onProgress - Callback for progress updates

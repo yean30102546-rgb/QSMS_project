@@ -12,14 +12,13 @@ import {
 } from './calendar';
 import type { DayInfo, Employee, LeaveRecord, RosterCellStatus, RosterOverride } from './types';
 import { User } from '../../services/auth';
+import { useNotification } from '../../contexts/NotificationContext';
 import { useSaveProgress } from '../../hooks/useSaveProgress';
 import {
   addRosterEmployee,
   clearRosterMonthOverrides,
   deleteRosterEmployee,
   fetchRosterMonth,
-  swapRosterSaturday,
-  updateRosterEmployeePhase,
   updateRosterEmployeeStartSaturday,
   upsertRosterLeave,
   deleteRosterLeave,
@@ -29,46 +28,37 @@ import {
 // Sub-components
 import { RosterHeader } from './components/RosterHeader';
 import { RosterControls } from './components/RosterControls';
-import { RosterSidebar } from './components/RosterSidebar';
-import { RosterSummary } from './components/RosterSummary';
-import { RosterEmployeeHeader } from './components/RosterEmployeeHeader';
-import { RosterCalendar } from './components/RosterCalendar';
 import { RosterDialogs } from './components/RosterDialogs';
+import { RosterMatrix } from './components/RosterMatrix';
+import { RosterEmployeeDrawer } from './components/RosterEmployeeDrawer';
 
 interface RosterAppProps {
   user: User | null;
   onBackToPortal: () => void;
 }
 
-type DragPayload = {
-  sourceDateKey: string;
-};
-
 export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
+  const { showConfirm } = useNotification();
   const [monthDate, setMonthDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [selectedEmployeeIdForDrawer, setSelectedEmployeeIdForDrawer] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<RosterOverride[]>([]);
   const [holidays, setHolidays] = useState<Array<{ dateKey: string; name: string }>>([]);
   const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [newEmployeeName, setNewEmployeeName] = useState('');
-  const [leaveType, setLeaveType] = useState<'sick' | 'business' | 'vacation'>('sick');
-  const [leaveDate, setLeaveDate] = useState('');
-  const [dragPayload, setDragPayload] = useState<DragPayload | null>(null);
-  const [dragOverDateKey, setDragOverDateKey] = useState<string | null>(null);
-
-  const [activeTab, setActiveTab] = useState<'summary' | 'calendar'>('summary');
+  
+  // Dialog States
   const [activeLeaveDialog, setActiveLeaveDialog] = useState<{
+    employeeId: string;
     dateKey: string;
     leaveType: 'sick' | 'business' | 'vacation';
   } | null>(null);
-  const [deleteConfirmation, setDeleteEmployeeConfirm] = useState<{ id: string; name: string } | null>(null);
   const [leaveNoteInput, setLeaveNoteInput] = useState('');
+  const [deleteConfirmation, setDeleteEmployeeConfirm] = useState<{ id: string; name: string } | null>(null);
 
   const { isSaving, progress, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
 
@@ -82,10 +72,15 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
   const overrideMap = useMemo(() => buildOverrideMap(overrides), [overrides]);
   const monthLabel = useMemo(() => getThaiMonthLabel(monthDate), [monthDate]);
   
-  const selectedEmployee = useMemo(
-    () => employees.find((employee) => employee.id === selectedEmployeeId) || null,
-    [employees, selectedEmployeeId],
+  const selectedEmployeeForDrawer = useMemo(
+    () => employees.find((employee) => employee.id === selectedEmployeeIdForDrawer) || null,
+    [employees, selectedEmployeeIdForDrawer],
   );
+
+  const todayKey = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }, []);
 
   const leaveMap = useMemo(() => {
     const map = new Map<string, LeaveRecord>();
@@ -94,15 +89,6 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
     }
     return map;
   }, [leaves]);
-
-  const calendarCells = useMemo(() => {
-    if (monthDays.length === 0) return [];
-    const firstWeekday = monthDays[0].date.getDay();
-    const before = Array.from({ length: firstWeekday }, () => null as DayInfo | null);
-    const combined = [...before, ...monthDays];
-    while (combined.length % 7 !== 0) combined.push(null);
-    return combined;
-  }, [monthDays]);
 
   const clearSessionCache = () => {
     try {
@@ -133,11 +119,6 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
             setOverrides(parsed.overrides || []);
             setHolidays(parsed.holidays || []);
             setLeaves(parsed.leaves || []);
-            setSelectedEmployeeId((prev) =>
-              prev && parsed.employees.some((e: Employee) => e.id === prev)
-                ? prev
-                : parsed.employees[0]?.id || ''
-            );
             setIsLoading(false);
           }
         } catch (e) {
@@ -162,7 +143,6 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
       setOverrides(result.data.overrides || []);
       setHolidays(result.data.holidays || []);
       setLeaves(result.data.leaves || []);
-      setSelectedEmployeeId((prev) => (prev && nextEmployees.some((e) => e.id === prev) ? prev : nextEmployees[0]?.id || ''));
       setIsLoading(false);
 
       try {
@@ -178,8 +158,8 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
   const previousMonth = () => setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   const nextMonth = () => setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
 
-  const addEmployee = async () => {
-    const trimmed = newEmployeeName.trim();
+  const addEmployee = async (name: string) => {
+    const trimmed = name.trim();
     if (!trimmed) return;
     const phase: 0 | 1 = employees.length % 2 === 0 ? 0 : 1;
     const result = await addRosterEmployee(trimmed, phase, '');
@@ -190,8 +170,6 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
     clearSessionCache();
     const created = result.data as Employee;
     setEmployees((prev) => [...prev, created]);
-    if (!selectedEmployeeId) setSelectedEmployeeId(created.id);
-    setNewEmployeeName('');
   };
 
   const updateEmployeeStartSaturday = async (employeeId: string, startWorkingSaturday: string) => {
@@ -207,60 +185,59 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
     }
   };
 
-  const handleSaturdayStatusChange = async (dateKey: string, status: string) => {
-    if (!selectedEmployee) return;
+  const handleSaturdayStatusChange = async (employeeId: string, dateKey: string, status: string) => {
     const previousOverrides = [...overrides];
     setOverrides((prev) => {
       const filtered = prev.filter(
-        (item) => !(item.employeeId === selectedEmployee.id && item.dateKey === dateKey)
+        (item) => !(item.employeeId === employeeId && item.dateKey === dateKey)
       );
       if (status !== 'CLEAR') {
-        filtered.push({ employeeId: selectedEmployee.id, dateKey, status: status as RosterCellStatus });
+        filtered.push({ employeeId, dateKey, status: status as RosterCellStatus });
       }
       return filtered;
     });
     clearSessionCache();
-    const result = await upsertRosterOverride(selectedEmployee.id, dateKey, status);
+    const result = await upsertRosterOverride(employeeId, dateKey, status);
     if (!result.success) {
       setError(result.error || 'ปรับปรุงสถานะวันเสาร์ไม่สำเร็จ');
       setOverrides(previousOverrides);
     }
   };
 
-  const handleUpsertLeave = (dateKey: string, leaveType: 'sick' | 'business' | 'vacation') => {
+  const handleUpsertLeave = (employeeId: string, dateKey: string, leaveType: 'sick' | 'business' | 'vacation') => {
     setLeaveNoteInput(
       leaveType === 'sick' ? 'ลาป่วย 🤒' : leaveType === 'business' ? 'ลากิจ 💼' : 'ลาพักร้อน 🏖️',
     );
-    setActiveLeaveDialog({ dateKey, leaveType });
+    setActiveLeaveDialog({ employeeId, dateKey, leaveType });
   };
 
   const executeUpsertLeave = async () => {
-    if (!selectedEmployee || !activeLeaveDialog) return;
-
+    if (!activeLeaveDialog) return;
     startSaving();
-
-    const { dateKey, leaveType: type } = activeLeaveDialog;
+    const { employeeId, dateKey, leaveType: type } = activeLeaveDialog;
     const note =
       leaveNoteInput.trim() ||
       (type === 'sick' ? 'ลาป่วย 🤒' : type === 'business' ? 'ลากิจ 💼' : 'ลาพักร้อน 🏖️');
+    
     const previousLeaves = [...leaves];
     const newRecord: LeaveRecord = {
       id: `temp-${Date.now()}`,
-      employeeId: selectedEmployee.id,
+      employeeId,
       dateKey,
       leaveType: type,
       note,
     };
+    
     setLeaves((prev) => {
       const filtered = prev.filter(
-        (l) => !(l.employeeId === selectedEmployee.id && l.dateKey === dateKey)
+        (l) => !(l.employeeId === employeeId && l.dateKey === dateKey)
       );
       return [...filtered, newRecord];
     });
     clearSessionCache();
 
     try {
-      const result = await upsertRosterLeave(selectedEmployee.id, dateKey, type, note);
+      const result = await upsertRosterLeave(employeeId, dateKey, type, note);
       if (!result.success) {
         failSaving();
         setError(result.error || 'บันทึกการลาไม่สำเร็จ');
@@ -275,164 +252,77 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
     }
   };
 
-  const handleDeleteLeave = async (dateKey: string) => {
-    if (!selectedEmployee) return;
+  const handleDeleteLeave = async (employeeId: string, dateKey: string) => {
     const previousLeaves = [...leaves];
     setLeaves((prev) =>
-      prev.filter((l) => !(l.employeeId === selectedEmployee.id && l.dateKey === dateKey))
+      prev.filter((l) => !(l.employeeId === employeeId && l.dateKey === dateKey))
     );
     clearSessionCache();
-    const result = await deleteRosterLeave(selectedEmployee.id, dateKey);
+    const result = await deleteRosterLeave(employeeId, dateKey);
     if (!result.success) {
       setError(result.error || 'ลบข้อมูลการลาไม่สำเร็จ');
       setLeaves(previousLeaves);
     }
   };
 
-  const handleCreateLeave = async () => {
-    if (!leaveDate) return;
-    handleUpsertLeave(leaveDate, leaveType);
-    setLeaveDate('');
-  };
-
-  const deleteEmployee = (employeeId: string, name: string) => {
-    setDeleteEmployeeConfirm({ id: employeeId, name });
-  };
-
-  const handleConfirmDeleteEmployee = async () => {
-    if (!deleteConfirmation) return;
-    const { id: employeeId } = deleteConfirmation;
-    
+  const handleDeleteEmployee = async (employeeId: string) => {
     setIsLoading(true);
     const result = await deleteRosterEmployee(employeeId);
     if (!result.success) {
       setError(result.error || 'ลบพนักงานไม่สำเร็จ');
       setIsLoading(false);
-      setDeleteEmployeeConfirm(null);
       return;
     }
-    
-    setEmployees((prev) => {
-      const remaining = prev.filter((e) => e.id !== employeeId);
-      if (selectedEmployeeId === employeeId) {
-        setSelectedEmployeeId(remaining[0]?.id || '');
-      }
-      return remaining;
-    });
-    
+    setEmployees((prev) => prev.filter((e) => e.id !== employeeId));
     clearSessionCache();
     setIsLoading(false);
-    setDeleteEmployeeConfirm(null);
   };
 
   const resetMonthOverrides = async () => {
-    if (!window.confirm('คุณต้องการล้างการสลับวันเสาร์ทั้งหมดในเดือนนี้ใช่หรือไม่?')) return;
-    const previousOverrides = [...overrides];
-    setOverrides((prev) => prev.filter((item) => !item.dateKey.startsWith(`${monthKey}-`)));
-    clearSessionCache();
-    const result = await clearRosterMonthOverrides(monthKey);
-    if (!result.success) {
-      setError(result.error || 'ล้างการสลับเดือนนี้ไม่สำเร็จ');
-      setOverrides(previousOverrides);
-    }
+    showConfirm('คุณต้องการล้างการสลับวันเสาร์ทั้งหมดในเดือนนี้ใช่หรือไม่?', async () => {
+      const previousOverrides = [...overrides];
+      setOverrides((prev) => prev.filter((item) => !item.dateKey.startsWith(`${monthKey}-`)));
+      clearSessionCache();
+      const result = await clearRosterMonthOverrides(monthKey);
+      if (!result.success) {
+        setError(result.error || 'ล้างการสลับเดือนนี้ไม่สำเร็จ');
+        setOverrides(previousOverrides);
+      }
+    });
   };
 
   const getEmployeeDayStatus = (employee: Employee, day: DayInfo): RosterCellStatus => {
     return getCellStatus(employee, day, overrideMap, workingSaturdayIndexMap);
   };
 
-  const handleSwapSaturdayStatus = async (sourceDateKey: string, targetDateKey: string) => {
-    if (!selectedEmployee || sourceDateKey === targetDateKey) return;
-    const sourceDay = monthDays.find((d) => d.dateKey === sourceDateKey);
-    const targetDay = monthDays.find((d) => d.dateKey === targetDateKey);
-    if (!sourceDay || !targetDay || !sourceDay.isSaturday || !targetDay.isSaturday) return;
-    if (sourceDay.isPublicHoliday || targetDay.isPublicHoliday) return;
-
-    const sourceStatus = getEmployeeDayStatus(selectedEmployee, sourceDay);
-    const targetStatus = getEmployeeDayStatus(selectedEmployee, targetDay);
-
-    // If both are already working days, a swap changes nothing, so we just return silently.
-    if (
-      (sourceStatus === 'WORK' || sourceStatus === 'WORK_SWAP') &&
-      (targetStatus === 'WORK' || targetStatus === 'WORK_SWAP')
-    ) {
-      return;
-    }
-
-    if (sourceStatus !== 'WORK' && sourceStatus !== 'WORK_SWAP') {
-      setError('สามารถลากย้ายสลับได้เฉพาะวันเสาร์ที่เป็นวันทำงานเท่านั้น');
-      return;
-    }
-
-    let mappedSource: RosterCellStatus | 'CLEAR' = 'OFF_SWAP';
-    let mappedTarget: RosterCellStatus | 'CLEAR' = 'WORK_SWAP';
-
-    if (sourceStatus === 'WORK_SWAP' && targetStatus === 'OFF_SWAP') {
-      mappedSource = 'CLEAR';
-      mappedTarget = 'CLEAR';
-    } else if (targetStatus === 'WORK' || targetStatus === 'WORK_SWAP') {
-      mappedSource = 'WORK_SWAP';
-      mappedTarget = 'WORK_SWAP';
-    } else if (targetStatus === 'OT2X') {
-      mappedSource = 'OT2X';
-      mappedTarget = 'WORK_SWAP';
-    }
-
-    const previousOverrides = [...overrides];
-    setOverrides((prev) => {
-      const filtered = prev.filter(
-        (item) => !(item.employeeId === selectedEmployee.id && (item.dateKey === sourceDateKey || item.dateKey === targetDateKey))
-      );
-      if (mappedSource !== 'CLEAR') filtered.push({ employeeId: selectedEmployee.id, dateKey: sourceDateKey, status: mappedSource });
-      if (mappedTarget !== 'CLEAR') filtered.push({ employeeId: selectedEmployee.id, dateKey: targetDateKey, status: mappedTarget });
-      return filtered;
-    });
-    clearSessionCache();
-
-    const save = await swapRosterSaturday(selectedEmployee.id, sourceDateKey, targetDateKey, mappedSource, mappedTarget);
-    if (!save.success) {
-      setError(save.error || 'สลับวันเสาร์ไม่สำเร็จ');
-      setOverrides(previousOverrides);
-    }
-  };
-
-  const navigateToEmployeeCalendar = (employeeId: string) => {
-    setSelectedEmployeeId(employeeId);
-    setActiveTab('calendar');
-  };
-
-  const saturdaysInMonth = useMemo(() => monthDays.filter((d) => d.isSaturday && !d.isPublicHoliday), [monthDays]);
-  const todayKey = useMemo(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  }, []);
-
   return (
     <div className="min-h-screen bg-[#fdfdfd] text-[#111111] font-sans">
-      <div className="mx-auto max-w-[1440px] px-5 py-6 md:px-8 lg:px-10">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 lg:px-8">
         <RosterHeader user={user} onBackToPortal={onBackToPortal} />
 
         {error && (
-          <div className="mb-6 rounded-xl border border-[#ffd4d4] bg-[#fff6f6] px-3.5 py-3 text-sm text-[#b42318] shadow-sm">
-            <div className="font-semibold mb-1 font-thai">❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์:</div>
-            <div className="break-all font-thai">{error}</div>
-            {error.includes('Unknown action') && (
-              <div className="mt-2 rounded-lg bg-white/70 p-2.5 text-xs text-[#5f1712] border border-[#ffd4d4]/60 space-y-1 font-thai">
-                <p>💡 <strong>คำแนะนำในการแก้ไข:</strong></p>
-                <p>ระบบตรวจพบว่า Google Apps Script ยังไม่ได้อัปเดต...</p>
-              </div>
-            )}
+          <div className="mb-6 rounded-xl border border-[#ffd4d4] bg-[#fff6f6] px-4 py-3 text-sm text-[#b42318] shadow-sm flex items-center justify-between">
+            <div className="flex gap-2">
+              <span className="font-semibold">❌ ข้อผิดพลาด:</span>
+              <span className="break-all">{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="text-rose-500 hover:text-rose-700 p-1 font-bold rounded-md hover:bg-rose-100 transition-colors">
+              ✕
+            </button>
           </div>
         )}
 
-        <RosterControls
-          monthLabel={monthLabel}
-          onPreviousMonth={previousMonth}
-          onNextMonth={nextMonth}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onResetOverrides={resetMonthOverrides}
-        />
+        <div className="mb-6 bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+          <RosterControls
+            monthLabel={monthLabel}
+            onPreviousMonth={previousMonth}
+            onNextMonth={nextMonth}
+            activeTab={'matrix'}
+            onTabChange={() => {}} // Disabled as we use Unified view
+            onResetOverrides={resetMonthOverrides}
+            onAddEmployee={addEmployee}
+          />
+        </div>
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -441,86 +331,38 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.15 }}
-            className="grid gap-5 lg:grid-cols-[240px_1fr]"
           >
-            <RosterSidebar
-              employees={employees}
-              selectedEmployeeId={selectedEmployeeId}
-              onSelectEmployee={(id) => {
-                setSelectedEmployeeId(id);
-                setActiveTab('calendar');
-              }}
-              onDeleteEmployee={deleteEmployee}
-              newEmployeeName={newEmployeeName}
-              setNewEmployeeName={setNewEmployeeName}
-              onAddEmployee={addEmployee}
-            />
-
-            <div className="flex flex-col gap-4">
-              {isLoading && <div className="text-sm text-[#71717a] font-medium font-thai">กำลังโหลดข้อมูล...</div>}
-              {!isLoading && employees.length === 0 && (
-                <div className="border border-[#e4e4e7] rounded-2xl bg-[#fafafa] p-8 text-center text-sm text-[#71717a] font-thai">
-                  ยังไม่มีพนักงานในระบบ กรุณาเพิ่มพนักงานที่แถบเมนูด้านซ้ายก่อน
-                </div>
-              )}
-
-              {!isLoading && employees.length > 0 && activeTab === 'summary' && (
-                <RosterSummary
-                  employees={employees}
-                  saturdaysInMonth={saturdaysInMonth}
-                  leaveMap={leaveMap}
-                  onNavigateToEmployee={navigateToEmployeeCalendar}
-                  getEmployeeDayStatus={getEmployeeDayStatus}
-                />
-              )}
-
-              {!isLoading && employees.length > 0 && activeTab === 'calendar' && selectedEmployee && (
-                <div className="flex flex-col gap-4">
-                  <RosterEmployeeHeader
-                    selectedEmployee={selectedEmployee}
-                    leaves={leaves}
-                    leaveType={leaveType}
-                    setLeaveType={setLeaveType}
-                    leaveDate={leaveDate}
-                    setLeaveDate={setLeaveDate}
-                    onCreateLeave={handleCreateLeave}
-                  />
-
-                  {!selectedEmployee.startWorkingSaturday && (
-                    <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 shadow-sm font-thai">
-                      <span className="text-lg">⚠️</span>
-                      <div>
-                        <strong>ยังไม่ได้ระบุวันเสาร์แรกที่เริ่มงาน:</strong> โปรดเลือกวันเสาร์แรกที่เข้างานของ <strong>{selectedEmployee.name}</strong>...
-                      </div>
-                    </div>
-                  )}
-
-                  <RosterCalendar
-                    selectedEmployee={selectedEmployee}
-                    calendarCells={calendarCells}
-                    leaveMap={leaveMap}
-                    todayKey={todayKey}
-                    getEmployeeDayStatus={getEmployeeDayStatus}
-                    dragPayload={dragPayload}
-                    dragOverDateKey={dragOverDateKey}
-                    onDragStart={(dateKey) => setDragPayload({ sourceDateKey: dateKey })}
-                    onDragOver={setDragOverDateKey}
-                    onDragEnd={() => setDragPayload(null)}
-                    onDrop={(targetDateKey) => dragPayload && handleSwapSaturdayStatus(dragPayload.sourceDateKey, targetDateKey)}
-                    onUpsertLeave={handleUpsertLeave}
-                    onDeleteLeave={handleDeleteLeave}
-                    onSaturdayStatusChange={handleSaturdayStatusChange}
-                    onSetStartSaturday={(dateKey) => updateEmployeeStartSaturday(selectedEmployee.id, dateKey)}
-                  />
-                </div>
-              )}
-            </div>
+            {isLoading ? (
+              <div className="flex justify-center py-20 text-sm font-medium text-slate-500">
+                <span className="animate-pulse">กำลังโหลดข้อมูล...</span>
+              </div>
+            ) : (
+              <RosterMatrix
+                employees={employees}
+                monthDays={monthDays}
+                leaveMap={leaveMap}
+                todayKey={todayKey}
+                getEmployeeDayStatus={getEmployeeDayStatus}
+                onNavigateToEmployee={(id) => setSelectedEmployeeIdForDrawer(id)}
+                onSetStartSaturday={updateEmployeeStartSaturday}
+                onSaturdayStatusChange={handleSaturdayStatusChange}
+                onUpsertLeave={handleUpsertLeave}
+                onDeleteLeave={handleDeleteLeave}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
 
+      <RosterEmployeeDrawer
+        employee={selectedEmployeeForDrawer}
+        isOpen={!!selectedEmployeeIdForDrawer}
+        onClose={() => setSelectedEmployeeIdForDrawer(null)}
+        onDelete={handleDeleteEmployee}
+      />
+
       <RosterDialogs
-        activeLeaveDialog={activeLeaveDialog}
+        activeLeaveDialog={activeLeaveDialog as any}
         onCloseLeaveDialog={() => setActiveLeaveDialog(null)}
         leaveNoteInput={leaveNoteInput}
         setLeaveNoteInput={setLeaveNoteInput}
@@ -531,7 +373,7 @@ export function RosterApp({ user, onBackToPortal }: RosterAppProps) {
         isComplete={isComplete}
         deleteConfirmation={deleteConfirmation}
         onCloseDeleteDialog={() => setDeleteEmployeeConfirm(null)}
-        onConfirmDelete={handleConfirmDeleteEmployee}
+        onConfirmDelete={async () => {}} // Not used here, handled in Drawer
       />
     </div>
   );

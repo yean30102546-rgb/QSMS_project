@@ -12,10 +12,12 @@ import { loginWithPassword } from '../services/auth';
 
 export function Login({ 
   onSuccess,
-  onBack
+  onBack,
+  onNavigateToRegister
 }: { 
   onSuccess: (authenticated?: boolean) => void;
   onBack?: () => void;
+  onNavigateToRegister?: () => void;
 }) {
   const handleBack = onBack || (() => {
     window.location.href = '/';
@@ -28,23 +30,13 @@ export function Login({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load remembered credentials
+  // Load remembered username
   React.useEffect(() => {
     const savedUser = localStorage.getItem('remembered_user');
-    const savedPass = localStorage.getItem('remembered_pass');
     
     if (savedUser) {
       setUsername(savedUser);
       setRememberMe(true);
-    }
-    
-    if (savedPass) {
-      try {
-        // Simple obfuscation decoding
-        setPassword(atob(savedPass));
-      } catch (e) {
-        console.error('Failed to decode saved password');
-      }
     }
   }, []);
 
@@ -56,11 +48,16 @@ export function Login({
       return;
     }
 
+    if (!password) {
+      setError('กรุณาระบุรหัสผ่าน');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await loginWithPassword(username.trim().toUpperCase(), password);
+      const response = await loginWithPassword(username.trim(), password);
 
       if (!response.success) {
         setPassword('');
@@ -68,14 +65,13 @@ export function Login({
         return;
       }
 
-      // Handle Remember Me
+      // Handle Remember Me — store username only (never password)
       if (rememberMe) {
-        localStorage.setItem('remembered_user', username.trim().toUpperCase());
-        localStorage.setItem('remembered_pass', btoa(password)); // Simple obfuscation
+        localStorage.setItem('remembered_user', username.trim());
       } else {
         localStorage.removeItem('remembered_user');
-        localStorage.removeItem('remembered_pass');
       }
+      localStorage.removeItem('remembered_pass'); // Clean up legacy
 
       onSuccess(true);
     } catch (err) {
@@ -180,7 +176,7 @@ export function Login({
                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="rememberMe" className="text-xs font-medium text-[#6e6e73] cursor-pointer hover:text-[#1d1d1f] transition-colors">
-                  จดจำรหัสผ่านไว้ในเครื่องนี้
+                  จดจำชื่อผู้ใช้งานไว้ในเครื่องนี้
                 </label>
               </div>
 
@@ -215,9 +211,21 @@ export function Login({
               </motion.button>
             </form>
 
-            <div className="mt-7 border-t border-[#e8e8ed] pt-5 text-xs leading-5 text-[#6e6e73]">
-              <p>ตัวอย่าง profile: `QSMS`, `OPERATOR`, `FINANCE`</p>
-              <p className="mt-1">หากต้องการแก้บัญชี ให้ปรับค่าใน Google Apps Script Properties</p>
+            <div className="mt-7 border-t border-[#e8e8ed] pt-5 flex flex-col gap-3">
+              <p className="text-xs leading-5 text-[#6e6e73]">
+                ยังไม่มีบัญชีผู้ใช้งานใช่หรือไม่?
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigateToRegister) {
+                    onNavigateToRegister();
+                  }
+                }}
+                className="w-full rounded-2xl border border-[#d2d2d7] bg-white py-3 text-sm font-semibold text-[#1d1d1f] transition hover:bg-gray-50"
+              >
+                สร้างบัญชีใหม่
+              </button>
             </div>
           </div>
         </div>
@@ -225,3 +233,4 @@ export function Login({
     </div>
   );
 }
+

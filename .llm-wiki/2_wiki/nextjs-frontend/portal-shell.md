@@ -44,5 +44,6 @@ useEffect(() => {
 - **Impacted By**: [[architecture/system-architecture.md]] — ส่วนประกอบหลักใน Frontend Layer
 
 ---
-> 🔄 *อัปเดตเมื่อ 2026-05-22*: เพิ่มการบันทึกระบบ Landing Page, Guest Mode, และระบบ Auto-redirect หลังล็อกอินสำเร็จ
+## Ingested Raw Sources
+- Ingested Raw Source: [[1_raw/central_portal_plan_603507707.md]]
 

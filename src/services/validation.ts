@@ -31,6 +31,7 @@ export interface ReworkItemValidationInput {
   line?: string;
   verificationStatus?: string;
   imageCount?: number;
+  isFastTrack?: boolean;
 }
 
 export function validateItemNumber(value: string | number | undefined | null): ValidationError | null {
@@ -141,22 +142,24 @@ export function validateBoxNumber(value: string | undefined): ValidationError | 
 }
 
 export function validateReworkItem(item: ReworkItemValidationInput): ValidationResult {
+  const isFastTrack = item.isFastTrack === true;
+
   const errors = [
     validateItemNumber(item.itemNumber || ''),
     validateItemName(item.itemName || ''),
     validateItemCode(item.itemCode || ''),
     validateAmount(item.amount ?? ''),
     validateReason(item.reason || ''),
-    validateResponsible(item.responsible || ''),
+    !isFastTrack ? validateResponsible(item.responsible || '') : null,
     validateDetails(item.details),
     validateBatchNo(item.batchNo),
     validateBoxNumber(item.boxNumber),
     // Subtype Validation (Logic for Thailand)
     (item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !String(item.reasonSubtype || '').trim() 
       ? { field: 'reasonSubtype', message: `กรุณาระบุรูปแบบการ${item.reason}` } : null,
-    (item.responsible === 'SFC' || item.responsible === 'Supplier') && !String(item.responsibleSubtype || '').trim()
+    !isFastTrack && (item.responsible === 'SFC' || item.responsible === 'Supplier') && !String(item.responsibleSubtype || '').trim()
       ? { field: 'responsibleSubtype', message: 'กรุณาระบุหน่วยงานที่รับผิดชอบ' } : null,
-    !String(item.customerName || '').trim()
+    !isFastTrack && !String(item.customerName || '').trim()
       ? { field: 'customerName', message: 'Customer Name is required' } : null,
     // Image Validation (Mandatory Evidence) - Removed per user request
     null,

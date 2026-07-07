@@ -12,9 +12,13 @@ import dynamic from 'next/dynamic';
 import { portalAppRegistry } from './modules/platform/appRegistry';
 import type { AppView } from './modules/platform/types';
 import { getCurrentUser, isAuthenticated as authIsAuthenticated, logout as authLogout, restoreSession, type User } from './services/auth';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { ToastContainer } from './components/ui/Toast';
+import { AlertModal } from './components/ui/AlertModal';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
 const Login = dynamic(() => import('./components/Login').then(mod => mod.Login), { ssr: false });
+const Register = dynamic(() => import('./components/Register').then(mod => mod.Register), { ssr: false });
 const RosterApp = dynamic(() => import('./modules/roster/RosterApp').then(mod => mod.RosterApp), { ssr: false });
 const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
 const GuideApp = dynamic(() => import('./modules/guide/GuideApp').then(mod => mod.GuideApp), { ssr: false });
@@ -47,14 +51,23 @@ function AuthWrapper() {
       
       if (typeof window !== 'undefined') {
         const savedView = sessionStorage.getItem('currentView') as AppView | null;
-        if (savedView && savedView !== 'login' && authenticated) {
-          if (savedView === 'roster' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
-            setCurrentView('portal');
+        if (authenticated) {
+          if (savedView && savedView !== 'login') {
+            if (savedView === 'roster' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
+              setCurrentView('portal');
+            } else {
+              setCurrentView(savedView);
+            }
           } else {
-            setCurrentView(savedView);
+            setCurrentView('portal');
           }
         } else {
-          setCurrentView('portal');
+          if (savedView && savedView !== 'portal' && savedView !== 'login') {
+            setRedirectAfterLogin(savedView);
+            setCurrentView('login');
+          } else {
+            setCurrentView('portal');
+          }
         }
       } else {
         setCurrentView('portal');
@@ -143,6 +156,14 @@ function AuthWrapper() {
           setRedirectAfterLogin(null);
           setCurrentView('portal');
         }}
+        onNavigateToRegister={() => setCurrentView('register')}
+      />
+    );
+  } else if (currentView === 'register') {
+    content = (
+      <Register
+        onSuccess={refreshAuth}
+        onBack={() => setCurrentView('login')}
       />
     );
   } else if (currentView === 'portal') {
@@ -169,7 +190,10 @@ function AuthWrapper() {
           }
         }}
         onLogout={handleLogout}
-        onLogin={() => setCurrentView('login')}
+        onLogin={() => {
+          setRedirectAfterLogin('rework');
+          setCurrentView('login');
+        }}
         onOpenRag={() => setIsRagOpen(true)}
       />
     );
@@ -279,5 +303,11 @@ function AuthWrapper() {
 }
 
 export default function App() {
-  return <AuthWrapper />;
+  return (
+    <NotificationProvider>
+      <AuthWrapper />
+      <ToastContainer />
+      <AlertModal />
+    </NotificationProvider>
+  );
 }

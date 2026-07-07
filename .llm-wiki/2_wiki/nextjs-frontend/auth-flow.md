@@ -87,3 +87,4 @@ export async function loginWithPassword(userId: string, password: string): Promi
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/FIREBASE_PROVIDER_GUIDE_1202618693.md]]
+- Ingested Raw Source: [[1_raw/AUTHENTICATION_IMPLEMENTATION_47689780.md]]

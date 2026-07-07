@@ -13,6 +13,7 @@ import { getCurrentUserRole } from '../../services/auth';
 import { UserRole } from '../../config/auth.config';
 import { AppleProgressBar } from '../ui/AppleProgressBar';
 import { useSaveProgress } from '../../hooks/useSaveProgress';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface UpdateModalProps {
   isOpen: boolean;
@@ -26,7 +27,6 @@ interface UpdateModalProps {
 }
 
 const STANDARD_MATERIALS = ['บรรจุภัณฑ์', 'แกลลอน', 'ฝา', 'สติ๊กเกอร์', 'ชริ้งค์ ลาเบล', 'ของแถม'];
-
 export function UpdateModal({
   isOpen,
   caseData,
@@ -37,6 +37,7 @@ export function UpdateModal({
   inline = false,
   userRoleOverride,
 }: UpdateModalProps) {
+  const { showToast, showAlert, showConfirm } = useNotification();
   const { progress, isSaving, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
   const [caseStatus, setCaseStatus] = useState<ReworkCase['status']>(
     caseData?.status || 'Pending'
@@ -77,10 +78,10 @@ export function UpdateModal({
 
   const handleRequestClose = () => {
     if (isEditMode) {
-      if (window.confirm('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการปิดใช่หรือไม่?')) {
+      showConfirm('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการปิดใช่หรือไม่?', () => {
         setIsEditMode(false);
         onClose();
-      }
+      });
     } else {
       onClose();
     }
@@ -228,6 +229,20 @@ export function UpdateModal({
   const handleUpdate = async () => {
     if (!caseData) return;
 
+    if (isPDB || isAdmin) {
+      const hasZeroAmount = editedItems.some(item => (Number(item.amount) || 0) <= 0);
+      const hasZeroBox = editedItems.some(item => item.boxNumber === '0');
+      
+      if (hasZeroAmount) {
+        showAlert('จำนวนสินค้าต้องมากกว่า 0', 'error');
+        return;
+      }
+      if (hasZeroBox) {
+        showAlert('จำนวนกล่อง (Box Number) ห้ามเป็น 0', 'error');
+        return;
+      }
+    }
+
     startSaving();
 
     try {
@@ -336,7 +351,7 @@ export function UpdateModal({
       onClose(); // Close the main modal after deletion
     } catch (error) {
       console.error('Delete failed:', error);
-      alert('ไม่สามารถลบรายการได้ กรุณาลองใหม่อีกครั้ง');
+      showAlert('ไม่สามารถลบรายการได้ กรุณาลองใหม่อีกครั้ง', 'error');
     } finally {
       setIsActionLoading(false);
     }
@@ -344,10 +359,10 @@ export function UpdateModal({
 
   const handleRemoveItem = (index: number) => {
     if (editedItems.length <= 1) {
-      alert('ต้องมีอย่างน้อย 1 รายการในงานนี้');
+      showAlert('ต้องมีอย่างน้อย 1 รายการในงานนี้', 'warning');
       return;
     }
-    if (window.confirm('คุณต้องการลบรายการย่อยนี้ใช่หรือไม่?')) {
+    showConfirm('คุณต้องการลบรายการย่อยนี้ใช่หรือไม่?', () => {
       const itemToDelete = editedItems[index];
       const idToDelete = itemToDelete.uid || itemToDelete.id;
 
@@ -357,7 +372,7 @@ export function UpdateModal({
 
       const newItems = editedItems.filter((_, i) => i !== index);
       setEditedItems(newItems);
-    }
+    });
   };
 
   const getStatusIcon = (status: ReworkCase['status']) => {
@@ -464,7 +479,7 @@ export function UpdateModal({
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">แหล่งที่มา</label>
+                            <label className="text-sm font-medium text-on-surface-variant">แหล่งที่มา</label>
                             <select
                               value={editedSource}
                               onChange={(e) => setEditedSource(e.target.value)}
@@ -474,7 +489,7 @@ export function UpdateModal({
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">เลขที่เคส</label>
+                            <label className="text-sm font-medium text-on-surface-variant">เลขที่เคส</label>
                             <div className="flex items-center bg-surface-secondary rounded-lg border border-divider-color focus-within:ring-[3px] focus-within:ring-blue-500/30 transition-all overflow-hidden">
                               <span className="pl-4 py-2.5 text-base font-semibold text-on-surface-variant">{caseNamePrefix}</span>
                               <input
@@ -491,7 +506,7 @@ export function UpdateModal({
                         {/* Files Section */}
                         {(editedItems.every(i => i.customerName === 'OR')) && (
                           <div className="pt-4 border-t border-divider-color space-y-3">
-                            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">เอกสาร OR</label>
+                            <label className="text-sm font-medium text-on-surface-variant">เอกสาร OR</label>
                             <div className="flex flex-wrap items-center gap-3">
                               {caseData?.orFilesUrls?.map((url, i) => (
                                 <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-surface-secondary rounded-full text-[#0066cc] text-sm font-semibold hover:bg-surface-variant transition-colors">
@@ -535,8 +550,8 @@ export function UpdateModal({
                                 <div className="p-5 flex flex-col md:flex-row gap-4 items-start md:items-stretch">
                                   <div className="flex-1 space-y-4 w-full">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ชื่อรายการ</label>
+                                      <div className="space-y-2">
+                                        <label className="text-sm font-medium text-on-surface-variant">ชื่อรายการ</label>
                                         <input
                                           value={item.itemName || ''}
                                           onChange={(e) => {
@@ -547,8 +562,8 @@ export function UpdateModal({
                                           className="apple-input w-full bg-system-background px-3 py-2.5 text-sm font-semibold text-on-surface rounded-lg"
                                         />
                                       </div>
-                                      <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ลูกค้า</label>
+                                      <div className="space-y-2">
+                                        <label className="text-sm font-medium text-on-surface-variant">ลูกค้า</label>
                                         <select
                                           value={item.customerName || ''}
                                           onChange={(e) => {
@@ -565,8 +580,8 @@ export function UpdateModal({
                                     </div>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-[1fr_120px] gap-4">
-                                      <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">อาการเสีย / รายละเอียด</label>
+                                      <div className="space-y-2">
+                                        <label className="text-sm font-medium text-on-surface-variant">อาการเสีย / รายละเอียด</label>
                                         <textarea
                                           value={item.details || ''}
                                           onChange={(e) => {
@@ -578,8 +593,8 @@ export function UpdateModal({
                                           className="apple-input w-full bg-system-background p-3 text-sm font-medium text-on-surface rounded-lg resize-none"
                                         />
                                       </div>
-                                      <div className="space-y-1.5 flex flex-col items-end">
-                                        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider w-full text-right">จำนวน</label>
+                                      <div className="space-y-2 flex flex-col items-end">
+                                        <label className="text-sm font-medium text-on-surface-variant w-full text-right">จำนวน</label>
                                         <div className="flex items-center justify-end gap-2 w-full">
                                           <input
                                             type="number"
@@ -597,7 +612,6 @@ export function UpdateModal({
                                   </div>
 
                                   <div className="w-full md:w-48 flex flex-col items-end gap-3 shrink-0 h-full justify-between">
-                                    <div className="w-full flex-1 border border-divider-color rounded-lg bg-system-background p-2">
                                       <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1.5 text-center">รูปภาพ ({((item.imageUrls || []).length - deletedItemIds.filter(u => (item.imageUrls||[]).includes(u)).length) + (newImages[item.id || index.toString()] || []).length})</label>
                                       <div className="flex gap-2 flex-wrap min-h-[50px] items-start justify-center">
                                         {(item.imageUrls || []).map((url, i) => {
@@ -666,7 +680,6 @@ export function UpdateModal({
                                       </button>
                                     </div>
                                   </div>
-                                </div>
 
                                 {/* Collapsible Complex Fields */}
                                 <AnimatePresence initial={false}>
@@ -676,132 +689,154 @@ export function UpdateModal({
                                       animate={{ height: 'auto', opacity: 1 }}
                                       exit={{ height: 0, opacity: 0 }}
                                       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                                      className="border-t border-divider-color bg-surface-secondary/40 overflow-hidden"
+                                      className="border-t border-divider-color bg-surface-secondary/30 overflow-hidden"
                                     >
-                                      <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <div className="space-y-1.5">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Batch No.</label>
-                                          <input
-                                            type="text"
-                                            value={item.batchNo || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], batchNo: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">วันที่ผลิตแกลลอน</label>
-                                          <input
-                                            type="date"
-                                            value={item.gallonDate ? convertDMYToYMD(item.gallonDate) : ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], gallonDate: convertYMDToDMY(e.target.value) };
-                                              setEditedItems(newItems);
-                                            }}
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Box Number</label>
-                                          <input
-                                            type="text"
-                                            value={item.boxNumber || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], boxNumber: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Mold</label>
-                                          <input
-                                            type="text"
-                                            value={item.mold || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], mold: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Line</label>
-                                          <input
-                                            type="text"
-                                            value={item.line || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], line: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
-                                        </div>
+                                      <div className="p-5 flex flex-col gap-8">
                                         
-                                        <div className="space-y-1.5 col-span-2">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">สาเหตุ (Reason)</label>
-                                          <input
-                                            type="text"
-                                            value={item.reason || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], reason: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            placeholder="เช่น รั่ว, เปื้อน"
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
-                                        </div>
-                                        <div className="space-y-1.5 col-span-2">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">ประเภทย่อย (Subtype)</label>
-                                          <input
-                                            type="text"
-                                            value={item.reasonSubtype || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], reasonSubtype: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            placeholder="เช่น รั่วซึม, กล่องเปื้อน"
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
+                                        {/* Production Group */}
+                                        <div>
+                                          <h4 className="text-[13px] font-semibold text-on-surface mb-4 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-apple-blue-deep"></div>
+                                            ข้อมูลการผลิต
+                                          </h4>
+                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">Batch No.</label>
+                                              <input
+                                                type="text"
+                                                value={item.batchNo || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], batchNo: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                              />
+                                            </div>
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">วันที่ผลิตแกลลอน</label>
+                                              <input
+                                                type="date"
+                                                value={item.gallonDate ? convertDMYToYMD(item.gallonDate) : ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], gallonDate: convertYMDToDMY(e.target.value) };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                              />
+                                            </div>
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">Box Number</label>
+                                              <input
+                                                type="text"
+                                                value={item.boxNumber || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], boxNumber: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                              />
+                                            </div>
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">Mold / Line</label>
+                                              <div className="flex gap-3">
+                                                <input
+                                                  type="text"
+                                                  value={item.mold || ''}
+                                                  onChange={(e) => {
+                                                    const newItems = [...editedItems];
+                                                    newItems[index] = { ...newItems[index], mold: e.target.value };
+                                                    setEditedItems(newItems);
+                                                  }}
+                                                  placeholder="Mold"
+                                                  className="apple-input w-1/2 bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                />
+                                                <input
+                                                  type="text"
+                                                  value={item.line || ''}
+                                                  onChange={(e) => {
+                                                    const newItems = [...editedItems];
+                                                    newItems[index] = { ...newItems[index], line: e.target.value };
+                                                    setEditedItems(newItems);
+                                                  }}
+                                                  placeholder="Line"
+                                                  className="apple-input w-1/2 bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
                                         </div>
 
-                                        <div className="space-y-1.5 col-span-2">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">ผู้รับผิดชอบ (Responsible)</label>
-                                          <input
-                                            type="text"
-                                            value={item.responsible || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], responsible: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            placeholder="เช่น SFC, Customer, Supplier"
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
+                                        <div className="h-px bg-divider-color/50 w-full"></div>
+
+                                        {/* Responsibility Group */}
+                                        <div>
+                                          <h4 className="text-[13px] font-semibold text-on-surface mb-4 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#ff9500]"></div>
+                                            สาเหตุและผู้รับผิดชอบ
+                                          </h4>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">สาเหตุหลัก (Reason)</label>
+                                              <input
+                                                type="text"
+                                                value={item.reason || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], reason: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="เช่น รั่ว, เปื้อน"
+                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                              />
+                                            </div>
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">ประเภทย่อย (Subtype)</label>
+                                              <input
+                                                type="text"
+                                                value={item.reasonSubtype || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], reasonSubtype: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="เช่น รั่วซึม, กล่องเปื้อน"
+                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                              />
+                                            </div>
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">ผู้รับผิดชอบ (Responsible)</label>
+                                              <input
+                                                type="text"
+                                                value={item.responsible || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], responsible: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="เช่น SFC, Customer, Supplier"
+                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                              />
+                                            </div>
+                                            <div className="space-y-3">
+                                              <label className="text-xs tracking-wide font-semibold text-on-surface-variant uppercase">แผนก (Subdivision)</label>
+                                              <input
+                                                type="text"
+                                                value={item.responsibleSubtype || ''}
+                                                onChange={(e) => {
+                                                  const newItems = [...editedItems];
+                                                  newItems[index] = { ...newItems[index], responsibleSubtype: e.target.value };
+                                                  setEditedItems(newItems);
+                                                }}
+                                                placeholder="เช่น PDF, WPK"
+                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                              />
+                                            </div>
+                                          </div>
                                         </div>
-                                        <div className="space-y-1.5 col-span-2">
-                                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">แผนก (Subdivision)</label>
-                                          <input
-                                            type="text"
-                                            value={item.responsibleSubtype || ''}
-                                            onChange={(e) => {
-                                              const newItems = [...editedItems];
-                                              newItems[index] = { ...newItems[index], responsibleSubtype: e.target.value };
-                                              setEditedItems(newItems);
-                                            }}
-                                            placeholder="เช่น PDF, WPK"
-                                            className="apple-input w-full bg-system-background px-3 py-2 text-sm font-medium text-on-surface rounded-lg"
-                                          />
-                                        </div>
+                                        
                                       </div>
                                     </motion.div>
                                   )}
@@ -827,7 +862,7 @@ export function UpdateModal({
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
-                              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">จำนวนพนักงาน (คน)</label>
+                              <label className="text-sm font-medium text-on-surface-variant">จำนวนพนักงาน (คน)</label>
                               <select
                                 value={laborCount}
                                 onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
@@ -839,7 +874,7 @@ export function UpdateModal({
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">ชั่วโมงที่ใช้ (ชม.)</label>
+                              <label className="text-sm font-medium text-on-surface-variant">ชั่วโมงที่ใช้ (ชม.)</label>
                               <input
                                 type="number"
                                 min="0" step="0.5"
@@ -852,7 +887,7 @@ export function UpdateModal({
                             </div>
                             {canViewFinancialData && (
                               <div className="space-y-2">
-                                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">อัตราค่าแรง (บาท/ชม.)</label>
+                                <label className="text-sm font-medium text-on-surface-variant">อัตราค่าแรง (บาท/ชม.)</label>
                                 <div className="relative">
                                   <input
                                     type="number" min="0" step="1"
@@ -889,7 +924,7 @@ export function UpdateModal({
                             <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                               <table className="w-full text-left min-w-[500px]">
                                 <thead>
-                                  <tr className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider border-b border-divider-color">
+                                  <tr className="text-xs font-medium text-on-surface-variant border-b border-divider-color">
                                     <th className="pb-3 px-2">ชื่อวัสดุ</th>
                                     <th className="pb-3 px-2 text-center w-24">จำนวน</th>
                                     <th className="pb-3 px-2 text-center w-16">หน่วย</th>
@@ -1060,48 +1095,48 @@ export function UpdateModal({
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-3 gap-x-2 sm:gap-4 mt-2 mb-4 bg-surface-secondary/30 p-3 sm:p-4 rounded-xl border border-divider-color/50">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-5 gap-x-4 sm:gap-6 mt-3 mb-5 bg-surface-secondary/20 p-4 sm:p-5 rounded-2xl border border-divider-color/50">
                               <div>
-                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Batch No.</div>
-                                <div className="text-sm font-medium text-on-surface">{item.batchNo || '-'}</div>
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Batch No.</div>
+                                <div className="text-[15px] font-semibold text-on-surface">{item.batchNo || '-'}</div>
                               </div>
                               <div>
-                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">วันที่ผลิตแกลลอน</div>
-                                <div className="text-sm font-medium text-on-surface">{item.gallonDate || '-'}</div>
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">วันที่ผลิตแกลลอน</div>
+                                <div className="text-[15px] font-semibold text-on-surface">{item.gallonDate || '-'}</div>
                               </div>
                               <div>
-                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Box Number</div>
-                                <div className="text-sm font-medium text-on-surface">{item.boxNumber || '-'}</div>
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Box Number</div>
+                                <div className="text-[15px] font-semibold text-on-surface">{item.boxNumber || '-'}</div>
                               </div>
                               <div>
-                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Mold</div>
-                                <div className="text-sm font-medium text-on-surface">{item.mold || '-'}</div>
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Mold</div>
+                                <div className="text-[15px] font-semibold text-on-surface">{item.mold || '-'}</div>
                               </div>
                               <div>
-                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Line</div>
-                                <div className="text-sm font-medium text-on-surface">{item.line || '-'}</div>
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Line</div>
+                                <div className="text-[15px] font-semibold text-on-surface">{item.line || '-'}</div>
                               </div>
-                              <div>
-                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">สาเหตุ (Reason)</div>
-                                <div className="text-sm font-medium text-on-surface">
-                                  {item.reason || '-'} {item.reasonSubtype ? `(${item.reasonSubtype})` : ''}
+                              <div className="col-span-2 sm:col-span-3 md:col-span-1">
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">สาเหตุ (Reason)</div>
+                                <div className="text-[15px] font-semibold text-on-surface">
+                                  {item.reason || '-'} {item.reasonSubtype ? <span className="text-on-surface-variant font-medium">({item.reasonSubtype})</span> : ''}
                                 </div>
                               </div>
                               <div className="col-span-2 sm:col-span-3 md:col-span-2">
-                                <div className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">ผู้รับผิดชอบ (Responsible)</div>
-                                <div className="text-sm font-medium text-on-surface">
-                                  {item.responsible || '-'} {item.responsibleSubtype ? `(${item.responsibleSubtype})` : ''}
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">ผู้รับผิดชอบ (Responsible)</div>
+                                <div className="text-[15px] font-semibold text-on-surface">
+                                  {item.responsible || '-'} {item.responsibleSubtype ? <span className="text-on-surface-variant font-medium">({item.responsibleSubtype})</span> : ''}
                                 </div>
                               </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-divider-color/50">
                               <div>
-                                <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Details</h4>
+                                <h4 className="text-sm font-medium text-on-surface-variant mb-2">Details</h4>
                                 <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap break-words">{item.details || 'ไม่มีข้อมูล'}</p>
                               </div>
                               <div>
-                                <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 flex justify-between items-center">
+                                <h4 className="text-sm font-medium text-on-surface-variant mb-2 flex justify-between items-center">
                                   <span>Images ({images.length})</span>
                                   {images.length > 0 && (
                                     <button
@@ -1194,7 +1229,7 @@ export function UpdateModal({
                                   <h4 className="text-sm font-semibold text-on-surface flex items-center gap-2"><Clock size={16} className="text-[#0066cc]" /> การจัดการเวลาทำงาน (Labor)</h4>
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-1.5">
-                                      <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">จำนวนพนักงาน (คน)</label>
+                                      <label className="text-xs font-medium text-on-surface-variant">จำนวนพนักงาน (คน)</label>
                                       <select
                                         value={laborCount}
                                         onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
@@ -1206,7 +1241,7 @@ export function UpdateModal({
                                       </select>
                                     </div>
                                     <div className="space-y-1.5">
-                                      <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">ชั่วโมงที่ใช้ (ชม.)</label>
+                                      <label className="text-xs font-medium text-on-surface-variant">ชั่วโมงที่ใช้ (ชม.)</label>
                                       <input
                                         type="number" min="0" step="0.5"
                                         value={laborHours === undefined || laborHours === null || laborHours.toString() === 'NaN' ? '' : laborHours}
@@ -1218,7 +1253,7 @@ export function UpdateModal({
                                     </div>
                                     {canViewFinancialData && (
                                       <div className="space-y-1.5">
-                                        <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">อัตราค่าแรง (บาท/ชม.)</label>
+                                        <label className="text-xs font-medium text-on-surface-variant">อัตราค่าแรง (บาท/ชม.)</label>
                                         <div className="relative">
                                           <input
                                             type="number" min="0" step="1"
@@ -1250,7 +1285,7 @@ export function UpdateModal({
                                     <div className="overflow-hidden border border-divider-color rounded-lg">
                                       <table className="w-full text-left bg-surface-bright">
                                         <thead className="bg-surface-secondary/50">
-                                          <tr className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider border-b border-divider-color">
+                                          <tr className="text-xs font-medium text-on-surface-variant border-b border-divider-color">
                                             <th className="py-2 px-3">ชื่อวัสดุ</th>
                                             <th className="py-2 px-3 text-center w-20">จำนวน</th>
                                             <th className="py-2 px-3 text-center w-16">หน่วย</th>

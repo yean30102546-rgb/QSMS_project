@@ -31,7 +31,7 @@ export function groupItemsById<T extends { itemId: string; url: string }>(rows: 
  * Includes milliseconds and random suffix for uniqueness
  * ✅ ใช้ timezone Asia/Bangkok เสมอ
  */
-export function generateCaseId(): string {
+export function generateCaseId(prefix: 'RW' | 'RT' = 'RW'): string {
   const now = new Date();
   // แปลงเป็น Bangkok timezone
   const bkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
@@ -43,7 +43,7 @@ export function generateCaseId(): string {
   const ms = now.getMilliseconds().toString().padStart(3, '0'); // ms ไม่ต้องแปลง timezone
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
 
-  return `RW${yy}${mm}${dd}${hh}${min}${ms}${random}`;
+  return `${prefix}${yy}${mm}${dd}${hh}${min}${ms}${random}`;
 }
 
 /**

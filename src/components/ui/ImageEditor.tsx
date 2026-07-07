@@ -491,6 +491,7 @@ export function ImageEditor({
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={handleUndo}
             disabled={strokes.length === 0}
             className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:hover:bg-white/5 border border-white/5 transition-colors"
@@ -499,6 +500,7 @@ export function ImageEditor({
             <Undo size={16} />
           </button>
           <button
+            type="button"
             onClick={handleClear}
             disabled={strokes.length === 0}
             className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-white hover:text-red-400 disabled:opacity-30 disabled:hover:bg-white/5 border border-white/5 transition-colors"
@@ -508,12 +510,14 @@ export function ImageEditor({
           </button>
           <div className="w-px h-6 bg-white/10 mx-1" />
           <button
+            type="button"
             onClick={onCancel}
             className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5 transition-colors"
           >
             ยกเลิก
           </button>
           <button
+            type="button"
             onClick={handleSave}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-xs hover:bg-white hover:text-black transition-all shadow-lg shadow-accent/15"
           >
@@ -577,6 +581,7 @@ export function ImageEditor({
           <span className="text-xs font-semibold text-white/50 text-center md:text-left">โหมดเครื่องมือ (ดึงปุ่มวาดเพื่อร่าง)</span>
           <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 w-fit gap-1 flex-wrap justify-center">
             <button
+              type="button"
               onClick={() => setEditorMode('pan')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'pan'
@@ -587,6 +592,7 @@ export function ImageEditor({
               <Hand size={12} /> เลื่อนภาพ (Pan)
             </button>
             <button
+              type="button"
               onClick={() => setEditorMode('draw')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'draw'
@@ -597,6 +603,7 @@ export function ImageEditor({
               <Edit3 size={12} /> พู่กัน (Draw)
             </button>
             <button
+              type="button"
               onClick={() => setEditorMode('rect')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'rect'
@@ -607,6 +614,7 @@ export function ImageEditor({
               <Square size={12} /> สี่เหลี่ยม (Rect)
             </button>
             <button
+              type="button"
               onClick={() => setEditorMode('circle')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 editorMode === 'circle'
@@ -626,6 +634,7 @@ export function ImageEditor({
           <span className="text-xs font-semibold text-white/50 text-center md:text-left">การซูม (หรือใช้ลูกกลิ้งเมาส์)</span>
           <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 w-fit items-center gap-1">
             <button
+              type="button"
               onClick={() => handleZoomButton('out')}
               disabled={zoomScale <= 0.5}
               className="p-1.5 rounded-lg text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
@@ -637,6 +646,7 @@ export function ImageEditor({
               {Math.round(zoomScale * 100)}%
             </span>
             <button
+              type="button"
               onClick={() => handleZoomButton('in')}
               disabled={zoomScale >= 5.0}
               className="p-1.5 rounded-lg text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
@@ -646,6 +656,7 @@ export function ImageEditor({
             </button>
             <div className="w-px h-4 bg-white/10 mx-1" />
             <button
+              type="button"
               onClick={() => handleZoomButton('reset')}
               className="p-1.5 rounded-lg text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-xs font-semibold"
               title="พอดีหน้าจอ"
@@ -664,6 +675,7 @@ export function ImageEditor({
             <div className="flex gap-3">
               {BRUSH_COLORS.map((c) => (
                 <button
+                  type="button"
                   key={c.value}
                   onClick={() => setColor(c.value)}
                   className="w-8 h-8 rounded-full border flex items-center justify-center relative transition-transform duration-200 hover:scale-110"
@@ -691,6 +703,7 @@ export function ImageEditor({
             <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 w-fit">
               {BRUSH_SIZES.map((sz) => (
                 <button
+                  type="button"
                   key={sz.value}
                   onClick={() => setBrushSize(sz.value)}
                   className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${

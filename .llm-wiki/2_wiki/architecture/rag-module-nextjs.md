@@ -1,8 +1,13 @@
 # Title: Next.js RAG Module Architecture
-[Updated: 2026-05-29]
+[Updated: 2026-06-15]
 
 ## 1. Summary & Current Implementation
-QSMS RAG is a Next.js portal module for unstructured document search. The backend uses the Google Gen AI SDK (`gemini-2.5-flash` for extraction, `gemini-3.1-flash-lite` for streaming chat) and Supabase PostgreSQL with `pgvector` for storage. 
+QSMS RAG is a Next.js portal module for unstructured document search. The backend uses the Google Gen AI SDK (`gemini-3.1-flash-lite` for extraction and streaming chat) and Supabase PostgreSQL with `pgvector` for storage. 
+
+**Database Separation**: The database and storage for the RAG module is separated from the main Rework & Roster project to optimize Free Tier limits. The RAG API route and frontend client query this second Supabase project:
+- Server operations use `ragSupabaseServer` initialized with `RAG_SUPABASE_URL` and `RAG_SUPABASE_SERVICE_ROLE_KEY` (or fallback).
+- Frontend image uploads use client-side Supabase client initialized with `NEXT_PUBLIC_RAG_SUPABASE_URL` and `NEXT_PUBLIC_RAG_SUPABASE_ANON_KEY`.
+- **Exception (Agentic Tools)**: The AI has Function Calling tools (`get_rework_statistics`, `search_rework_history`, `get_rework_item_detail`) that continue querying the main `supabaseServer` client. This allows the AI to answer real-time questions about active operational data (`rework_cases`, `rework_items`) while general document RAG is separated.
 
 Key features implemented in the current system:
 - **Session Conversation Memory**: Passes client-side chat history (last 5 messages) to Gemini to allow follow-up questions.

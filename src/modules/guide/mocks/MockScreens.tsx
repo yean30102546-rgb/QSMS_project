@@ -15,6 +15,7 @@ import { MainLayout } from '../../../components/layout/MainLayout';
 import { ReworkDataProvider } from '../../../contexts/ReworkDataContext';
 import { MockAddCaseTab } from './MockAddCaseTab';
 import { DashboardTab } from '../../../components/tabs/DashboardTab';
+import { MobileFastTrackApp } from '../../../components/apps/rework/MobileFastTrackApp';
 
 // Apple Progress Bar Mock (From UpdateModal)
 function AppleProgressBar({ progress, statusText, isComplete }: { progress: number, statusText: string, isComplete: boolean }) {
@@ -719,6 +720,61 @@ export function MockUpdateModal({ onNavigate }: { onNavigate?: () => void }) {
         inline={true}
         userRoleOverride={UserRole.QSMS} // Admin role to enable all edit features
       />
+    </div>
+  );
+}
+
+// 3.5 Mock Mobile FastTrack
+export function MockMobileFastTrack({ onNavigate }: { onNavigate?: () => void }) {
+  const [caseSource, setCaseSource] = useState('SFC');
+  const [caseNumber, setCaseNumber] = useState('');
+
+  return (
+    <div className="w-full h-full relative overflow-hidden bg-slate-100 flex items-center justify-center pointer-events-auto">
+      <div className="flex flex-row items-center justify-center gap-8 w-[1100px] max-w-none transform scale-[0.55] md:scale-[0.7] xl:scale-[0.85] origin-center">
+        {/* Phone frame mock */}
+        <div 
+          className="bg-[#1d1d1f] rounded-[55px] p-3 shadow-2xl relative flex-shrink-0"
+          style={{ width: '430px', height: '900px', transform: 'translateZ(0)' }}
+        >
+          {/* Screen */}
+          <div className="w-full h-full bg-white rounded-[45px] overflow-hidden relative">
+            {/* Dynamic Island Mock */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-7 bg-black rounded-full z-[80]" />
+            <ReworkDataProvider>
+              <MobileFastTrackApp 
+                onComplete={(source, caseId, items) => {
+                  const event = new CustomEvent('fasttrack-complete', { detail: { source, caseId, items }});
+                  window.dispatchEvent(event);
+                }}
+                onCancel={() => onNavigate && onNavigate()}
+                initialSource={caseSource as "SFC" | "Customer"}
+                initialCaseId={caseNumber}
+              />
+            </ReworkDataProvider>
+          </div>
+        </div>
+        
+        {/* Add Case View Mock */}
+        <div 
+          className="flex-shrink-0 w-[640px] bg-white rounded-[45px] shadow-2xl overflow-hidden relative border border-slate-200"
+          style={{ height: '900px', transform: 'translateZ(0)' }}
+        >
+          <div className="w-full h-full overflow-y-auto">
+            <ReworkDataProvider>
+              <div className="p-4 md:p-8">
+                <MockAddCaseTab 
+                  preset="empty" 
+                  onCaseInfoChange={(source, num) => {
+                    setCaseSource(source);
+                    setCaseNumber(num);
+                  }}
+                />
+              </div>
+            </ReworkDataProvider>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
-import { GoogleGenAI } from '@google/genai';
+import { ragSupabaseServer } from '../../../lib/ragSupabaseServer';
+import { GoogleGenAI, Type } from '@google/genai';
 import { MarkdownTextSplitter } from '@langchain/textsplitters';
 import * as XLSX from 'xlsx';
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
 
     switch (action) {
       case 'list_documents': {
-        const { data, error } = await supabaseServer
+        const { data, error } = await ragSupabaseServer
           .from('rag_documents')
           .select('*')
           .order('created_at', { ascending: false });
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
 
         console.log(`🗑️ Deleting document and chunks for ID: ${id}`);
         // Chunks are automatically deleted via ON DELETE CASCADE foreign key
-        const { error } = await supabaseServer
+        const { error } = await ragSupabaseServer
           .from('rag_documents')
           .delete()
           .eq('id', id);
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
         }
 
         console.log(`🗑️ Bulk deleting documents for ${ids.length} IDs`);
-        const { error } = await supabaseServer
+        const { error } = await ragSupabaseServer
           .from('rag_documents')
           .delete()
           .in('id', ids);
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
         console.log(`📥 Ingesting document: ${filename} (${fileType})`);
 
         // 1. Insert parent document metadata record
-        const { data: docRecord, error: docError } = await supabaseServer
+        const { data: docRecord, error: docError } = await ragSupabaseServer
           .from('rag_documents')
           .insert([{ filename, file_type: fileType }])
           .select()
@@ -126,16 +127,16 @@ export async function POST(request: Request) {
 
           let parseResponse;
           try {
-            console.log(`🤖 Requesting Gemini 2.5 Flash parsing for ${filename} (${mimeType})...`);
+            console.log(`🤖 Requesting Gemini 3.1 Flash Lite parsing for ${filename} (${mimeType})...`);
             parseResponse = await ai.models.generateContent({
-              model: 'gemini-2.5-flash',
+              model: 'gemini-3.1-flash-lite',
               contents: [
                 { inlineData: { mimeType, data: base64Data } },
                 { text: parsePrompt }
               ]
             });
           } catch (error: any) {
-            console.warn(`⚠️ Gemini 2.5 Flash failed (possibly 503 high demand). Falling back to gemini-2.0-flash:`, error.message);
+            console.warn(`⚠️ Gemini 3.1 Flash Lite failed (possibly 503 high demand). Falling back to gemini-2.0-flash:`, error.message);
             parseResponse = await ai.models.generateContent({
               model: 'gemini-2.0-flash',
               contents: [
@@ -251,7 +252,7 @@ export async function POST(request: Request) {
         // 5. Bulk insert into Supabase
         console.log(`💾 Bulk inserting ${allInsertRecords.length} chunks into database...`);
         if (allInsertRecords.length > 0) {
-          const { error: chunkError } = await supabaseServer
+          const { error: chunkError } = await ragSupabaseServer
             .from('rag_document_chunks')
             .insert(allInsertRecords);
 
@@ -311,7 +312,7 @@ export async function POST(request: Request) {
         let matchedChunks: any = [];
         
         // Try hybrid search first
-        const { data: hybridData, error: hybridError } = await supabaseServer.rpc(
+        const { data: hybridData, error: hybridError } = await ragSupabaseServer.rpc(
           'hybrid_search_chunks',
           {
             query_text: message,
@@ -322,7 +323,7 @@ export async function POST(request: Request) {
 
         if (hybridError || !hybridData) {
           console.warn('⚠️ Hybrid search failed or not available, falling back to pure vector search:', hybridError);
-          const { data: vectorData, error: matchError } = await supabaseServer.rpc(
+          const { data: vectorData, error: matchError } = await ragSupabaseServer.rpc(
             'match_document_chunks',
             {
               query_embedding: queryEmbedding,
@@ -389,6 +390,27 @@ Instructions:
                   {
                     name: 'get_rework_statistics',
                     description: 'Fetch real-time statistics about rework cases from the system database (e.g., total rework items, counts of defects like leak (รั่ว) or stain (เปื้อน)). Call this ONLY when the user specifically asks for statistics, data, or counts.'
+                  },
+                  {
+                    name: 'search_rework_history',
+                    description: 'Search recent rework cases from the operational database to get actual rework history, issues, and resolutions. Use this when the user asks about recent rework cases or specific problems.',
+                    parameters: {
+                      type: Type.OBJECT,
+                      properties: {
+                        limit: { type: Type.NUMBER, description: 'Number of recent cases to fetch (default 5)' }
+                      }
+                    }
+                  },
+                  {
+                    name: 'get_rework_item_detail',
+                    description: 'Get details of a specific rework item by its item code or item number.',
+                    parameters: {
+                      type: Type.OBJECT,
+                      properties: {
+                        keyword: { type: Type.STRING, description: 'The item code or item number to search for' }
+                      },
+                      required: ['keyword']
+                    }
                   }
                 ]
               }]
@@ -399,15 +421,49 @@ Instructions:
             const call = toolResponse.functionCalls[0];
             if (call.name === 'get_rework_statistics') {
               console.log('🔧 Model requested get_rework_statistics tool. Executing query...');
-              const { data: statsData, error: statsError } = await supabaseServer.from('rework_items').select('defect_reason');
+              const { data: statsData, error: statsError } = await supabaseServer.from('rework_items').select('reason');
               if (!statsError && statsData) {
                 const total = statsData.length;
-                const leaks = statsData.filter(d => d.defect_reason === 'รั่ว').length;
-                const stains = statsData.filter(d => d.defect_reason === 'เปื้อน').length;
+                const leaks = statsData.filter(d => d.reason === 'รั่ว').length;
+                const stains = statsData.filter(d => d.reason === 'เปื้อน').length;
                 functionResponseContext = `\n\n[System Data (Real-time)]:\n- Total Rework Items: ${total}\n- Leaks (รั่ว): ${leaks}\n- Stains (เปื้อน): ${stains}\n`;
                 console.log(`📊 Tool executed. Total: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
               } else {
                 console.error('Failed to fetch statistics:', statsError);
+              }
+            } else if (call.name === 'search_rework_history') {
+              console.log('🔧 Model requested search_rework_history tool. Executing query...');
+              const limit = (call.args && (call.args as any).limit) ? (call.args as any).limit : 5;
+              const { data: casesData, error: casesError } = await supabaseServer.from('rework_cases')
+                .select('id, status, resolution_method, items:rework_items(item_code, reason)')
+                .order('created_at', { ascending: false })
+                .limit(limit);
+              if (!casesError && casesData) {
+                const casesStr = casesData.map(c => `- Case ${c.id}: Status: ${c.status}, Fix: ${c.resolution_method || 'N/A'}, Items: ${c.items ? c.items.map((i: any) => i.item_code + ' (' + i.reason + ')').join(', ') : 'None'}`).join('\n');
+                functionResponseContext = `\n\n[System Data (Recent Rework Cases)]:\n${casesStr}\n`;
+                console.log(`📊 Tool search_rework_history executed. Fetched ${casesData.length} cases.`);
+              } else {
+                console.error('Failed to fetch rework history:', casesError);
+              }
+            } else if (call.name === 'get_rework_item_detail') {
+              console.log('🔧 Model requested get_rework_item_detail tool. Executing query...');
+              const keyword = (call.args && (call.args as any).keyword) ? (call.args as any).keyword : '';
+              if (keyword) {
+                const { data: itemData, error: itemError } = await supabaseServer.from('rework_items')
+                  .select('case_id, item_code, item_number, reason, amount, responsible, rework_cases(status, resolution_method)')
+                  .or(`item_code.ilike.%${keyword}%,item_number.ilike.%${keyword}%`)
+                  .limit(3);
+                if (!itemError && itemData && itemData.length > 0) {
+                  const itemsStr = itemData.map(c => {
+                    const caseInfo = c.rework_cases ? (Array.isArray(c.rework_cases) ? c.rework_cases[0] : c.rework_cases) : null;
+                    return `- Item ${c.item_code} (${c.item_number}): Defect: ${c.reason}, Fix: ${caseInfo?.resolution_method || 'N/A'}, Status: ${caseInfo?.status || 'Unknown'}, Amount: ${c.amount}, Responsible: ${c.responsible}`;
+                  }).join('\n');
+                  functionResponseContext = `\n\n[System Data (Item Detail for ${keyword})]:\n${itemsStr}\n`;
+                  console.log(`📊 Tool get_rework_item_detail executed for ${keyword}.`);
+                } else {
+                  functionResponseContext = `\n\n[System Data]: No details found for item '${keyword}'.\n`;
+                  console.error('Failed to fetch item detail:', itemError);
+                }
               }
             }
           }
@@ -479,7 +535,7 @@ Instructions:
 
         console.log(`📝 Saving RAG Feedback: ${is_positive ? '👍' : '👎'}`);
         
-        const { error } = await supabaseServer
+        const { error } = await ragSupabaseServer
           .from('rag_feedback')
           .insert([{
             query,

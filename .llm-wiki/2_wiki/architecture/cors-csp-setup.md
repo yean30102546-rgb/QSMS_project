@@ -46,3 +46,4 @@ Impacted By (ได้รับผลกระทบจาก): [[gas-backend/ga
 - Ingested Raw Source: [[1_raw/CORS_ERROR_FIX_1090207951.md]]
 - Ingested Raw Source: [[1_raw/CORS_SETUP_GUIDE_1600942671.md]]
 - Ingested Raw Source: [[1_raw/CSP_FIX_IMPLEMENTATION_2105364283.md]]
+- Ingested Raw Source: [[1_raw/CORS_FIX_GUIDE_1557533658.md]]

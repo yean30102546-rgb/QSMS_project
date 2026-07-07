@@ -136,6 +136,19 @@ describe('Validation Services', () => {
       expect(result.isValid).toBe(false)
       expect(result.errors.some(e => e.field === 'responsibleSubtype')).toBe(true)
     })
+
+    it('should pass if isFastTrack is true even if responsible and customerName are missing', () => {
+      const fastTrackItem = {
+        itemNumber: 'ITEM-123',
+        itemName: 'Product Name',
+        amount: 10,
+        reason: 'อื่นๆ',
+        isFastTrack: true,
+      }
+      const result = validateReworkItem(fastTrackItem)
+      expect(result.isValid).toBe(true)
+      expect(result.errors).toHaveLength(0)
+    })
   })
 
   describe('findDuplicateItemNumbers', () => {

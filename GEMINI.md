@@ -23,11 +23,13 @@
   ทำงานบนฝั่ง Client เป็นหลัก ดูแลเรื่อง View, Session Restore, Role-based Routing และจัดการ State ภายใน UI อย่างลื่นไหล 
 - **Operational Database (Supabase):** 
   ฐานข้อมูลหลักของระบบที่ใช้เก็บข้อมูลทั้งหมดแบบ Real-time และจัดการ Authentication
+- **Image Storage (Cloudinary):**
+  ระบบจัดการและจัดเก็บรูปภาพหลักฐาน Rework (Evidence Images) โดยใช้วิธี Unsigned Upload โดยตรงจาก Frontend (Client-side) เพื่อลดปัญหาข้อจำกัดขนาด Base64 และลดโหลดเซิร์ฟเวอร์
 - **Media/Compatibility Sidecar (Google Apps Script - GAS):** 
-  ทำงานเป็นระบบเบื้องหลังสำหรับงานเฉพาะทาง เช่น การทำงานร่วมกับ Google Drive, Google Sheets หรือ Legacy System บางส่วน
+  ทำงานเป็นระบบเบื้องหลังสำหรับงานเฉพาะทาง เช่น Google Sheets หรือ Legacy System บางส่วน (อดีตเคยใช้รับรูปภาพแต่ปัจจุบันย้ายไป Cloudinary แล้ว)
 - **DocAI RAG Engine (Gemini & Jina AI):**
   โมดูลสืบค้นปัญญาประดิษฐ์ (Retrieval-Augmented Generation) ค้นหาคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ทำงานโดยใช้ Supabase pgvector ร่วมกับ Jina AI Embeddings (`jina-embeddings-v5-text-small` ขนาด 768 มิติ) และ Gemini ในการสร้างคำตอบที่เป็นธรรมชาติ
-  - **Parsing Ingestion:** ใช้ `gemini-2.5-flash` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown โดยมีระบบ Fallback ไปยัง `gemini-2.0-flash` เมื่อเจอปัญหา 503 ในช่วงการทำงานที่มีโหลดสูง
+  - **Parsing Ingestion:** ใช้ `gemini-3.1-flash-lite` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown โดยมีระบบ Fallback ไปยัง `gemini-2.0-flash` เมื่อเจอปัญหา 503 ในช่วงการทำงานที่มีโหลดสูง
   - **Chat Interface:** ใช้ `gemini-3.1-flash-lite` ในการตอบคำถามผู้ใช้งานผ่าน SSE Stream ร่วมกับระบบ Function Calling (`get_rework_statistics`) สำหรับเรียกดูสถิติสดย้อนหลัง
 
 ---
@@ -72,7 +74,7 @@
 - **Language & Typings:** TypeScript (v5.8)
 - **Build Tool:** Next.js Compiler (Vite ถูกจำกัดบทบาทไว้ใช้เฉพาะสำหรับการรัน Vitest เท่านั้น)
 - **Testing:** Playwright (E2E Testing ในโฟลเดอร์ `/e2e`), Vitest (Unit Testing ทั่วระบบ)
-- **Utilities:** Excel Generation (`exceljs`), PDF Generation (`jspdf`, `html2canvas`), Image Compression (`browser-image-compression`), PDF Rendering (`pdfjs-dist`)
+- **Utilities:** Excel Generation (`exceljs`), PDF Generation (`jspdf`, `html2canvas`), Image Compression (`browser-image-compression`), PDF Rendering (`pdfjs-dist`), Image Storage (`cloudinary` API)
 
 ---
 

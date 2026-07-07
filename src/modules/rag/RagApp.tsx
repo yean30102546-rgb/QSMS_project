@@ -7,18 +7,19 @@ import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCir
 import { createClient } from '@supabase/supabase-js';
 import * as pdfjsLib from 'pdfjs-dist';
 import { User } from '../../services/auth';
+import { useNotification } from '../../contexts/NotificationContext';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co';
+const supabaseUrl = process.env.NEXT_PUBLIC_RAG_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co';
 // Client-safe anonymous key used in frontend
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key-to-prevent-crash';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_RAG_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key-to-prevent-crash';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_RAG_SUPABASE_ANON_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   console.warn('⚠️ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in .env. Supabase client features will fail.');
 }
 
@@ -59,6 +60,7 @@ interface UploadQueueItem {
 const WELCOME_MESSAGE = 'สวัสดีครับ ผมคือ QSMS AI Assistant ยินดีให้บริการครับ \n\nผมสามารถช่วยคุณค้นหาข้อมูลจากคู่มือ (PDF/Excel) หรือตรวจสอบสถิติข้อมูลจริงในระบบได้ พิมพ์คำถามของคุณได้เลยครับ';
 
 export function RagApp({ user, open, onOpenChange }: RagAppProps) {
+  const { showAlert, showConfirm } = useNotification();
   const [activeTab, setActiveTab] = useState<'chat' | 'documents'>('chat');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: WELCOME_MESSAGE }
@@ -115,22 +117,24 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
   };
 
   const handleDeleteDocument = async (id: string) => {
-    if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบเอกสารนี้? ข้อมูลเวกเตอร์จะถูกลบทั้งหมด')) return;
-    try {
-      const res = await fetch('/api/rag', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_document', id })
-      });
-      const result = await res.json();
-      if (result.success) {
-        setDocuments(prev => prev.filter(d => d.id !== id));
-      } else {
-        alert('เกิดข้อผิดพลาดในการลบเอกสาร: ' + result.error);
+    showConfirm('คุณแน่ใจหรือไม่ว่าต้องการลบเอกสารนี้? ข้อมูลเวกเตอร์จะถูกลบทั้งหมด', async () => {
+      try {
+        const res = await fetch('/api/rag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ action: 'delete_document', id })
+        });
+        const result = await res.json();
+        if (result.success) {
+          setDocuments(prev => prev.filter(d => d.id !== id));
+        } else {
+          showAlert('เกิดข้อผิดพลาดในการลบเอกสาร: ' + result.error, 'error');
+        }
+      } catch (err) {
+        console.error('Delete error:', err);
       }
-    } catch (err) {
-      console.error('Delete error:', err);
-    }
+    });
   };
 
   const handleToggleSelect = (id: string) => {
@@ -163,7 +167,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
         setSelectedDocs(new Set());
         setShowDeleteModal(false);
       } else {
-        alert('เกิดข้อผิดพลาดในการลบเอกสาร: ' + result.error);
+        showAlert('เกิดข้อผิดพลาดในการลบเอกสาร: ' + result.error, 'error');
       }
     } catch (err) {
       console.error('Bulk delete error:', err);
@@ -549,9 +553,9 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                     {activeTab === 'chat' && (
                       <button 
                         onClick={() => { 
-                          if(confirm('ต้องการล้างประวัติการแชทหรือไม่?')) {
+                          showConfirm('ต้องการล้างประวัติการแชทหรือไม่?', () => {
                             setMessages([{ role: 'model', text: WELCOME_MESSAGE }]);
-                          }
+                          });
                         }}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                         title="ล้างประวัติการแชท"

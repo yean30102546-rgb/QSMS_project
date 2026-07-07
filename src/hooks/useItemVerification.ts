@@ -105,6 +105,7 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
       const response = await fetch('/api/rework', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           action: 'verifyItem',
           itemNumber: field === 'itemNumber' ? value : undefined,
@@ -125,7 +126,7 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
       const currentValue = field === 'itemNumber' ? currentItem.itemNumber : currentItem.itemCode;
       
       // Ignore stale result if user changed input while fetching
-      if (currentItem.verificationStatus !== 'checking' || currentValue.trim() !== value || currentItem.lastActiveField !== field) {
+      if (currentItem.verificationStatus !== 'checking' || (currentValue || '').trim() !== value || currentItem.lastActiveField !== field) {
         return;
       }
 

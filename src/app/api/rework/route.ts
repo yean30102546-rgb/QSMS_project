@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { assertPermission, AuthError, requireServerAuth } from '../../../lib/serverAuth';
+import { generateCaseId } from '../../../utils/helpers';
 
 export const maxDuration = 60; // Allow up to 60s for slow GAS file uploads
 export const dynamic = 'force-dynamic';
@@ -325,17 +326,23 @@ export async function POST(request: Request) {
         if (!auth) throw new AuthError('Authentication required');
         assertPermission(auth, 'create_case');
         const { caseData } = body;
+        const isFastTrack = !!caseData?.isFastTrack;
+
         console.log('📦 Inserting Case Data:', {
           id: caseData?.id,
           itemCount: caseData?.items?.length,
-          hasOrFiles: !!caseData?.orFiles?.length
+          hasOrFiles: !!caseData?.orFiles?.length,
+          isFastTrack
         });
 
-        if (!caseData || !caseData.id) {
-          throw new Error('Invalid case data: Missing ID');
+        // Generate Case ID if missing or temporary
+        let finalCaseId = caseData?.id;
+        const isTemporaryId = !finalCaseId || String(finalCaseId).startsWith('temp-') || String(finalCaseId).length < 5;
+        
+        if (isTemporaryId) {
+          const prefix = caseData?.source === 'Customer' ? 'RT' : 'RW';
+          finalCaseId = generateCaseId(prefix);
         }
-
-        const finalCaseId = caseData.id;
 
         // 1. Upload OR Files
         const orFilesUrls: string[] = [];
@@ -399,11 +406,11 @@ export async function POST(request: Request) {
               amount: i.amount || 0,
               reason: i.reason,
               reason_subtype: i.reasonSubtype,
-              responsible: i.responsible,
-              responsible_subtype: i.responsibleSubtype,
+              responsible: i.responsible || (isFastTrack ? 'รอระบุ' : ''),
+              responsible_subtype: i.responsibleSubtype || (isFastTrack ? 'รอระบุ' : ''),
               details: i.details,
               line: i.line,
-              image_urls: itemImageUrls.length > 0 ? itemImageUrls : (i.imageUrls || []),
+              image_urls: [...(i.imageUrls || []), ...itemImageUrls],
               image_folder_url: '',
               customer_name: i.customerName || primaryCustomer,
               batch_no: i.batchNo || caseData.batchNo,

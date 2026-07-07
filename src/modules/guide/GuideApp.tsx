@@ -13,7 +13,7 @@ import { Badge } from "@/src/components/ui/badge";
 
 // Import Mock Components
 import {
-  MockLogin, MockPortal, MockOverall, MockUpdateModal, MockAddCase, MockDashboard
+  MockLogin, MockPortal, MockOverall, MockUpdateModal, MockAddCase, MockDashboard, MockMobileFastTrack
 } from "./mocks/MockScreens";
 
 type Slide = {
@@ -70,11 +70,41 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       subtitle: "Management System",
       description: "เปลี่ยนระบบการแจ้งซ่อมและประเมินราคางาน Rework ให้เป็นดิจิทัล 100% จัดการข้อมูลอย่างโปร่งใสและตรวจสอบได้",
     },
-    // 2. Painpoints
+    // 2. Objectives
     {
       id: 2,
       type: "split",
-      chapter: "02 / THE CHALLENGE",
+      chapter: "02 / OBJECTIVES",
+      title: "Project Objectives",
+      description: "เป้าหมายหลักของการพัฒนาระบบ QSMS Rework Management System",
+      bullets: [
+        {
+          title: "Paperless",
+          desc: "ลดการใช้กระดาษและเอกสารซ้ำซ้อน",
+          icon: <FileText className="w-6 h-6 text-emerald-500" />
+        },
+        {
+          title: "Transparency & Costing",
+          desc: "เพิ่มความแม่นยำและโปร่งใสในการประเมินราคาและค่าแรง",
+          icon: <Database className="w-6 h-6 text-blue-500" />
+        },
+        {
+          title: "Speed & Collaboration",
+          desc: "เพิ่มความรวดเร็วในการประสานงานระหว่างฝ่าย Operator และ Finance",
+          icon: <Clock className="w-6 h-6 text-amber-500" />
+        },
+        {
+          title: "Data Analytics",
+          desc: "ติดตามและวิเคราะห์ข้อมูล Rework เพื่อนำไปพัฒนาคุณภาพสินค้าในอนาคต",
+          icon: <TrendingDown className="w-6 h-6 text-indigo-500" />
+        }
+      ]
+    },
+    // 3. Painpoints
+    {
+      id: 3,
+      type: "split",
+      chapter: "03 / THE CHALLENGE",
       title: "Current Painpoints",
       description: "ปัญหาหลักที่พบในการทำงานด้วยระบบแบบดั้งเดิมหรือการใช้ Excel เพียงอย่างเดียว",
       bullets: [
@@ -90,11 +120,11 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         }
       ]
     },
-    // 3. Solution
+    // 4. Solution
     {
-      id: 3,
+      id: 4,
       type: "split",
-      chapter: "03 / THE SOLUTION",
+      chapter: "04 / THE SOLUTION",
       title: "How QSMS Solves This",
       description: "โซลูชันที่ออกแบบมาเพื่อขจัดปัญหาของ Operator และ Finance อย่างตรงจุด",
       bullets: [
@@ -115,11 +145,11 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         }
       ]
     },
-    // 4. Full User Guide (Mocks)
+    // 5. Full User Guide (Mocks)
     {
-      id: 4,
+      id: 5,
       type: "tour",
-      chapter: "04 / USER GUIDE",
+      chapter: "05 / USER GUIDE",
       title: "Authentication",
       mockComponent: <MockLogin onNavigate={() => setCurrentIdx(5)} />,
       tourCard: {
@@ -136,9 +166,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       }
     },
     {
-      id: 5,
+      id: 6,
       type: "tour",
-      chapter: "04 / USER GUIDE",
+      chapter: "05 / USER GUIDE",
       title: "Portal Entry",
       mockComponent: <MockPortal onNavigate={() => setCurrentIdx(6)} />,
       tourCard: {
@@ -155,9 +185,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       }
     },
     {
-      id: 6,
+      id: 7,
       type: "tour",
-      chapter: "04 / USER GUIDE",
+      chapter: "05 / USER GUIDE",
       title: "Overall Monitoring",
       mockComponent: <MockOverall onNavigate={() => setCurrentIdx(7)} />,
       tourCard: {
@@ -174,9 +204,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       }
     },
     {
-      id: 7,
+      id: 8,
       type: "tour",
-      chapter: "04 / USER GUIDE",
+      chapter: "05 / USER GUIDE",
       title: "Case Initiation & Evidence Integrity",
       mockComponent: <MockAddCase onNavigate={() => setCurrentIdx(8)} preset="with-item" />,
       tourCard: {
@@ -194,9 +224,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       }
     },
     {
-      id: 8,
+      id: 9,
       type: "tour",
-      chapter: "04 / USER GUIDE",
+      chapter: "05 / USER GUIDE",
       title: "Smart Features",
       mockComponent: <MockAddCase onNavigate={() => setCurrentIdx(9)} preset="ptt-or" />,
       tourCard: {
@@ -214,9 +244,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       }
     },
     {
-      id: 9,
+      id: 10,
       type: "tour",
-      chapter: "04 / USER GUIDE",
+      chapter: "05 / USER GUIDE",
       title: "Updating Case",
       mockComponent: <MockUpdateModal onNavigate={() => setCurrentIdx(10)} />,
       tourCard: {
@@ -232,11 +262,31 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       }
     },
     {
-      id: 10,
+      id: 11,
       type: "tour",
-      chapter: "04 / USER GUIDE",
+      chapter: "05 / USER GUIDE",
+      title: "Mobile Fast-Track",
+      mockComponent: <MockMobileFastTrack onNavigate={() => setCurrentIdx(11)} />,
+      tourCard: {
+        title: "โหมด Fast-Track สำหรับมือถือ",
+        description: (
+          <>
+            บันทึกงานซ่อมรวดเร็วผ่านมือถือหน้างาน<br />
+            <br />
+            • <b>ถ่ายรูปและบันทึกข้อมูลทันที:</b> ลดขั้นตอนการจดกระดาษ<br />
+            • <b>Auto-Watermark:</b> ฝังลายน้ำ วันเวลาและสถานที่อัตโนมัติ<br />
+            • <b>ระบบคิว (Queue):</b> บันทึกหลายรายการต่อเนื่องแล้วส่งเข้าเคสหลักทีเดียว
+          </>
+        ),
+        position: "bottom-12 right-12"
+      }
+    },
+    {
+      id: 12,
+      type: "tour",
+      chapter: "05 / USER GUIDE",
       title: "Export & Reporting",
-      mockComponent: <MockDashboard onNavigate={() => setCurrentIdx(0)} />,
+      mockComponent: <MockDashboard onNavigate={() => setCurrentIdx(12)} />,
       tourCard: {
         title: "ส่งออกรายงานแบบมืออาชีพ",
         description: (
@@ -260,11 +310,11 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         position: "bottom-12 right-12"
       }
     },
-    // 5. Benefits
+    // 6. Benefits
     {
-      id: 11,
+      id: 13,
       type: "split",
-      chapter: "05 / BENEFITS",
+      chapter: "06 / BENEFITS",
       title: "Business Impact",
       description: "สิ่งที่องค์กรจะได้รับหลังจากการนำ QSMS ไปใช้งานจริง",
       bullets: [

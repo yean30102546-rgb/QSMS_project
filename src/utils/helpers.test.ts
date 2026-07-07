@@ -34,9 +34,14 @@ describe('Helper Functions', () => {
   })
 
   describe('generateCaseId', () => {
-    it('should generate a valid case ID starting with RW', () => {
+    it('should generate a valid case ID starting with RW by default', () => {
       const id = generateCaseId()
       expect(id).toMatch(/^RW\d{16}$/)
+    })
+
+    it('should generate a valid case ID starting with RT when prefix is RT', () => {
+      const id = generateCaseId('RT')
+      expect(id).toMatch(/^RT\d{16}$/)
     })
   })
 

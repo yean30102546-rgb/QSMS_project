@@ -65,7 +65,7 @@ An optional relational reference for stained items ('เปื้อน'). If an
 A two-part classification of which entity or process is accountable for the rework. Like reasons, these are **Independent Fields** allowing for flexible reporting.
 
 ### Evidence Integrity
-The requirement that every [Rework Item](#rework-item) must be accompanied by at least one visual record (image) during case creation. Images undergo client-side compression (target 300KB) to ensure efficient upload.
+The requirement that every [Rework Item](#rework-item) must be accompanied by at least one visual record (image) during case creation. Images undergo client-side compression (target 300KB) and are directly uploaded to **Cloudinary** via unsigned upload before the case is finalized, ensuring robust media storage without payload size limitations.
 
 ### PTT OR Rework Documents (OR Files)
 An optional feature for cases where the customer name is "OR". Users can attach up to 2 OR files (.xlsx, .xls, .pdf, or .png) to accompany the rework case.
@@ -105,7 +105,7 @@ The text embedding model (`jina-embeddings-v5-text-small`) used by the RAG modul
 
 ### Gemini Ingestion & Chat Models
 The server-side Google Gemini models:
-- **Ingestion (Parsing)**: Uses `gemini-2.5-flash` with vision capabilities to parse documents into Markdown, falling back to `gemini-2.0-flash` on server-side 503 errors.
+- **Ingestion (Parsing)**: Uses `gemini-3.1-flash-lite` with vision capabilities to parse documents into Markdown, falling back to `gemini-2.0-flash` on server-side 503 errors.
 - **Chat Interface**: Uses `gemini-3.1-flash-lite` to stream responses in real-time.
 
 ### Hybrid Search
@@ -158,3 +158,15 @@ The client-side download utility (`handleDownloadImages`) that fetches item evid
 
 ### Production Security Posture
 The deployment standard prioritizing environment variables for all secrets over hardcoded credentials, and the strict enforcement of Row Level Security (RLS) on Supabase databases to protect against unauthorized access via public `anon` keys.
+
+### Mobile Fast-Track UI
+A mobile-optimized, edge-to-edge user interface designed specifically for shop floor operators. It enables rapid capture of rework items through chunky, easily tappable input fields and instantaneous (snappy) animations, minimizing disruption to physical workflows.
+
+### Fast-Track Draft Queue
+A state management pattern utilizing local storage (`qsms_fast_track_draft`) to queue newly captured rework items directly on the operator's device. This provides resilience against network drops and allows for batch submission to the main system.
+
+### Client-Side Image Compression
+An Evidence Integrity optimization where image file sizes are significantly reduced (targeting <0.5MB) within the user's browser prior to upload, conserving bandwidth and accelerating the mobile submission process.
+
+### Client-Side Watermarking
+A process leveraging the HTML Canvas API to overlay dynamic text (such as Date/Time and GPS coordinates) directly onto captured images within the browser, ensuring provenance without requiring server-side image processing.

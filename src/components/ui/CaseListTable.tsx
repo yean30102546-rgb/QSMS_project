@@ -245,18 +245,29 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
         <p className="text-[11px] font-medium text-slate-500 mt-0.5 break-words">{reasonsDisplay}</p>
       </div>
 
-      <StatusPill status={caseItem.status} />
+      <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
     </div>
   );
 }
 
 interface StatusPillProps {
   status: ReworkCase['status'];
+  deadlineStatus?: 'warning' | 'danger' | null;
 }
 
-function StatusPill({ status }: StatusPillProps) {
+function StatusPill({ status, deadlineStatus }: StatusPillProps) {
+  let pendingStyle = 'bg-slate-100 text-slate-700 border-slate-200 shadow-sm shadow-slate-500/5';
+  
+  if (status === 'Pending') {
+    if (deadlineStatus === 'warning') {
+      pendingStyle = 'bg-amber-100/90 text-amber-900 border-amber-300/70 shadow-sm shadow-amber-500/5';
+    } else if (deadlineStatus === 'danger') {
+      pendingStyle = 'bg-red-100/90 text-red-950 border-red-300/70 shadow-sm shadow-red-500/5';
+    }
+  }
+
   const styles: Record<ReworkCase['status'], string> = {
-    Pending: 'bg-amber-100/90 text-amber-900 border-amber-300/70 shadow-sm shadow-amber-500/5',
+    Pending: pendingStyle,
     'In-Progress': 'bg-sky-100/90 text-sky-950 border-sky-300/70 shadow-sm shadow-sky-500/5',
     'Awaiting Valuation': 'bg-violet-100/90 text-violet-950 border-violet-300/70 shadow-sm shadow-violet-500/5',
     Completed: 'bg-emerald-100/90 text-emerald-950 border-emerald-300/70 shadow-sm shadow-emerald-500/5',
@@ -275,6 +286,8 @@ function StatusPill({ status }: StatusPillProps) {
       whileTap={{ scale: 0.95 }}
       className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${styles[status]}`}
     >
+      {status === 'Pending' && deadlineStatus === 'danger' && <span className="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5 animate-pulse" />}
+      {status === 'Pending' && deadlineStatus === 'warning' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />}
       {status === 'Awaiting Valuation' && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 mr-1.5 animate-pulse" />}
       {thaiLabels[status]}
     </motion.span>

@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useReworkData } from '../../contexts/ReworkDataContext';
+import { createPortal } from 'react-dom';
+import { useNotification } from '../../contexts/NotificationContext';
 import { useItemVerification } from '../../hooks/useItemVerification';
 import type { ReworkItem, ReworkCase } from '../../services/api';
 import { CUSTOMER_OPTIONS, insertCase } from '../../services/api';
@@ -15,6 +17,9 @@ import { ImageUpload } from '../ui/ImageUpload';
 import { AppleProgressBar } from '../ui/AppleProgressBar';
 import { convertDMYToYMD, convertYMDToDMY, findDuplicateItemNumbers } from '../../utils/helpers';
 import { ConflictModal } from '../modals/ConflictModal';
+import { MobileFastTrackApp, FastTrackItem } from '../apps/rework/MobileFastTrackApp';
+import { Combobox } from '../ui/Combobox';
+import { RecentDatePicker } from '../ui/RecentDatePicker';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -33,7 +38,7 @@ interface AddCaseTabProps {
 }
 
 const REASON_MAIN_OPTIONS = ['รั่ว', 'เปื้อน', 'อื่นๆ'] as const;
-const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วขูดเจาะ', 'รั่วโดนเครื่องจักร', 'รั่วกระแทก', 'รั่วตะเข็บ', ' รั่วบุบแตก', 'รอยมีด'] as const;
+const LEAK_SUBTYPES = ['รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน', 'รั่วขูดเจาะ', 'รั่วโดนเครื่องจักร', 'รั่วกระแทก', 'รั่วตะเข็บ', 'รั่วบุบแตก', 'รอยมีด'] as const;
 const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื้อน'] as const;
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
 
@@ -42,6 +47,21 @@ const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };
+
+const COMBINED_REASON_OPTIONS = [
+  ...LEAK_SUBTYPES.map(s => ({ label: s.trim(), value: `รั่ว:${s.trim()}`, group: 'รั่ว' })),
+  { label: 'ขวดเปื้อน', value: 'เปื้อน:ขวดเปื้อน', group: 'เปื้อน' },
+  { label: 'กล่องเปื้อน', value: 'เปื้อน:กล่องเปื้อน', group: 'เปื้อน' },
+  { label: 'ขวดเปื้อน และ กล่องเปื้อน', value: 'เปื้อน:ขวดเปื้อน, กล่องเปื้อน', group: 'เปื้อน' },
+  { label: 'อื่นๆ', value: 'อื่นๆ', group: 'อื่นๆ' }
+];
+
+const COMBINED_RESPONSIBLE_OPTIONS = [
+  ...RESPONSIBLE_SUBDIVISIONS.SFC.map(s => ({ label: s.trim(), value: `SFC:${s.trim()}`, group: 'SFC' })),
+  ...RESPONSIBLE_SUBDIVISIONS.Supplier.map(s => ({ label: s.trim(), value: `Supplier:${s.trim()}`, group: 'Supplier' })),
+  { label: 'Customer', value: 'Customer', group: 'Customer' },
+  { label: 'อื่นๆ', value: 'อื่นๆ', group: 'อื่นๆ' }
+];
 
 const initialFormItem = {
   customerName: '',
@@ -62,6 +82,7 @@ const initialFormItem = {
   linkedSourceId: '',
   verificationStatus: 'idle' as const,
   lastActiveField: 'itemNumber' as const,
+  imageUrls: [] as string[],
 };
 
 const reworkItemSchema = z.object({
@@ -72,10 +93,10 @@ const reworkItemSchema = z.object({
   itemName: z.string(),
   batchNo: z.string().optional().nullable(),
   gallonDate: z.string().optional().nullable(),
-  boxNumber: z.string().optional().nullable(),
+  boxNumber: z.string().optional().nullable().refine((val) => !val || parseInt(val, 10) > 0, { message: 'จำนวนกล่องต้องมากกว่า 0' }),
   mold: z.string().optional().nullable(),
   line: z.string().optional().nullable(),
-  amount: z.union([z.number().min(0), z.nan()]).optional().nullable(),
+  amount: z.union([z.number().min(1, 'จำนวนต้องมากกว่า 0'), z.nan()]).optional().nullable(),
   reason: z.string(),
   reasonSubtype: z.string().optional().nullable(),
   responsible: z.string(),
@@ -83,7 +104,8 @@ const reworkItemSchema = z.object({
   details: z.string().optional().nullable(),
   linkedSourceId: z.string().optional().nullable(),
   verificationStatus: z.string().optional().nullable(),
-  lastActiveField: z.string().optional().nullable()
+  lastActiveField: z.string().optional().nullable(),
+  imageUrls: z.array(z.string()).optional()
 });
 
 const formSchema = z.object({
@@ -96,16 +118,18 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   const { cases, loadCases } = useReworkData();
-  
+  const { showToast, showAlert, showConfirm } = useNotification();
+
+  const [isFastTrackMode, setIsFastTrackMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const [saveMessage, setSaveMessage] = useState<SaveMessage>(null);
-  
+
   const [uploadedImages, setUploadedImages] = useState<Record<string, File[]>>({});
   const [orFiles, setOrFiles] = useState<File[]>([]);
-  
+
   const [selectionModal, setSelectionModal] = useState<SelectionModalState>(null);
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [autoFillTriggeredItem, setAutoFillTriggeredItem] = useState<string | null>(null);
@@ -126,7 +150,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   });
 
   const { control, register, handleSubmit, watch, setValue, getValues, reset } = methods;
-  
+
   const { fields, append, remove, insert, update } = useFieldArray({
     control,
     name: 'items'
@@ -158,9 +182,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             setValue('items', parsed);
           }
-        } catch(e) {}
+        } catch (e) { }
       }
-      
+
       // Allow DOM to update with restored state before enabling animations
       requestAnimationFrame(() => {
         setTimeout(() => setIsRestoring(false), 10);
@@ -180,7 +204,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
   const isSaveDisabled = (items: typeof formItems) => {
     return items.some((item) => {
-      const imgCount = (uploadedImages[item.id] || []).length;
+      const imgCount = (uploadedImages[item.id] || []).length + (item.imageUrls || []).length;
       const isZeroBox = String(item.boxNumber).trim() === '0';
       const isZeroAmount = item.amount === 0;
 
@@ -199,7 +223,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   };
 
   const clearAllForm = () => {
-    if (window.confirm('คุณต้องการล้างข้อมูลที่กรอกค้างไว้ทั้งหมดใช่หรือไม่? ข้อมูลและไฟล์ที่แนบไว้จะหายไปทั้งหมด')) {
+    showConfirm('คุณต้องการล้างข้อมูลที่กรอกค้างไว้ทั้งหมดใช่หรือไม่? ข้อมูลและไฟล์ที่แนบไว้จะหายไปทั้งหมด', () => {
       reset({
         caseSource: 'SFC',
         caseNumber: '',
@@ -207,18 +231,18 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       });
       setUploadedImages({});
       setOrFiles([]);
-    }
+    });
   };
 
   const onSubmit = async (data: FormValues) => {
     if (isSaveDisabled(data.items)) {
-      alert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ห้ามใส่จำนวนเป็น 0, ต้องระบุรหัสสินค้า, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)');
+      showAlert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ห้ามใส่จำนวนเป็น 0, ต้องระบุรหัสสินค้า, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)', 'error');
       return;
     }
 
     const trimmedNumber = data.caseNumber.trim();
     if (!trimmedNumber) {
-      alert('กรุณากรอกหมายเลขเคส (Running Number)');
+      showAlert('กรุณากรอกหมายเลขเคส (Running Number)', 'error');
       return;
     }
 
@@ -227,7 +251,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     const composedCaseId = `${prefix}${trimmedNumber}-${currentYear}`;
 
     if (existingCaseIds.includes(composedCaseId)) {
-      alert(`หมายเลขเคส "${composedCaseId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น`);
+      showAlert(`หมายเลขเคส "${composedCaseId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น`, 'error');
       return;
     }
 
@@ -246,13 +270,13 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       setStatusText('กำลังบันทึกข้อมูลเข้าสู่ฐานข้อมูล...');
 
       const result = await insertCase(data.caseSource, apiItems, uploadedImages, orFiles, composedCaseId);
-      
+
       if (result.success) {
         setProgress(100);
         setStatusText('บันทึกสำเร็จ!');
         setIsComplete(true);
         setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
-        
+
         // Reset form
         setTimeout(() => {
           reset({
@@ -280,6 +304,72 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     }
   };
 
+  const handleFastTrackComplete = (source: string, caseId: string, fastTrackItems: FastTrackItem[]) => {
+    // Switch back to normal mode
+    setIsFastTrackMode(false);
+
+    // Set Case Source and optional Case ID
+    setValue('caseSource', source);
+    if (caseId && !caseId.startsWith('temp-')) {
+      setValue('caseNumber', caseId);
+    }
+
+    // Map Fast Track items to Main Form items
+    const newFormItems = fastTrackItems.map((ftItem, index) => {
+      // Find matching standard subtype if applicable
+      let reasonSubtype = ftItem.reasonSubtype || '';
+
+      // Auto-fill responsible as 'รอระบุ' to force review
+      return {
+        ...initialFormItem,
+        id: `ft-${Date.now()}-${index}`,
+        customerName: source === 'Customer' ? 'Customer' : '', // Fallback
+        itemNumber: ftItem.itemNumber || '',
+        itemCode: ftItem.itemCode || '',
+        itemName: ftItem.itemName || '',
+        amount: ftItem.amount || 0,
+        reason: ftItem.reason || '',
+        reasonSubtype: reasonSubtype,
+        responsible: '', // Force user to fill this in the main form
+        responsibleSubtype: '',
+        batchNo: ftItem.batchNo || '',
+        verificationStatus: 'verified' as const, // Assume verified if they got this far
+        lastActiveField: 'itemNumber' as const,
+        imageUrls: ftItem.imageUrls || []
+      };
+    });
+
+    if (newFormItems.length > 0) {
+      // Get current items and filter out the initial empty template if it's completely blank
+      const currentItems = getValues('items') || [];
+      const validCurrentItems = currentItems.filter(item => 
+        item.itemNumber || item.itemName || item.customerName || (item.imageUrls && item.imageUrls.length > 0) || item.amount > 0
+      );
+
+      // Append the new fast track items to the existing ones
+      setValue('items', [...validCurrentItems, ...newFormItems]);
+
+      // Show success message
+      setSaveMessage({ type: 'success', text: `เพิ่ม ${fastTrackItems.length} รายการจาก Fast-Track เรียบร้อยแล้ว กรุณาระบุรายละเอียดเพิ่มเติม` });
+      setTimeout(() => setSaveMessage(null), 5000);
+    }
+  };
+
+  if (isFastTrackMode) {
+    if (typeof document === 'undefined') return null;
+    return createPortal(
+      <div className="fixed inset-0 z-[60] bg-white">
+        <MobileFastTrackApp
+          initialSource={getValues('caseSource') as "SFC" | "Customer"}
+          initialCaseId={getValues('caseNumber')}
+          onComplete={handleFastTrackComplete}
+          onCancel={() => setIsFastTrackMode(false)}
+        />
+      </div>,
+      document.body
+    );
+  }
+
   return (
     <FormProvider {...methods}>
       <div
@@ -291,6 +381,13 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             <p className="mt-1 text-xs md:text-sm text-muted">เพิ่มข้อมูลล็อตสินค้าที่พบคราบหรือความเสียหายเพื่อบันทึกเข้าสู่ระบบ</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsFastTrackMode(true)}
+              className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-600 shadow-sm transition-all hover:bg-blue-100 active:scale-95"
+            >
+              <Plus size={12} /> เข้าสู่ Fast-Track (มือถือ)
+            </button>
             <button
               type="button"
               onClick={clearAllForm}
@@ -309,13 +406,19 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="ml-1 text-xs font-semibold text-slate-500">แหล่งที่มาของงาน (Source) *</label>
-                <select
-                  {...register('caseSource')}
-                  className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
-                >
-                  <option value="SFC">SFC</option>
-                  <option value="Customer">Customer</option>
-                </select>
+                <Controller
+                  control={control}
+                  name="caseSource"
+                  render={({ field }) => (
+                    <Combobox
+                      options={['SFC', 'Customer']}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="เลือกแหล่งที่มา"
+                      className="bg-slate-50/50 font-normal"
+                    />
+                  )}
+                />
               </div>
 
               <div className="space-y-2">
@@ -352,7 +455,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 })()}
               </div>
             </div>
-            
+
             {formItems.length > 0 && formItems.every(item => item.customerName === 'OR') && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mt-6 border-t border-slate-100 pt-6">
                 <div className="rounded-2xl bg-amber-50 p-6 border border-amber-100">
@@ -399,387 +502,357 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
           <div className="flex flex-col">
             <AnimatePresence initial={false}>
-            {fields.map((field, idx) => {
-              const item = formItems[idx];
-              if (!item) return null;
-              
-              return (
-              <motion.div
-                key={field.id}
-                id={`form-card-wrapper-${item.id}`}
-                initial={isRestoring ? false : { opacity: 0, height: 0, scale: 0.98, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 'auto', scale: 1, marginBottom: 24 }}
-                exit={{ opacity: 0, height: 0, scale: 0.95, marginBottom: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="relative overflow-hidden"
-              >
-                <div 
-                  id={`form-card-${item.id}`}
-                  className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
-                  <div className="mb-8 flex items-center justify-between">
-                  <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
-                    <Plus size={16} /> รายการที่ {idx + 1}
-                    {item.verificationStatus === 'verified' && (
-                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> พบในระบบ
-                      </span>
-                    )}
-                    {item.verificationStatus === 'new' && (
-                      <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> สินค้าใหม่
-                      </span>
-                    )}
-                    {item.verificationStatus === 'checking' && (
-                      <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
-                      </span>
-                    )}
-                  </h3>
-                </div>
+              {fields.map((field, idx) => {
+                const item = formItems[idx];
+                if (!item) return null;
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  <div className="space-y-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
-                    <select
-                      {...register(`items.${idx}.customerName`)}
-                      className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none disabled:opacity-50 h-[46px]"
-                      disabled={isSaving}
+                return (
+                  <motion.div
+                    key={field.id}
+                    id={`form-card-wrapper-${item.id}`}
+                    initial={isRestoring ? false : { opacity: 0, height: 0, scale: 0.98, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: 'auto', scale: 1, marginBottom: 24 }}
+                    exit={{ opacity: 0, height: 0, scale: 0.95, marginBottom: 0 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative overflow-hidden"
+                  >
+                    <div
+                      id={`form-card-${item.id}`}
+                      className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
                     >
-                      <option value="">กรุณาเลือก</option>
-                      {CUSTOMER_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between ml-1 mb-1.5">
-                      <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
-                    </div>
-                    <div className="relative flex items-center">
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        {...register(`items.${idx}.itemNumber`, {
-                          onChange: (e) => {
-                            const val = e.target.value.replace(/[<>]/g, '').slice(0, 50);
-                            setValue(`items.${idx}.lastActiveField`, 'itemNumber');
-                            triggerDebouncedVerification(item.id, idx, 'itemNumber', val);
-                          }
-                        })}
-                        placeholder="เช่น 60001234A"
-                        disabled={isSaving}
-                        className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
-                        disabled={isSaving || !item.itemNumber}
-                        className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
-                      >
-                        <Search size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between ml-1 mb-1.5">
-                      <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
-                    </div>
-                    <div className="relative flex items-center">
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        {...register(`items.${idx}.itemCode`, {
-                          onChange: (e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 50);
-                            setValue(`items.${idx}.lastActiveField`, 'itemCode');
-                            triggerDebouncedVerification(item.id, idx, 'itemCode', val);
-                          }
-                        })}
-                        placeholder="เช่น 40001234"
-                        disabled={isSaving}
-                        className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
-                        disabled={isSaving || !item.itemCode}
-                        className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
-                      >
-                        <Search size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <InputField label="ชื่อรายการ (Item Name) *" {...register(`items.${idx}.itemName`)} disabled={isSaving} />
-                </div>
-
-                <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                  <div className="col-span-2 sm:col-span-1">
-                    <Controller
-                      control={control}
-                      name={`items.${idx}.batchNo`}
-                      render={({ field }) => (
-                        <InputField label="หมายเลขล็อต (Batch no.)" type="date" value={convertDMYToYMD(field.value || '')} onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(convertYMDToDMY(e.target.value))} disabled={isSaving} />
-                      )}
-                    />
-                  </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <Controller
-                      control={control}
-                      name={`items.${idx}.gallonDate`}
-                      render={({ field }) => (
-                        <InputField label="วันที่ผลิตแกลลอน" type="date" value={convertDMYToYMD(field.value || '')} onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(convertYMDToDMY(e.target.value))} disabled={isSaving} />
-                      )}
-                    />
-                  </div>
-                  <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
-                </div>
-
-                <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ *</label>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <select
-                          {...register(`items.${idx}.reason`, {
-                            onChange: (e) => {
-                              setValue(`items.${idx}.reasonSubtype`, '');
-                              if (e.target.value !== 'รั่ว' && e.target.value !== 'เปื้อน') setExpandedReasonSelection(null);
-                            }
-                          })}
-                          className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
-                        >
-                          <option value="">กรุณาเลือก</option>
-                          {REASON_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedReasonSelection(expandedReasonSelection === idx ? null : idx)}
-                            className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20"
-                          >
-                            เลือก
-                          </button>
-                        )}
-                      </div>
-                      <AnimatePresence>
-                        {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && expandedReasonSelection === idx && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
-                            {(item.reason === 'รั่ว' ? LEAK_SUBTYPES : STAIN_SUBTYPES).map(subtype => {
-                              const isSelected = item.reason === 'รั่ว' ? item.reasonSubtype === subtype : (item.reasonSubtype || '').split(', ').includes(subtype);
-                              return (
-                                <button
-                                  key={subtype}
-                                  type="button"
-                                  onClick={() => {
-                                    if (item.reason === 'รั่ว') {
-                                      setValue(`items.${idx}.reasonSubtype`, subtype);
-                                      setExpandedReasonSelection(null);
-                                    } else {
-                                      const current = (item.reasonSubtype || '').split(', ').filter(Boolean);
-                                      const pos = current.indexOf(subtype);
-                                      if (pos > -1) current.splice(pos, 1);
-                                      else current.push(subtype);
-                                      setValue(`items.${idx}.reasonSubtype`, current.join(', '));
-                                    }
-                                  }}
-                                  className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isSelected ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
-                                >{subtype}</button>
-                              );
-                            })}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {item.reasonSubtype && (
-                        <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
-                          <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
-                          <p className="text-sm font-semibold text-accent">{item.reasonSubtype}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ *</label>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <select
-                          {...register(`items.${idx}.responsible`, {
-                            onChange: (e) => {
-                              setValue(`items.${idx}.responsibleSubtype`, '');
-                              if (e.target.value !== 'SFC' && e.target.value !== 'Supplier') setExpandedResponsibleSelection(null);
-                            }
-                          })}
-                          className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
-                        >
-                          <option value="">กรุณาเลือก</option>
-                          {RESPONSIBLE_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        {(item.responsible === 'SFC' || item.responsible === 'Supplier') && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedResponsibleSelection(expandedResponsibleSelection === idx ? null : idx)}
-                            className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent"
-                          >
-                            เลือก
-                          </button>
-                        )}
-                      </div>
-                      <AnimatePresence>
-                        {(item.responsible === 'SFC' || item.responsible === 'Supplier') && expandedResponsibleSelection === idx && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
-                            {(RESPONSIBLE_SUBDIVISIONS[item.responsible] || []).map(subtype => (
-                              <button
-                                key={subtype}
-                                type="button"
-                                onClick={() => {
-                                  setValue(`items.${idx}.responsibleSubtype`, subtype);
-                                  setExpandedResponsibleSelection(null);
-                                }}
-                                className={`rounded-xl px-4 py-3 text-sm font-semibold ${item.responsibleSubtype === subtype ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
-                              >{subtype}</button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {item.responsibleSubtype && (
-                        <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
-                          <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
-                          <p className="text-sm font-semibold text-accent">{item.responsibleSubtype}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {item.reason === 'เปื้อน' && formItems.some((i, iidx) => i.reason === 'รั่ว' && iidx !== idx) && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-8 overflow-hidden">
-                    <div className="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-5 transition-all">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                            <HelpCircle size={20} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-amber-900">ระบุความเชื่อมโยง (Cross-Item Link)</p>
-                            <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-amber-700">
-                              <input
-                                type="checkbox"
-                                checked={!!item.linkedSourceId}
-                                onChange={(e) => {
-                                  if (!e.target.checked) setValue(`items.${idx}.linkedSourceId`, '');
-                                  else {
-                                    const leaks = formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx);
-                                    if (leaks.length === 1) setValue(`items.${idx}.linkedSourceId`, leaks[0].id);
-                                  }
-                                }}
-                                className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                              />
-                              สาเหตุมาจากไอเทมที่รั่วในเคสนี้
-                            </label>
-                          </div>
-                        </div>
-
-                        <AnimatePresence>
-                          {item.linkedSourceId && (
-                            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1.5">
-                              <label className="text-xs font-semibold text-amber-900/60">ไอเทมต้นเหตุ *</label>
-                              <select
-                                {...register(`items.${idx}.linkedSourceId`)}
-                                className="min-w-[200px] rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm focus:border-amber-500 focus:outline-none"
-                              >
-                                <option value="">-- เลือกรายการ --</option>
-                                {formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx).map(leak => (
-                                  <option key={leak.id} value={leak.id}>
-                                    {leak.itemNumber || 'ไม่ระบุเบอร์'} - {leak.itemName || 'ไม่ระบุชื่อ'}
-                                  </option>
-                                ))}
-                              </select>
-                            </motion.div>
+                      <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
+                      <div className="mb-8 flex items-center justify-between">
+                        <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
+                          <Plus size={16} /> รายการที่ {idx + 1}
+                          {item.verificationStatus === 'verified' && (
+                            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> พบในระบบ
+                            </span>
                           )}
-                        </AnimatePresence>
+                          {item.verificationStatus === 'new' && (
+                            <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> สินค้าใหม่
+                            </span>
+                          )}
+                          {item.verificationStatus === 'checking' && (
+                            <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
+                            </span>
+                          )}
+                        </h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <div className="space-y-2">
+                          <label className="ml-1 text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
+                          <Controller
+                            control={control}
+                            name={`items.${idx}.customerName`}
+                            render={({ field }) => (
+                              <Combobox
+                                options={CUSTOMER_OPTIONS as any}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="กรุณาเลือก"
+                                searchPlaceholder="ค้นหาชื่อลูกค้า..."
+                                className="bg-slate-50/50 font-normal"
+                              />
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between ml-1 mb-1.5">
+                            <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
+                          </div>
+                          <div className="relative flex items-center">
+                            <input
+                              type="text"
+                              autoComplete="off"
+                              {...register(`items.${idx}.itemNumber`, {
+                                onChange: (e) => {
+                                  const val = e.target.value.replace(/[<>]/g, '').slice(0, 50);
+                                  setValue(`items.${idx}.lastActiveField`, 'itemNumber');
+                                  triggerDebouncedVerification(item.id, idx, 'itemNumber', val);
+                                }
+                              })}
+                              placeholder="เช่น 60001234A"
+                              disabled={isSaving}
+                              className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
+                              disabled={isSaving || !item.itemNumber}
+                              className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                            >
+                              <Search size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between ml-1 mb-1.5">
+                            <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
+                          </div>
+                          <div className="relative flex items-center">
+                            <input
+                              type="text"
+                              autoComplete="off"
+                              {...register(`items.${idx}.itemCode`, {
+                                onChange: (e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 50);
+                                  setValue(`items.${idx}.lastActiveField`, 'itemCode');
+                                  triggerDebouncedVerification(item.id, idx, 'itemCode', val);
+                                }
+                              })}
+                              placeholder="เช่น 40001234"
+                              disabled={isSaving}
+                              className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
+                              disabled={isSaving || !item.itemCode}
+                              className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                            >
+                              <Search size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mb-8">
+                        <InputField label="ชื่อรายการ (Item Name) *" {...register(`items.${idx}.itemName`)} disabled={isSaving} />
+                      </div>
+
+                      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                        <div className="col-span-2 sm:col-span-1">
+                          <Controller
+                            control={control}
+                            name={`items.${idx}.batchNo`}
+                            render={({ field }) => (
+                              <RecentDatePicker
+                                label="หมายเลขล็อต (Batch no.)"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                disabled={isSaving}
+                              />
+                            )}
+                          />
+                        </div>
+                        <div className="col-span-2 sm:col-span-1">
+                          <Controller
+                            control={control}
+                            name={`items.${idx}.gallonDate`}
+                            render={({ field }) => (
+                              <RecentDatePicker
+                                label="วันที่ผลิตแกลลอน"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                disabled={isSaving}
+                              />
+                            )}
+                          />
+                        </div>
+                        <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
+                      </div>
+
+                      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ *</label>
+                          <div className="space-y-2">
+                            <Controller
+                              control={control}
+                              name={`items.${idx}.reason`}
+                              render={({ field }) => {
+                                const reasonVal = watch(`items.${idx}.reason`);
+                                const subtypeVal = watch(`items.${idx}.reasonSubtype`);
+                                const composedValue = subtypeVal ? `${reasonVal}:${subtypeVal}` : reasonVal;
+                                return (
+                                  <Combobox
+                                    options={COMBINED_REASON_OPTIONS}
+                                    value={composedValue}
+                                    onChange={(val) => {
+                                      if (val.includes(':')) {
+                                        const [r, s] = val.split(':');
+                                        setValue(`items.${idx}.reason`, r);
+                                        setValue(`items.${idx}.reasonSubtype`, s);
+                                      } else {
+                                        setValue(`items.${idx}.reason`, val);
+                                        setValue(`items.${idx}.reasonSubtype`, '');
+                                      }
+                                    }}
+                                    placeholder="เลือกสาเหตุ..."
+                                    className="bg-slate-50/50 font-normal"
+                                  />
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ *</label>
+                          <div className="space-y-2">
+                            <Controller
+                              control={control}
+                              name={`items.${idx}.responsible`}
+                              render={({ field }) => {
+                                const respVal = watch(`items.${idx}.responsible`);
+                                const subtypeVal = watch(`items.${idx}.responsibleSubtype`);
+                                const composedValue = (respVal === 'Customer' || respVal === 'อื่นๆ') 
+                                  ? respVal 
+                                  : (subtypeVal ? `${respVal}:${subtypeVal}` : respVal);
+                                return (
+                                  <Combobox
+                                    options={COMBINED_RESPONSIBLE_OPTIONS}
+                                    value={composedValue}
+                                    onChange={(val) => {
+                                      if (val.includes(':')) {
+                                        const [r, s] = val.split(':');
+                                        setValue(`items.${idx}.responsible`, r);
+                                        setValue(`items.${idx}.responsibleSubtype`, s);
+                                      } else {
+                                        setValue(`items.${idx}.responsible`, val);
+                                        setValue(`items.${idx}.responsibleSubtype`, '');
+                                      }
+                                    }}
+                                    placeholder="เลือกผู้รับผิดชอบ..."
+                                    className="bg-slate-50/50 font-normal"
+                                  />
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {item.reason === 'เปื้อน' && formItems.some((i, iidx) => i.reason === 'รั่ว' && iidx !== idx) && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-8 overflow-hidden">
+                          <div className="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-5 transition-all">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                                  <HelpCircle size={20} />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-amber-900">ระบุความเชื่อมโยง (Cross-Item Link)</p>
+                                  <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-amber-700">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!item.linkedSourceId}
+                                      onChange={(e) => {
+                                        if (!e.target.checked) setValue(`items.${idx}.linkedSourceId`, '');
+                                        else {
+                                          const leaks = formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx);
+                                          if (leaks.length === 1) setValue(`items.${idx}.linkedSourceId`, leaks[0].id);
+                                        }
+                                      }}
+                                      className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                    />
+                                    สาเหตุมาจากไอเทมที่รั่วในเคสนี้
+                                  </label>
+                                </div>
+                              </div>
+
+                              <AnimatePresence>
+                                {item.linkedSourceId && (
+                                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-semibold text-amber-900/60">ไอเทมต้นเหตุ *</label>
+                                    <select
+                                      {...register(`items.${idx}.linkedSourceId`)}
+                                      className="min-w-[200px] rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm focus:border-amber-500 focus:outline-none"
+                                    >
+                                      <option value="">-- เลือกรายการ --</option>
+                                      {formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx).map(leak => (
+                                        <option key={leak.id} value={leak.id}>
+                                          {leak.itemNumber || 'ไม่ระบุเบอร์'} - {leak.itemName || 'ไม่ระบุชื่อ'}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="ml-1 text-xs font-semibold text-slate-500">รายละเอียดเพิ่มเติม</label>
+                          <textarea
+                            rows={3}
+                            {...register(`items.${idx}.details`)}
+                            placeholder="ระบุรายละเอียดเพิ่มเติม..."
+                            className="w-full resize-none rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="md:col-span-1">
+                          <ImageUpload
+                            itemIndex={idx}
+                            onImagesSelected={(files) => setUploadedImages(prev => ({ ...prev, [item.id]: files }))}
+                            onUrlsChange={(urls) => setValue(`items.${idx}.imageUrls`, urls)}
+                            currentImages={uploadedImages[item.id] || []}
+                            initialImageUrls={item.imageUrls || []}
+                            maxImages={5}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ duration: 0.12 }}
+                          onClick={() => {
+                            const dup = { ...item, id: `form-${Date.now()}` };
+                            insert(idx + 1, dup);
+                          }}
+                          className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition-colors"
+                        >
+                          <Copy size={16} /> คัดลอกรายการ
+                        </motion.button>
+                        {fields.length > 1 ? (
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ duration: 0.12 }}
+                            onClick={() => {
+                              remove(idx);
+                              setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
+                            }}
+                            className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                          >
+                            <Trash2 size={16} /> ลบรายการ
+                          </motion.button>
+                        ) : (
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ duration: 0.12 }}
+                            onClick={() => {
+                              update(idx, { ...initialFormItem, id: item.id });
+                              setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
+                            }}
+                            className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
+                          >
+                            <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
+                          </motion.button>
+                        )}
                       </div>
                     </div>
                   </motion.div>
-                )}
-
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">รายละเอียดเพิ่มเติม</label>
-                    <textarea
-                      rows={3}
-                      {...register(`items.${idx}.details`)}
-                      placeholder="ระบุรายละเอียดเพิ่มเติม..."
-                      className="w-full resize-none rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-1">
-                    <ImageUpload
-                      itemIndex={idx}
-                      onImagesSelected={(files) => setUploadedImages(prev => ({ ...prev, [item.id]: files }))}
-                      currentImages={uploadedImages[item.id] || []}
-                      maxImages={5}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ duration: 0.12 }}
-                    onClick={() => {
-                      const dup = { ...item, id: `form-${Date.now()}` };
-                      insert(idx + 1, dup);
-                    }}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition-colors"
-                  >
-                    <Copy size={16} /> คัดลอกรายการ
-                  </motion.button>
-                  {fields.length > 1 ? (
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ duration: 0.12 }}
-                      onClick={() => {
-                        remove(idx);
-                        setUploadedImages(prev => { const n = {...prev}; delete n[item.id]; return n; });
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                    >
-                      <Trash2 size={16} /> ลบรายการ
-                    </motion.button>
-                  ) : (
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ duration: 0.12 }}
-                      onClick={() => {
-                        update(idx, { ...initialFormItem, id: item.id });
-                        setUploadedImages(prev => { const n = {...prev}; delete n[item.id]; return n; });
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
-                    >
-                      <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
-                    </motion.button>
-                  )}
-                  </div>
-                </div>
-              </motion.div>
-            );})}
+                );
+              })}
             </AnimatePresence>
 
             <AnimatePresence mode="wait">

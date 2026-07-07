@@ -14,7 +14,7 @@
               "type": "graph",
               "state": {},
               "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "title": "มุมมองกราฟ"
             }
           }
         ]
@@ -40,7 +40,7 @@
                 "autoReveal": false
               },
               "icon": "lucide-folder-closed",
-              "title": "Files"
+              "title": "File explorer"
             }
           },
           {
@@ -167,17 +167,30 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:Open quick switcher": false,
-      "graph:Open graph view": false,
-      "canvas:Create new canvas": false,
-      "daily-notes:Open today's daily note": false,
-      "templates:Insert template": false,
-      "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "switcher:เปิด quick switcher": false,
+      "graph:เปิดมุมมองกราฟ": false,
+      "canvas:สร้างผืนผ้าใบใหม่": false,
+      "daily-notes:เปิดโน้ตของวันนี้": false,
+      "templates:แทรกเทมเพลต": false,
+      "command-palette:เปิดกระดานคำสั่ง": false,
+      "bases:สร้างฐานใหม่": false
     }
   },
   "active": "d1fb03d42cec95a6",
   "lastOpenFiles": [
+    "1_raw/DietrichGebertponytail Makes your AI agent think like the laziest senior dev in the room. The best code is the code you never wrote.md",
+    "picture/screencapture-ui-design-dictionary-pages-dev-2026-06-29-20_13_39.png",
+    "1_raw/screencapture-ui-design-dictionary-pages-dev-2026-06-29-20_13_39.png",
+    "2_wiki/nextjs-frontend/ui-glossary.md",
+    "2_wiki/agent-frameworks/ponytail-lazy-dev.md",
+    "2_wiki/agent-frameworks/agent-dev-thai.md",
+    "AGENTS.md",
+    "1_raw/opendataloader-projectopendataloader-pdf PDF Parser for AI-ready data. Automate PDF accessibility. Open-source.md",
+    "1_raw/Agent Dev Thai - AI เดา โกหก ทำเกิน ลืม ไม่ใช่เพราะ model แย่.md",
+    "1_raw/A complete UI glossary 100 terms all designers should know.md",
+    "picture",
+    "New folder",
+    "1_raw/AI Motion Designer & Animator.md",
     "2_wiki/lessons-learned/text-clipping-ui.md",
     "1_raw/AGENTS.md",
     "1_raw/PRODUCT.md",
@@ -197,16 +210,6 @@
     "2_wiki/lessons-learned/bugs-and-fixes.md",
     "2_wiki/lessons-learned",
     "1_raw/CSP_FIX_IMPLEMENTATION.md",
-    "1_raw/CORS_SETUP_GUIDE.md",
-    "1_raw/CORS_FIX_GUIDE.md",
-    "1_raw/CORS_ERROR_FIX.md",
-    "1_raw/COMPLETION_REPORT.md",
-    "1_raw/CODE_COMPARISON.md",
-    "1_raw/CHANGES_LOG.md",
-    "1_raw/central_portal_plan.md",
-    "1_raw/BUG_FIX_VERIFICATION.md",
-    "1_raw/BUG_FIX_REPORT.md",
-    "1_raw/BUG_FIX_CHANGELOG.md",
     "1_raw/metadata.json",
     "1_raw/ERROR_HANDLING_SETUP.ts"
   ]

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { generateToken } from '../../../../lib/serverAuth';
 import { cookies } from 'next/headers';
+import { supabaseServer } from '../../../../lib/supabaseServer';
+import crypto from 'crypto';
 
 export async function POST(request: Request) {
   try {
@@ -8,15 +10,26 @@ export async function POST(request: Request) {
     const { profile, password } = body;
     const profileLower = (profile || '').toLowerCase();
 
-    // MOCK ACCOUNTS
-    const mockAccounts: Record<string, { pass: string, role: string, name: string }> = {
-      'qsms': { pass: process.env.MOCK_PASS_QSMS || 'Qsms123', role: 'qsms', name: 'QSMS Test' },
-      'operator': { pass: process.env.MOCK_PASS_OPERATOR || 'Operator123', role: 'operator', name: 'Operator Test' },
-      'finance': { pass: process.env.MOCK_PASS_FINANCE || 'Finance123', role: 'finance', name: 'Finance Test' }
-    };
+    // Query user from Supabase
+    const { data: user, error: fetchError } = await supabaseServer
+      .from('users')
+      .select('id, username, password_hash, name, role')
+      .eq('username', profileLower)
+      .single();
 
-    if (mockAccounts[profileLower] && mockAccounts[profileLower].pass === password) {
-      const role = mockAccounts[profileLower].role;
+    if (fetchError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'รหัสผ่านหรือชื่อผู้ใช้ไม่ถูกต้อง' },
+        { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    }
+
+    // Verify password
+    const [salt, hash] = user.password_hash.split(':');
+    const verifyHash = crypto.scryptSync(password, salt, 64).toString('hex');
+
+    if (hash === verifyHash) {
+      const role = user.role.toLowerCase();
       const token = await generateToken(profileLower, role);
 
       // Set HTTP-Only Cookie
@@ -36,8 +49,8 @@ export async function POST(request: Request) {
           success: true,
           data: {
             user: {
-              email: `${profileLower}@test.com`,
-              name: mockAccounts[profileLower].name,
+              email: profileLower,
+              name: user.name,
               role: role
             },
             expiresIn: 8 * 3600

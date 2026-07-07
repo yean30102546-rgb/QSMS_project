@@ -1,29 +1,38 @@
 'use client';
 
-import React from 'react';
-import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, RotateCcw, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Tabs, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
 
 interface RosterControlsProps {
   monthLabel: string;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
-  activeTab: 'summary' | 'calendar';
-  onTabChange: (tab: 'summary' | 'calendar') => void;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
   onResetOverrides: () => void;
+  onAddEmployee: (name: string) => void;
 }
 
 export function RosterControls({
   monthLabel,
   onPreviousMonth,
   onNextMonth,
-  activeTab,
-  onTabChange,
   onResetOverrides,
+  onAddEmployee,
 }: RosterControlsProps) {
+  const [newEmployeeName, setNewEmployeeName] = useState('');
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newEmployeeName.trim()) {
+      onAddEmployee(newEmployeeName.trim());
+      setNewEmployeeName('');
+    }
+  };
+
   return (
-    <section className="mb-6 flex flex-wrap items-center justify-between gap-4 bg-white border border-[#e4e4e7] rounded-2xl p-4 shadow-sm">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -46,39 +55,38 @@ export function RosterControls({
         </motion.button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Tabs 
-          value={activeTab} 
-          onValueChange={(v) => onTabChange(v as 'summary' | 'calendar')}
-          className="bg-[#f4f4f5] p-1 rounded-xl"
-        >
-          <TabsList className="bg-transparent border-none p-0 gap-1 h-auto">
-            <TabsTrigger 
-              value="summary"
-              className="px-4 py-1.5 rounded-lg text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-[#18181b] data-[state=active]:shadow-sm text-[#71717a] transition-all"
-            >
-              📊 ภาพรวม
-            </TabsTrigger>
-            <TabsTrigger 
-              value="calendar"
-              className="px-4 py-1.5 rounded-lg text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-[#18181b] data-[state=active]:shadow-sm text-[#71717a] transition-all"
-            >
-              📅 ปฏิทิน
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex flex-wrap items-center gap-3">
+        <form onSubmit={handleAdd} className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="ชื่อพนักงานใหม่..."
+            value={newEmployeeName}
+            onChange={(e) => setNewEmployeeName(e.target.value)}
+            className="w-48 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            disabled={!newEmployeeName.trim()}
+            className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-blue-300"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">เพิ่มพนักงาน</span>
+          </button>
+        </form>
+
+        <div className="h-6 w-px bg-slate-200" />
 
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           type="button"
           onClick={onResetOverrides}
-          className="border border-[#e4e4e7] bg-white hover:bg-[#fafafa] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#3f3f46] transition-colors inline-flex items-center gap-1.5"
+          className="border border-[#e4e4e7] bg-white hover:bg-[#fafafa] rounded-lg px-3 py-1.5 text-sm font-semibold text-[#3f3f46] transition-colors inline-flex items-center gap-1.5"
         >
-          <RotateCcw size={13} />
-          ล้างการสลับ
+          <RotateCcw size={16} />
+          ล้างการสลับเสาร์
         </motion.button>
       </div>
-    </section>
+    </div>
   );
 }

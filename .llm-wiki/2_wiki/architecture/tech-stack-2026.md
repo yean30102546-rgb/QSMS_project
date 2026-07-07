@@ -73,12 +73,13 @@
 ## 10. Relevance กับ QSMS Project
 | QSMS ใช้ | เทียบกับ Trend 2026 |
 |---|---|
-| Next.js + React | ✅ Modern Web Stack มาตรฐาน |
-| TypeScript | ✅ ต้องใช้ทุก stack จริงจัง |
-| Tailwind CSS | ✅ Styling standard |
-| Google Sheets | ⚠️ Non-standard (แทน PostgreSQL) — เหมาะสำหรับ small-scale |
-| GAS as Backend | ⚠️ Serverless approach — ประหยัดค่าใช้จ่าย แต่ limited |
-| No Vector DB | ℹ️ ไม่จำเป็นตอนนี้ — หาก integrate AI ในอนาคตควรพิจารณา |
+| Next.js 16.2.6 + React 19 | ✅ Modern Web Stack มาตรฐานล่าสุด พร้อม App Router |
+| TypeScript + Zod | ✅ Type-safety สูงในทุกเลเยอร์ |
+| Tailwind CSS v4 | ✅ Styling standard รุ่นล่าสุด (Vite/PostCSS plugins) |
+| Supabase (Auth, Storage, DB) | ✅ Serverless PostgreSQL แทน Google Sheets ครอบคลุมการทำงานหลัก |
+| Google Apps Script (GAS) | ⚠️ ทำหน้าที่เป็น Fallback หรือ Sidecar ในบางโฟลว์เท่านั้น |
+| Vitest + Playwright | ✅ Testing Pipeline ควบคุมคุณภาพระดับโมเดิร์น |
+| Gemini API + Jina + pgvector | ✅ รองรับฟีเจอร์ AI และ Semantic Search เต็มรูปแบบ (DocAI RAG) |
 
 ## 11. Modern Full-Stack LMS Tech Stack (NotebookLM 2026 Ingestion)
 ถอดรหัสคู่มือการพัฒนา Full-Stack Web Application (เช่น ระบบ LMS) เพื่อทดแทน WordPress ด้วยเทคโนโลยีปี 2026 ที่เน้นความเร็ว ความคุ้มค่า และ Type-safety 100% ตั้งแต่หน้าบ้านถึงหลังบ้าน:

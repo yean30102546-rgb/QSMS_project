@@ -146,5 +146,23 @@ Knowledge สำคัญที่ได้:
 - **Git**: Commit การเปลี่ยนแปลงระบบ Integrity ทั้งหมดเข้าสู่ `main` branch
 - **Wiki Update**: อัปเดตบทเรียนการจัดการ Integrity และ Conflict ใน [item-master-upsert-flow.md](file:///c:/Workplace/QSMS_project/web-app-wiki/2_wiki/lessons-learned/item-master-upsert-flow.md)
 
+## 2026-06-29
+
+### [Librarian] ปรับปรุงบทบาท AI บรรณารักษ์ (Second Brain Protocol)
+- แก้ไขไฟล์ [AGENTS.md](file:///c:/Workplace/Agent%20setup/.llm-wiki/AGENTS.md) ปรับปรุงกฎระเบียบของ AI Agent ให้ทำหน้าที่ดูแล จัดระบบ และรวบรวมคลังความรู้ Second Brain อย่างเดียวตามที่ผู้ใช้สั่ง ตัดโค้ดดิ้งและดีบั๊กกิ้งโปรโตคอลการทำแอปออกเพื่อประหยัด Token ในเซสชันถัดไป
+
+### [Ingest & Synthesis] นำเข้าคลังข้อมูลดิบใน 1_raw/ ใหม่ทั้งหมดและเชื่อมโยงความรู้
+ดำเนินการ Ingest ข้อมูลที่ค้างอยู่จาก `1_raw/` เข้าสู่คลังความรู้ถาวร `2_wiki/` สมบูรณ์ 100%:
+- **Agent Dev Thai Ingestion**: สร้าง [[agent-frameworks/agent-dev-thai.md]] จากไฟล์ดิบ `Agent Dev Thai - AI เดา โกหก ทำเกิน ลืม...md` บันทึกกฎกันพฤติกรรมเอเจนต์พัง (4 Guardrails) และโครงสร้างบันทึก Memory.md
+- **Ponytail Lazy Dev Ingestion**: สร้าง [[agent-frameworks/ponytail-lazy-dev.md]] จากไฟล์ดิบ `DietrichGebertponytail...md` บันทึกบันไดความขี้เกียจของนักพัฒนา 7 ขั้น (YAGNI & Laziness Ladder) เพื่อจำกัดจำนวนบรรทัดโค้ดสะสม
+- **UI Glossary & Visual Dictionary Ingestion**: อัปเดต [[nextjs-frontend/ui-glossary.md]] จากไฟล์ดิบ `A complete UI glossary...md` และคัดลอกไฟล์รูปภาพสกรีนช็อต `screencapture-ui-design-dictionary-pages-dev-2026-06-29-20_13_39.png` ไปที่โฟลเดอร์ `.llm-wiki/picture/` พร้อมจำแนกและระบุรายการดีไซน์แพทเทิร์น 15 หมวดหมู่หลัก (118 รายการย่อย) เพื่อใช้เป็นดัชนีนำทางรูปแบบภาพสำหรับการออกแบบ UI
+- **Mantine UI Ingestion**: อัปเดต [[lessons-learned/ui-libraries-resource.md]] ดึงข้อมูลจากไฟล์ดิบ `A fully featured React components library.md` บันทึกรายละเอียดของ `@mantine/form`, dates, tiptap, combobox, และเอกสาร `llms.txt` สำหรับเอเจนต์
+- **Auth Flow & Roles Update**: อัปเดต [[nextjs-frontend/auth-flow.md]] และ [[nextjs-frontend/roles.md]] ดึงข้อมูลจากไฟล์ดิบ `AUTHENTICATION_IMPLEMENTATION_47689780.md` พร้อมใส่ข้อขัดแย้งเก่า-ใหม่ของบทบาท (Conflict Note)
+- **Portal Shell Update**: อัปเดต [[nextjs-frontend/portal-shell.md]] เชื่อมโยงกับไฟล์แผนงาน `central_portal_plan_603507707.md`
+- **CORS Fix Update**: อัปเดต [[architecture/cors-csp-setup.md]] เชื่อมโยงกับไฟล์คำแนะนำแก้บั๊ก `CORS_FIX_GUIDE_1557533658.md`
+- **Development Learnings backfill**: รีไรท์ [[lessons-learned/development-learnings.md]] ดึงข้อมูลบทเรียนการพัฒนาทั้งหมด 36 รายการในอดีตจากไฟล์ดิบ `ForLearning_1941763098.md` สรุปอาการและโซลูชันแก้ไขในรูปแบบที่สแกนง่าย
+- **Consolidated Flat Index**: รีไรท์สารบัญหลัก [[index.md]] ใหม่ทั้งหมด ลงทะเบียนลิงก์สัมบูรณ์ชี้ไปยังหน้าความรู้ทั้งหมด 64 ไฟล์จำแนกตามโครงสร้างโฟลเดอร์ 7 หมวดหมู่
+
+
 
 

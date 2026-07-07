@@ -30,7 +30,7 @@
 ### 🤖 DocAI RAG Module (ระบบถามตอบปัญญาประดิษฐ์จากคลังเอกสาร)
 - **Nong Beepa Persona** - แชทถามตอบข้อสงสัยภาษาไทยกับ "น้องผึ้งพา" ด้วยน้ำเสียงที่เป็นกันเอง สุภาพ และมีภาพลักษณ์แบรนด์ที่น่ารักเพื่อช่วยลดความตึงเครียดในโรงงาน
 - **Hybrid Search Engine** - ค้นหาคำตอบจากเอกสารอ้างอิงที่มีความแม่นยำสูง ด้วยการผสานกำลังระหว่าง Vector Search (Supabase pgvector + Jina Embeddings `jina-embeddings-v5-text-small` ขนาด 768 มิติ) และ Full-Text Search สำหรับจับคีย์เวิร์ดเฉพาะทาง
-- **RAG Ingestion Pipeline** - แปลงเอกสาร PDF แยกรายหน้าเป็นรูปภาพ JPEG บนเบราว์เซอร์ด้วย `pdfjs-dist` อัปโหลดขึ้น Supabase Storage และใช้ `gemini-2.5-flash` วิเคราะห์ข้อความและภาพหน้าคู่มือเพื่อถอดเป็น Markdown จากนั้นแบ่ง Chunk ด้วย MarkdownTextSplitter และสร้างเวกเตอร์ Jina Embeddings
+- **RAG Ingestion Pipeline** - แปลงเอกสาร PDF แยกรายหน้าเป็นรูปภาพ JPEG บนเบราว์เซอร์ด้วย `pdfjs-dist` อัปโหลดขึ้น Supabase Storage และใช้ `gemini-3.1-flash-lite` วิเคราะห์ข้อความและภาพหน้าคู่มือเพื่อถอดเป็น Markdown จากนั้นแบ่ง Chunk ด้วย MarkdownTextSplitter และสร้างเวกเตอร์ Jina Embeddings
 - **RAG Bulk Deletion** - หน้าจอจัดการเอกสาร RAG มาพร้อมระบบเลือกหลายเอกสารพร้อมกัน (Checklist) และปุ่มกดลบถาวรแบบกลุ่ม (`bulk_delete_documents`) เพื่อลบข้อมูล metadata และ chunks ทั้งหมดพร้อมกันแบบ Cascading
 - **Streaming Responses** - แสดงผลลัพธ์การตอบสนองแบบตัวอักษรสตรีมมิ่งสดตามสไตล์แชทบอท พร้อม **Suggestion Chips** คำถามแนะนำด้านล่างของข้อความตอบกลับ
 

@@ -1,5 +1,5 @@
 # Title: RAG Streaming, Function Calling & Impeccable UI Lessons
-[Updated: 2026-06-08]
+[Updated: 2026-06-15]
 
 ## 1. Summary & Current Implementation
 During the implementation of Phase 2 and 3 upgrades for QSMS DocAI, we added true streaming responses (SSE), hybrid search (combining pgvector and full-text search), chat session memory, suggestion chips, and user feedback logs. This document captures the architectural insights, gotchas, and solutions.
@@ -69,6 +69,11 @@ During the implementation of Phase 2 and 3 upgrades for QSMS DocAI, we added tru
   - Replaced `type: 'spring'` with exponential `ease: [0.16, 1, 0.3, 1]` for solid, professional transitions.
   - Added global hotkey (`Ctrl+K` at `App.tsx` level) for power-user accessibility across all modules without having to navigate back to the Portal.
 
-## 5. Knowledge Relationships
+## 5. Gemini 3.1 Flash Lite Model Transition
+- **Issue**: Large document parsing ingestion previously used `gemini-2.5-flash` which is a heavier model. Under high document load or rapid user uploads, this triggered Gemini's free-tier rate limits and quota exhaustion (e.g., `RESOURCE_EXHAUSTED` / `429` error).
+- **Solution**: Changed the primary ingestion parsing model in the `ingest` route to `gemini-3.1-flash-lite`. It is faster, more cost-efficient, consumes fewer tokens, and is less likely to hit aggressive rate-limiting, while keeping `gemini-2.0-flash` as a reliable fallback.
+- **Gotcha**: Multimodal parsing inputs (base64 image/PDF data and prompt instructions) are fully supported on `gemini-3.1-flash-lite` just as they were on `gemini-2.5-flash`, meaning no ingestion prompt changes were required.
+
+## 6. Knowledge Relationships
 - Depends On (must read): [[../architecture/rag-module-nextjs.md]]
 - Impacted By (changes affect): `src/modules/rag/RagApp.tsx`, `src/app/api/rag/route.ts`

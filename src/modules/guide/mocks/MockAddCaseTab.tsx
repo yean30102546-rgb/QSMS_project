@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useReworkData } from '../../../contexts/ReworkDataContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { useItemVerification } from '../../../hooks/useItemVerification';
 import type { ReworkItem, ReworkCase } from '../../../services/api';
 import { CUSTOMER_OPTIONS, insertCase } from '../../../services/api';
@@ -31,6 +32,7 @@ type SelectionModalState = {
 interface AddCaseTabProps {
   onOpenTutorial?: () => void;
   preset?: 'empty' | 'ptt-or' | 'cross-link' | 'with-item';
+  onCaseInfoChange?: (source: string, number: string) => void;
 }
 
 export const Hotspot = ({ top, left, right, bottom, title, content, targetId, align = 'center' }: any) => {
@@ -151,8 +153,9 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabProps) {
+export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoChange }: AddCaseTabProps) {
   const { cases, loadCases } = useReworkData();
+  const { showToast, showAlert, showConfirm } = useNotification();
   
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -249,6 +252,44 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
     }
   }, [preset]);
 
+  useEffect(() => {
+    if (onCaseInfoChange) {
+      onCaseInfoChange(caseSource, caseNumber);
+    }
+  }, [caseSource, caseNumber, onCaseInfoChange]);
+
+  useEffect(() => {
+    const handleFastTrackComplete = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { source, caseId, items } = customEvent.detail;
+      
+      if (source && !getValues('caseSource')) setValue('caseSource', source);
+      if (caseId && !getValues('caseNumber')) setValue('caseNumber', caseId);
+
+      const mappedItems = items.map((it: any) => ({
+        ...initialFormItem,
+        itemNumber: it.itemNumber || '',
+        itemCode: it.itemCode || '',
+        itemName: it.itemName || '',
+        amount: it.amount || 0,
+        reason: it.reason || '',
+        reasonSubtype: it.reasonSubtype || '',
+        batchNo: it.batchNo || '',
+        id: `form-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        verificationStatus: 'verified'
+      }));
+
+      const currentItems = getValues('items');
+      if (currentItems.length === 1 && !currentItems[0].itemNumber && !currentItems[0].itemName) {
+        setValue('items', mappedItems);
+      } else {
+        append(mappedItems);
+      }
+    };
+    window.addEventListener('fasttrack-complete', handleFastTrackComplete);
+    return () => window.removeEventListener('fasttrack-complete', handleFastTrackComplete);
+  }, [setValue, getValues, append]);
+
   // Save session state (only if empty preset)
   useEffect(() => {
     if (typeof window !== 'undefined' && preset === 'empty') {
@@ -275,7 +316,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
   };
 
   const clearAllForm = () => {
-    if (window.confirm('คุณต้องการล้างข้อมูลที่กรอกค้างไว้ทั้งหมดใช่หรือไม่? ข้อมูลและไฟล์ที่แนบไว้จะหายไปทั้งหมด')) {
+    showConfirm('คุณต้องการล้างข้อมูลที่กรอกค้างไว้ทั้งหมดใช่หรือไม่? ข้อมูลและไฟล์ที่แนบไว้จะหายไปทั้งหมด', () => {
       reset({
         caseSource: 'SFC',
         caseNumber: '',
@@ -283,18 +324,18 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
       });
       setUploadedImages({});
       setOrFiles([]);
-    }
+    });
   };
 
   const onSubmit = async (data: FormValues) => {
     if (isSaveDisabled(data.items)) {
-      alert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ต้องระบุรหัสสินค้า, บาร์โค้ด, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)');
+      showAlert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ต้องระบุรหัสสินค้า, บาร์โค้ด, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)', 'error');
       return;
     }
 
     const trimmedNumber = data.caseNumber.trim();
     if (!trimmedNumber) {
-      alert('กรุณากรอกหมายเลขเคส (Running Number)');
+      showAlert('กรุณากรอกหมายเลขเคส (Running Number)', 'error');
       return;
     }
 
@@ -303,7 +344,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty' }: AddCaseTabP
     const composedCaseId = `${prefix}${trimmedNumber}-${currentYear}`;
 
     if (existingCaseIds.includes(composedCaseId)) {
-      alert(`หมายเลขเคส "${composedCaseId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น`);
+      showAlert(`หมายเลขเคส "${composedCaseId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น`, 'error');
       return;
     }
 

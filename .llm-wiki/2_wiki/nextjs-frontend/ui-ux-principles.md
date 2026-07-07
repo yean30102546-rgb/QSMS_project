@@ -112,17 +112,20 @@ export default function ActionModal({
 3. **Consistency (ความสม่ำเสมอ)**:
    - ออกแบบปุ่ม ขนาดความโค้งมน (`rounded-[20px]` ถึง `rounded-[36px]`) และไอคอนให้ใช้งานและตอบสนองแบบเดียวกันทั้งแอปพลิเคชัน
    - การรักษารูปแบบที่สอดคล้องช่วยให้ผู้ใช้ทำงานได้โดยไม่ต้องหยุดคิดหาปุ่มใหม่
+   - **No Emoji as Structural Icons**: ใช้ไอคอนแบบเวกเตอร์ (เช่น SVG ของ Lucide หรือ Material Symbols) เท่านั้น ห้ามใช้ Emojis (เช่น ⚙️, 🚀, 🎨) เป็นส่วนประกอบโครงสร้างการนำทาง
 4. **Contrast (ความต่างของสีและขนาด)**:
    - ใช้เฉดสีสูงในการดึงความสนใจไปยังส่วนงานวิกฤต เช่น การใช้ปุ่มบันทึก/ยืนยันสีเข้มตัดกับพื้นหลังสีขาวนวล
    - การทำลายการสอดคล้องอย่างจงใจเพื่อแจ้งเตือน เช่น ปุ่มลบเป็นสีแดง Rose/Red และปุ่มยกเลิกเป็นสีเทา Grayscale
+   - ตรวจสอบอัตราส่วนคอนทราสต์ในทั้งสองธีมอย่างเป็นอิสระต่อกัน (เช่น คอนทราสต์ของข้อความหลักต้องไม่ต่ำกว่า 4.5:1 และข้อความรองไม่ต่ำกว่า 3:1)
 5. **Accessibility (การเข้าถึงสำหรับทุกคน)**:
    - ออกแบบให้ตัวอักษรมี Contrast และขนาดที่เหมาะสมกับผู้ใช้ที่มีปัญหาทางสายตา
-   - เพิ่มระยะขอบปุ่มและการเว้นวรรค (Padding) ป้องกันการกดผิดบนมือถือ (Touch Target ขนาดอย่างน้อย 44x44px)
+   - เพิ่มระยะขอบปุ่มและการเว้นวรรค (Padding) ป้องกันการกดผิดบนมือถือ (**Touch Target Size ขนาดอย่างน้อย 44x44px**) หากปุ่มภาพจริงเล็กกว่านั้น ให้ขยายพื้นที่คลิกโดยรอบ (เช่น ใช้ insets/padding)
 6. **Proximity (ความใกล้ชิดเชิงพื้นที่)**:
    - จัดกลุ่มปุ่มที่ทำหน้าที่คล้ายกันไว้ด้วยกัน (เช่น ปุ่มควบคุมการเล่น หรือปุ่มเซฟ/ยกเลิก)
    - แยกปุ่มที่อาจเกิดผลเสียรุนแรง (เช่น ปุ่มลบเคส) ออกไปอยู่ในตำแหน่งห่างออกไปเพื่อกันการคลิกผิดพลาด
 7. **Alignment (การจัดแนวให้ตรง)**:
    - ใช้ระบบ Grid Layout ในการจัดแนวเส้นสายให้สวยงาม เพื่อความเป็นระเบียบ สบายตา และอ่านง่ายขึ้น
+   - การรักษาระยะห่างแบบทวีคูณ 4/8dp เพื่อให้สัดส่วนของ UI เป็นระบบระเบียบคงที่
 
 ## 4. Effective UX/UI Guidelines (BIZIDEA)
 หลักปฏิบัติเพิ่มเติมเพื่อเพิ่มประสิทธิภาพของเว็บแอปพลิเคชัน:
@@ -139,6 +142,7 @@ export default function ActionModal({
 
 ## 6. Knowledge Relationships (การเชื่อมโยงข้อมูล)
 - **Depends On**: [[nextjs-frontend/design-system.md]] — การใช้ธีมสไตล์ Apple Minimal และ Custom Components
+- **Depends On**: [[nextjs-frontend/ui-glossary.md]] — แคตตาล็อกคำศัพท์ UI และองค์ประกอบสากล
 - **Impacted By**: 
   - [[nextjs-frontend/rework-module.md]] — หน้าจองาน Rework ต้องนำหลัก Hierarchy และ Proximity ไปจัดวาง
   - [[nextjs-frontend/portal-shell.md]] — ใช้ Progressive Disclosure และ Feedback ในการสลับหน้าและแสดงตัวอย่างงาน
@@ -154,3 +158,5 @@ export default function ActionModal({
 - Ingested Raw Source: [[1_raw/UI_UX_IMPROVEMENTS_CHECKLIST_1247082575.md]]
 - Ingested Raw Source: [[1_raw/UI_UX_QUICK_REFERENCE_1041119776.md]]
 - Ingested Raw Source: [[1_raw/การออกแบบ UXUI ที่ดี และมีประสิทธิภาพ.md]]
+- Ingested Raw Source: [[1_raw/A complete UI glossary 100 terms all designers should know.md]]
+- Ingested Raw Source: [[1_raw/ui-ux-pro-max-skill.claudeskillsui-ux-pro-maxSKILL.md at main.md]]

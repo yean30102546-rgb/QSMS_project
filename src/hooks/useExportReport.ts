@@ -4,6 +4,7 @@ import React from 'react';
 import { fetchImageDataUrl } from '../services/api';
 import { toCorsProxyUrl, toDisplayImageUrl, toInternalProxyUrl } from '../utils/imageUrls';
 import { ReworkCase } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
 
 const PNG_SCALE = 2;
 const PDF_SCALE = 2;
@@ -199,6 +200,7 @@ function hideExportElement(el: HTMLDivElement | null) {
 }
 
 export function useExportReport() {
+  const { showAlert } = useNotification();
   const exportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState('');
@@ -254,7 +256,7 @@ export function useExportReport() {
       document.body.removeChild(link);
     } catch (error) {
       console.error('PNG export failed:', error);
-      alert('ไม่สามารถ Export PNG ได้ กรุณาลองใหม่อีกครั้ง');
+      showAlert('ไม่สามารถ Export PNG ได้ กรุณาลองใหม่อีกครั้ง', 'error');
     } finally {
       hideExportElement(exportRef.current);
       setIsExporting(false);
@@ -291,7 +293,7 @@ export function useExportReport() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('PDF export failed:', error);
-      alert('ไม่สามารถ Export PDF ได้ กรุณาลองใหม่อีกครั้ง');
+      showAlert('ไม่สามารถ Export PDF ได้ กรุณาลองใหม่อีกครั้ง', 'error');
     } finally {
       setIsExporting(false);
       setExportProgress('');
@@ -436,7 +438,7 @@ export function useExportReport() {
       
     } catch (error) {
       console.error('Excel export failed:', error);
-      alert('ไม่สามารถ Export Excel ได้ กรุณาลองใหม่อีกครั้ง');
+      showAlert('ไม่สามารถ Export Excel ได้ กรุณาลองใหม่อีกครั้ง', 'error');
     } finally {
       setIsExporting(false);
       setExportProgress('');

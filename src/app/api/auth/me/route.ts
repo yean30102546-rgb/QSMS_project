@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyToken, AuthError } from '../../../../lib/serverAuth';
 import { cookies } from 'next/headers';
+import { supabaseServer } from '../../../../lib/supabaseServer';
 
 export async function GET() {
   try {
@@ -16,22 +17,28 @@ export async function GET() {
 
     const payload = await verifyToken(token);
     const profileLower = String(payload.sub || '').toLowerCase();
-    
-    const mockAccounts: Record<string, { pass: string, role: string, name: string }> = {
-      'qsms': { pass: process.env.MOCK_PASS_QSMS || 'Qsms123', role: 'qsms', name: 'QSMS Test' },
-      'operator': { pass: process.env.MOCK_PASS_OPERATOR || 'Operator123', role: 'operator', name: 'Operator Test' },
-      'finance': { pass: process.env.MOCK_PASS_FINANCE || 'Finance123', role: 'finance', name: 'Finance Test' }
-    };
 
-    const name = mockAccounts[profileLower]?.name || profileLower.toUpperCase();
+    // Query real user data from Supabase
+    const { data: user, error: fetchError } = await supabaseServer
+      .from('users')
+      .select('username, name, role')
+      .eq('username', profileLower)
+      .single();
+
+    if (fetchError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found', statusCode: 401 },
+        { status: 401 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         user: {
-          email: `${profileLower}@test.com`,
-          name: name,
-          role: payload.profile
+          email: user.username,
+          name: user.name,
+          role: user.role.toLowerCase()
         }
       }
     });
