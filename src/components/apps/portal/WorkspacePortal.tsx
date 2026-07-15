@@ -9,7 +9,9 @@ import {
   Sparkles,
   Users2,
   CalendarDays,
-  Activity
+  Activity,
+  FileText,
+  CheckCircle2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -54,6 +56,13 @@ export function WorkspacePortal({
     retentionRate: 0,
     hasData: false,
   });
+  const [storageStats, setStorageStats] = useState({
+    totalDrawings: 0,
+    completedMasters: 0,
+    missingMasters: 0,
+    coverageRate: 0,
+    hasData: false,
+  });
 
   useEffect(() => {
     const fetchOverview = async () => {
@@ -89,6 +98,46 @@ export function WorkspacePortal({
       }
     };
     fetchOverview();
+
+    const fetchStorageOverview = async () => {
+      try {
+        const res = await fetch('/api/drawings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'list_drawings' }),
+        });
+        const resJson = await res.json();
+        if (resJson.success && resJson.data) {
+          type StorageDoc = { type: string; item_code?: string; drawing_number?: string; [key: string]: unknown };
+          const docs = resJson.data as StorageDoc[];
+          const drawings = docs.filter((d: StorageDoc) => d.type === 'drawing');
+          const masters = docs.filter((d: StorageDoc) => d.type === 'master');
+          
+          const gaps = drawings.filter((drawing: StorageDoc) => {
+            return !masters.some((master: StorageDoc) => 
+              (drawing.item_code && master.item_code === drawing.item_code) || 
+              (!drawing.item_code && master.drawing_number === drawing.drawing_number)
+            );
+          });
+          
+          const total = drawings.length;
+          const missing = gaps.length;
+          const completed = total - missing;
+          const coverage = total > 0 ? Math.round((completed / total) * 100) : 0;
+          
+          setStorageStats({
+            totalDrawings: total,
+            completedMasters: completed,
+            missingMasters: missing,
+            coverageRate: coverage,
+            hasData: true
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch storage stats overview:', err);
+      }
+    };
+    fetchStorageOverview();
   }, []);
 
   return (
@@ -190,7 +239,7 @@ export function WorkspacePortal({
         <section className="grid gap-6 lg:grid-cols-2">
           {apps.filter(app => {
             const isRestrictedRole = user?.role === 'OPERATOR';
-            return !(app.id === 'roster' && isRestrictedRole);
+            return !(app.id === 'storage' && isRestrictedRole);
           }).map((app, index) => {
             const isActive = app.status === 'active';
             const accentClasses =
@@ -304,82 +353,60 @@ export function WorkspacePortal({
                         </div>
                       </div>
                     </div>
-                  ) : app.id === 'roster' ? (
+                  ) : app.id === 'storage' ? (
                     <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                      {/* Top Stats: Present vs Leave */}
+                      {/* Top Stats: Active Drawings vs Linked Masters */}
                       <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col justify-center rounded-2xl bg-blue-50 p-3.5 border border-blue-100 shadow-sm">
+                          <div className="flex items-center gap-1.5 text-blue-700 mb-1">
+                            <FileText size={14} className="text-blue-600" />
+                            <span className="text-xs font-medium">Drawing ลูกค้าทั้งหมด</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-2xl font-bold text-blue-800 leading-none">
+                              {storageStats.hasData ? storageStats.totalDrawings : '--'}
+                            </span>
+                            <span className="text-xs font-medium text-blue-600/80"> ไฟล์</span>
+                          </div>
+                        </div>
+
                         <div className="flex flex-col justify-center rounded-2xl bg-emerald-50 p-3.5 border border-emerald-100 shadow-sm">
-                          <div className="flex items-center gap-1.5 text-emerald-700 mb-1">
-                            <Users2 size={14} className="text-emerald-600" />
-                            <span className="text-xs font-medium">บุคลากรพร้อมปฏิบัติงาน</span>
+                          <div className="flex items-center gap-1.5 text-emerald-700 mb-1.5">
+                            <CheckCircle2 size={14} className="text-emerald-600" />
+                            <span className="text-xs font-medium">ทำ Master เสร็จแล้ว</span>
                           </div>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-bold text-emerald-800 leading-none">
-                              {rosterStats.hasData ? rosterStats.staffPresentCount : '--'}
+                              {storageStats.hasData ? storageStats.completedMasters : '--'}
                             </span>
-                            {rosterStats.hasData && (
+                            {storageStats.hasData && (
                               <span className="text-xs font-medium text-emerald-600/80">
-                                / {rosterStats.totalEmployees}
+                                / {storageStats.totalDrawings}
                               </span>
                             )}
                           </div>
                         </div>
-
-                        <div className="flex flex-col justify-center rounded-2xl bg-white p-3.5 border border-slate-200 shadow-sm">
-                          <div className="flex items-center gap-1.5 text-slate-500 mb-1.5">
-                            <CalendarDays size={14} />
-                            <span className="text-xs font-medium">ลาพักวันนี้</span>
-                          </div>
-
-                          {/* Leave Breakdown */}
-                          {!rosterStats.hasData ? (
-                            <div className="text-lg font-bold text-slate-400">--</div>
-                          ) : rosterStats.onLeaveCount === 0 ? (
-                            <div className="text-sm font-medium text-slate-400 mt-1">ไม่มีผู้ลาพัก</div>
-                          ) : (
-                            <div className="flex gap-2">
-                              {rosterStats.leaveSummary.sick > 0 && (
-                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 text-xs font-medium border border-rose-100">
-                                  <span>ป่วย:</span>
-                                  <span>{rosterStats.leaveSummary.sick}</span>
-                                </div>
-                              )}
-                              {rosterStats.leaveSummary.business > 0 && (
-                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 text-xs font-medium border border-amber-100">
-                                  <span>กิจ:</span>
-                                  <span>{rosterStats.leaveSummary.business}</span>
-                                </div>
-                              )}
-                              {rosterStats.leaveSummary.vacation > 0 && (
-                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 text-xs font-medium border border-violet-100">
-                                  <span>พักผ่อน:</span>
-                                  <span>{rosterStats.leaveSummary.vacation}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
                       </div>
 
-                      {/* Retention Rate Bar */}
+                      {/* Coverage Progress Bar */}
                       <div className="mt-1 flex flex-col gap-2 rounded-2xl bg-white p-3.5 border border-slate-200 shadow-sm">
                         <div className="flex justify-between items-center px-1">
                           <div className="flex items-center gap-1.5">
                             <span className="relative flex h-2 w-2">
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                             </span>
-                            <span className="text-xs font-medium text-slate-500">อัตราการมาทำงานสะสม (Live)</span>
+                            <span className="text-xs font-medium text-slate-500">อัตราการทำ Master ครบถ้วน (Coverage)</span>
                           </div>
                           <span className="text-xs font-bold text-slate-700">
-                            {rosterStats.hasData ? `${rosterStats.retentionRate}%` : '--%'}
+                            {storageStats.hasData ? `${storageStats.coverageRate}%` : '--%'}
                           </span>
                         </div>
 
                         <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-200/60 shadow-inner">
-                          {rosterStats.hasData && (
+                          {storageStats.hasData && (
                             <div
-                              className="h-full bg-gradient-to-r from-sky-400 to-sky-500 transition-all duration-1000 ease-out"
-                              style={{ width: `${rosterStats.retentionRate}%` }}
+                              className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-1000 ease-out"
+                              style={{ width: `${storageStats.coverageRate}%` }}
                             />
                           )}
                         </div>

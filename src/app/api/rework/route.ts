@@ -665,7 +665,7 @@ export async function POST(request: Request) {
           if (itemsRes.error.code === 'PGRST205') {
             console.warn('⚠️ Table rework_master_items not found, defaulting to empty.');
             itemsRes.data = [];
-            itemsRes.error = null as any;
+            (itemsRes as { error: unknown }).error = null;
           } else {
             throw itemsRes.error;
           }
@@ -675,7 +675,7 @@ export async function POST(request: Request) {
           if (defectsRes.error.code === 'PGRST205') {
             console.warn('⚠️ Table rework_master_defects not found, defaulting to empty.');
             defectsRes.data = [];
-            defectsRes.error = null as any;
+            (defectsRes as { error: unknown }).error = null;
           } else {
             throw defectsRes.error;
           }
@@ -971,7 +971,7 @@ export async function POST(request: Request) {
         { status: error.status, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       );
     }
-    const errMsg = error instanceof Error ? error.message : ((error as any)?.message || 'เกิดข้อผิดพลาดภายในระบบ');
+    const errMsg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : 'เกิดข้อผิดพลาดภายในระบบ');
     return NextResponse.json(
       { success: false, error: errMsg },
       { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }

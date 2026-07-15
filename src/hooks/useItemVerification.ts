@@ -1,15 +1,20 @@
 import { useCallback, useRef } from 'react';
-import { UseFormGetValues, UseFormSetValue } from 'react-hook-form';
+import { UseFormGetValues, UseFormSetValue, FieldValues } from 'react-hook-form';
 import { getToken, getCurrentUser } from '../services/auth';
 import { saveItemToMaster } from '../services/api';
 import { useReworkData } from '../contexts/ReworkDataContext';
 import { ReworkItem } from '../services/api';
 
+export interface ReworkFormValues {
+  items: ReworkItem[];
+  [key: string]: unknown;
+}
+
 interface UseItemVerificationProps {
   onConflict: () => void;
   onAutofillTriggered: (itemId: string) => void;
-  getValues: UseFormGetValues<any>;
-  setValue: UseFormSetValue<any>;
+  getValues: UseFormGetValues<ReworkFormValues>;
+  setValue: UseFormSetValue<ReworkFormValues>;
 }
 
 export function useItemVerification({ onConflict, onAutofillTriggered, getValues, setValue }: UseItemVerificationProps) {

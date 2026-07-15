@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'; // Force Turbopack Cache Invalidate
 
 const ragSupabaseUrl = process.env.NEXT_PUBLIC_RAG_SUPABASE_URL || '';
 const ragSupabaseServiceKey = process.env.RAG_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_RAG_SUPABASE_ANON_KEY || '';

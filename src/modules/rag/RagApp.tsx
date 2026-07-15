@@ -5,14 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, Sparkles, Bot, X, RotateCw } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
-import * as pdfjsLib from 'pdfjs-dist';
 import { User } from '../../services/auth';
-import { useNotification } from '../../contexts/NotificationContext';
-
-// Set up PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
+import { useNotification } from '@/src/contexts/NotificationContext';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_RAG_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co';
 // Client-safe anonymous key used in frontend
@@ -176,7 +170,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
     }
   };
 
-  // Convert File object to Base64 helper
+  // Helper to convert File object to Base64 helper
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -189,41 +183,6 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
     });
   };
 
-  // Helper to convert PDF pages to Blob images
-  const extractPdfPagesAsImages = async (file: File): Promise<Blob[]> => {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const images: Blob[] = [];
-
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.5 }); // 1.5 scale for good quality
-
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        if (!context) continue;
-
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-        const blob = await new Promise<Blob | null>((resolve) => {
-          canvas.toBlob(resolve, 'image/jpeg', 0.8);
-        });
-
-        if (blob) {
-          images.push(blob);
-        }
-      }
-      return images;
-    } catch (err) {
-      console.error('PDF to Image conversion error:', err);
-      return [];
-    }
-  };
-
   // Process the file upload queue sequentially (concurrency control)
   const processQueue = async (itemsToProcess: UploadQueueItem[]) => {
     for (const item of itemsToProcess) {
@@ -231,31 +190,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
 
       try {
         const fileType = item.file.name.endsWith('.xlsx') ? 'xlsx' : 'pdf';
-
-        // Extract and upload images if PDF
-        let imageUrls: string[] = [];
-        if (fileType === 'pdf') {
-          setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'uploading', progress: 40 } : q));
-          const pageImages = await extractPdfPagesAsImages(item.file);
-
-          setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'uploading', progress: 60 } : q));
-
-          for (let i = 0; i < pageImages.length; i++) {
-            const fileName = `doc_${item.id}_page_${i + 1}.jpg`;
-            const { data, error } = await supabase.storage
-              .from('rag_images')
-              .upload(fileName, pageImages[i], { contentType: 'image/jpeg' });
-
-            if (!error && data) {
-              const { data: publicData } = supabase.storage
-                .from('rag_images')
-                .getPublicUrl(fileName);
-              if (publicData.publicUrl) {
-                imageUrls.push(publicData.publicUrl);
-              }
-            }
-          }
-        }
+        const imageUrls: string[] = []; // No longer extracting images on the frontend to avoid pdf.js errors
 
         // Convert file to base64
         setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'processing', progress: 80 } : q));
@@ -402,18 +337,19 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
         });
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Chat error:', err);
-      if (err.message?.includes('โทเคนลิมิตเต็ม') || err.message?.includes('RESOURCE_EXHAUSTED')) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('โทเคนลิมิตเต็ม') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
         setCooldown(60);
       }
       setMessages(prev => {
         const newMsgs = [...prev];
         // If the last message was the empty model response, replace it. Otherwise append.
         if (newMsgs[newMsgs.length - 1].role === 'model' && !newMsgs[newMsgs.length - 1].text) {
-          newMsgs[newMsgs.length - 1].text = `❌ เกิดข้อผิดพลาด: ${err.message || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}`;
+          newMsgs[newMsgs.length - 1].text = `❌ เกิดข้อผิดพลาด: ${errorMessage || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}`;
         } else {
-          newMsgs.push({ role: 'model', text: `❌ เกิดข้อผิดพลาด: ${err.message || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}` });
+          newMsgs.push({ role: 'model', text: `❌ เกิดข้อผิดพลาด: ${errorMessage || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}` });
         }
         return newMsgs;
       });

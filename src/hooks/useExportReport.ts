@@ -15,13 +15,14 @@ const CONTENT_WIDTH_MM = A4_WIDTH_MM - PDF_MARGIN_MM * 2;
 const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - PDF_MARGIN_MM * 2;
 
 async function loadExportLibraries() {
-  const [{ jsPDF }, htmlToImage, ExcelJS] = await Promise.all([
+  const [{ jsPDF }, htmlToImage, ExcelJS, html2canvasModule] = await Promise.all([
     import('jspdf'),
     import('html-to-image'),
-    import('exceljs')
+    import('exceljs'),
+    import('html2canvas')
   ]);
 
-  return { jsPDF, htmlToImage, ExcelJS: ExcelJS.default || ExcelJS };
+  return { jsPDF, htmlToImage, ExcelJS: ExcelJS.default || ExcelJS, html2canvas: html2canvasModule.default };
 }
 
 const IMAGE_TIMEOUT_MS = 5000; // 5 seconds per image
@@ -187,9 +188,10 @@ async function preloadImagesForCaseData(caseData: ReworkCase, onProgress?: (msg:
 
 function prepareExportElement(el: HTMLDivElement) {
   el.style.display = 'block';
-  el.style.position = 'absolute';
-  el.style.left = '-9999px';
+  el.style.position = 'fixed';
+  el.style.left = '0';
   el.style.top = '0';
+  el.style.zIndex = '-9999';
   el.style.width = '1000px';
   el.style.overflow = 'visible';
 }
@@ -213,7 +215,7 @@ export function useExportReport() {
     setExportProgress('Preparing export...');
 
     try {
-      const { htmlToImage } = await loadExportLibraries();
+      const { html2canvas } = await loadExportLibraries();
 
       prepareExportElement(el);
       setExportProgress('Loading images...');
@@ -224,25 +226,15 @@ export function useExportReport() {
 
       setExportProgress('Rendering PNG...');
       
-      const clonedEl = el.querySelector('[data-export-template="true"]') as HTMLElement | null;
-      if (clonedEl) {
-        clonedEl.style.display = 'block';
-        clonedEl.style.width = '1000px';
-      }
-
-      const dataUrl = await htmlToImage.toPng(el, {
-        pixelRatio: PNG_SCALE,
+      const canvas = await html2canvas(el, {
+        scale: PNG_SCALE,
+        useCORS: true,
         backgroundColor: '#ffffff',
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-        }
+        logging: false,
+        allowTaint: true,
       });
 
-      if (clonedEl) {
-        clonedEl.style.display = '';
-        clonedEl.style.width = '';
-      }
+      const dataUrl = canvas.toDataURL('image/png');
 
       setExportProgress('Downloading PNG...');
       const sanitizedId = caseId.replace(/[\/\\?%*:|"<>]/g, '-');
@@ -275,9 +267,9 @@ export function useExportReport() {
       setExportProgress('Rendering PDF...');
       
       const { pdf } = await import('@react-pdf/renderer');
-      const { ExportPDFTemplate } = await import('../components/ui/ExportPDFTemplate');
+      const { ExportPDFTemplate } = await import('@/src/modules/drawings/components/ExportPDFTemplate');
       
-      const blob = await pdf(React.createElement(ExportPDFTemplate, { caseData: preloadedCaseData }) as React.ReactElement<any>).toBlob();
+      const blob = await pdf(React.createElement(ExportPDFTemplate, { caseData: preloadedCaseData }) as React.ReactElement<unknown>).toBlob();
       
       setExportProgress('Downloading PDF...');
       const sanitizedId = caseData.id.replace(/[\/\\?%*:|"<>]/g, '-');

@@ -13,13 +13,13 @@ import { portalAppRegistry } from './modules/platform/appRegistry';
 import type { AppView } from './modules/platform/types';
 import { getCurrentUser, isAuthenticated as authIsAuthenticated, logout as authLogout, restoreSession, type User } from './services/auth';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { ToastContainer } from './components/ui/Toast';
-import { AlertModal } from './components/ui/AlertModal';
+import { ToastContainer } from '@/src/components/shared/Toast';
+import { AlertModal } from '@/src/components/shared/AlertModal';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
-const Login = dynamic(() => import('./components/Login').then(mod => mod.Login), { ssr: false });
-const Register = dynamic(() => import('./components/Register').then(mod => mod.Register), { ssr: false });
-const RosterApp = dynamic(() => import('./modules/roster/RosterApp').then(mod => mod.RosterApp), { ssr: false });
+const Login = dynamic(() => import('@/src/modules/auth/views/Login').then(mod => mod.Login), { ssr: false });
+const Register = dynamic(() => import('@/src/modules/auth/views/Register').then(mod => mod.Register), { ssr: false });
+const StorageApp = dynamic(() => import('./modules/storage/StorageApp').then(mod => mod.StorageApp), { ssr: false });
 const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
 const GuideApp = dynamic(() => import('./modules/guide/GuideApp').then(mod => mod.GuideApp), { ssr: false });
 const RagApp = dynamic(() => import('./modules/rag/RagApp').then(mod => mod.RagApp), { ssr: false });
@@ -53,7 +53,7 @@ function AuthWrapper() {
         const savedView = sessionStorage.getItem('currentView') as AppView | null;
         if (authenticated) {
           if (savedView && savedView !== 'login') {
-            if (savedView === 'roster' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
+            if (savedView === 'storage' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
               setCurrentView('portal');
             } else {
               setCurrentView(savedView);
@@ -175,11 +175,11 @@ function AuthWrapper() {
           if (route === 'portal') {
             setCurrentView('portal');
           } else if (isAuthenticated) {
-            if (route === 'roster') {
+            if (route === 'storage') {
               const upperRole = appUser?.role?.toUpperCase();
               const isRestrictedRole = upperRole === 'OPERATOR';
               if (isRestrictedRole) {
-                // Ignore roster navigation for restricted roles
+                // Ignore storage navigation for restricted roles
                 return;
               }
             }
@@ -197,8 +197,8 @@ function AuthWrapper() {
         onOpenRag={() => setIsRagOpen(true)}
       />
     );
-  } else if (currentView === 'roster') {
-    content = <RosterApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
+  } else if (currentView === 'storage') {
+    content = <StorageApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else if (currentView === 'guide') {
     content = <GuideApp onBackToPortal={() => setCurrentView('portal')} />;
   } else {

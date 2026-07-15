@@ -112,7 +112,7 @@ export async function POST(request: Request) {
           let mimeType = fileType === 'pdf' ? 'application/pdf' : fileType;
           // Clean up generic image types if passed
           if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
-          
+
           const parsePrompt = `วิเคราะห์เอกสาร/รูปภาพนี้อย่างละเอียด และแปลงเป็นรูปแบบ Markdown (ใช้ # หรือ ## ในการแบ่งหัวข้อ) 
 สิ่งที่ต้องทำ:
 1. วิเคราะห์หมวดหมู่ของเอกสาร (Document Category) และคำค้นหาหลัก (Keywords) แล้วใส่ไว้ในส่วนบนสุดของไฟล์เสมอ ในรูปแบบ:
@@ -135,8 +135,8 @@ export async function POST(request: Request) {
                 { text: parsePrompt }
               ]
             });
-          } catch (error: any) {
-            console.warn(`⚠️ Gemini 3.1 Flash Lite failed (possibly 503 high demand). Falling back to gemini-2.0-flash:`, error.message);
+          } catch (error: unknown) {
+            console.warn(`⚠️ Gemini 3.1 Flash Lite failed (possibly 503 high demand). Falling back to gemini-2.0-flash:`, error instanceof Error ? error.message : String(error));
             parseResponse = await ai.models.generateContent({
               model: 'gemini-2.0-flash',
               contents: [
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
 
         // 4. Generate embeddings using Jina AI (768 dimensions to fit schema)
         console.log(`✨ Generating embeddings using Jina AI...`);
-        const allInsertRecords: any[] = [];
+        const allInsertRecords: Record<string, unknown>[] = [];
         const jinaApiKey = process.env.JINA_API_KEY || '';
 
         if (!jinaApiKey) {
@@ -309,8 +309,8 @@ export async function POST(request: Request) {
 
         // 2. Search similarity using Supabase RPC function (Hybrid Search)
         console.log('🔍 Executing Hybrid Search in database...');
-        let matchedChunks: any = [];
-        
+        let matchedChunks: DocumentChunk[] | null = [];
+
         // Try hybrid search first
         const { data: hybridData, error: hybridError } = await ragSupabaseServer.rpc(
           'hybrid_search_chunks',
@@ -331,7 +331,7 @@ export async function POST(request: Request) {
               match_count: 5
             }
           );
-          
+
           if (matchError) {
             console.error('❌ Error executing match_document_chunks RPC:', matchError);
             throw matchError;
@@ -367,9 +367,9 @@ Instructions:
 `;
 
         console.log('🤖 Requesting streaming response from Gemini chat model (using gemini-3.1-flash-lite)...');
-        
+
         // Map conversation history
-        const historyContents = messages.map((m: any) => ({
+        const historyContents = messages.map((m: { role: string; text: string }) => ({
           role: m.role === 'user' ? 'user' : 'model',
           parts: [{ text: m.text }]
         }));
@@ -433,13 +433,14 @@ Instructions:
               }
             } else if (call.name === 'search_rework_history') {
               console.log('🔧 Model requested search_rework_history tool. Executing query...');
-              const limit = (call.args && (call.args as any).limit) ? (call.args as any).limit : 5;
+              const args = call.args as Record<string, unknown> | undefined;
+              const limit = typeof args?.limit === 'number' ? args.limit : 5;
               const { data: casesData, error: casesError } = await supabaseServer.from('rework_cases')
                 .select('id, status, resolution_method, items:rework_items(item_code, reason)')
                 .order('created_at', { ascending: false })
                 .limit(limit);
               if (!casesError && casesData) {
-                const casesStr = casesData.map(c => `- Case ${c.id}: Status: ${c.status}, Fix: ${c.resolution_method || 'N/A'}, Items: ${c.items ? c.items.map((i: any) => i.item_code + ' (' + i.reason + ')').join(', ') : 'None'}`).join('\n');
+                const casesStr = casesData.map(c => `- Case ${c.id}: Status: ${c.status}, Fix: ${c.resolution_method || 'N/A'}, Items: ${c.items ? (c.items as { item_code: string; reason: string }[]).map((i: { item_code: string; reason: string }) => i.item_code + ' (' + i.reason + ')').join(', ') : 'None'}`).join('\n');
                 functionResponseContext = `\n\n[System Data (Recent Rework Cases)]:\n${casesStr}\n`;
                 console.log(`📊 Tool search_rework_history executed. Fetched ${casesData.length} cases.`);
               } else {
@@ -447,7 +448,8 @@ Instructions:
               }
             } else if (call.name === 'get_rework_item_detail') {
               console.log('🔧 Model requested get_rework_item_detail tool. Executing query...');
-              const keyword = (call.args && (call.args as any).keyword) ? (call.args as any).keyword : '';
+              const args = call.args as Record<string, unknown> | undefined;
+              const keyword = typeof args?.keyword === 'string' ? args.keyword : '';
               if (keyword) {
                 const { data: itemData, error: itemError } = await supabaseServer.from('rework_items')
                   .select('case_id, item_code, item_number, reason, amount, responsible, rework_cases(status, resolution_method)')
@@ -485,15 +487,15 @@ Instructions:
           const readableStream = new ReadableStream({
             async start(controller) {
               // Send metadata first (sources)
-              const metadata = { 
-                sources: chunks.map((c: any) => ({
+              const metadata = {
+                sources: chunks.map((c: DocumentChunk) => ({
                   content: c.content,
                   image_urls: c.image_urls,
                   similarity: c.similarity
-                })) 
+                }))
               };
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'metadata', data: metadata })}\n\n`));
-              
+
               // Stream chunks
               try {
                 for await (const chunk of stream) {
@@ -502,24 +504,24 @@ Instructions:
                   }
                 }
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-              } catch (err: any) {
+              } catch (err: unknown) {
                 console.error('Streaming error:', err);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', data: err.message || 'Stream failed' })}\n\n`));
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', data: err instanceof Error ? err.message : 'Stream failed' })}\n\n`));
               } finally {
                 controller.close();
               }
             }
           });
 
-          return new Response(readableStream, { 
-            headers: { 
-              'Content-Type': 'text/event-stream', 
-              'Cache-Control': 'no-cache', 
-              'Connection': 'keep-alive' 
-            } 
+          return new Response(readableStream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive'
+            }
           });
 
-        } catch (genErr: any) {
+        } catch (genErr: unknown) {
           console.error('Gemini Generation Error:', genErr);
           // If quota limit or model error occurs before stream starts, throw to be caught by main handler
           throw genErr;
@@ -528,13 +530,13 @@ Instructions:
 
       case 'feedback': {
         const { query, response, context, is_positive } = body;
-        
+
         if (!query || !response || is_positive === undefined) {
           return NextResponse.json({ success: false, error: 'Missing required feedback fields' }, { status: 400 });
         }
 
         console.log(`📝 Saving RAG Feedback: ${is_positive ? '👍' : '👎'}`);
-        
+
         const { error } = await ragSupabaseServer
           .from('rag_feedback')
           .insert([{

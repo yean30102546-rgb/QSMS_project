@@ -309,7 +309,22 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-06-08*: เพิ่ม BUG-018 (แก้ปัญหาการบัง Error ของ Supabase PGRST205 และ fallback ตาราง defects)
+## BUG-019: Relative Imports Path Mismatches & Auth Views Type Inference Loss Post-FSD Refactoring
+**Status**: ✅ FIXED (2026-07-14)
+- *Problem*: หลังทำการ Refactor โครงสร้างโฟลเดอร์ให้เป็นแบบ Feature-Sliced Design (FSD) และสลาย Monolithic `UpdateModal.tsx` เป็นโฟลเดอร์ย่อย เกิดปัญหา Build Errors คาสเคดดังนี้:
+  1. มีการนำเข้า (Imports) แบบ Relative Path ย้อนกลับ เช่น `../../../components/...` หลุดค้างอยู่ในหลายไฟล์ เช่น `MockScreens.tsx`, `MockAddCaseTab.tsx`, และ `ReworkApp.tsx` ชี้ไปยังตำแหน่งเดิมที่ว่างเปล่าหลังย้ายโฟลเดอร์
+  2. โค้ดในหน้าจอ Auth (`Login.tsx`, `Register.tsx`) มีการ import โมดูลบริการ `services/auth` ด้วย relative path `../services/auth` ที่ไม่ถูกต้องหลังจากการย้ายโมดูล ส่งผลให้ TypeScript ไม่สามารถอ่านข้อมูล Type ของ component ได้ และทำให้ไฟล์หลัก `App.tsx` เกิด Type compilation error `Type '{ onSuccess... }' is not assignable to type 'IntrinsicAttributes'` จาก Dynamic loading
+  3. มีการ import ฟังก์ชัน `registerWithPassword` ที่เป็นขยะ (Stale Import) ในหน้าจอลงทะเบียน ค้างอยู่โดยตัวฟังก์ชันนี้ไม่มีตัวตนในไฟล์ Services หลักแล้ว
+- *Solution*:
+  1. ลบไฟล์เก่า `src/components/modals/UpdateModal.tsx` ทิ้งถาวรเพื่อป้องกันความซ้ำซ้อนของการประมวลผล build
+  2. ย้ายและอัปเดต Path นำเข้าในทุกๆ จุดที่มีปัญหา รวมถึง Mock Screens, Rework App ให้เปลี่ยนมาใช้งานรูปแบบ Absolute Path Alias (`@/src/...`) เพื่อความสถียรและทนทานต่อการปรับโครงสร้างโฟลเดอร์
+  3. แก้ไข `Login.tsx` และ `Register.tsx` ให้ใช้ Absolute Path (`@/src/services/auth` และ `@/src/contexts/NotificationContext`) ส่งผลให้คืนค่า Type Inference ที่ถูกต้องให้กับ `App.tsx`
+  4. ทำความสะอาดโดยถอนการ import `registerWithPassword` ที่ไม่ใช้ออกไป
+  5. สั่งทดสอบ Type Safety ทั้งระบบผ่าน `npx tsc --noEmit` ได้ผลสำเร็จสมบูรณ์ (0 errors)
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-07-14*: เพิ่ม BUG-019 (แก้ไข Relative Imports และกู้คืน Type Inference ของ Auth modules หลังทำ FSD Refactor)
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]

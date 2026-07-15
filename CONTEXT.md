@@ -170,3 +170,6 @@ An Evidence Integrity optimization where image file sizes are significantly redu
 
 ### Client-Side Watermarking
 A process leveraging the HTML Canvas API to overlay dynamic text (such as Date/Time and GPS coordinates) directly onto captured images within the browser, ensuring provenance without requiring server-side image processing.
+
+### AI-Assisted Drawing & Master Metadata Extraction
+A metadata extraction feature implemented in the Drawings/Master module (UploadModal). When PDF files (including scanned drawings or sheets) are uploaded, the client automatically converts the files to Base64 and invokes the drawings API endpoint (`/api/drawings` with action `parse_drawing`). The server leverages Gemini 3.5 Flash (falling back to Gemini 2.0 Flash) to perform OCR and extract structured parameters (e.g., drawing number, revision, part name, package size, oil group, pallet type, boxes per pallet, shelf life) using JSON schema structured outputs, which auto-populates the upload form. During parsing, interactions are locked using the `isProcessing` flag.

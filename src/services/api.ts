@@ -4,7 +4,7 @@
  */
 
 import { getCurrentUser, isAuthenticated } from './auth';
-import { compressImage } from '../utils/imageCompressionUtils';
+import { compressImage } from '@/src/utils/imageCompressionUtils';
 import { uploadImageToCloudinary } from './imageUploadService';
 
 // GAS URL is managed securely server-side, local wrapper handles backward-compatibility

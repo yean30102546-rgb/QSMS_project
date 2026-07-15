@@ -34,6 +34,9 @@
 - **RAG Bulk Deletion** - หน้าจอจัดการเอกสาร RAG มาพร้อมระบบเลือกหลายเอกสารพร้อมกัน (Checklist) และปุ่มกดลบถาวรแบบกลุ่ม (`bulk_delete_documents`) เพื่อลบข้อมูล metadata และ chunks ทั้งหมดพร้อมกันแบบ Cascading
 - **Streaming Responses** - แสดงผลลัพธ์การตอบสนองแบบตัวอักษรสตรีมมิ่งสดตามสไตล์แชทบอท พร้อม **Suggestion Chips** คำถามแนะนำด้านล่างของข้อความตอบกลับ
 
+### 📁 Drawing & Master Module (ระบบจัดการแบบแปลนและใบมาสเตอร์)
+- **AI-Assisted PDF Parsing** - ระบบอ่านไฟล์ PDF อัตโนมัติ (รองรับ Scanned PDF) เมื่อพนักงานเลือกไฟล์ PDF ระบบจะส่งข้อมูลไปให้ Gemini 3.5 Flash (และ fallback 2.0 Flash) ทางเซิร์ฟเวอร์ เพื่อดึงข้อมูล Metadata สำคัญทั้งหมดแบบ Structured JSON (Structured Outputs) เช่น หมายเลขแบบแปลน, เวอร์ชัน (Revision), ขนาดบรรจุ (Package Size), กลุ่มน้ำมัน (Oil Group), ประเภทพาเลท (Pallet Type), จำนวนกล่อง และอายุผลิตภัณฑ์ ช่วยกรอกฟอร์มอัตโนมัติและลด Human Error โดยมีการระงับปุ่มบันทึกและป้อนค่าฟิลด์ชั่วคราวจนกว่าจะประมวลผลเสร็จ (`isProcessing = true`)
+
 ### 🎨 Apple Premium UI/UX & accessibility
 - **Frosted Glassmorphism** - ใช้เอฟเฟกต์กระจกเบลอระดับสูง (`.glass-panel`, `.glass-input` + `backdrop-blur-xl`) และขอบโปร่งแสงสะท้อนเงา
 - **Tactile Spring Micro-animations** - การกดปุ่มหรือเปลี่ยนหน้าต่างมาพร้อมการยุบตัวขยายตัวตามกฎฟิสิกส์สปริงที่ลื่นไหล (รองรับ `willChange: opacity, transform` และ Framer Motion จาก `motion/react`)
@@ -48,7 +51,7 @@
 
 ### Frontend Stack
 - **Next.js 16.2 (App Router)** - เฟรมเวิร์กจัดการเพจและ API Routes Proxy
-- **React 19 & TypeScript** - ตัวสร้างเว็บเพจและประเภทข้อมูลที่มั่นคงปลอดภัย
+- **React 19 & TypeScript (Strict Type-Safety, No `any`)** - ห้ามใช้ type `any` โดยเด็ดขาดเพื่อให้เกิดความมั่นคงและความปลอดภัยสูงสุดของโครงสร้างข้อมูล
 - **Tailwind CSS v4 & PostCSS** - การจัดการสไตล์ชีตประสิทธิภาพสูงและโครงสีตามธีม
 - **Motion (Framer Motion / `motion/react`)** - ตัวขับเคลื่อนฟิสิกส์อนิเมชั่นทั้งหมดในระบบ
 - **Radix UI Primitives** - พื้นฐานคอมโพเนนต์ Dialog, Popover, Select, Tabs
@@ -179,7 +182,10 @@ src/
 - `POST /api/rag` (action: `chat`): รับข้อความแชทและประวัติแชทล่าสุด แปลง embeddings และเรียกใช้ Supabase RPC (Hybrid Search) เพื่อสืบค้นข้อมูลในฐานข้อมูล จากนั้นส่งข้อมูลแบบ Stream ผ่าน Server-Sent Events (SSE) ร่วมกับประมวลผลคำตอบจาก Gemini
 - `POST /api/rag` (action: `feedback`): บันทึกความพึงพอใจของคำตอบ (Thumbs Up/Down) สู่ตาราง `rag_feedback` เพื่อใช้ในการประเมินความถูกต้องของคำตอบ
 
+### Drawings & Master APIs
+- `POST /api/drawings` (action: `parse_drawing`): ทำ OCR และสกัดข้อมูลตัวแปรโครงสร้าง (Structured JSON) จากไฟล์ PDF แบบแปลนหรือใบมาสเตอร์โดยใช้ Gemini 3.5 Flash และ 2.0 Flash
+
 ---
 
-Last Updated: June 2026
-Version: 1.1.0
+Last Updated: July 2026
+Version: 1.2.0

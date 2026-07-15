@@ -2,6 +2,21 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Rework Portal - Case Update', () => {
   test.beforeEach(async ({ page }) => {
+    await page.route('/api/auth/me', async route => {
+      await route.fulfill({
+        json: {
+          success: true,
+          data: {
+            user: {
+              email: 'test@example.com',
+              name: 'Test Admin',
+              role: 'QSMS'
+            }
+          }
+        }
+      });
+    });
+
     // Mock initial list of cases and updates
     await page.route('/api/rework', async route => {
       const method = route.request().method();
@@ -47,22 +62,9 @@ test.describe('Rework Portal - Case Update', () => {
       }
     });
 
-    // Bootstrapping auth & view state via sessionStorage before app mounts
+    // Bootstrapping view state via sessionStorage before app mounts
     await page.goto('/');
     await page.evaluate(() => {
-      const tokenHeader = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      const tokenPayload = btoa(JSON.stringify({ sub: 'test@example.com', profile: 'QSMS', exp: Math.floor(Date.now() / 1000) + 3600 }));
-      const tokenSignature = 'dummysignature';
-      const dummyToken = `${tokenHeader}.${tokenPayload}.${tokenSignature}`;
-      
-      sessionStorage.setItem('qsms_token', dummyToken);
-      sessionStorage.setItem('qsms_user', JSON.stringify({
-        email: 'test@example.com',
-        name: 'Test Admin',
-        role: 'QSMS'
-      }));
-      sessionStorage.setItem('qsms_role', 'QSMS');
-      sessionStorage.setItem('qsms_token_expiry', (Date.now() + 3600000).toString());
       sessionStorage.setItem('currentView', 'rework');
     });
     await page.reload();

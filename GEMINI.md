@@ -31,6 +31,7 @@
   โมดูลสืบค้นปัญญาประดิษฐ์ (Retrieval-Augmented Generation) ค้นหาคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ทำงานโดยใช้ Supabase pgvector ร่วมกับ Jina AI Embeddings (`jina-embeddings-v5-text-small` ขนาด 768 มิติ) และ Gemini ในการสร้างคำตอบที่เป็นธรรมชาติ
   - **Parsing Ingestion:** ใช้ `gemini-3.1-flash-lite` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown โดยมีระบบ Fallback ไปยัง `gemini-2.0-flash` เมื่อเจอปัญหา 503 ในช่วงการทำงานที่มีโหลดสูง
   - **Chat Interface:** ใช้ `gemini-3.1-flash-lite` ในการตอบคำถามผู้ใช้งานผ่าน SSE Stream ร่วมกับระบบ Function Calling (`get_rework_statistics`) สำหรับเรียกดูสถิติสดย้อนหลัง
+  - **Drawing & Master Metadata Extraction:** ระบบวิเคราะห์แบบแปลนวิศวกรรม (Engineering Drawings) และใบมาสเตอร์ภายใน (Internal Master Sheets) ผ่าน API Endpoint `src/app/api/drawings` โดยใช้ **`gemini-3.5-flash`** เป็นโมเดลหลัก (และ **`gemini-3.1-flash-lite`** เป็นตัวสำรอง) เพื่อทำ OCR และสกัด Metadata ต่างๆ กลับคืนมาในแบบ Structured JSON (Structured Outputs) ทันทีหลังพนักงานอัปโหลดไฟล์ PDF
 
 ---
 
@@ -62,6 +63,10 @@
 8. **RAG Ingestion Pipeline (การนำเข้าคู่มือ):**
    - การอัปโหลดไฟล์ PDF ในแท็บเอกสารของ DocAI จะทำการแปลงหน้า PDF เป็นรูปภาพ JPEG (ผ่าน `pdfjs-dist`) อัปโหลดไป Supabase Storage แล้วส่งให้ Gemini Vision ทำการแปลงเนื้อหาพร้อมแผนภาพเป็น Markdown จากนั้นจึงคำนวณเวกเตอร์ embeddings ผ่าน Jina AI และบันทึกลง Supabase
    - **RAG Bulk Deletion:** ผู้ดูแลสามารถเลือกเอกสารหลายรายการใน Checklist เพื่อสั่งลบเอกสารและข้อมูลเวกเตอร์ชิ้นส่วนที่เกี่ยวข้องพร้อมกันผ่าน API (`bulk_delete_documents`)
+9. **AI-Assisted Drawing & Master Parsing (การดึงข้อมูลแบบแปลนอัตโนมัติ):**
+   - เมื่อผู้ใช้ทำการอัปโหลดไฟล์ PDF เข้าสู่ระบบในหน้าจอ Drawing/Master ระบบจะส่งไฟล์ Base64 ไปยังเซิร์ฟเวอร์
+   - Gemini AI จะทำหน้าที่ทำ OCR และวิเคราะห์เอกสารสแกนเพื่อแกะข้อมูลฟิลด์ต่าง ๆ เช่น เลขแบบแปลน (drawing_number), รหัสสินค้าลูกค้า (item_code), ชื่อชิ้นงาน (part_name), ขนาดบรรจุ (package_size), กลุ่มน้ำมัน (oil_group), ประเภทพาเลท (pallet_type), จำนวนกล่อง (boxes_per_pallet) และอายุผลิตภัณฑ์ (shelf_life) เพื่อกรอกฟอร์มอัปโหลดโดยอัตโนมัติ ช่วยลดปัญหาความผิดพลาดจากการพิมพ์ (Human Error) ตัวฟิลด์ที่ดึงไม่พบจะเว้นว่างไว้ให้ผู้ใช้ตรวจสอบเพิ่มเติมได้ และการแก้ไขฟิลด์จะถูกบล็อกชั่วคราวระหว่างประมวลผลวิเคราะห์ข้อมูล (`isProcessing = true`)
+
 
 ---
 

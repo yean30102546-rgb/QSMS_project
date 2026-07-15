@@ -1,0 +1,236 @@
+/**
+ * Authentication Login Component
+ * Apple-inspired shared entry surface for modular portal flow
+ */
+
+'use client';
+
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { ArrowRight, Eye, EyeOff, Lock, UserCircle2, ChevronLeft } from 'lucide-react';
+import { loginWithPassword } from '@/src/services/auth';
+
+export function Login({ 
+  onSuccess,
+  onBack,
+  onNavigateToRegister
+}: { 
+  onSuccess: (authenticated?: boolean) => void;
+  onBack?: () => void;
+  onNavigateToRegister?: () => void;
+}) {
+  const handleBack = onBack || (() => {
+    window.location.href = '/';
+  });
+
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load remembered username
+  React.useEffect(() => {
+    const savedUser = localStorage.getItem('remembered_user');
+    
+    if (savedUser) {
+      setUsername(savedUser);
+      setRememberMe(true);
+    }
+  }, []);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (!username.trim()) {
+      setError('กรุณาระบุชื่อผู้ใช้งาน');
+      return;
+    }
+
+    if (!password) {
+      setError('กรุณาระบุรหัสผ่าน');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await loginWithPassword(username.trim(), password);
+
+      if (!response.success) {
+        setPassword('');
+        setError(response.error || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่');
+        return;
+      }
+
+      // Handle Remember Me — store username only (never password)
+      if (rememberMe) {
+        localStorage.setItem('remembered_user', username.trim());
+      } else {
+        localStorage.removeItem('remembered_user');
+      }
+      localStorage.removeItem('remembered_pass'); // Clean up legacy
+
+      onSuccess(true);
+    } catch (err) {
+      setPassword('');
+      setError(err instanceof Error ? err.message : 'ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="apple-shell flex min-h-screen items-center justify-center overflow-y-auto bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] px-4 py-8 md:px-8">
+      <div className="pointer-events-none absolute inset-0 opacity-30">
+        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.05),transparent_70%)]" />
+        <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.04),transparent_70%)]" />
+      </div>
+
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-[980px] overflow-hidden rounded-[36px] bg-white/30 backdrop-blur-md shadow-2xl shadow-blue-900/5 border border-white/40"
+      >
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="border-b border-white/60 bg-white/40 backdrop-blur-xl px-7 py-10 text-[#1d1d1f] md:px-10 lg:border-b-0 lg:border-r lg:border-r-black/5">
+            <div className="mb-8 flex items-center gap-3">
+              <img src="/img/logo.png" alt="QSMS" className="h-10 object-contain" />
+              <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#1d1d1f]/70">Central Workspace</div>
+            </div>
+            <h1 className="max-w-lg text-4xl font-semibold leading-[1.04] tracking-[-0.03em] md:text-5xl text-[#1d1d1f]">
+              One login for Rework and upcoming Roster operations.
+            </h1>
+            <p className="mt-5 max-w-md text-[16px] leading-7 text-[#515154]">
+              เข้าสู่ระบบครั้งเดียว แล้วเลือกใช้งานแต่ละ webapp ผ่าน Central Control ได้ทันที
+              โดยรักษา workflow เดิมของ Rework ให้ทำงานต่อเนื่อง
+            </p>
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-black/60">
+              Platform session secured
+            </div>
+          </div>
+
+          <div className="bg-white/80 px-6 py-8 md:px-9 md:py-10">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="mb-6 inline-flex items-center gap-1 text-xs font-semibold text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+            >
+              <ChevronLeft size={14} />
+              ย้อนกลับสู่ศูนย์ควบคุม
+            </button>
+
+            <div className="mb-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6e6e73]">Sign in</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">เข้าสู่ Central Control</h2>
+              <p className="mt-2 text-sm leading-6 text-[#5d5d63]">
+                ใช้ profile และ password เดิมของระบบเพื่อเข้าสู่ Portal
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative group">
+                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="Username"
+                  className="glass-input w-full rounded-2xl py-3.5 pl-11 pr-4 text-[15px]"
+                />
+              </div>
+
+              <div className="relative group">
+                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="Password"
+                  className="glass-input w-full rounded-2xl py-3.5 pl-11 pr-11 text-[15px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7a7a80] transition hover:text-[#1d1d1f]"
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 px-1">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="rememberMe" className="text-xs font-medium text-[#6e6e73] cursor-pointer hover:text-[#1d1d1f] transition-colors">
+                  จดจำชื่อผู้ใช้งานไว้ในเครื่องนี้
+                </label>
+              </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl border border-[#ffd4d4] bg-[#fff6f6] px-4 py-3 text-sm text-[#b42318]"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={!username.trim() || !password.trim() || isLoading}
+                className="apple-btn-primary mt-1 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold shadow-lg shadow-blue-600/20 disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    เข้าสู่ระบบ
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </motion.button>
+            </form>
+
+            <div className="mt-7 border-t border-[#e8e8ed] pt-5 flex flex-col gap-3">
+              <p className="text-xs leading-5 text-[#6e6e73]">
+                ยังไม่มีบัญชีผู้ใช้งานใช่หรือไม่?
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigateToRegister) {
+                    onNavigateToRegister();
+                  }
+                }}
+                className="w-full rounded-2xl border border-[#d2d2d7] bg-white py-3 text-sm font-semibold text-[#1d1d1f] transition hover:bg-gray-50"
+              >
+                สร้างบัญชีใหม่
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+    </div>
+  );
+}
+

@@ -1,5 +1,5 @@
 # Development Learnings (React, Next.js, & Google Apps Script)
-[วันที่อัปเดต: 2026-06-29]
+[วันที่อัปเดต: 2026-07-10]
 
 ## 1. Summary & Current Implementation
 เอกสารนี้รวบรวมแนวคิด วิธีแก้ไขปัญหา และบทเรียนสำคัญที่พบในกระบวนการพัฒนาระบบ QSMS Rework & ShiftHub Roster ครอบคลุมทั้งฝั่ง Frontend (React 19, Next.js, Tailwind v4) และ Backend (Google Apps Script, Google Sheets Database) เพื่อป้องกันการเกิดปัญหาซ้ำซ้อนในการปรับปรุงระบบครั้งหน้า
@@ -96,6 +96,7 @@ const App = dynamic(
 34. **TypeScript Strict Union Type Conflict (2026-05-20)**: การใส่สถานะชั่วคราว `'CLEAR'` ในฟังก์ชันเปลี่ยนสถานะวันเสาร์ทำให้บิลด์พัง วิธีแก้คือระบุไทป์ตัวแปรท้องถิ่นเป็น `RosterCellStatus | 'CLEAR'` เพื่อความปลอดภัย
 35. **Google Apps Script Boolean Simplification (2026-05-20)**: โค้ดแปลงค่า Boolean ในชีตมีความซับซ้อน อ่านยาก วิธีแก้คือเรียกฟังก์ชัน `sanitizeText` ของระบบและตรวจสอบความเท่ากับ `'FALSE'` เพื่อเพิ่มความกระชับ
 36. **Single-Transaction Batch Updates on Sheet (2026-05-20)**: การแก้ไขข้อมูลวันเสาร์ของพนักงาน 2 แถวติดกันสร้างดีเลย์เน็ตเวิร์กสูง วิธีแก้คือเขียนฟังก์ชัน `upsertOverrideRows` ให้ทำงานแบบสะสมข้อมูลในแรมและสั่งเขียนชีตเพียงรอบเดียว
+37. **AI-Assisted Drawing & Master PDF Ingestion (2026-07-10)**: การเพิ่มระบบสแกนเอกสาร PDF (ทั้งแบบเวกเตอร์และสแกน/รูปภาพ) ในโมดูล Drawing/Master ด้วย Gemini 3.5 Flash (fallback เป็น Gemini 2.0 Flash) ผ่าน action `parse_drawing` ดึงข้อมูลเป็น JSON โครงสร้าง (Structured Outputs) เพื่อป้อนกลับเข้า UI บล็อกการแก้ไข/ส่งงานชั่วคราว (`isProcessing = true`) ป้องกันข้อผิดพลาดกรอกฟิลด์ผิดพลาด (Human Error)
 
 ---
 

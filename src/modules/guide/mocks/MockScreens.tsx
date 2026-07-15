@@ -14,8 +14,9 @@ import { Card, CardContent } from '@/src/components/ui/card';
 import { MainLayout } from '../../../components/layout/MainLayout';
 import { ReworkDataProvider } from '../../../contexts/ReworkDataContext';
 import { MockAddCaseTab } from './MockAddCaseTab';
-import { DashboardTab } from '../../../components/tabs/DashboardTab';
-import { MobileFastTrackApp } from '../../../components/apps/rework/MobileFastTrackApp';
+import { DashboardTab } from '@/src/modules/rework/views/DashboardTab';
+import { MobileFastTrackApp } from '@/src/modules/rework/views/MobileFastTrackApp';
+import type { ReworkCase } from '../../../services/api';
 
 // Apple Progress Bar Mock (From UpdateModal)
 function AppleProgressBar({ progress, statusText, isComplete }: { progress: number, statusText: string, isComplete: boolean }) {
@@ -668,7 +669,7 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 // 3. Mock Update Modal (True UI Style using Real Component)
-import { UpdateModal } from '../../../components/modals/UpdateModal';
+import { UpdateModal } from '@/src/modules/rework/components/UpdateModal';
 import { UserRole } from '../../../config/auth.config';
 
 export function MockUpdateModal({ onNavigate }: { onNavigate?: () => void }) {
@@ -680,7 +681,7 @@ export function MockUpdateModal({ onNavigate }: { onNavigate?: () => void }) {
   }, []);
 
   // Provide mock case data based on the original hardcoded mock
-  const mockCaseData: any = {
+  const mockCaseData = {
     id: "RT084-2026",
     caseName: "RT084-2026",
     status: "Pending",
@@ -696,10 +697,10 @@ export function MockUpdateModal({ onNavigate }: { onNavigate?: () => void }) {
         reasonSubtype: "",
         responsible: "",
         responsibleSubtype: "",
-        imageUrls: [],
+        imageUrls: [] as string[],
       }
     ],
-    materials: [],
+    materials: [] as string[],
     laborCount: 0,
     laborHours: 0,
     laborRate: 0,
@@ -709,7 +710,7 @@ export function MockUpdateModal({ onNavigate }: { onNavigate?: () => void }) {
     <div className="w-full h-full relative overflow-hidden bg-transparent pointer-events-auto">
       <UpdateModal
         isOpen={isOpen}
-        caseData={mockCaseData}
+        caseData={mockCaseData as unknown as ReworkCase}
         isLoading={false}
         onClose={() => {}}
         onUpdate={async () => {
@@ -790,12 +791,12 @@ export function MockAddCase({ onNavigate, preset }: { onNavigate?: () => void; p
           activeTab={activeTab}
           setActiveTab={(tab) => {
             if (tab === 'overall' && onNavigate) onNavigate();
-            else setActiveTab(tab as any);
+            else setActiveTab(tab as 'overall'|'add'|'dashboard');
           }}
           onLogout={() => {}}
           onBackToPortal={() => {}}
           userName="สมชาย"
-          userRole={"OPERATOR" as any}
+          userRole={UserRole.OPERATOR}
           onOpenTutorial={() => {}}
         >
           <div className="flex-1 overflow-x-hidden overflow-y-auto w-full h-full">
@@ -820,12 +821,12 @@ export function MockDashboard({ onNavigate }: { onNavigate?: () => void }) {
           activeTab={activeTab}
           setActiveTab={(tab) => {
             if (tab === 'overall' && onNavigate) onNavigate();
-            else setActiveTab(tab as any);
+            else setActiveTab(tab as 'overall'|'add'|'dashboard');
           }}
           onLogout={() => {}}
           onBackToPortal={() => {}}
           userName="สมชาย (แดชบอร์ด)"
-          userRole={"QSMS" as any}
+          userRole={UserRole.QSMS}
           onOpenTutorial={() => {}}
         >
           <div className="flex-1 overflow-x-hidden overflow-y-auto w-full h-full">

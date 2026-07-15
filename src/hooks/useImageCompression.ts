@@ -14,7 +14,7 @@ import {
   validateImageFile,
   formatFileSize,
   calculateCompressionRatio,
-} from '../utils/imageCompressionUtils';
+} from '@/src/utils/imageCompressionUtils';
 
 // ===== TYPES =====
 

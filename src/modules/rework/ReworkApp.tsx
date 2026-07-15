@@ -6,13 +6,13 @@ import { AnimatePresence, motion } from 'motion/react';
 
 import { MainLayout } from '../../components/layout/MainLayout';
 import { TutorialModal } from '../../components/modals/TutorialModal';
-import { ReworkDataProvider } from '../../contexts/ReworkDataContext';
-import { setGasWebAppUrl } from '../../services/api';
+import { ReworkDataProvider } from '@/src/contexts/ReworkDataContext';
+import { setGasWebAppUrl } from '@/src/services/api';
 import type { User } from '../../services/auth';
 
-import { OverallTab } from '../../components/tabs/OverallTab';
-import { AddCaseTab } from '../../components/tabs/AddCaseTab';
-import { DashboardTab } from '../../components/tabs/DashboardTab';
+import { OverallTab } from '@/src/modules/rework/views/OverallTab';
+import { AddCaseTab } from '@/src/modules/rework/views/AddCaseTab';
+import { DashboardTab } from '@/src/modules/rework/views/DashboardTab';
 
 type Tab = 'overall' | 'add' | 'dashboard';
 

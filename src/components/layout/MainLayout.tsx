@@ -4,17 +4,17 @@ import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLeft } from 'lucide-react';
 
-import type { ReworkCase, ReworkItem } from '../../services/api';
+import type { ReworkCase, ReworkItem } from '@/src/services/api';
 import type { User } from '../../services/auth';
 import { PermissionsModal } from '../modals/PermissionsModal';
 
 const OverallTab = React.lazy(async () => {
-  const mod = await import('../tabs/OverallTab');
+  const mod = await import('@/src/modules/rework/views/OverallTab');
   return { default: mod.OverallTab };
 });
 
 const DashboardTab = React.lazy(async () => {
-  const mod = await import('../tabs/DashboardTab');
+  const mod = await import('@/src/modules/rework/views/DashboardTab');
   return { default: mod.DashboardTab };
 });
 

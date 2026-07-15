@@ -9,6 +9,7 @@
 - [[SESSION_KNOWLEDGE_2026_05_25.md]] - ข้อมูลประมวลความรู้สำคัญระหว่างเซสชันในเดือนพฤษภาคม 2026
 
 ## 📂 2. Next.js Frontend (โมดูลฝั่งหน้าบ้าน)
+- [[architecture/fsd-update-modal-refactoring.md]] - สถาปัตยกรรม FSD (Feature-Sliced Design) สำหรับการแยกองค์ประกอบซับซ้อน เช่น UpdateModal ออกจากกันเพื่อลด Bugs
 - [[nextjs-frontend/ui-ux-principles.md]] - กฎการออกแบบ UI/UX ขนาดปุ่มสัมผัส 44x44px สัดส่วนสว่าง/มืด และระบบช่องไฟ 4/8dp
 - [[nextjs-frontend/ui-glossary.md]] - แคตตาล็อกคำศัพท์ภาษาอังกฤษและส่วนประกอบพื้นฐานสำหรับการออกแบบองค์ประกอบ UI
 - [[nextjs-frontend/design-system.md]] - ระบบการออกแบบหน้าจอ Minimal Grayscale Gradient และ Premium Apple Glassmorphism
@@ -23,6 +24,8 @@
 - [[nextjs-frontend/testing-pipeline.md]] - ทูลสืบค้นการตั้งค่าการทดสอบ Unit และ E2E Playwright ทั้งระบบ
 - [[nextjs-frontend/testsprite-testing.md]] - สเปกและแผนการทดสอบอัตโนมัติความปลอดภัยผ่านเครื่องมือ Testsprite
 - [[nextjs-frontend/refactoring-history.md]] - บันทึกประวัติการปรับโครงสร้างโฟลเดอร์และจัดระเบียบคอมโพเนนต์
+- [[nextjs-frontend/qol_recommendations.md]] - แนวทางปรับปรุง Quality of Life ระบบจัดเก็บเอกสารและลิงก์ Drawing & Master
+
 
 ## 📂 3. Architecture & System Design (ระบบสถาปัตยกรรม)
 - [[architecture/system-architecture.md]] - ภาพรวมการส่งต่อข้อมูลระหว่าง Next.js Frontend กับ GAS Backend
@@ -31,9 +34,12 @@
 - [[architecture/supabase-hybrid-migration.md]] - รูปแบบโครงสร้างการย้ายและประสานข้อมูลซิงค์ Supabase ร่วมกับ Google Sheets
 - [[architecture/cloudinary-storage.md]] - สรุปข้อจำกัด แบนด์วิดท์ และการคำนวณเครดิตของ Cloudinary (Free Tier)
 - [[architecture/prisma-orm.md]] - โครงสร้างและการทำ Migration ตารางฐานข้อมูลด้วย Prisma ORM
+- [[architecture/drawing-master-storage.md]] - ระบบจัดการไฟล์ Drawing ลูกค้าและ Master ภายใน รวมถึงการสกัดข้อมูลด้วย AI
 - [[architecture/rag-module-nextjs.md]] - สถาปัตยกรรม RAG สำหรับเก็บและค้นหาเอกสารความรู้ผ่าน Supabase pgvector และ Gemini
 - [[architecture/multimodal-rag.md]] - การออกแบบสถาปัตยกรรมประมวลผลข้อความและภาพหลายรูปแบบของโมดูล RAG
 - [[architecture/tech-stack-2026.md]] - สรุปรายการเทคโนโลยี ไลบรารี และไดอะแกรมความเชื่อมโยงของ Stack ปี 2026
+- [[architecture/fsd-migration.md]] - การจัดระเบียบโครงสร้างโฟลเดอร์แบบ Feature-Sliced Design (FSD)
+- [[architecture/modular-breakdown.md]] - รายละเอียดโครงสร้างและการทำงานเชิงลึกของทั้ง 7 โมดูลหลักในระบบ
 - [[architecture/project-overview.md]] - ภาพรวมของแอปพลิเคชัน ขอบเขตการทำงาน และบันทึกการรันงาน
 - [[architecture/project-history.md]] - บันทึกเหตุการณ์ ลำดับพัฒนาการ และไทม์ไลน์ของระบบ QSMS
 - [[architecture/deployment.md]] - แผนขั้นตอนการนำแอปพลิเคชันและ Google Apps Script ขึ้นระบบจำหน่ายจริง (Production)
@@ -65,6 +71,7 @@
 - [[lessons-learned/windows-cli-environment.md]] - ทางเลี่ยงการใช้ unzip.exe บน Windows ในสภาพแวดล้อมที่ไร้คำสั่ง unzip
 - [[lessons-learned/text-clipping-ui.md]] - การแก้ปัญหาเลย์เอาต์ตัวอักษรล้นจอหรือแหว่งหน้าต่างของเบราว์เซอร์
 - [[lessons-learned/ui-libraries-resource.md]] - ข้อมูลระบบ Mantine UI Components, Hooks, Dates และ Combobox
+- [[lessons-learned/update-modal-layout-rework.md]] - การแก้ปัญหาเลื่อนจอพัง, ล็อกแถบเลื่อนฝั่งขวา และการถอนคลาส uppercase บน Tailwind
 - [[lessons-learned/js-projects-resource.md]] - แคตตาล็อกไลบรารีและคู่มือพัฒนาของโปรเจกต์ JavaScript/TypeScript
 
 ## 📂 5. Backend Services (บริการหลังบ้าน)

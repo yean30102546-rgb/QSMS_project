@@ -163,6 +163,42 @@ Knowledge สำคัญที่ได้:
 - **Development Learnings backfill**: รีไรท์ [[lessons-learned/development-learnings.md]] ดึงข้อมูลบทเรียนการพัฒนาทั้งหมด 36 รายการในอดีตจากไฟล์ดิบ `ForLearning_1941763098.md` สรุปอาการและโซลูชันแก้ไขในรูปแบบที่สแกนง่าย
 - **Consolidated Flat Index**: รีไรท์สารบัญหลัก [[index.md]] ใหม่ทั้งหมด ลงทะเบียนลิงก์สัมบูรณ์ชี้ไปยังหน้าความรู้ทั้งหมด 64 ไฟล์จำแนกตามโครงสร้างโฟลเดอร์ 7 หมวดหมู่
 
+## 2026-07-07
 
+### [UI/UX & Layout] Rework หน้าต่างจัดการสถานะสินค้า (Update Status Modal Layout & Spacing)
+- **Viewport Jumping Fix**: แก้ไขปัญหากระโดด/ดีดกลับไปบนสุดของ Viewport เมื่อกดพรีวิวรูปหรือเปิด Image Editor โดยห่อหุ้ม Lightbox และ Editor ภายใต้ React Portals (`createPortal` ชี้ตรงที่ `document.body`) เลี่ยง Stacking Context ของ Framer Motion parent component
+- **Capped Materials Table Scroll**: จำกัดความสูงตารางวัสดุทั้งสองโหมดไว้ที่ `max-h-[220px]` และทำระบบเลื่อนแนวตั้ง/แนวนอนในกล่อง (`overflow-auto min-w-[500px]`)
+- **Locked Right Column Scroll**: ตรึงแผงด้านขวาไม่ให้เลื่อนแยกเพื่อไม่ให้เกิด Scrollbar ซ้อนกัน 2 เส้น (`overflow-hidden`)
+- **Responsive Layout Breakpoints**: ย้ายปุ่มดาวน์โหลดรายงานไปอยู่มุมขวาบนของ Header และปรับเปลี่ยนจุดตัดแถว (Grid split) ของฝั่งซ้ายและขวาในโหมด View เป็น `lg` (1024px) เพื่อไม่ให้บีบฟิลด์บนแท็บเล็ต
+- **Tailwind Casing Fix**: เอาคลาส `uppercase` ของ Tailwind ออกจากป้ายกำกับสินค้า เพื่อคืนค่าสไตล์ Title Case ให้ป้ายกำกับ (`Batch`, `Mold`, `Line`, `Reason`) ตามจริงในซอร์สโค้ด
+- **Resolution Field Removal**: ลบช่องป้อน/แสดงผลของ "วิธีแก้ไขปัญหา (Resolution)" ออกทั้งหมดตามคำสั่งผู้ใช้งาน เพื่อลดความเทอะทะของ UI
+- **Wiki Update**: บันทึกบทเรียนลงใน [[lessons-learned/update-modal-layout-rework.md]] และลงทะเบียนสารบัญใน [[index.md]]
 
+## 2026-07-14
+
+### [Refactor] ปรับปรุง UpdateModal เป็น Feature-Sliced Design (FSD)
+- สลาย Monolithic Component `UpdateModal.tsx` (~1,500 บรรทัด) ออกเป็นโครงสร้าง FSD ในโฟลเดอร์ `src/modules/rework/components/UpdateModal/`:
+  - `UpdateModalContext.tsx`: จัดการสถานะ Business Logic และคำนวณราคา
+  - `UpdateModalView.tsx`: เลเยอร์แสดงข้อมูลแบบอ่านอย่างเดียว (Presentation layer)
+  - `UpdateModalEdit.tsx`: หน้าจอแก้ไขฟอร์มและจัดการ Material
+  - `index.tsx`: Component Orchestrator ที่ใช้ห่อหุ้ม Provider
+- **Build & Path Alignment**:
+  - ลบไฟล์เก่า `src/components/modals/UpdateModal.tsx` ทิ้งเพื่อป้องกันการพังของคอมไพล์เลอร์
+  - เปลี่ยนพาทนำเข้าใน Mock Screens, Tests และแอปหลักมาใช้ Absolute Path Alias `@/src/...` แทน Relative Path ป้องกัน Build Error
+  - แก้ไขปัญหา Type Inference ใน `App.tsx` เนื่องจาก relative path ที่เสียใน auth views (`Login.tsx`, `Register.tsx`)
+
+### [Librarian] ติดตั้งโปรโตคอลด่านตรวจความจำและจัดระเบียบ Raw Data
+- **ปรับปรุงข้อตกลง Agent**: อัปเดตไฟล์ `AGENTS.md` ทั้งของ Oak ( root) และ Oil ( ใน `.llm-wiki/`) เพื่อใช้ระบบ **Validation Gate** และ **Tiered Classification** ในการคัดกรองนำเข้าข้อมูล
+- **Ingestion & Conflict Detection**:
+  - ประสานงานระหว่าง Oak และ Oil เพื่อตรวจพบว่าเอกสารดิบของรูปภาพ `IMAGE_UPLOAD_*.md` ระบุสเปกการอัปโหลดไป GAS/Drive ซึ่งล้าสมัยและขัดแย้งกับโค้ดจริงที่ใช้ Cloudinary
+  - บันทึกการแก้ไขลงใน [[nextjs-frontend/image-upload-system.md]] พร้อมใส่เครื่องหมาย `[Conflict Note]` ชี้แจงข้อขัดแย้งเชิงประวัติเพื่อความสว่างแก่นักพัฒนาและโมเดลในอนาคต
+  - เพิ่มประวัติแก้ไขปัญหาลง [[lessons-learned/bugs-and-fixes.md]] (BUG-019)
+## 2026-07-15
+
+### [Ingest & Feature] สร้าง Agent Skills และรวบรวมข้อมูลสำหรับรายงาน/พรีเซนเตชัน
+- **คู่มือพรีเซนต์และรายงาน**: ค้นหาข้อมูลและสร้าง [[1_raw/presentation_and_report_guide.md]] รวบรวมหลักการทำรายงานวิทยานิพนธ์และพรีเซนเตชันที่ดีตามแนวทางวิชาการและการสื่อสารยุคใหม่
+- **ระบบวิเคราะห์ทักษะโครงการ (Agent Skills)**: สร้างทักษะเฉพาะ (Project Skills) สำหรับเอเจนต์คู่หูพัฒนาใต้โฟลเดอร์ `.agents/skills/` 2 ชุด:
+  - `project-reporter` - สำหรับสั่งการให้วิเคราะห์โค้ดและออกเลย์เอาต์รายงาน 5 บทบาททางวิทยานิพนธ์ รวมถึงพิมพ์โครงร่างสไลด์นำเสนอ (Presentation Slides Outline)
+  - `project-workflow-generator` - สำหรับสั่งการให้วิเคราะห์ขั้นตอนและสร้างแผนภาพ (Mermaid.js Flowchart/Sequence Diagram) ครอบคลุม 5 งานหลักของโครงการ
+- **การตั้งค่าเอเจนต์ (Agent configuration)**: ลงทะเบียน `agents/openai.yaml` ของทักษะทั้งสองเพื่อระบุดำเนินงานเป็น slash commands หรือ subagents ประจำตัว
 

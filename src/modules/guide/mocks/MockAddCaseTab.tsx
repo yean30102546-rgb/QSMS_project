@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search } from 'lucide-react';
-import { useForm, useFieldArray, FormProvider, Controller } from 'react-hook-form';
+import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -12,10 +12,10 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { useItemVerification } from '../../../hooks/useItemVerification';
 import type { ReworkItem, ReworkCase } from '../../../services/api';
 import { CUSTOMER_OPTIONS, insertCase } from '../../../services/api';
-import { ImageUpload } from '../../../components/ui/ImageUpload';
-import { AppleProgressBar } from '../../../components/ui/AppleProgressBar';
+import { ImageUpload } from '@/src/modules/storage/components/ImageUpload';
+import { AppleProgressBar } from '@/src/components/shared/AppleProgressBar';
 import { convertDMYToYMD, convertYMDToDMY, findDuplicateItemNumbers } from '../../../utils/helpers';
-import { ConflictModal } from '../../../components/modals/ConflictModal';
+import { ConflictModal } from '@/src/components/modals/ConflictModal';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -35,7 +35,7 @@ interface AddCaseTabProps {
   onCaseInfoChange?: (source: string, number: string) => void;
 }
 
-export const Hotspot = ({ top, left, right, bottom, title, content, targetId, align = 'center' }: any) => {
+export const Hotspot = ({ top, left, right, bottom, title, content, targetId, align = 'center' }: { top?: string | number; left?: string | number; right?: string | number; bottom?: string | number; title?: React.ReactNode; content?: React.ReactNode; targetId?: string; align?: string }) => {
   const [isHovered, setIsHovered] = useState(false);
   
   useEffect(() => {
@@ -182,8 +182,8 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
         caseSource: 'Customer',
         caseNumber: '999',
         items: [
-          { ...initialFormItem, id: `form-1`, customerName: 'OR', itemNumber: '60001234A', verificationStatus: 'verified' as any, reason: 'รั่ว', reasonSubtype: 'รั่วซึม' },
-          { ...initialFormItem, id: `form-2`, customerName: 'OR', itemNumber: '60001234B', verificationStatus: 'verified' as any, reason: 'เปื้อน', reasonSubtype: 'ขวดเปื้อน', linkedSourceId: 'form-1' }
+          { ...initialFormItem, id: `form-1`, customerName: 'OR', itemNumber: '60001234A', verificationStatus: 'verified', reason: 'รั่ว', reasonSubtype: 'รั่วซึม' },
+          { ...initialFormItem, id: `form-2`, customerName: 'OR', itemNumber: '60001234B', verificationStatus: 'verified', reason: 'เปื้อน', reasonSubtype: 'ขวดเปื้อน', linkedSourceId: 'form-1' }
         ]
       };
     }
@@ -216,8 +216,8 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
       setAutoFillTriggeredItem(itemId);
       setTimeout(() => setAutoFillTriggeredItem(null), 1500);
     },
-    getValues: methods.getValues,
-    setValue: methods.setValue
+    getValues: methods.getValues as unknown as UseFormGetValues<import('../../../hooks/useItemVerification').ReworkFormValues>,
+    setValue: methods.setValue as unknown as UseFormSetValue<import('../../../hooks/useItemVerification').ReworkFormValues>
   });
 
   // Restore session state (only if empty preset)
@@ -266,7 +266,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
       if (source && !getValues('caseSource')) setValue('caseSource', source);
       if (caseId && !getValues('caseNumber')) setValue('caseNumber', caseId);
 
-      const mappedItems = items.map((it: any) => ({
+      const mappedItems = items.map((it: Partial<ReworkItem>) => ({
         ...initialFormItem,
         itemNumber: it.itemNumber || '',
         itemCode: it.itemCode || '',
@@ -1024,7 +1024,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
   );
 }
 
-const InputField = React.forwardRef<HTMLInputElement, any>(({ label, className, id: externalId, ...props }, ref) => {
+const InputField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { label: string }>(({ label, className, id: externalId, ...props }, ref) => {
   const internalId = React.useId();
   const id = externalId || internalId;
   return (
