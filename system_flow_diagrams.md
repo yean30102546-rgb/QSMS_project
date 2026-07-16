@@ -1,130 +1,194 @@
 # แผนผังกระแสการทำงานระบบ (QSMS System Flow Diagrams)
 
-แผนผังเหล่านี้เขียนขึ้นโดยใช้ไวยากรณ์ **Mermaid.js** ซึ่งคุณสามารถคัดลอกโค้ดไปแสดงผลในสไลด์นำเสนอ เล่มรายงาน (Markdown) หรือโปรแกรมที่รองรับได้ทันที
+แผนผังเหล่านี้ถูกปรับปรุงให้ใช้คำศัพท์ที่ **เข้าใจง่าย (User-friendly)** และลดความซับซ้อนเชิงเทคนิคลง เพื่อให้นำไปใช้ประกอบการนำเสนอ (Presentation) หรือใส่ในเล่มรายงานวิทยานิพนธ์ได้อย่างสวยงามและสื่อสารได้ชัดเจนยิ่งขึ้นครับ
 
 ---
 
-## 1. แผนผังโครงสร้างสถาปัตยกรรมระบบ (Overall System Architecture)
+## 1. ภาพรวมการทำงานของระบบ (Overall System Architecture)
 
 ```mermaid
 flowchart TD
-    subgraph Client ["ฝั่งผู้ใช้งาน (Client SPA Layer)"]
-        UI["React SPA Shell (Tailwind v4 / Motion)"]
-        Comp["Image Compressor (Client-side)"]
+    subgraph Client ["🖥️ ฝั่งผู้ใช้งาน"]
+        UI["หน้าเว็บแอปพลิเคชัน"]
     end
 
-    subgraph Server ["ระดับเซิร์ฟเวอร์ (API Gateway & Proxy)"]
-        NextAPI["Next.js Route Handlers (/api/drawings)"]
+    subgraph Server ["⚙️ ระบบประมวลผลกลาง"]
+        API["เซิร์ฟเวอร์หลัก (API)"]
     end
 
-    subgraph Service ["บริการภายนอกและฐานข้อมูล (Services Layer)"]
-        SupaDB[("Supabase DB (PostgreSQL)")]
-        Cloudinary[("Cloudinary API (Evidence Images)")]
-        GAS["Google Apps Script (Legacy Data Sync)"]
-        Gemini["Gemini AI 3.5 Flash (OCR Engine)"]
+    subgraph Database ["🗄️ ฐานข้อมูลและระบบภายนอก"]
+        DB[("ฐานข้อมูลหลัก (Supabase)")]
+        ImageDB[("ระบบเก็บรูปภาพ (Cloudinary)")]
+        AI["ระบบผู้ช่วยวิเคราะห์ (Gemini AI)"]
+        Excel["ระบบสำรองข้อมูล (Google Sheets)"]
     end
 
-    UI -->|1. Request Metadata| NextAPI
-    UI -->|2. Direct Upload compressed img| Cloudinary
-    NextAPI -->|3. Call Gemini Vision API| Gemini
-    NextAPI -->|4. Store Metadata| SupaDB
-    NextAPI -->|5. Sync Sheets Transaction| GAS
-    Cloudinary -.->|6. Return Image URL| UI
+    UI -->|"1. ส่งข้อมูลและคำสั่ง"| API
+    UI -->|"2. อัปโหลดรูประบบ Rework"| ImageDB
+    API -->|"3. สั่งให้ AI อ่านข้อมูล"| AI
+    API -->|"4. บันทึกข้อมูลงาน"| DB
+    API -->|"5. ซิงค์ข้อมูลสำรอง"| Excel
 ```
 
 ---
 
-## 2. ลำดับขั้นตอนการวิเคราะห์และดึงข้อมูลแบบแปลน (AI Drawing/Master OCR Ingestion)
+## 2. ขั้นตอนการทำงานของ AI ช่วยอ่านแบบแปลน (AI Document OCR Workflow)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Staff as เจ้าหน้าที่ฝ่ายผลิต/คลังสินค้า
-    participant Front as Frontend UploadModal.tsx
-    participant API as Next.js API (/api/drawings)
-    participant Gemini as Gemini AI API
-    participant Supa as Supabase Database
+    actor User as 👨‍🔧 ผู้ใช้งาน
+    participant Web as 💻 หน้าเว็บแอป
+    participant API as ⚙️ ระบบเซิร์ฟเวอร์
+    participant AI as 🧠 AI วิเคราะห์เอกสาร
+    participant DB as 🗄️ ฐานข้อมูล
 
-    Staff->>Front: อัปโหลดเอกสาร PDF (Drawing / Master)
-    Front->>Front: แปลงไฟล์เป็น Base64 Data
-    Front->>API: ส่ง JSON Request (Base64 + type)
-    API->>Gemini: วิเคราะห์เอกสารตามประเภท Prompt Template
-    Note over Gemini: วิเคราะห์แยกประเภท:<br/>- Customer Drawing: งดดึงข้อมูลภายใน<br/>- Master spec: ดึงข้อมูลและประเภทน้ำมัน
-    Gemini-->>API: คืนค่า JSON Metadata ผลลัพธ์การอ่าน
-    API-->>Front: ส่ง Metadata กลับไปยังฟอร์มหน้าจอ
-    Front->>Staff: แสดงผลข้อมูลล่วงหน้าให้ตรวจสอบและแก้ไข (Preview Form)
-    Staff->>Front: กดยืนยันการบันทึกข้อมูล
-    Front->>API: ส่งข้อมูลที่ตรวจสอบแล้ว (Save Action)
-    API->>Supa: อัปเดตข้อมูลและเปลี่ยนเอกสารเก่าเป็น Inactive (Versioning)
-    Supa-->>API: ยืนยันบันทึกสำเร็จ
-    API-->>Front: บันทึกข้อมูล Drawing/Master เสร็จสิ้น
+    User->>Web: อัปโหลดไฟล์แบบแปลน (PDF)
+    Web->>API: ส่งไฟล์เข้าสู่ระบบ
+    API->>AI: สั่งให้ AI อ่านและสกัดข้อมูลสำคัญ
+    AI-->>API: ส่งคืนข้อมูลที่อ่านได้ (รหัส, ชื่อสินค้า, ฯลฯ)
+    API-->>Web: แสดงข้อมูลลงในแบบฟอร์มให้โดยอัตโนมัติ
+    Web->>User: ให้ผู้ใช้ตรวจสอบความถูกต้องอีกครั้ง
+    User->>Web: กดยืนยันการบันทึก
+    Web->>API: ส่งข้อมูลที่ยืนยันแล้ว
+    API->>DB: บันทึกข้อมูลลงฐานข้อมูล
+    DB-->>Web: แจ้งผลการบันทึกสำเร็จ
 ```
 
 ---
 
-## 3. ผังสถานะระบบตรวจสอบข้อมูลสินค้าอัตโนมัติสองทาง (Two-Way Verification States)
+## 3. ระบบช่วยตรวจสอบและป้องกันข้อมูลผิดพลาด (Smart Verification)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle : รอกรอกข้อมูลรหัสสินค้า
+    [*] --> รอกรอกข้อมูล : เริ่มต้น
     
-    Idle --> Checking : พนักงานกรอก Item Code / Item Number
+    รอกรอกข้อมูล --> กำลังตรวจสอบ : ผู้ใช้พิมพ์รหัสสินค้า
     
-    state Checking {
-        [*] --> Database_Lookup : สืบค้นจากตาราง Item Master
+    state กำลังตรวจสอบ {
+        [*] --> ค้นหาในระบบ : ค้นหาจากฐานข้อมูลสินค้าส่วนกลาง
     }
     
-    Checking --> Verified : พบข้อมูลในระบบมาสเตอร์
-    Checking --> New : ไม่พบรหัสในมาสเตอร์
-    Checking --> Conflict : รหัสถูกบันทึกซ้ำซ้อนหรือติดเงื่อนไข
+    กำลังตรวจสอบ --> ข้อมูลถูกต้อง : พบข้อมูลตรงกัน
+    กำลังตรวจสอบ --> สินค้าใหม่ : ไม่พบรหัสสินค้านี้มาก่อน
+    กำลังตรวจสอบ --> ข้อมูลขัดแย้ง : รหัสและชื่อไม่ตรงกัน (เสี่ยงผิดพลาด)
     
-    Verified --> [*] : ดึงสเปกไปกรอกอัตโนมัติ (Autofill)
-    New --> [*] : บังคับกรอกมือและจัดเก็บเข้าฐานข้อมูลในพื้นหลัง (Smart Upsert)
-    Conflict --> Idle : แจ้งเตือนข้อผิดพลาดและเคลียร์ช่องป้อนข้อมูล
+    ข้อมูลถูกต้อง --> [*] : ระบบเติมข้อมูลสเปกให้เรียบร้อย (Autofill)
+    สินค้าใหม่ --> [*] : ให้ผู้ใช้กรอกเองและบันทึกเป็นสินค้าใหม่
+    ข้อมูลขัดแย้ง --> รอกรอกข้อมูล : แจ้งเตือนข้อผิดพลาด บล็อกไม่ให้ไปต่อ
 ```
 
 ---
 
-## 4. แผนผังกระบวนการดำเนินงานของ Rework Case (Rework Case Lifecycle)
+## 4. วงจรชีวิตการทำงานของงาน Rework (Rework Case Lifecycle)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Pending : สร้างใบงาน Rework Case โดย Operator (สถานะรอนำเนินการ)
+    [*] --> รอดำเนินการ : สร้างใบงาน Rework ใหม่
     
-    Pending --> In_Progress : เจ้าหน้าที่คลังสแกนแกลลอนและเริ่มซ่อมแซมแก้ไข
+    รอดำเนินการ --> กำลังดำเนินการ : ฝ่ายผลิตเริ่มซ่อมแซมสินค้า
     
-    state In_Progress {
-        [*] --> Processing : กำลังล้างแกลลอน / เปลี่ยนฝา / แพ็คลงกล่อง
-        Processing --> Verification : ตรวจสอบรูปภาพหลักฐานและนับจำนวน
+    state กำลังดำเนินการ {
+        [*] --> ซ่อมแซม : ล้างแกลลอน / เปลี่ยนฝา / แพ็คลงกล่อง
+        ซ่อมแซม --> ตรวจสอบ : ถ่ายรูปหลักฐานและนับจำนวน
     }
     
-    In_Progress --> Awaiting_Valuation : ส่งต่อใบงานเสร็จสิ้นให้ฝ่ายบัญชีและการเงิน
+    กำลังดำเนินการ --> รอประเมินราคา : งานเสร็จ ส่งต่อให้ฝ่ายการเงิน
     
-    Awaiting_Valuation --> Completed : ฝ่ายการเงินบันทึกค่าแรงจริงและค่าวัสดุ (Valuation)
+    รอประเมินราคา --> เสร็จสมบูรณ์ : ฝ่ายการเงินประเมินค่าแรงและค่าวัสดุ
     
-    Completed --> [*] : ใบงานปิดสำเร็จพร้อมส่งออกรายงาน Excel
+    เสร็จสมบูรณ์ --> [*] : ปิดใบงานและออกรายงาน Excel ได้
 ```
 
 ---
 
-## 5. กระบวนการนำเข้าเอกสารความรู้ของระบบคู่มืออัจฉริยะ (DocAI RAG Ingestion Pipeline)
+## 5. กระบวนการนำเข้าคู่มือเพื่อสอน AI (AI Knowledge Ingestion)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as ผู้ดูแลระบบคู่มือเทคนิค
-    participant Front as Frontend DocAI Dashboard
-    participant API as Next.js API (/api/rag)
-    participant Jina as Jina AI API (Embedding)
-    participant Supa as Supabase pgvector DB
+    actor Admin as 👨‍💼 แอดมินระบบ
+    participant Web as 💻 หน้าจอจัดการคู่มือ
+    participant Server as ⚙️ เซิร์ฟเวอร์
+    participant AI as 🧠 AI สร้างสมอง (Embedding)
+    participant DB as 🗄️ ฐานข้อมูลความรู้
 
-    Admin->>Front: อัปโหลดเอกสารคู่มือการซ่อมแซม PDF
-    Front->>Front: แบ่งหน้าและแปลงหน้า PDF เป็น JPEG (pdfjs-dist)
-    Front->>API: ส่งข้อมูลรูปภาพหน้าคู่มือ
-    API->>API: ใช้ OCR สกัดข้อมูลข้อความและตารางจากหน้า
-    API->>Jina: ส่งข้อความไปคำนวณเวกเตอร์ embeddings (Jina-v5)
-    Jina-->>API: คืนค่าเวกเตอร์พิกัด 768 มิติ
-    API->>Supa: บันทึก Chunk เนื้อหาคู่มือและ Vector ลง pgvector
-    Supa-->>API: บันทึกข้อมูลเวกเตอร์สำเร็จ
-    API-->>Front: แสดงเครื่องหมายนำเข้าเอกสารเสร็จสมบูรณ์
+    Admin->>Web: อัปโหลดไฟล์คู่มือเทคนิค (PDF)
+    Web->>Server: ส่งไฟล์เข้าสู่ระบบ
+    Server->>Server: แยกไฟล์ออกเป็นหน้าๆ และอ่านตัวอักษร
+    Server->>AI: ส่งเนื้อหาไปประมวลผลเป็นความหมายเชิงลึก (Vector)
+    AI-->>Server: ส่งคืนข้อมูลความรู้ที่แปลงแล้ว
+    Server->>DB: จัดเก็บความรู้เข้าสู่สมองของ AI
+    DB-->>Web: แจ้งผลว่าระบบ AI พร้อมตอบคำถามแล้ว
+```
+
+---
+
+## 6. แผนภาพความสัมพันธ์ของฐานข้อมูล (Database ERD)
+
+เนื่องจากระบบถูกแบ่งส่วนฐานข้อมูลออกจากกันอย่างชัดเจนตามขอบเขตการทำงาน (Bounded Context) แผนภาพจึงถูกแยกออกเป็น 2 ส่วนหลัก ดังนี้:
+
+### 6.1 ฐานข้อมูลระบบจัดการงาน Rework (Rework Management DB)
+
+```mermaid
+erDiagram
+    REWORK_CASES ||--o{ REWORK_ITEMS : "ประกอบด้วยรายการสินค้า"
+    REWORK_CASES ||--o{ REWORK_LOGS : "บันทึกประวัติการแก้ไข"
+    REWORK_ITEMS }o--|| REWORK_MASTER_ITEMS : "ตรวจสอบความถูกต้องด้วย"
+    REWORK_MASTER_ITEMS ||--o{ REWORK_MASTER_DEFECTS : "อ้างอิงรหัสอาการเสีย"
+
+    REWORK_CASES {
+        text id PK "รหัสใบงาน"
+        text case_name "ชื่อเคส"
+        text customer_name "ชื่อลูกค้า"
+        text status "สถานะใบงาน"
+        decimal total_rework_cost "ค่าใช้จ่ายรวม"
+    }
+
+    REWORK_ITEMS {
+        uuid id PK
+        text case_id FK
+        text item_code "รหัสสินค้า"
+        decimal amount "จำนวน"
+        text reason "อาการเสีย"
+    }
+
+    REWORK_LOGS {
+        uuid id PK
+        text case_id FK
+        text action "การกระทำ (สร้าง/เปลี่ยนสถานะ)"
+        text performed_by "ผู้ทำรายการ"
+    }
+
+    REWORK_MASTER_ITEMS {
+        uuid id PK
+        text item_code "รหัสสินค้ามาตรฐาน"
+        text item_name "ชื่อสินค้ามาตรฐาน"
+    }
+```
+
+### 6.2 ฐานข้อมูลระบบเอกสารและคู่มือ AI (Document & Knowledge DB)
+
+```mermaid
+erDiagram
+    RAG_DOCUMENTS ||--o{ RAG_DOCUMENT_CHUNKS : "ถูกหั่นเนื้อหาเป็นส่วนๆ"
+    RAG_DOCUMENTS ||--o{ RAG_FEEDBACK : "รับผลตอบรับความแม่นยำ"
+
+    ENGINEERING_DRAWINGS {
+        uuid id PK
+        text drawing_number "เลขที่แบบแปลน"
+        text revision "เวอร์ชัน"
+        text file_name "ชื่อไฟล์"
+    }
+
+    RAG_DOCUMENTS {
+        uuid id PK
+        text filename "ชื่อไฟล์คู่มือ"
+    }
+
+    RAG_DOCUMENT_CHUNKS {
+        uuid id PK
+        uuid document_id FK
+        text content "เนื้อหาที่ถูกตัดแบ่งให้ AI อ่าน"
+    }
 ```

@@ -202,3 +202,11 @@ Knowledge สำคัญที่ได้:
   - `project-workflow-generator` - สำหรับสั่งการให้วิเคราะห์ขั้นตอนและสร้างแผนภาพ (Mermaid.js Flowchart/Sequence Diagram) ครอบคลุม 5 งานหลักของโครงการ
 - **การตั้งค่าเอเจนต์ (Agent configuration)**: ลงทะเบียน `agents/openai.yaml` ของทักษะทั้งสองเพื่อระบุดำเนินงานเป็น slash commands หรือ subagents ประจำตัว
 
+### [Documentation] จัดทำรายงานวิทยานิพนธ์และเอกสารเชิงระบบ
+- **รายงานวิทยานิพนธ์ (Thesis Report)**: สังเคราะห์ข้อมูลและจัดทำ `system_thesis_report.md` (5 บท) ครอบคลุมภาพรวมระบบ, สถาปัตยกรรม FSD, การทำงานของ Supabase, และแผนการทดสอบ พร้อมแทรกทฤษฎีอ้างอิงและหลักการทางวิศวกรรมซอฟต์แวร์ที่เกี่ยวข้อง (เช่น ACID, SoC, FSM)
+- **แผนภาพระบบ (System Flow Diagrams)**: สร้าง `system_flow_diagrams.md` ด้วย Mermaid.js ประกอบด้วย 5 แผนภาพหลัก ได้แก่ Architecture, AI OCR Flow, Verification State Machine, Rework Lifecycle, และ RAG Ingestion Flow
+- **สรุปไทม์ไลน์ฟีเจอร์ (Project Timeline)**: ดึงประวัติจาก Git Log ตั้งแต่จุดเริ่มต้น (เมษายน 2026) และสร้าง `project_timeline.md` เพื่อสรุปการเพิ่มฟีเจอร์ใหม่ที่ส่งผลต่อผู้ใช้ (User-facing features)
+
+### [System] คลีนอัปและซิงค์ข้อมูล (Git Push)
+- ทำการลบไฟล์และโฟลเดอร์เก่าที่ไม่ได้ใช้งาน (เช่น `archive_docs`, ทดสอบ `gas`, ไฟล์ `.cjs` และ `testsprite_tests`) เพื่อทำความสะอาด Workspace
+- **Git Sync**: ทำการ Add, Commit และ Push งานล่าสุดทั้งหมด (เอกสารวิทยานิพนธ์, แผนภาพ, ไทม์ไลน์ และ FSD Refactoring) ขึ้นสู่ GitHub Branch `main` สมบูรณ์

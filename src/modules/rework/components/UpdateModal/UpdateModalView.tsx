@@ -282,7 +282,7 @@ export function UpdateModalView() {
                                         value={laborCount}
                                         onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
                                         disabled={!canEditMaterialNameQty}
-                                        className="apple-input w-full bg-surface-bright border border-divider-color px-3 py-2 text-sm font-semibold rounded-lg"
+                                        className="w-full bg-surface-bright border border-divider-color px-3 py-2 text-sm font-semibold rounded-lg"
                                       >
                                         <option value="">เลือกจำนวน</option>
                                         {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} คน</option>)}
@@ -296,7 +296,7 @@ export function UpdateModalView() {
                                         onChange={(e) => setLaborHours(e.target.value === '' ? '' : Number(e.target.value))}
                                         disabled={!canEditMaterialNameQty}
                                         placeholder="0.0"
-                                        className="apple-input w-full bg-surface-bright border border-divider-color px-3 py-2 text-sm font-semibold rounded-lg"
+                                        className="w-full bg-surface-bright border border-divider-color px-3 py-2 text-sm font-semibold rounded-lg"
                                       />
                                     </div>
                                     {canViewFinancialData && (
@@ -309,7 +309,7 @@ export function UpdateModalView() {
                                             onChange={(e) => setLaborRate(e.target.value === '' ? '' : Number(e.target.value))}
                                             disabled={!canEditUnitPrice}
                                             placeholder="0"
-                                            className="apple-input w-full bg-surface-bright border border-divider-color pl-7 pr-3 py-2 text-sm font-semibold rounded-lg"
+                                            className="w-full bg-surface-bright border border-divider-color pl-7 pr-3 py-2 text-sm font-semibold rounded-lg"
                                           />
                                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant font-semibold">฿</span>
                                         </div>
@@ -349,7 +349,7 @@ export function UpdateModalView() {
                                                   value={mat.name}
                                                   onChange={(e) => handleMaterialChange(mat.id, 'name', e.target.value)}
                                                   disabled={!canEditMaterialNameQty}
-                                                  className="apple-input w-full bg-system-background px-2 py-1.5 text-xs font-medium border border-divider-color rounded"
+                                                  className="w-full bg-system-background px-2 py-1.5 text-xs font-medium border border-divider-color rounded"
                                                 >
                                                   {STANDARD_MATERIALS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                                 </select>
@@ -360,7 +360,7 @@ export function UpdateModalView() {
                                                   value={mat.quantity || ''}
                                                   onChange={(e) => handleMaterialChange(mat.id, 'quantity', Number(e.target.value))}
                                                   disabled={!canEditMaterialNameQty}
-                                                  className="apple-input w-full bg-system-background px-1 py-1.5 text-center text-xs font-medium border border-divider-color rounded"
+                                                  className="w-full bg-system-background px-1 py-1.5 text-center text-xs font-medium border border-divider-color rounded"
                                                 />
                                               </td>
                                               <td className="p-2 text-center text-xs text-on-surface-variant">{mat.unit}</td>
@@ -371,7 +371,7 @@ export function UpdateModalView() {
                                                     value={mat.unitPrice || ''}
                                                     onChange={(e) => handleMaterialChange(mat.id, 'unitPrice', Number(e.target.value))}
                                                     disabled={!canEditUnitPrice}
-                                                    className="apple-input w-full bg-system-background px-2 py-1.5 text-right text-xs font-medium border border-divider-color rounded"
+                                                    className="w-full bg-system-background px-2 py-1.5 text-right text-xs font-medium border border-divider-color rounded"
                                                   />
                                                 </td>
                                               )}
@@ -402,7 +402,7 @@ export function UpdateModalView() {
                                       value={resolutionMethod}
                                       onChange={(e) => setResolutionMethod(e.target.value)}
                                       placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
-                                      className="apple-input w-full bg-surface-bright border border-divider-color p-3 rounded-lg text-sm font-medium text-on-surface min-h-[80px]"
+                                      className="w-full bg-surface-bright border border-divider-color p-3 rounded-lg text-sm font-medium text-on-surface min-h-[80px]"
                                     />
                                   </div>
                                 ) : null}
@@ -426,7 +426,7 @@ export function UpdateModalView() {
                                       onChange={(e) => setReworkCost(e.target.value)}
                                       disabled={userRole !== UserRole.FINANCE && !isAdmin}
                                       placeholder="0.00"
-                                      className="apple-input w-full bg-system-background pl-8 pr-4 py-2 text-base font-semibold rounded-lg text-on-surface"
+                                      className="w-full bg-system-background pl-8 pr-4 py-2 text-base font-semibold rounded-lg text-on-surface"
                                     />
                                   </div>
                                 </div>
@@ -505,11 +505,11 @@ export function UpdateModalView() {
                           </div>
                         )}
                         {isAdmin && (
-                          <button onClick={handleToggleEditMode} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-3 sm:px-4 py-2">
+                          <button onClick={handleToggleEditMode} className="bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-3 sm:px-4 py-2 rounded-lg font-semibold transition-colors border border-divider-color">
                             {isEditMode ? 'ยกเลิกแก้' : 'แก้ไข'}
                           </button>
                         )}
-                        <button onClick={onClose} className="apple-button bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-3 sm:px-4 py-2">
+                        <button onClick={onClose} className="bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-3 sm:px-4 py-2 rounded-lg font-semibold transition-colors border border-divider-color">
                           ปิด
                         </button>
                         {isSaving ? (
@@ -525,7 +525,7 @@ export function UpdateModalView() {
                               if (caseData.status === 'Completed' && !isAdmin) return true;
                               return false;
                             })()}
-                            className="apple-button apple-button-primary shadow-md text-[13px] sm:text-sm px-4 sm:px-6 py-2 flex-1 sm:flex-none justify-center whitespace-nowrap"
+                            className="bg-primary text-white hover:bg-primary/90 shadow-md text-[13px] sm:text-sm px-4 sm:px-6 py-2 rounded-lg font-semibold flex-1 sm:flex-none justify-center whitespace-nowrap transition-colors disabled:opacity-50"
                           >
                             {isEditMode ? 'บันทึก' : 'อัปเดต'}
                           </button>

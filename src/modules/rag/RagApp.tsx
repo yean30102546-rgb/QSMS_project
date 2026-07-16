@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, Sparkles, Bot, X, RotateCw } from 'lucide-react';
+import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, Sparkles, Bot, X, RotateCw, Eye } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { User } from '../../services/auth';
 import { useNotification } from '@/src/contexts/NotificationContext';
@@ -71,6 +71,34 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const [inspectingDoc, setInspectingDoc] = useState<DocFile | null>(null);
+  const [inspectingChunks, setInspectingChunks] = useState<Array<{ id: string; content: string; image_urls?: string[] }>>([]);
+  const [loadingChunks, setLoadingChunks] = useState(false);
+
+  const fetchDocumentChunks = async (doc: DocFile) => {
+    setInspectingDoc(doc);
+    setLoadingChunks(true);
+    setInspectingChunks([]);
+    try {
+      const res = await fetch('/api/rag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_document_chunks', documentId: doc.id })
+      });
+      const result = await res.json();
+      if (result.success) {
+        setInspectingChunks(result.data || []);
+      } else {
+        showAlert('ไม่สามารถดึงข้อมูลชิ้นส่วนได้: ' + result.error, 'error');
+      }
+    } catch (err) {
+      console.error('Error fetching document chunks:', err);
+      showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    } finally {
+      setLoadingChunks(false);
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -803,13 +831,22 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                                     </p>
                                   </div>
                                 </div>
-                                <button
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteDocument(doc.id); }}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 transition shrink-0"
-                                  title="ลบเอกสารนี้"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); fetchDocumentChunks(doc); }}
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 transition"
+                                    title="ส่องดูชิ้นส่วนเวกเตอร์ (Vector Chunks)"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteDocument(doc.id); }}
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 transition"
+                                    title="ลบเอกสารนี้"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                               </motion.label>
                             ))}
                           </AnimatePresence>
@@ -940,6 +977,92 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                         )}
                       </button>
                     </div>
+                  </div>
+                </motion.div>
+              </DialogPrimitive.Content>
+            </DialogPrimitive.Portal>
+          </DialogPrimitive.Root>
+        )}
+      </AnimatePresence>
+
+      {/* Vector Chunks Inspector Modal */}
+      <AnimatePresence>
+        {inspectingDoc && (
+          <DialogPrimitive.Root open={!!inspectingDoc} onOpenChange={(o) => !o && setInspectingDoc(null)}>
+            <DialogPrimitive.Portal forceMount>
+              <DialogPrimitive.Overlay asChild forceMount>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm"
+                />
+              </DialogPrimitive.Overlay>
+              <DialogPrimitive.Content asChild forceMount>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[120] w-[90vw] max-w-xl max-h-[80vh] rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#1c1c1e] dark:border dark:border-slate-800 flex flex-col"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
+                    <div className="min-w-0 flex-1">
+                      <DialogPrimitive.Title className="text-base font-bold text-slate-900 dark:text-white truncate pr-4">
+                        ส่องเวกเตอร์: {inspectingDoc.filename}
+                      </DialogPrimitive.Title>
+                      <DialogPrimitive.Description className="text-xs text-slate-400 mt-0.5">
+                        แสดงชิ้นส่วนเนื้อหา (Chunks) ที่จัดเก็บเพื่อทำ Semantic Search ใน AI
+                      </DialogPrimitive.Description>
+                    </div>
+                    <button
+                      onClick={() => setInspectingDoc(null)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto py-4 space-y-3 pr-1">
+                    {loadingChunks ? (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-2">
+                        <span className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                        <span className="text-xs text-slate-500 font-semibold">กำลังดึงข้อมูลเวกเตอร์ชิ้นส่วน...</span>
+                      </div>
+                    ) : inspectingChunks.length === 0 ? (
+                      <div className="text-center py-12 text-xs text-slate-400">
+                        ไม่พบข้อมูลเวกเตอร์ชิ้นส่วนในระบบ
+                      </div>
+                    ) : (
+                      inspectingChunks.map((chunk, index) => (
+                        <div
+                          key={chunk.id}
+                          className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[10px]">
+                              ชิ้นส่วนที่ #{index + 1}
+                            </span>
+                            <span className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                              ID: {chunk.id}
+                            </span>
+                          </div>
+                          <p className="whitespace-pre-wrap select-all font-mono leading-relaxed">{chunk.content}</p>
+                          {chunk.image_urls && chunk.image_urls.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {chunk.image_urls.map((url, i) => (
+                                <img
+                                  key={i}
+                                  src={url}
+                                  alt={`image-${i}`}
+                                  className="h-12 w-12 rounded object-cover border border-slate-200 dark:border-slate-700"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
                 </motion.div>
               </DialogPrimitive.Content>

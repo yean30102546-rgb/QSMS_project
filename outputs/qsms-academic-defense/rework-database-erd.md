@@ -8,7 +8,6 @@ This ERD summarizes the main database entities that support the Rework workflow,
 erDiagram
     REWORK_CASES ||--o{ REWORK_ITEMS : contains
     REWORK_CASES ||--o{ REWORK_LOGS : records
-    REWORK_CASES ||--o{ ENGINEERING_DRAWINGS : supports
     REWORK_ITEMS }o--|| REWORK_MASTER_ITEMS : verifies_via_item_code_number
     REWORK_MASTER_ITEMS ||--o{ REWORK_MASTER_DEFECTS : lookup_reference
     RAG_DOCUMENTS ||--o{ RAG_DOCUMENT_CHUNKS : contains

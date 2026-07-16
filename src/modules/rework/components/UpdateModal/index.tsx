@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { UpdateModalProvider, useUpdateModal } from './UpdateModalContext';
 import { UpdateModalEdit } from './UpdateModalEdit';
@@ -30,7 +31,7 @@ function UpdateModalContent() {
   
   if (typeof document === 'undefined') return null;
 
-  return (
+  const content = (
     <AnimatePresence mode="wait">
       {isOpen && (
         <>
@@ -40,14 +41,14 @@ function UpdateModalContent() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={handleRequestClose}
-            className={`${inline ? 'absolute' : 'fixed'} inset-0 bg-black/35 z-40 will-change-opacity`}
+            className={`${inline ? 'absolute' : 'fixed'} inset-0 bg-black/35 z-[9998] will-change-opacity`}
           />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className={`${inline ? 'absolute' : 'fixed'} top-0 left-0 w-full ${inline ? 'h-full' : 'h-[100dvh]'} z-50 flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform`}
+            className={`${inline ? 'absolute' : 'fixed'} top-0 left-0 w-full ${inline ? 'h-full' : 'h-[100dvh]'} z-[9999] flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform`}
           >
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -64,4 +65,6 @@ function UpdateModalContent() {
       )}
     </AnimatePresence>
   );
+
+  return inline ? content : createPortal(content, document.body);
 }

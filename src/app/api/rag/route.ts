@@ -63,6 +63,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true });
       }
 
+      case 'get_document_chunks': {
+        const { documentId } = body;
+        if (!documentId) {
+          return NextResponse.json({ success: false, error: 'Missing document ID.' }, { status: 400 });
+        }
+
+        console.log(`🔍 Fetching chunks for document ID: ${documentId}`);
+        const { data, error } = await ragSupabaseServer
+          .from('rag_document_chunks')
+          .select('id, content, image_urls')
+          .eq('document_id', documentId);
+
+        if (error) {
+          console.error('❌ Error fetching document chunks:', error);
+          throw error;
+        }
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
       case 'bulk_delete_documents': {
         const { ids } = body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -184,30 +203,46 @@ export async function POST(request: Request) {
 
         console.log(`📝 Parsing completed. Length: ${parsedText.length} characters.`);
 
-        // 3. Chunk the parsed text using LangChain MarkdownTextSplitter (Semantic Chunking)
-        const splitter = new MarkdownTextSplitter({
-          chunkSize: 1200,
-          chunkOverlap: 200,
-        });
-        const langChainDocs = await splitter.createDocuments([parsedText]);
-        const chunks = langChainDocs.map(d => d.pageContent).filter(c => c.length > 30);
-        console.log(`📦 Generated ${chunks.length} chunks for indexing.`);
+        // 3. Chunk the parsed text using Markdown Headers (Semantic Header-based Chunking)
+        console.log(`📦 Segmenting text based on markdown headers...`);
+        const rawChunks = parsedText.split(/(?=\n#{1,3}\s)/);
+        const chunks: string[] = [];
+        let currentChunk = '';
 
-        // 4. Generate embeddings using Jina AI (768 dimensions to fit schema)
-        console.log(`✨ Generating embeddings using Jina AI...`);
+        for (const rawChunk of rawChunks) {
+          const trimmed = rawChunk.trim();
+          if (!trimmed) continue;
+          
+          // Combine chunks if they are small (e.g. less than 500 chars) to prevent micro-chunks
+          if (currentChunk.length + trimmed.length < 500) {
+            currentChunk = currentChunk ? currentChunk + '\n\n' + trimmed : trimmed;
+          } else {
+            if (currentChunk) chunks.push(currentChunk);
+            currentChunk = trimmed;
+          }
+        }
+        if (currentChunk) {
+          chunks.push(currentChunk);
+        }
+
+        const filteredChunks = chunks.filter(c => c.length > 20);
+        console.log(`📦 Generated ${filteredChunks.length} header-based chunks for indexing.`);
+
+        // 4. Generate embeddings using Jina AI or Gemini as fallback (768 dimensions)
+        console.log(`✨ Generating embeddings...`);
         const allInsertRecords: Record<string, unknown>[] = [];
         const jinaApiKey = process.env.JINA_API_KEY || '';
 
-        if (!jinaApiKey) {
-          throw new Error('JINA_API_KEY is not configured on the server. Please check your .env configuration.');
-        }
-
         const BATCH_SIZE = 20;
-        for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-          const batchChunks = chunks.slice(i, i + BATCH_SIZE);
-          console.log(`Processing Jina batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(chunks.length / BATCH_SIZE)}...`);
-
+        for (let i = 0; i < filteredChunks.length; i += BATCH_SIZE) {
+          const batchChunks = filteredChunks.slice(i, i + BATCH_SIZE);
+          
           try {
+            if (!jinaApiKey) {
+              throw new Error('JINA_API_KEY is not configured. Forcing fallback.');
+            }
+
+            console.log(`Processing Jina embedding batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(filteredChunks.length / BATCH_SIZE)}...`);
             const jinaRes = await fetch('https://api.jina.ai/v1/embeddings', {
               method: 'POST',
               headers: {
@@ -244,8 +279,37 @@ export async function POST(request: Request) {
               }
             });
           } catch (err) {
-            console.error('Error generating Jina embeddings for batch:', err);
-            throw err;
+            console.warn('⚠️ Jina Embeddings failed, falling back to Gemini text-embedding-004:', err instanceof Error ? err.message : String(err));
+            
+            try {
+              console.log(`Processing Gemini embedding batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(filteredChunks.length / BATCH_SIZE)}...`);
+              const embedPromises = batchChunks.map(async (chunk) => {
+                const embedResponse = await ai.models.embedContent({
+                  model: 'text-embedding-004',
+                  contents: chunk
+                });
+                const embeddingValues = embedResponse.embeddings?.[0]?.values;
+                if (!embeddingValues || embeddingValues.length !== 768) {
+                  throw new Error(`Invalid Gemini embedding size: ${embeddingValues?.length}`);
+                }
+                return embeddingValues;
+              });
+
+              const embeddingsList = await Promise.all(embedPromises);
+
+              batchChunks.forEach((chunk, index) => {
+                const embeddingValues = embeddingsList[index];
+                allInsertRecords.push({
+                  document_id: docRecord.id,
+                  content: chunk,
+                  embedding: embeddingValues,
+                  image_urls: imageUrls || []
+                });
+              });
+            } catch (geminiErr) {
+              console.error('❌ Critical: Both Jina and Gemini embeddings failed:', geminiErr);
+              throw geminiErr;
+            }
           }
         }
 
@@ -274,41 +338,117 @@ export async function POST(request: Request) {
 
         console.log(`💬 Processing chat query: "${message.substring(0, 50)}..."`);
 
-        // 1. Generate query embedding vector using Jina AI
+        // 1. Query Expansion (Gemini generates 3 variations)
+        let searchQueries = [message];
+        try {
+          console.log('🤖 Expanding search queries with Gemini...');
+          const expansionResponse = await ai.models.generateContent({
+            model: 'gemini-3.1-flash-lite',
+            contents: `คุณคือผู้เชี่ยวชาญการสืบค้นข้อมูลคู่มือโรงงาน หน้าที่ของคุณคือสร้างประโยคคำค้นหาภาษาไทยที่แตกต่างกันแต่องค์ความรู้คล้ายคลึงกัน 3 ประโยค จากคำถามเริ่มต้น เพื่อใช้ในการทำ Semantic Search หาคู่มือการซ่อมหรือข้อมูลสเปกสินค้า
+            
+คำถามเริ่มต้น: "${message}"
+
+คืนค่าผลลัพธ์เป็นประโยคคำค้นหาโดยตรง คั่นด้วยเครื่องหมายขึ้นบรรทัดใหม่เท่านั้น (ห้ามใส่เลขข้อ หรือคำอธิบายเพิ่มเติม)`
+          });
+          
+          const expansionText = expansionResponse.text || '';
+          const expandedList = expansionText
+            .split('\n')
+            .map(q => q.trim())
+            .filter(q => q.length > 0 && !q.startsWith('-') && !q.match(/^\d+\./));
+          
+          if (expandedList.length > 0) {
+            searchQueries = [...searchQueries, ...expandedList.slice(0, 3)];
+            console.log('🔍 Expanded queries:', searchQueries);
+          }
+        } catch (e) {
+          console.warn('⚠️ Query expansion failed, using original message:', e);
+        }
+
+        // 2. Generate query embedding vector (Jina AI with Gemini fallback)
+        let queryEmbedding: number[] = new Array(768).fill(0);
         const jinaApiKey = process.env.JINA_API_KEY || '';
-        if (!jinaApiKey) {
-          throw new Error('JINA_API_KEY is not configured on the server. Please check your .env configuration.');
+
+        try {
+          if (!jinaApiKey) {
+            throw new Error('JINA_API_KEY is not configured. Forcing fallback.');
+          }
+
+          console.log('✨ Generating query embeddings via Jina AI...');
+          const jinaRes = await fetch('https://api.jina.ai/v1/embeddings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${jinaApiKey}`
+            },
+            body: JSON.stringify({
+              model: 'jina-embeddings-v5-text-small',
+              dimensions: 768,
+              normalized: true,
+              input: searchQueries
+            })
+          });
+
+          if (!jinaRes.ok) {
+            const errorText = await jinaRes.text();
+            throw new Error(`Jina API error (${jinaRes.status}): ${errorText}`);
+          }
+
+          const jinaData = await jinaRes.json();
+          const embeddingsList = jinaData.data || [];
+
+          if (embeddingsList.length > 0) {
+            embeddingsList.forEach((item: { embedding: number[] }) => {
+              const emb = item.embedding;
+              if (emb && emb.length === 768) {
+                for (let d = 0; d < 768; d++) {
+                  queryEmbedding[d] += emb[d];
+                }
+              }
+            });
+            for (let d = 0; d < 768; d++) {
+              queryEmbedding[d] /= embeddingsList.length;
+            }
+          }
+        } catch (err) {
+          console.warn('⚠️ Jina query embedding failed, falling back to Gemini text-embedding-004:', err instanceof Error ? err.message : String(err));
+          
+          try {
+            const embedPromises = searchQueries.map(async (q) => {
+              const embedResponse = await ai.models.embedContent({
+                model: 'text-embedding-004',
+                contents: q
+              });
+              return embedResponse.embeddings?.[0]?.values;
+            });
+            
+            const embeddingsList = await Promise.all(embedPromises);
+            let validCount = 0;
+            
+            for (const emb of embeddingsList) {
+              if (emb && emb.length === 768) {
+                validCount++;
+                for (let d = 0; d < 768; d++) {
+                  queryEmbedding[d] += emb[d];
+                }
+              }
+            }
+            
+            if (validCount > 0) {
+              for (let d = 0; d < 768; d++) {
+                queryEmbedding[d] /= validCount;
+              }
+            } else {
+              throw new Error('Gemini returned empty embeddings.');
+            }
+          } catch (geminiErr) {
+            console.error('❌ Critical: Both Jina and Gemini query embedding failed:', geminiErr);
+            throw geminiErr;
+          }
         }
 
-        console.log('✨ Generating query embedding via Jina AI...');
-        const jinaRes = await fetch('https://api.jina.ai/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jinaApiKey}`
-          },
-          body: JSON.stringify({
-            model: 'jina-embeddings-v5-text-small',
-            dimensions: 768,
-            normalized: true,
-            input: [message]
-          })
-        });
-
-        if (!jinaRes.ok) {
-          const errorText = await jinaRes.text();
-          throw new Error(`Jina API error (${jinaRes.status}): ${errorText}`);
-        }
-
-        const jinaData = await jinaRes.json();
-        const queryEmbedding = jinaData.data?.[0]?.embedding;
-
-        if (!queryEmbedding || queryEmbedding.length !== 768) {
-          throw new Error('Failed to generate embedding for the search query via Jina.');
-        }
-
-        // 2. Search similarity using Supabase RPC function (Hybrid Search)
-        console.log('🔍 Executing Hybrid Search in database...');
+        // 3. Search similarity using Supabase RPC function (Hybrid Search)
+        console.log('🔍 Executing Hybrid Search in database (Match Count 12)...');
         let matchedChunks: DocumentChunk[] | null = [];
 
         // Try hybrid search first
@@ -317,18 +457,18 @@ export async function POST(request: Request) {
           {
             query_text: message,
             query_embedding: queryEmbedding,
-            match_count: 5
+            match_count: 12
           }
         );
 
         if (hybridError || !hybridData) {
-          console.warn('⚠️ Hybrid search failed or not available, falling back to pure vector search:', hybridError);
+          console.warn('⚠️ Hybrid search failed, falling back to pure vector search:', hybridError);
           const { data: vectorData, error: matchError } = await ragSupabaseServer.rpc(
             'match_document_chunks',
             {
               query_embedding: queryEmbedding,
-              match_threshold: 0.3,
-              match_count: 5
+              match_threshold: 0.25,
+              match_count: 12
             }
           );
 
@@ -341,9 +481,56 @@ export async function POST(request: Request) {
           matchedChunks = hybridData;
         }
 
-        console.log(`🎯 Found ${(matchedChunks as DocumentChunk[] | null)?.length || 0} matching document chunks.`);
+        console.log(`🎯 Found ${(matchedChunks as DocumentChunk[] | null)?.length || 0} raw matching document chunks.`);
+        const rawChunks = (matchedChunks as DocumentChunk[] | null) || [];
+        
+        // 4. Jina Rerank to pick top 8 relevant chunks
+        let rerankedChunks: DocumentChunk[] = [];
+        if (rawChunks.length > 0 && jinaApiKey) {
+          try {
+            console.log(`✨ Reranking ${rawChunks.length} chunks via Jina Reranker...`);
+            const rerankRes = await fetch('https://api.jina.ai/v1/rerank', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${jinaApiKey}`
+              },
+              body: JSON.stringify({
+                model: 'jina-reranker-v2-base-multilingual',
+                query: message,
+                top_n: 8,
+                documents: rawChunks.map(c => c.content)
+              })
+            });
 
-        const chunks = (matchedChunks as DocumentChunk[] | null) || [];
+            if (rerankRes.ok) {
+              const rerankData = await rerankRes.json();
+              const results = rerankData.results || [];
+              
+              results.forEach((res: { index: number; relevance_score: number }) => {
+                if (res.relevance_score > 0.35) {
+                  const originalChunk = rawChunks[res.index];
+                  rerankedChunks.push({
+                    ...originalChunk,
+                    similarity: res.relevance_score
+                  });
+                }
+              });
+              console.log(`🎯 Rerank completed. Filtered down to ${rerankedChunks.length} high-relevance chunks.`);
+            } else {
+              const errorText = await rerankRes.text();
+              console.warn(`⚠️ Jina Rerank API error (${rerankRes.status}): ${errorText}. Using top 8 raw chunks.`);
+              rerankedChunks = rawChunks.slice(0, 8);
+            }
+          } catch (rerankErr) {
+            console.warn('⚠️ Jina Reranking failed, using raw vector chunks:', rerankErr);
+            rerankedChunks = rawChunks.slice(0, 8);
+          }
+        } else {
+          rerankedChunks = rawChunks.slice(0, 8);
+        }
+
+        const chunks = rerankedChunks;
 
         // 3. Construct Context
         const contextText = chunks

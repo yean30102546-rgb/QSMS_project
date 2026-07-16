@@ -70,7 +70,7 @@ export function UpdateModalEdit() {
                             <select
                               value={editedSource}
                               onChange={(e) => setEditedSource(e.target.value)}
-                              className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg text-on-surface"
+                              className="w-full border border-divider-color bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg text-on-surface"
                             >
                               {SOURCE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
@@ -146,7 +146,7 @@ export function UpdateModalEdit() {
                                             newItems[index] = { ...newItems[index], itemName: e.target.value };
                                             setEditedItems(newItems);
                                           }}
-                                          className="apple-input w-full bg-system-background px-3 py-2.5 text-sm font-semibold text-on-surface rounded-lg"
+                                          className="w-full border border-divider-color bg-system-background px-3 py-2.5 text-sm font-semibold text-on-surface rounded-lg"
                                         />
                                       </div>
                                       <div className="space-y-2">
@@ -158,7 +158,7 @@ export function UpdateModalEdit() {
                                             newItems[index] = { ...newItems[index], customerName: e.target.value };
                                             setEditedItems(newItems);
                                           }}
-                                          className="apple-input w-full bg-system-background px-3 py-2.5 text-sm font-semibold text-on-surface rounded-lg"
+                                          className="w-full border border-divider-color bg-system-background px-3 py-2.5 text-sm font-semibold text-on-surface rounded-lg"
                                         >
                                           <option value="">เลือกสีลูกค้า</option>
                                           {CUSTOMER_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -177,7 +177,7 @@ export function UpdateModalEdit() {
                                             setEditedItems(newItems);
                                           }}
                                           rows={2}
-                                          className="apple-input w-full bg-system-background p-3 text-sm font-medium text-on-surface rounded-lg resize-none"
+                                          className="w-full border border-divider-color bg-system-background p-3 text-sm font-medium text-on-surface rounded-lg resize-none"
                                         />
                                       </div>
                                       <div className="space-y-2 flex flex-col items-end">
@@ -191,7 +191,7 @@ export function UpdateModalEdit() {
                                               newItems[index] = { ...newItems[index], amount: Number(e.target.value) };
                                               setEditedItems(newItems);
                                             }}
-                                            className="apple-input w-full bg-system-background px-2 py-2.5 text-center text-sm font-bold text-on-surface rounded-lg"
+                                            className="w-full border border-divider-color bg-system-background px-2 py-2.5 text-center text-sm font-bold text-on-surface rounded-lg"
                                           />
                                         </div>
                                       </div>
@@ -297,7 +297,7 @@ export function UpdateModalEdit() {
                                                   newItems[index] = { ...newItems[index], batchNo: e.target.value };
                                                   setEditedItems(newItems);
                                                 }}
-                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                className="w-full border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                               />
                                             </div>
                                             <div className="space-y-3">
@@ -310,7 +310,7 @@ export function UpdateModalEdit() {
                                                   newItems[index] = { ...newItems[index], gallonDate: convertYMDToDMY(e.target.value) };
                                                   setEditedItems(newItems);
                                                 }}
-                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                className="w-full border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                               />
                                             </div>
                                             <div className="space-y-3">
@@ -323,7 +323,7 @@ export function UpdateModalEdit() {
                                                   newItems[index] = { ...newItems[index], boxNumber: e.target.value };
                                                   setEditedItems(newItems);
                                                 }}
-                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                className="w-full border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                               />
                                             </div>
                                             <div className="space-y-3">
@@ -338,7 +338,7 @@ export function UpdateModalEdit() {
                                                     setEditedItems(newItems);
                                                   }}
                                                   placeholder="Mold"
-                                                  className="apple-input w-1/2 bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                  className="w-1/2 border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                                 />
                                                 <input
                                                   type="text"
@@ -349,7 +349,7 @@ export function UpdateModalEdit() {
                                                     setEditedItems(newItems);
                                                   }}
                                                   placeholder="Line"
-                                                  className="apple-input w-1/2 bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                  className="w-1/2 border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                                 />
                                               </div>
                                             </div>
@@ -376,7 +376,7 @@ export function UpdateModalEdit() {
                                                   setEditedItems(newItems);
                                                 }}
                                                 placeholder="เช่น รั่ว, เปื้อน"
-                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                className="w-full border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                               />
                                             </div>
                                             <div className="space-y-3">
@@ -390,7 +390,7 @@ export function UpdateModalEdit() {
                                                   setEditedItems(newItems);
                                                 }}
                                                 placeholder="เช่น รั่วซึม, กล่องเปื้อน"
-                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                className="w-full border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                               />
                                             </div>
                                             <div className="space-y-3">
@@ -404,7 +404,7 @@ export function UpdateModalEdit() {
                                                   setEditedItems(newItems);
                                                 }}
                                                 placeholder="เช่น SFC, Customer, Supplier"
-                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                className="w-full border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                               />
                                             </div>
                                             <div className="space-y-3">
@@ -418,7 +418,7 @@ export function UpdateModalEdit() {
                                                   setEditedItems(newItems);
                                                 }}
                                                 placeholder="เช่น PDF, WPK"
-                                                className="apple-input w-full bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
+                                                className="w-full border border-divider-color bg-system-background px-4 py-2.5 text-sm font-medium text-on-surface rounded-lg"
                                               />
                                             </div>
                                           </div>
@@ -454,7 +454,7 @@ export function UpdateModalEdit() {
                                 value={laborCount}
                                 onChange={(e) => setLaborCount(e.target.value === '' ? '' : Number(e.target.value))}
                                 disabled={!canEditMaterialNameQty}
-                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg"
+                                className="w-full border border-divider-color bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg"
                               >
                                 <option value="">เลือกจำนวน</option>
                                 {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} คน</option>)}
@@ -469,7 +469,7 @@ export function UpdateModalEdit() {
                                 onChange={(e) => setLaborHours(e.target.value === '' ? '' : Number(e.target.value))}
                                 disabled={!canEditMaterialNameQty}
                                 placeholder="0.0"
-                                className="apple-input w-full bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg"
+                                className="w-full border border-divider-color bg-surface-secondary px-4 py-2.5 text-base font-semibold rounded-lg"
                               />
                             </div>
                             {canViewFinancialData && (
@@ -482,7 +482,7 @@ export function UpdateModalEdit() {
                                     onChange={(e) => setLaborRate(e.target.value === '' ? '' : Number(e.target.value))}
                                     disabled={!canEditUnitPrice}
                                     placeholder="0"
-                                    className="apple-input w-full bg-surface-secondary pl-8 pr-4 py-2.5 text-base font-semibold rounded-lg"
+                                    className="w-full border border-divider-color bg-surface-secondary pl-8 pr-4 py-2.5 text-base font-semibold rounded-lg"
                                   />
                                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-on-surface-variant font-semibold">฿</span>
                                 </div>
@@ -501,7 +501,7 @@ export function UpdateModalEdit() {
                               <h3 className="text-base font-semibold text-on-surface">รายการวัสดุที่ใช้ (Materials)</h3>
                             </div>
                             {canManageRows && (
-                              <button onClick={handleAddMaterial} className="apple-button text-sm bg-surface-secondary hover:bg-surface-variant text-[#0066cc]">
+                              <button onClick={handleAddMaterial} className="text-sm border border-divider-color bg-surface-secondary hover:bg-surface-variant text-[#0066cc] px-4 py-2 rounded-lg font-medium">
                                 + เพิ่มวัสดุ
                               </button>
                             )}
@@ -527,7 +527,7 @@ export function UpdateModalEdit() {
                                           value={mat.name}
                                           onChange={(e) => handleMaterialChange(mat.id, 'name', e.target.value)}
                                           disabled={!canEditMaterialNameQty}
-                                          className="apple-input w-full bg-surface-bright px-2 py-1.5 text-sm font-medium"
+                                          className="w-full border border-divider-color bg-surface-bright px-2 py-1.5 text-sm font-medium rounded-md"
                                         >
                                           {STANDARD_MATERIALS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                         </select>
@@ -538,7 +538,7 @@ export function UpdateModalEdit() {
                                           value={mat.quantity || ''}
                                           onChange={(e) => handleMaterialChange(mat.id, 'quantity', Number(e.target.value))}
                                           disabled={!canEditMaterialNameQty}
-                                          className="apple-input w-full bg-surface-bright px-1 py-1.5 text-center text-sm font-medium"
+                                          className="w-full border border-divider-color bg-surface-bright px-1 py-1.5 text-center text-sm font-medium rounded-md"
                                         />
                                       </td>
                                       <td className="py-2 px-2 text-center text-sm text-on-surface-variant">{mat.unit}</td>
@@ -549,7 +549,7 @@ export function UpdateModalEdit() {
                                             value={mat.unitPrice || ''}
                                             onChange={(e) => handleMaterialChange(mat.id, 'unitPrice', Number(e.target.value))}
                                             disabled={!canEditUnitPrice}
-                                            className="apple-input w-full bg-surface-bright px-2 py-1.5 text-right text-sm font-medium"
+                                            className="w-full border border-divider-color bg-surface-bright px-2 py-1.5 text-right text-sm font-medium rounded-md"
                                           />
                                         </td>
                                       )}
@@ -584,7 +584,7 @@ export function UpdateModalEdit() {
                             value={resolutionMethod}
                             onChange={(e) => setResolutionMethod(e.target.value)}
                             placeholder="ระบุรายละเอียดการแก้ไขปัญหา..."
-                            className="apple-input w-full bg-surface-secondary p-4 rounded-lg text-sm font-medium text-on-surface min-h-[100px] leading-relaxed"
+                            className="w-full border border-divider-color bg-surface-secondary p-4 rounded-lg text-sm font-medium text-on-surface min-h-[100px] leading-relaxed"
                           />
                         </div>
                       )}
