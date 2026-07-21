@@ -23,7 +23,7 @@ flowchart TD
 - Add one or more rework items with reason, responsible party, amount, line, and notes.
 - Verify each item against `rework_master_items`.
 - Save case and items into Supabase.
-- Update workflow status from Pending → In-Progress → Awaiting Valuation → Completed.
+- Update workflow status from Pending → In-Progress → Completed.
 - Log every meaningful state change in `rework_logs`.
 
 ### Backend actions used

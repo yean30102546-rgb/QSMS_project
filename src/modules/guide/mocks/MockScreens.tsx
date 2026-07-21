@@ -174,9 +174,8 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
     total: 120,
     pending: 15,
     inProgress: 40,
-    awaitingValuation: 20,
-    completed: 45,
-    completionRate: 37,
+    completed: 65,
+    completionRate: 54,
     hasData: true,
   };
   const rosterStats = {
@@ -335,12 +334,11 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
                       <div className="relative flex h-3.5 w-full overflow-hidden rounded-full bg-slate-200/50 shadow-inner">
                         <div style={{ width: `${(reworkStats.pending / reworkStats.total) * 100}%` }} className="h-full bg-amber-400" />
                         <div style={{ width: `${(reworkStats.inProgress / reworkStats.total) * 100}%` }} className="h-full bg-sky-400" />
-                        <div style={{ width: `${(reworkStats.awaitingValuation / reworkStats.total) * 100}%` }} className="h-full bg-violet-400" />
                         <div style={{ width: `${(reworkStats.completed / reworkStats.total) * 100}%` }} className="h-full bg-emerald-500" />
                       </div>
 
                       {/* Legend Grid */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4 mt-0.5 px-1">
+                      <div className="grid grid-cols-3 gap-x-4 gap-y-2.5 mt-0.5 px-1">
                         <div className="flex items-center gap-1.5 text-[11px] font-medium">
                           <span className="h-2 w-2 rounded-full bg-amber-400" />
                           <span className="text-slate-500">รอ:</span>
@@ -350,11 +348,6 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
                           <span className="h-2 w-2 rounded-full bg-sky-400" />
                           <span className="text-slate-500">กำลัง:</span>
                           <span className="font-semibold text-slate-800">{reworkStats.inProgress}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[11px] font-medium">
-                          <span className="h-2 w-2 rounded-full bg-violet-400" />
-                          <span className="text-slate-500">ประเมิน:</span>
-                          <span className="font-semibold text-slate-800">{reworkStats.awaitingValuation}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px] font-medium">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -498,8 +491,7 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
                   { label: "จำนวนงานทั้งหมด", value: "120" },
                   { label: "รอดำเนินการ", value: "15", trend: "13%" },
                   { label: "กำลังดำเนินการ", value: "40" },
-                  { label: "รอประเมินราคา", value: "20" },
-                  { label: "เสร็จสิ้น", value: "45" },
+                  { label: "เสร็จสิ้น", value: "65" },
                 ].map((s, i) => (
                   <div key={i} className="rounded-xl border border-white/45 bg-white/45 backdrop-blur-md p-4 md:p-6 shadow-sm hover:bg-white/70 hover:shadow-md transition-all">
                     <p className="mb-2 text-[9px] font-semibold uppercase leading-none tracking-[0.12em] text-slate-500 md:mb-3 md:text-[10px]">{s.label}</p>
@@ -542,7 +534,6 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
                     <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-[#1d1d1f] text-white shadow-md border border-transparent">ทั้งหมด <span className="opacity-90 text-[10px]">120</span></button>
                     <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">รอดำเนินการ <span className="opacity-65 text-[10px]">15</span></button>
                     <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">กำลังดำเนินการ <span className="opacity-65 text-[10px]">40</span></button>
-                    <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">รอประเมินราคา <span className="opacity-65 text-[10px]">20</span></button>
                     <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">เสร็จสิ้น <span className="opacity-65 text-[10px]">45</span></button>
                   </div>
                 </div>
@@ -550,7 +541,7 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
                 <div className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-0 shadow-sm overflow-hidden">
                   <div className="divide-y divide-slate-100 p-2">
 
-                    {/* Row 1 (Awaiting Valuation) */}
+                    {/* Row 1 (Completed) */}
                     <div onClick={onNavigate} className="group flex cursor-pointer items-center rounded-lg px-4 py-4 hover:bg-slate-50 active:scale-[0.99]">
                       <div className="flex-1 min-w-0 pr-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -573,8 +564,8 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
                         <p className="text-sm font-semibold text-[#1d1d1f]">120 กล่อง</p>
                         <p className="text-[11px] font-medium text-slate-500 mt-0.5">ฝารั่ว, ฉลากขาด</p>
                       </div>
-                      <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-violet-100/90 text-violet-950 border-violet-300/70">
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-600 mr-1.5 animate-pulse" />รอประเมินราคา
+                      <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-emerald-100/90 text-emerald-950 border-emerald-300/70">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5 animate-pulse" />เสร็จสิ้น
                       </span>
                     </div>
 

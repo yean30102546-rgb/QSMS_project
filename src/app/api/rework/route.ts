@@ -3,7 +3,7 @@ import { supabaseServer } from '../../../lib/supabaseServer';
 import { assertPermission, AuthError, requireServerAuth } from '../../../lib/serverAuth';
 import { generateCaseId } from '../../../utils/helpers';
 
-export const maxDuration = 60; // Allow up to 60s for slow GAS file uploads
+export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 interface DBItem {
@@ -25,6 +25,7 @@ interface DBItem {
   packaging_date?: string;
   mold?: string;
   uid?: string;
+  completed_boxes?: number;
 }
 
 interface FrontendItem {
@@ -66,21 +67,6 @@ interface DBMaterial {
   totalPrice?: number;
 }
 
-interface GasResponse {
-  success: boolean;
-  error?: string;
-  data?: {
-    caseId?: string;
-    caseFolderUrl?: string;
-    orFolderUrl?: string;
-    orFilesUrls?: string[];
-    items?: Array<{
-      id: string;
-      imageUrls?: string[];
-      imageFolderUrl?: string;
-    }>;
-  };
-}
 
 interface DBCase {
   id: string;
@@ -198,17 +184,15 @@ export async function POST(request: Request) {
         // 1. Rework calculations
         let pending = 0;
         let inProgress = 0;
-        let awaitingValuation = 0;
         let completed = 0;
 
         (casesRes.data || []).forEach((c: { status: string }) => {
           if (c.status === 'Pending') pending++;
           else if (c.status === 'In-Progress') inProgress++;
-          else if (c.status === 'Awaiting Valuation') awaitingValuation++;
           else if (c.status === 'Completed') completed++;
         });
 
-        const totalCases = pending + inProgress + awaitingValuation + completed;
+        const totalCases = pending + inProgress + completed;
         const completionRate = totalCases > 0 ? parseFloat(((completed / totalCases) * 100).toFixed(1)) : 0;
 
         // 2. Roster calculations
@@ -241,7 +225,6 @@ export async function POST(request: Request) {
                 total: totalCases,
                 pending,
                 inProgress,
-                awaitingValuation,
                 completed,
                 completionRate
               },
@@ -300,6 +283,7 @@ export async function POST(request: Request) {
             itemCode: i.item_code,
             itemName: i.item_name,
             amount: parseFloat(String(i.amount || 0)),
+            completedBoxes: parseFloat(String(i.completed_boxes || 0)),
             reason: i.reason,
             reasonSubtype: i.reason_subtype,
             responsible: i.responsible,
@@ -334,6 +318,14 @@ export async function POST(request: Request) {
           hasOrFiles: !!caseData?.orFiles?.length,
           isFastTrack
         });
+
+        if (caseData?.items && Array.isArray(caseData.items)) {
+          for (const i of caseData.items) {
+            if (!i.amount || i.amount <= 0) {
+              return NextResponse.json({ success: false, error: `Item amount must be greater than 0 for item: ${i.itemNumber || 'Unknown'}` }, { status: 400 });
+            }
+          }
+        }
 
         // Generate Case ID if missing or temporary
         let finalCaseId = caseData?.id;
@@ -417,6 +409,7 @@ export async function POST(request: Request) {
               packaging_date: i.packagingDate || caseData.packagingDate,
               mold: i.mold || caseData.mold,
               uid: i.uid || i.id,
+              completed_boxes: i.completedBoxes || 0,
               created_at: getBangkokISOString()
             });
           }
@@ -469,7 +462,7 @@ export async function POST(request: Request) {
 
         const { data: existingCase, error: existingCaseError } = await supabaseServer
           .from('rework_cases')
-          .select('status, resolution_method, total_rework_cost, labor_count, labor_hours, labor_rate, materials, customer_name, source, or_files_urls, or_folder_url, case_name')
+          .select('id, status, resolution_method, total_rework_cost, labor_count, labor_hours, labor_rate, materials, customer_name, source, or_files_urls, or_folder_url, case_name')
           .eq('id', caseId)
           .maybeSingle();
 
@@ -482,29 +475,45 @@ export async function POST(request: Request) {
           const uuidIds = updates.deleteItemIds.filter(isUuid);
           const otherIds = updates.deleteItemIds.filter((id: string) => !isUuid(id));
 
+          const actualCaseIdStr = existingCase.id;
           if (uuidIds.length > 0) {
-            const { error: delError1 } = await supabaseServer.from('rework_items').delete().eq('case_id', caseId).in('id', uuidIds);
+            const { error: delError1 } = await supabaseServer.from('rework_items').delete().eq('case_id', actualCaseIdStr).in('id', uuidIds);
             if (delError1) console.error('Error deleting items by UUID:', delError1);
           }
           if (otherIds.length > 0) {
-            const { error: delError2 } = await supabaseServer.from('rework_items').delete().eq('case_id', caseId).in('uid', otherIds);
+            const { error: delError2 } = await supabaseServer.from('rework_items').delete().eq('case_id', actualCaseIdStr).in('uid', otherIds);
             if (delError2) console.error('Error deleting items by UID:', delError2);
           }
         }
 
         // 2. Insert or update items
         if (updates.items && Array.isArray(updates.items)) {
+          for (const item of updates.items) {
+            if (!item.amount || item.amount <= 0) {
+              return NextResponse.json({ success: false, error: `Item amount must be greater than 0 for item: ${item.itemNumber || 'Unknown'}` }, { status: 400 });
+            }
+            if (item.completedBoxes !== undefined && item.completedBoxes < 0) {
+              return NextResponse.json({ success: false, error: `Completed boxes cannot be negative for item: ${item.itemNumber || 'Unknown'}` }, { status: 400 });
+            }
+          }
+
+          const actualCaseIdStr = existingCase.id;
+
           const { data: existingDbItems } = await supabaseServer
             .from('rework_items')
             .select('id, uid')
-            .eq('case_id', caseId);
+            .eq('case_id', actualCaseIdStr);
 
           const existingUids = new Set(existingDbItems?.map(x => x.uid).filter(Boolean) || []);
           const existingIds = new Set(existingDbItems?.map(x => x.id).filter(Boolean) || []);
 
+          try {
+            require('fs').appendFileSync('scratch/api_debug.log', new Date().toISOString() + ' items payload: ' + JSON.stringify(updates.items) + '\n');
+          } catch (e) {}
+
           for (const item of updates.items) {
             const itemData = {
-              case_id: caseId,
+              case_id: actualCaseIdStr,
               item_number: item.itemNumber,
               item_code: item.itemCode,
               item_name: item.itemName,
@@ -520,19 +529,23 @@ export async function POST(request: Request) {
               packaging_date: item.packagingDate,
               mold: item.mold,
               uid: item.uid,
+              completed_boxes: item.completedBoxes || 0,
               image_urls: item.imageUrls || [],
               image_folder_url: item.imageFolderUrl
             };
 
             if (item.id && existingIds.has(item.id)) {
-              await supabaseServer.from('rework_items').update(itemData).eq('id', item.id);
+              const { error: updErr } = await supabaseServer.from('rework_items').update(itemData).eq('id', item.id);
+              if (updErr) throw new Error(`Failed to update item ${item.itemNumber}: ${updErr.message}`);
             } else if (item.uid && existingUids.has(item.uid)) {
-              await supabaseServer.from('rework_items').update(itemData).eq('uid', item.uid);
+              const { error: updUidErr } = await supabaseServer.from('rework_items').update(itemData).eq('uid', item.uid);
+              if (updUidErr) throw new Error(`Failed to update item ${item.itemNumber}: ${updUidErr.message}`);
             } else {
-              await supabaseServer.from('rework_items').insert([{
+              const { error: insErr } = await supabaseServer.from('rework_items').insert([{
                 ...itemData,
                 created_at: getBangkokISOString()
               }]);
+              if (insErr) throw new Error(`Failed to insert item ${item.itemNumber}: ${insErr.message}`);
             }
           }
         }
@@ -908,7 +921,7 @@ export async function POST(request: Request) {
             const unsignedToken = `${headerStr}.${payloadStr}`;
 
             // Sign the token using AUTH_SECRET (same logic as serverAuth.ts)
-            const AUTH_SECRET = (process.env.AUTH_TOKEN_SECRET || process.env.GAS_AUTH_TOKEN_SECRET || '').trim();
+            const AUTH_SECRET = (process.env.AUTH_TOKEN_SECRET || '').trim();
             if (!AUTH_SECRET) {
               return NextResponse.json(
                 { success: false, error: 'AUTH_TOKEN_SECRET is not configured on the server.', statusCode: 500 },

@@ -1,5 +1,5 @@
 # Project History & Milestone Archive
-[วันที่อัปเดต: 2026-05-21]
+[วันที่อัปเดต: 2026-07-21]
 
 ## 1. Summary
 รวบรวมประวัติการพัฒนาและ Milestone สำคัญของโปรเจกต์ QSMS ตั้งแต่เริ่มต้นการ Migrate จนถึงปัจจุบัน
@@ -17,6 +17,12 @@
 - **Workspace Portal**: พัฒนา `App.tsx` ให้เป็น Hub กลางสำหรับเลือกใช้งานแต่ละ Module
 - **Roster Module**: เพิ่มระบบตารางเวรพนักงาน (Roster) เชื่อมต่อกับ GAS Calendar
 - **Login Modernization**: ปรับปรุงหน้า Login เป็น **Soft Glassmorphism** (2026-05-21)
+
+### Phase 3: FSD Refactoring & System Stability (2026-07)
+- **FSD Refactoring**: ย้ายโค้ด UpdateModal.tsx ที่เป็น Monolith แยกออกมาเป็นโครงสร้าง Feature-Sliced Design (FSD) ลดบั๊ก
+- **UI/UX Consistency**: แก้ปัญหา Scrolling ซ้อนทับ ปัญหา Viewport jumping
+- **Integrity Validation**: ปรับระบบ Auto-Status ใหม่ ให้ผูกติดกับจำนวนกล่องความคืบหน้าจริง ลดภาระ User ในการกดปุ่ม (2026-07-21)
+- **Database Alignment**: ปรับแต่ง Payload ให้ Mapping field ระหว่าง Database (Supabase) และ Frontend ถูกต้อง (`completed_boxes`)
 
 ## 3. Archive of Past Changes (Antigravity Notes)
 - ✅ `loadMasterData()` fix: จัดการกรณี sheet ไม่มีอยู่จริง

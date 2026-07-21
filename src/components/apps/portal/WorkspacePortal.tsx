@@ -43,7 +43,6 @@ export function WorkspacePortal({
     total: 0,
     pending: 0,
     inProgress: 0,
-    awaitingValuation: 0,
     completed: 0,
     completionRate: 0,
     hasData: false,
@@ -79,7 +78,6 @@ export function WorkspacePortal({
             total: rework.total,
             pending: rework.pending,
             inProgress: rework.inProgress,
-            awaitingValuation: rework.awaitingValuation,
             completed: rework.completed,
             completionRate: rework.completionRate,
             hasData: true
@@ -311,13 +309,7 @@ export function WorkspacePortal({
                                 title={`กำลังดำเนินการ: ${reworkStats.inProgress} เคส`}
                               />
                             )}
-                            {reworkStats.awaitingValuation > 0 && (
-                              <div
-                                style={{ width: `${(reworkStats.awaitingValuation / reworkStats.total) * 100}%` }}
-                                className="h-full bg-violet-400 transition-all duration-500 hover:brightness-95"
-                                title={`รอประเมินราคา: ${reworkStats.awaitingValuation} เคส`}
-                              />
-                            )}
+
                             {reworkStats.completed > 0 && (
                               <div
                                 style={{ width: `${(reworkStats.completed / reworkStats.total) * 100}%` }}
@@ -330,7 +322,7 @@ export function WorkspacePortal({
                       </div>
 
                       {/* Legend Grid */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4 mt-0.5 px-1">
+                      <div className="grid grid-cols-3 gap-x-4 gap-y-2.5 mt-0.5 px-1">
                         <div className="flex items-center gap-1.5 text-[11px] font-medium">
                           <span className="h-2 w-2 rounded-full bg-amber-400" />
                           <span className="text-slate-500">รอดำเนินการ:</span>
@@ -340,11 +332,6 @@ export function WorkspacePortal({
                           <span className="h-2 w-2 rounded-full bg-sky-400" />
                           <span className="text-slate-500">กำลังดำเนินการ:</span>
                           <span className="font-semibold text-slate-800">{reworkStats.hasData ? reworkStats.inProgress : '--'}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[11px] font-medium">
-                          <span className="h-2 w-2 rounded-full bg-violet-400" />
-                          <span className="text-slate-500">รอประเมินราคา:</span>
-                          <span className="font-semibold text-slate-800">{reworkStats.hasData ? reworkStats.awaitingValuation : '--'}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px] font-medium">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />

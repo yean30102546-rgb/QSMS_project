@@ -1,0 +1,1108 @@
+﻿
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.7 [39m[90mC:/Workplace/Mytask/Projects/QSMS_project[39m
+
+[90mstdout[2m | src/modules/rework/components/UpdateModal/index.test.tsx[2m > [22m[2mUpdateModal Component[2m > [22m[2mallows entering edit mode for admin
+[22m[39m<div></div><div class="fixed inset-0 bg-black/35 z-[9998] will-change-opacity" style="opacity: 0;"></div><div class="fixed top-0 left-0 w-full h-[100dvh] z-[9999] flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform" style="opacity: 0;"><div aria-hidden="false" class="pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl" style="opacity: 0; transform: translateY(20px) scale(0.98);"><div class="relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden"><div class="flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b border-divider-color bg-system-background z-10 shrink-0"><div><h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface">Update Status</h1><p class="text-sm sm:text-base text-on-surface-variant mt-1 flex items-center gap-1.5"><span>RT001-2026</span><button type="button" class="p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center " title="เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button></p></div><div class="flex items-center gap-1 sm:gap-2"><button class="text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full transition-colors focus:outline-none"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></div></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0"><div><div class="flex items-center gap-1.5 text-on-surface-variant mb-1"><span class="text-sm font-medium">Source</span></div><div class="text-base font-medium text-on-surface">Customer</div></div><div><div class="flex items-center gap-1.5 text-on-surface-variant mb-1"><span class="text-sm font-medium">Case Number</span></div><div class="text-base font-medium text-on-surface">RT001-2026</div></div><div><div class="flex items-center gap-1.5 text-on-surface-variant mb-1"><span class="text-sm font-medium">Date</span></div><div class="text-base font-medium text-on-surface">27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00</div></div><div><div class="flex items-center gap-1.5 text-on-surface-variant mb-1"><span class="text-sm font-medium">Quantity</span></div><div class="text-base font-medium text-on-surface">1 เธฃเธฒเธขเธเธฒเธฃ</div></div><div><div class="flex items-center gap-1.5 text-on-surface-variant mb-1"><span class="text-sm font-medium">Status</span></div><span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black border uppercase tracking-wider bg-amber-50 text-amber-700 border-amber-200" tabindex="0"><span class="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse"></span>เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ</span></div></div><div class="w-full flex-1 overflow-y-auto custom-scrollbar bg-surface-bright"><div class="max-w-4xl mx-auto flex flex-col p-4 sm:p-6 space-y-4 sm:space-y-6"><div class="flex items-center gap-2 mb-2 pb-2 text-on-surface border-b border-divider-color"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text text-[#0066cc]" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg><span class="text-base sm:text-lg font-semibold">เธฃเธฒเธขเธเธฒเธฃเธชเธดเธเธเนเธฒ (1)</span></div><div class="bg-system-background border border-[rgba(0,0,0,0.08)] rounded-xl overflow-hidden hover:border-[rgba(0,0,0,0.15)] transition-all duration-300"><div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between cursor-pointer hover:bg-surface-secondary/50 transition-colors gap-4"><div class="flex items-center gap-3 min-w-0 flex-1"><div class="w-1.5 h-10 rounded-full shrink-0 bg-[#0066cc]"></div><div class="min-w-0"><h4 class="text-[14px] font-bold text-on-surface flex items-center gap-2 flex-wrap"><span class="truncate max-w-[200px] sm:max-w-xs">Item 1</span><span class="text-on-surface-variant font-medium text-[13px] flex items-center gap-1"><span>(CODE1)</span><button type="button" class="p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center " title="เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button></span></h4><div class="flex items-center gap-2 mt-1"><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-surface-variant text-on-surface-variant">Defect</span></div></div></div><div class="flex items-center gap-4 shrink-0 justify-between sm:justify-end"><div class="flex items-center gap-1.5 text-[13px] font-bold"><span class="text-apple-blue-deep">0</span><span class="text-on-surface-variant/40">/</span><span class="text-on-surface-variant font-semibold">10</span><span class="text-[11px] text-on-surface-variant/75 font-normal ml-0.5">เธเธฅเนเธญเธ</span></div><div class="flex items-center gap-2"><div class="p-1.5 rounded-full bg-surface-secondary text-on-surface-variant transition-transform duration-300 "><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div></div></div></div></div> </div><div class="border-t border-divider-color bg-system-background px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 rounded-b-none sm:rounded-b-[16px] shadow-[0_-4px_16px_rgba(0,0,0,0.02)] z-10"><div class="flex gap-4 items-center w-full md:w-auto justify-center md:justify-start order-3 md:order-1 border-t md:border-t-0 border-divider-color/50 pt-3 md:pt-0"><span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider md:hidden mr-1">เธชเนเธเธญเธญเธ:</span><button class="text-sm font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-surface-secondary"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-spreadsheet" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M8 13h2"></path><path d="M14 13h2"></path><path d="M8 17h2"></path><path d="M14 17h2"></path></svg> <span class="inline">Excel</span></button></div><div class="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 order-1 md:order-2"><div class="hidden md:block h-6 w-[1px] bg-divider-color"></div><div class="flex items-center gap-3 w-full md:w-auto justify-end"><button class="flex-1 md:flex-none bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-4 py-2.5 rounded-xl font-bold transition-colors border border-divider-color whitespace-nowrap">เธเธดเธ”</button><button disabled="" class="bg-[#0066cc] text-white hover:bg-[#0055aa] shadow-md text-[13px] sm:text-sm px-5 py-2.5 rounded-xl font-bold flex-1 md:flex-none justify-center whitespace-nowrap transition-colors disabled:opacity-50">เธญเธฑเธเน€เธ”เธ•</button></div></div></div></div><div data-export-template="true" style="display: none;"><div style="font-family: &quot;Inter&quot;, &quot;Noto Sans Thai&quot;, sans-serif; background-color: rgb(255, 255, 255); padding: 50px; color: rgb(29, 29, 31); font-size: 14px; line-height: 1.6; width: 100%; max-width: 1000px; box-sizing: border-box; margin: 0px auto;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 2px solid rgb(241, 245, 249); padding-bottom: 30px;"><div style="display: flex; gap: 24px; align-items: center;"><img alt="SFC" style="height: 70px; object-fit: contain;" crossorigin="anonymous" src="/img/logo.png"><div style="height: 50px; width: 2px; background-color: rgb(226, 232, 240);"></div><div><h1 style="font-size: 28px; font-weight: 700; margin: 0px; letter-spacing: -0.02em; color: rgb(29, 29, 31);">เธฃเธฒเธขเธเธฒเธเธเธฒเธฃเนเธเนเนเธเธเธฒเธ (Rework Report)</h1><p style="font-size: 13px; font-weight: 600; color: rgb(134, 134, 139); text-transform: uppercase; letter-spacing: 0.1em; margin: 0px;">เธฃเธฐเธเธเธเธฃเธดเธซเธฒเธฃเธเธฑเธ”เธเธฒเธฃเธเธธเธ“เธ เธฒเธ โ€ข Quality Management</p></div></div><div style="text-align: right;"><div style="background-color: rgb(255, 251, 235); color: rgb(180, 83, 9); border: 1px solid rgb(253, 230, 138); padding: 8px 20px; border-radius: 16px; font-size: 13px; font-weight: 700; display: inline-block; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ</div><p style="font-size: 11px; font-weight: 600; color: rgb(134, 134, 139);">เธฃเธซเธฑเธชเธญเนเธฒเธเธญเธดเธ: RT001-2026</p></div></div><div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: rgb(229, 229, 234); border-radius: 16px; overflow: hidden; border: 1px solid rgb(229, 229, 234); margin-bottom: 40px;"><div style="background-color: rgb(250, 250, 252); padding: 16px; text-align: center;"><p style="font-size: 8px; font-weight: 600; color: rgb(134, 134, 139); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เนเธซเธฅเนเธเธ—เธตเนเธกเธฒ (Source)</p><p style="font-size: 15px; font-weight: 700; color: rgb(29, 29, 31); margin: 0px;">Customer</p></div><div style="background-color: rgb(250, 250, 252); padding: 16px; text-align: center;"><p style="font-size: 8px; font-weight: 600; color: rgb(134, 134, 139); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เธงเธฑเธเธ—เธตเนเธฃเธฒเธขเธเธฒเธ</p><p style="font-size: 15px; font-weight: 700; color: rgb(29, 29, 31); margin: 0px;">27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00</p></div><div style="background-color: rgb(250, 250, 252); padding: 16px; text-align: center;"><p style="font-size: 8px; font-weight: 600; color: rgb(134, 134, 139); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เธเธณเธเธงเธเธฃเธฒเธขเธเธฒเธฃเธฃเธงเธก</p><p style="font-size: 15px; font-weight: 700; color: rgb(29, 29, 31); margin: 0px;">1 เธฃเธฒเธขเธเธฒเธฃ</p></div><div style="background-color: rgb(250, 250, 252); padding: 16px; text-align: center;"><p style="font-size: 8px; font-weight: 600; color: rgb(134, 134, 139); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เธฃเธฐเธ”เธฑเธเธเธงเธฒเธกเธชเธณเธเธฑเธ</p><p style="font-size: 15px; font-weight: 700; color: rgb(0, 113, 227); margin: 0px;">เธเธเธ•เธด</p></div></div><div style="margin-bottom: 45px;"><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; color: rgb(29, 29, 31);"><div style="width: 6px; height: 24px; background-color: rgb(0, 113, 227); border-radius: 4px;"></div><h2 style="font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0px; color: rgb(15, 23, 42);">เธชเธฃเธธเธเธฃเธฒเธขเธเธฒเธฃเธชเธดเธเธเนเธฒ (Item Summary)</h2></div><div style="display: flex; flex-direction: column; gap: 15px;"><div style="display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 1px solid rgb(229, 229, 234); background-color: rgb(255, 255, 255); page-break-inside: avoid;"><div style="display: flex; padding: 16px 20px; border-bottom: 1px solid rgb(241, 245, 249); background-color: rgb(250, 250, 252); align-items: center;"><div style="width: 28px; height: 28px; border-radius: 6px; background-color: rgb(226, 232, 240); color: rgb(71, 85, 105); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; margin-right: 15px; flex-shrink: 0;">1</div><div style="flex: 1 1 0%;"><h3 style="font-size: 15px; font-weight: 700; margin: 0px 0px 6px; color: rgb(29, 29, 31);">Item 1</h3><div style="display: flex; align-items: center; gap: 10px;"><div style="background-color: rgb(239, 246, 255); padding: 3px 8px; border-radius: 6px; color: rgb(0, 113, 227); font-size: 11px; font-weight: 700;">123</div><div style="font-size: 11px; color: rgb(134, 134, 139);">Code: CODE1</div></div></div></div><div style="display: flex;"><div style="flex: 0 0 65%; padding: 20px; border-right: 1px solid rgb(241, 245, 249);"><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"><div><p style="font-size: 8px; font-weight: 800; color: rgb(148, 163, 184); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">Batch No.</p><p style="margin: 0px; font-size: 13px; font-weight: 700; color: rgb(51, 65, 85);">-</p></div><div><p style="font-size: 8px; font-weight: 800; color: rgb(148, 163, 184); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เธงเธฑเธเธ—เธตเนเธเธฅเธดเธ•เนเธเธฅเธฅเธญเธ</p><p style="margin: 0px; font-size: 13px; font-weight: 700; color: rgb(51, 65, 85);">-</p></div><div><p style="font-size: 8px; font-weight: 800; color: rgb(148, 163, 184); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">Box Number</p><p style="margin: 0px; font-size: 13px; font-weight: 700; color: rgb(51, 65, 85);">-</p></div><div style="display: flex; gap: 20px;"><div><p style="font-size: 8px; font-weight: 800; color: rgb(148, 163, 184); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">Mold</p><p style="margin: 0px; font-size: 13px; font-weight: 700; color: rgb(51, 65, 85);">-</p></div><div><p style="font-size: 8px; font-weight: 800; color: rgb(148, 163, 184); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">Line</p><p style="margin: 0px; font-size: 13px; font-weight: 700; color: rgb(51, 65, 85);">-</p></div></div></div></div><div style="flex: 0 0 35%; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;"><div><p style="font-size: 8px; font-weight: 800; color: rgb(148, 163, 184); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เธชเธฒเน€เธซเธ•เธธ (Reason)</p><p style="margin: 0px 0px 6px; font-size: 14px; font-weight: 700; color: rgb(255, 59, 48);">Defect</p><p style="margin: 0px; font-size: 11px; color: rgb(134, 134, 139); font-weight: 600;">เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ: QSMS </p></div><div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgb(241, 245, 249); padding-top: 12px; margin-top: 12px;"><p style="margin: 0px; font-size: 11px; font-weight: 700; color: rgb(134, 134, 139);">เธเธณเธเธงเธ</p><p style="margin: 0px; font-size: 18px; font-weight: 700; color: rgb(29, 29, 31);">10</p></div></div></div></div></div></div><div style="margin-bottom: 40px; page-break-before: always;"><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;"><div style="width: 6px; height: 24px; background-color: rgb(59, 130, 246); border-radius: 4px;"></div><h2 style="font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 0px; color: rgb(15, 23, 42);">เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธซเธฅเธฑเธเธเธฒเธเนเธฅเธฐเน€เธญเธเธชเธฒเธฃเนเธเธ</h2></div><div style="display: flex; flex-direction: column; gap: 40px;"><div style="background-color: rgb(255, 255, 255); border-radius: 24px; border: 1px solid rgb(229, 229, 234); overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.04); page-break-inside: avoid;"><div style="background-color: rgb(250, 250, 252); padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgb(229, 229, 234);"><div style="display: flex; align-items: center; gap: 15px;"><div style="width: 36px; height: 36px; border-radius: 12px; background-color: rgb(0, 113, 227); color: rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700;">1</div><h3 style="font-size: 18px; font-weight: 700; margin: 0px; color: rgb(29, 29, 31); letter-spacing: -0.01em;">Item 1</h3></div><div style="background-color: rgb(255, 255, 255); padding: 6px 16px; border-radius: 12px; color: rgb(29, 29, 31); font-size: 12px; font-weight: 600; border: 1px solid rgb(229, 229, 234);">เธเธณเธเธงเธ: 10 เธซเธเนเธงเธข</div></div><div style="padding: 30px;"><div style="margin-bottom: 30px; background-color: rgb(250, 250, 252); padding: 20px; border-radius: 16px; border-left: 4px solid rgb(0, 113, 227);"><p style="font-size: 10px; font-weight: 600; color: rgb(0, 113, 227); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เธเนเธญเธกเธนเธฅเธ—เธฒเธเน€เธ—เธเธเธดเธ / เธชเธดเนเธเธ—เธตเนเธ•เธฃเธงเธเธเธ (Technical Description)</p><p style="font-size: 14px; color: rgb(29, 29, 31); margin: 0px; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; font-weight: 500; line-height: 1.7;">เนเธกเนเธกเธตเธเธฒเธฃเธฃเธฐเธเธธเธเนเธญเธกเธนเธฅเน€เธเธดเนเธกเน€เธ•เธดเธกเธชเธณเธซเธฃเธฑเธเธฃเธฒเธขเธเธฒเธฃเธเธตเน</p></div><div><p style="font-size: 10px; font-weight: 600; color: rgb(134, 134, 139); text-transform: uppercase; letter-spacing: 0.05em; margin: 0px;">เธเธฅเธฑเธเธ เธฒเธเธซเธฅเธฑเธเธเธฒเธ (Visual Evidence Archive - 0 เนเธเธฅเน)</p><div style="padding: 30px; text-align: center; border: 2px dashed rgb(229, 229, 234); border-radius: 16px; color: rgb(134, 134, 139); font-size: 13px; font-weight: 600;">เนเธกเนเธกเธตเธ เธฒเธเธซเธฅเธฑเธเธเธฒเธเนเธเธเธกเธฒเธชเธณเธซเธฃเธฑเธเธฃเธฒเธขเธเธฒเธฃเธเธตเน</div></div></div></div></div></div><div style="margin-top: 60px; padding-top: 30px; border-top: 2px solid rgb(241, 245, 249); display: flex; justify-content: space-between; font-size: 10px; color: rgb(148, 163, 184); font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;"><div>เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃเธเธฒเธ Rework เธ”เธดเธเธดเธ—เธฑเธฅ (QSMS) โ€ข เน€เธญเธเธชเธฒเธฃเธ เธฒเธขเนเธเธซเธเนเธงเธขเธเธฒเธ</div><div>เธงเธฑเธเธ—เธตเนเธญเธญเธเน€เธญเธเธชเธฒเธฃ: 17 เธ.เธ. 2569 11:49</div></div></div></div></div></div>
+
+ [31mโฏ[39m src/modules/rework/components/UpdateModal/index.test.tsx [2m([22m[2m7 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[33m 664[2mms[22m[39m
+     [32mโ“[39m renders correctly when open[32m 241[2mms[22m[39m
+[31m     [31mร—[31m allows entering edit mode for admin[39m[32m 89[2mms[22m[39m
+[31m     [31mร—[31m updates state when changing case number in edit mode[39m[32m 80[2mms[22m[39m
+[31m     [31mร—[31m calls onUpdate with the updated caseName on save[39m[32m 68[2mms[22m[39m
+[31m     [31mร—[31m switches caseName prefix to RW when source is SFC[39m[32m 61[2mms[22m[39m
+[31m     [31mร—[31m exits edit mode when clicking cancel and confirming[39m[32m 61[2mms[22m[39m
+[31m     [31mร—[31m warns before closing the modal while editing[39m[32m 60[2mms[22m[39m
+node.exe : 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[31mโฏโฏโฏโฏโฏโฏโฏ[39m[1m[41m Failed Tests 6 [49m[22m[31mโฏโฏโฏโฏโฏโฏโฏ[39m
+
+[41m[1m FAIL [22m[49m src/modules/rework/components/UpdateModal/index.test.tsx[2m > [22mUpdateModal 
+Component[2m > [22mallows entering edit mode for admin
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: เนเธเนเนเธ. This could be 
+because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m"overflow: hidden; padding-right: 1024px;"[39m
+[36m>[39m
+  [36m<div />[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed inset-0 bg-black/35 z-[9998] will-change-opacity"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed top-0 left-0 w-full h-[100dvh] z-[9999] flex items-center justify-center p-4 
+pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"false"[39m
+      [33mclass[39m=[32m"pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] 
+sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"[39m
+      [33mstyle[39m=[32m"opacity: 0; transform: translateY(20px) scale(0.98);"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b 
+border-divider-color bg-system-background z-10 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface"[39m
+            [36m>[39m
+              [0mUpdate Status[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm sm:text-base text-on-surface-variant mt-1 flex items-center gap-1.5"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mRT001-2026[0m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface 
+hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center "[39m
+                [33mtitle[39m=[32m"เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-copy"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"13"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"13"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<rect[39m
+                    [33mheight[39m=[32m"14"[39m
+                    [33mrx[39m=[32m"2"[39m
+                    [33mry[39m=[32m"2"[39m
+                    [33mwidth[39m=[32m"14"[39m
+                    [33mx[39m=[32m"8"[39m
+                    [33my[39m=[32m"8"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-1 sm:gap-2"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full 
+transition-colors focus:outline-none"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-x"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M18 6 6 18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m6 6 12 12"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 
+py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mSource[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mCustomer[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mCase Number[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mRT001-2026[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mDate[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0m27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+ ...
+[90m [2mโฏ[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2mโฏ[22m src/modules/rework/components/UpdateModal/index.test.tsx:[2m97:32[22m[39m
+    [90m 95|[39m     [90m// Find the edit button[39m
+    [90m 96|[39m     console[33m.[39m[34mlog[39m(document[33m.[39mbody[33m.[39minnerHTML)[33m;[39m
+    [90m 97|[39m     [35mconst[39m editModeBtn [33m=[39m 
+screen[33m.[39m[34mgetByText[39m([32m'เนเธเนเนเธ'[39m)[33m;[39m
+    [90m   |[39m                                [31m^[39m
+    [90m 98|[39m     fireEvent[33m.[39m[34mclick[39m(editModeBtn)[33m;[39m
+    [90m 99|[39m
+
+[31m[2mโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏ[1/6]โฏ[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/rework/components/UpdateModal/index.test.tsx[2m > [22mUpdateModal 
+Component[2m > [22mupdates state when changing case number in edit mode
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: เนเธเนเนเธ. This could be 
+because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m"overflow: hidden; padding-right: 1024px;"[39m
+[36m>[39m
+  [36m<div />[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed inset-0 bg-black/35 z-[9998] will-change-opacity"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed top-0 left-0 w-full h-[100dvh] z-[9999] flex items-center justify-center p-4 
+pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"false"[39m
+      [33mclass[39m=[32m"pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] 
+sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"[39m
+      [33mstyle[39m=[32m"opacity: 0; transform: translateY(20px) scale(0.98);"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b 
+border-divider-color bg-system-background z-10 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface"[39m
+            [36m>[39m
+              [0mUpdate Status[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm sm:text-base text-on-surface-variant mt-1 flex items-center gap-1.5"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mRT001-2026[0m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface 
+hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center "[39m
+                [33mtitle[39m=[32m"เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-copy"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"13"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"13"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<rect[39m
+                    [33mheight[39m=[32m"14"[39m
+                    [33mrx[39m=[32m"2"[39m
+                    [33mry[39m=[32m"2"[39m
+                    [33mwidth[39m=[32m"14"[39m
+                    [33mx[39m=[32m"8"[39m
+                    [33my[39m=[32m"8"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-1 sm:gap-2"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full 
+transition-colors focus:outline-none"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-x"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M18 6 6 18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m6 6 12 12"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 
+py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mSource[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mCustomer[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mCase Number[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mRT001-2026[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mDate[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0m27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+ ...
+[90m [2mโฏ[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2mโฏ[22m src/modules/rework/components/UpdateModal/index.test.tsx:[2m126:28[22m[39m
+    [90m124|[39m     )[33m;[39m
+    [90m125|[39m
+    [90m126|[39m     
+fireEvent[33m.[39m[34mclick[39m(screen[33m.[39m[34mgetByText[39m([32m'เนเธเนเนเธ'[39m))[33m;[39m
+    [90m   |[39m                            [31m^[39m
+    [90m127|[39m
+    [90m128|[39m     [35mconst[39m caseNameInput [33m=[39m 
+screen[33m.[39m[34mgetByDisplayValue[39m([32m'001'[39m)[33m;[39m
+
+[31m[2mโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏ[2/6]โฏ[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/rework/components/UpdateModal/index.test.tsx[2m > [22mUpdateModal 
+Component[2m > [22mcalls onUpdate with the updated caseName on save
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: เนเธเนเนเธ. This could be 
+because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m"overflow: hidden; padding-right: 1024px;"[39m
+[36m>[39m
+  [36m<div />[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed inset-0 bg-black/35 z-[9998] will-change-opacity"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed top-0 left-0 w-full h-[100dvh] z-[9999] flex items-center justify-center p-4 
+pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"false"[39m
+      [33mclass[39m=[32m"pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] 
+sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"[39m
+      [33mstyle[39m=[32m"opacity: 0; transform: translateY(20px) scale(0.98);"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b 
+border-divider-color bg-system-background z-10 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface"[39m
+            [36m>[39m
+              [0mUpdate Status[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm sm:text-base text-on-surface-variant mt-1 flex items-center gap-1.5"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mRT001-2026[0m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface 
+hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center "[39m
+                [33mtitle[39m=[32m"เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-copy"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"13"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"13"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<rect[39m
+                    [33mheight[39m=[32m"14"[39m
+                    [33mrx[39m=[32m"2"[39m
+                    [33mry[39m=[32m"2"[39m
+                    [33mwidth[39m=[32m"14"[39m
+                    [33mx[39m=[32m"8"[39m
+                    [33my[39m=[32m"8"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-1 sm:gap-2"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full 
+transition-colors focus:outline-none"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-x"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M18 6 6 18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m6 6 12 12"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 
+py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mSource[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mCustomer[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mCase Number[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mRT001-2026[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mDate[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0m27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+ ...
+[90m [2mโฏ[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2mโฏ[22m src/modules/rework/components/UpdateModal/index.test.tsx:[2m146:28[22m[39m
+    [90m144|[39m       [33m/[39m[33m>[39m
+    [90m145|[39m     )[33m;[39m
+    [90m146|[39m     
+fireEvent[33m.[39m[34mclick[39m(screen[33m.[39m[34mgetByText[39m([32m'เนเธเนเนเธ'[39m))[33m;[39m
+    [90m   |[39m                            [31m^[39m
+    [90m147|[39m
+    [90m148|[39m     [35mconst[39m caseNameInput [33m=[39m 
+screen[33m.[39m[34mgetByDisplayValue[39m([32m'001'[39m)[33m;[39m
+
+[31m[2mโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏ[3/6]โฏ[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/rework/components/UpdateModal/index.test.tsx[2m > [22mUpdateModal 
+Component[2m > [22mswitches caseName prefix to RW when source is SFC
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: เนเธเนเนเธ. This could be 
+because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m"overflow: hidden; padding-right: 1024px;"[39m
+[36m>[39m
+  [36m<div />[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed inset-0 bg-black/35 z-[9998] will-change-opacity"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed top-0 left-0 w-full h-[100dvh] z-[9999] flex items-center justify-center p-4 
+pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"false"[39m
+      [33mclass[39m=[32m"pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] 
+sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"[39m
+      [33mstyle[39m=[32m"opacity: 0; transform: translateY(20px) scale(0.98);"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b 
+border-divider-color bg-system-background z-10 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface"[39m
+            [36m>[39m
+              [0mUpdate Status[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm sm:text-base text-on-surface-variant mt-1 flex items-center gap-1.5"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mRT001-2026[0m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface 
+hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center "[39m
+                [33mtitle[39m=[32m"เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-copy"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"13"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"13"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<rect[39m
+                    [33mheight[39m=[32m"14"[39m
+                    [33mrx[39m=[32m"2"[39m
+                    [33mry[39m=[32m"2"[39m
+                    [33mwidth[39m=[32m"14"[39m
+                    [33mx[39m=[32m"8"[39m
+                    [33my[39m=[32m"8"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-1 sm:gap-2"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full 
+transition-colors focus:outline-none"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-x"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M18 6 6 18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m6 6 12 12"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 
+py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mSource[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mCustomer[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mCase Number[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mRT001-2026[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mDate[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0m27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+ ...
+[90m [2mโฏ[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2mโฏ[22m src/modules/rework/components/UpdateModal/index.test.tsx:[2m176:28[22m[39m
+    [90m174|[39m     )[33m;[39m
+    [90m175|[39m
+    [90m176|[39m     
+fireEvent[33m.[39m[34mclick[39m(screen[33m.[39m[34mgetByText[39m([32m'เนเธเนเนเธ'[39m))[33m;[39m
+    [90m   |[39m                            [31m^[39m
+    [90m177|[39m
+    [90m178|[39m     [35mconst[39m sourceSelect [33m=[39m 
+screen[33m.[39m[34mgetAllByRole[39m([32m'combobox'[39m)[[34m0[39m][33m;[39m
+
+[31m[2mโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏ[4/6]โฏ[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/rework/components/UpdateModal/index.test.tsx[2m > [22mUpdateModal 
+Component[2m > [22mexits edit mode when clicking cancel and confirming
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: เนเธเนเนเธ. This could be 
+because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m"overflow: hidden; padding-right: 1024px;"[39m
+[36m>[39m
+  [36m<div />[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed inset-0 bg-black/35 z-[9998] will-change-opacity"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed top-0 left-0 w-full h-[100dvh] z-[9999] flex items-center justify-center p-4 
+pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"false"[39m
+      [33mclass[39m=[32m"pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] 
+sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"[39m
+      [33mstyle[39m=[32m"opacity: 0; transform: translateY(20px) scale(0.98);"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b 
+border-divider-color bg-system-background z-10 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface"[39m
+            [36m>[39m
+              [0mUpdate Status[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm sm:text-base text-on-surface-variant mt-1 flex items-center gap-1.5"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mRT001-2026[0m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface 
+hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center "[39m
+                [33mtitle[39m=[32m"เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-copy"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"13"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"13"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<rect[39m
+                    [33mheight[39m=[32m"14"[39m
+                    [33mrx[39m=[32m"2"[39m
+                    [33mry[39m=[32m"2"[39m
+                    [33mwidth[39m=[32m"14"[39m
+                    [33mx[39m=[32m"8"[39m
+                    [33my[39m=[32m"8"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-1 sm:gap-2"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full 
+transition-colors focus:outline-none"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-x"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M18 6 6 18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m6 6 12 12"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 
+py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mSource[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mCustomer[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mCase Number[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mRT001-2026[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mDate[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0m27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+ ...
+[90m [2mโฏ[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2mโฏ[22m src/modules/rework/components/UpdateModal/index.test.tsx:[2m206:28[22m[39m
+    [90m204|[39m     )[33m;[39m
+    [90m205|[39m
+    [90m206|[39m     
+fireEvent[33m.[39m[34mclick[39m(screen[33m.[39m[34mgetByText[39m([32m'เนเธเนเนเธ'[39m))[33m;[39m
+    [90m   |[39m                            [31m^[39m
+    [90m207|[39m     [34mexpect[39m(screen[33m.[39m[34mgetByText[39m([32m'เนเธซเธกเธ”เนเธเนเนเธ'[39m))
+[33m.[39m[34mtoBeInTheDocument[39m()[33m;[39m
+    [90m208|[39m
+
+[31m[2mโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏ[5/6]โฏ[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/rework/components/UpdateModal/index.test.tsx[2m > [22mUpdateModal 
+Component[2m > [22mwarns before closing the modal while editing
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: เนเธเนเนเธ. This could be 
+because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to 
+make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m"overflow: hidden; padding-right: 1024px;"[39m
+[36m>[39m
+  [36m<div />[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed inset-0 bg-black/35 z-[9998] will-change-opacity"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"fixed top-0 left-0 w-full h-[100dvh] z-[9999] flex items-center justify-center p-4 
+pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform"[39m
+    [33mstyle[39m=[32m"opacity: 0;"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"false"[39m
+      [33mclass[39m=[32m"pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] 
+sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"[39m
+      [33mstyle[39m=[32m"opacity: 0; transform: translateY(20px) scale(0.98);"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"relative bg-system-background w-full flex flex-col flex-1 min-h-0 overflow-hidden"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex justify-between items-start px-4 sm:px-6 pt-6 sm:pt-10 pb-4 border-b 
+border-divider-color bg-system-background z-10 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-2xl sm:text-3xl font-semibold tracking-tight text-on-surface"[39m
+            [36m>[39m
+              [0mUpdate Status[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm sm:text-base text-on-surface-variant mt-1 flex items-center gap-1.5"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mRT001-2026[0m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"p-1 rounded-md text-on-surface-variant/60 hover:text-on-surface 
+hover:bg-surface-secondary/80 transition-all active:scale-90 flex items-center justify-center "[39m
+                [33mtitle[39m=[32m"เธเธฑเธ”เธฅเธญเธเนเธเธขเธฑเธเธเธฅเธดเธเธเธญเธฃเนเธ”"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-copy"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"13"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"13"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<rect[39m
+                    [33mheight[39m=[32m"14"[39m
+                    [33mrx[39m=[32m"2"[39m
+                    [33mry[39m=[32m"2"[39m
+                    [33mwidth[39m=[32m"14"[39m
+                    [33mx[39m=[32m"8"[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m6 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 11:49:17
+[2m   Duration [22m 5.72s[2m (transform 583ms, setup 407ms, import 1.92s, tests 664ms, environment 2.38s)[22m
+
+                    [33my[39m=[32m"8"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-1 sm:gap-2"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full 
+transition-colors focus:outline-none"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-x"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M18 6 6 18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m6 6 12 12"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3 gap-x-2 sm:gap-4 px-4 sm:px-6 
+py-4 border-b border-divider-color bg-surface-secondary/30 shrink-0"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mSource[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mCustomer[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mCase Number[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0mRT001-2026[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center gap-1.5 text-on-surface-variant mb-1"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-sm font-medium"[39m
+              [36m>[39m
+                [0mDate[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"text-base font-medium text-on-surface"[39m
+            [36m>[39m
+              [0m27 เธเธคเธฉเธ เธฒเธเธก 2569, 07:00[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<div[39m
+ ...
+[90m [2mโฏ[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2mโฏ[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2mโฏ[22m src/modules/rework/components/UpdateModal/index.test.tsx:[2m229:28[22m[39m
+    [90m227|[39m     )[33m;[39m
+    [90m228|[39m
+    [90m229|[39m     
+fireEvent[33m.[39m[34mclick[39m(screen[33m.[39m[34mgetByText[39m([32m'เนเธเนเนเธ'[39m))[33m;[39m
+    [90m   |[39m                            [31m^[39m
+    [90m230|[39m     
+fireEvent[33m.[39m[34mclick[39m(screen[33m.[39m[34mgetByText[39m([32m'เธขเธเน€เธฅเธดเธ'[39m))[33m;[39m
+    [90m231|[39m
+
+[31m[2mโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏโฏ[6/6]โฏ[22m[39m
+

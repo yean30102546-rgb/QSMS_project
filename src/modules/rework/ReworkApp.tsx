@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { TutorialModal } from '../../components/modals/TutorialModal';
 import { ReworkDataProvider } from '@/src/contexts/ReworkDataContext';
-import { setGasWebAppUrl } from '@/src/services/api';
+
 import type { User } from '../../services/auth';
 
 import { OverallTab } from '@/src/modules/rework/views/OverallTab';
@@ -38,10 +38,7 @@ function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overall');
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
-  useEffect(() => {
-    const GAS_WEB_APP_URL = String(process.env.REACT_APP_GAS_WEB_APP_URL || '').trim();
-    setGasWebAppUrl(GAS_WEB_APP_URL);
-  }, []);
+
 
   return (
     <>

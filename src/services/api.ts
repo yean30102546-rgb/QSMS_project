@@ -1,26 +1,13 @@
 /**
- * API Service for Google Apps Script Integration
- * Includes authentication and authorization
+ * API Service
+ * Contains functions for interacting with the backend
  */
 
 import { getCurrentUser, isAuthenticated } from './auth';
 import { compressImage } from '@/src/utils/imageCompressionUtils';
 import { uploadImageToCloudinary } from './imageUploadService';
 
-// GAS URL is managed securely server-side, local wrapper handles backward-compatibility
-let GAS_WEB_APP_URL = '';
 
-export function setGasWebAppUrl(url: string): void {
-  GAS_WEB_APP_URL = url;
-}
-
-export function getGasWebAppUrl(): string {
-  return GAS_WEB_APP_URL;
-}
-
-function isValidGasUrl(url: string): boolean {
-  return !url || (url.includes('script.google.com/macros/s') && url.endsWith('/exec'));
-}
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -45,7 +32,7 @@ export interface ReworkItem {
   details?: string;
   imageUrls?: string[];
   imageFolderUrl?: string; // URL ของ folder ใน Google Drive ที่เก็บรูปทั้งหมดของ case นี้
-  status?: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
+  status?: 'Pending' | 'In-Progress' | 'Completed';
   batchNo?: string;
   gallonDate?: string;
   boxNumber?: string;
@@ -55,6 +42,7 @@ export interface ReworkItem {
   linkedSourceId?: string;
   customerName?: string;
   imageCount?: number;
+  completedBoxes?: number;
   uid?: string; // Stable unique ID from backend
   lastActiveField?: 'itemNumber' | 'itemCode'; // Tracks user priority
   verificationStatus?: 'idle' | 'checking' | 'verified' | 'new' | 'failed' | 'updating' | 'conflict';
@@ -85,7 +73,7 @@ export interface ReworkCase {
   timestamp?: string;
   source: string;
   customerName?: string;
-  status: 'Pending' | 'In-Progress' | 'Awaiting Valuation' | 'Completed';
+  status: 'Pending' | 'In-Progress' | 'Completed';
   items: ReworkItem[];
   resolutionMethod?: string;
   reworkCost?: number;
@@ -95,6 +83,9 @@ export interface ReworkCase {
   laborCount?: number;
   laborHours?: number;
   laborRate?: number;
+  missingBoxes?: number;
+  missingGallons?: number;
+  missingOil?: number;
 }
 
 export interface DashboardStats {
@@ -109,6 +100,9 @@ export interface DashboardStats {
 
 type ReworkCaseResponse = ReworkCase & {
   itemsRaw?: Array<Partial<ReworkItem> & { itemId?: string; url?: string; urls?: string[] }>;
+  missingBoxes?: number;
+  missingGallons?: number;
+  missingOil?: number;
 };
 
 /**
@@ -138,7 +132,7 @@ function parseTokenPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-async function postToGas<T>(payload: Record<string, unknown>): Promise<ApiResponse<T>> {
+async function apiFetch<T>(payload: Record<string, unknown>): Promise<ApiResponse<T>> {
   // Verify user is authenticated
   if (!isAuthenticated()) {
     throw new Error('Authentication required. Please login again.');
@@ -204,6 +198,7 @@ export async function insertCase(
   customCaseId?: string,
   isFastTrack?: boolean
 ): Promise<ApiResponse<{ caseId: string; itemIds: string[] }>> {
+  const allUploadedUrls: string[] = [];
   try {
     const processedItems = await Promise.all(items.map(async (item) => {
       const files = imageData && imageData[item.id] ? imageData[item.id] : [];
@@ -216,6 +211,7 @@ export async function insertCase(
         const uploadResult = await uploadImageToCloudinary(fileToUpload);
         if (uploadResult.success && uploadResult.url) {
           newUrls.push(uploadResult.url);
+          allUploadedUrls.push(uploadResult.url);
         } else {
           console.error(`Failed to upload image to Cloudinary for item ${item.itemNumber}:`, uploadResult.error);
         }
@@ -253,7 +249,7 @@ export async function insertCase(
     // Use custom Case ID if provided, otherwise fallback to auto-generated timestamp ID
     const caseId = customCaseId || `RW${new Date().toISOString().replace(/[-:T.Z]/g, '').substring(2, 14)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
 
-    console.log('📦 Sending case to GAS:', {
+    console.log('📦 Sending case to API:', {
       source,
       caseId,
       itemCount: processedItems.length,
@@ -271,11 +267,12 @@ export async function insertCase(
         const uploadResult = await uploadImageToCloudinary(fileToUpload);
         if (uploadResult.success && uploadResult.url) {
           processedOrFilesUrls.push(uploadResult.url);
+          allUploadedUrls.push(uploadResult.url);
         }
       }
     }
 
-    const result = await postToGas<{ caseId: string; itemIds: string[] }>({
+    const result = await apiFetch<{ caseId: string; itemIds: string[] }>({
       action: 'insertCase',
       caseData: {
         id: caseId,
@@ -292,6 +289,13 @@ export async function insertCase(
       console.log('✓ Case inserted successfully:', result.data);
     } else {
       console.error('✗ Case insertion failed:', result.error);
+      if (allUploadedUrls.length > 0) {
+        fetch('/api/cloudinary/rollback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls: allUploadedUrls })
+        }).catch(e => console.error('Rollback API failed:', e));
+      }
     }
 
     return {
@@ -303,6 +307,13 @@ export async function insertCase(
     };
   } catch (error) {
     console.error('Error inserting case:', error);
+    if (allUploadedUrls.length > 0) {
+      fetch('/api/cloudinary/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: allUploadedUrls })
+      }).catch(e => console.error('Rollback API failed:', e));
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to insert case',
@@ -381,6 +392,7 @@ function normalizeCaseItems(caseItem: ReworkCaseResponse): ReworkItem[] {
       linkedSourceId: normalizeString(rawItem.linkedSourceId || rawItem.linked_source_id),
       customerName: normalizeString(rawItem.customerName),
       uid: normalizeString(rawItem.uid),
+      completedBoxes: Number(rawItem.completedBoxes) || 0,
     };
   });
 }
@@ -410,6 +422,9 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
     laborCount: caseItem.laborCount !== undefined ? normalizeAmount(caseItem.laborCount) : undefined,
     laborHours: caseItem.laborHours !== undefined ? normalizeAmount(caseItem.laborHours) : undefined,
     laborRate: caseItem.laborRate !== undefined ? normalizeAmount(caseItem.laborRate) : undefined,
+    missingBoxes: caseItem.missingBoxes !== undefined ? normalizeAmount(caseItem.missingBoxes) : undefined,
+    missingGallons: caseItem.missingGallons !== undefined ? normalizeAmount(caseItem.missingGallons) : undefined,
+    missingOil: caseItem.missingOil !== undefined ? normalizeAmount(caseItem.missingOil) : undefined,
   }));
 }
 
@@ -418,7 +433,7 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
  */
 export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
   try {
-    const result = await postToGas<ReworkCaseResponse[]>({ action: 'fetchAllCases' });
+    const result = await apiFetch<ReworkCaseResponse[]>({ action: 'fetchAllCases' });
 
     if (result.success === false) {
       console.error('API Logic Error:', result.error);
@@ -446,9 +461,9 @@ export async function updateCase(
   caseId: string,
   updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[] }
 ): Promise<ApiResponse> {
+  // Process OR files if they exist in updates
+  let processedOrFilesUrls: string[] = [];
   try {
-    // Process OR files if they exist in updates
-    let processedOrFilesUrls: string[] = [];
     if (updates.newOrFiles && updates.newOrFiles.length > 0) {
       for (const file of updates.newOrFiles) {
         const compression = await compressImage(file, { maxSizeMB: 0.3 });
@@ -463,7 +478,7 @@ export async function updateCase(
     // Prepare the payload, excluding the raw File objects
     const { newOrFiles, ...restUpdates } = updates;
 
-    const result = await postToGas({
+    const result = await apiFetch({
       action: 'updateCaseStatus',
       caseId,
       status: updates.status,
@@ -474,12 +489,27 @@ export async function updateCase(
       orFilesUrls: processedOrFilesUrls.length > 0 ? processedOrFilesUrls : undefined
     });
 
+    if (!result.success && processedOrFilesUrls.length > 0) {
+      fetch('/api/cloudinary/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: processedOrFilesUrls })
+      }).catch(e => console.error('Rollback API failed:', e));
+    }
+
     return {
       success: result.success,
       message: result.message,
       error: result.error,
     };
   } catch (error) {
+    if (processedOrFilesUrls && processedOrFilesUrls.length > 0) {
+      fetch('/api/cloudinary/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: processedOrFilesUrls })
+      }).catch(e => console.error('Rollback API failed:', e));
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Update failed',
@@ -493,9 +523,9 @@ export async function updateCase(
 export async function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>> {
   try {
     // We can either compute this client-side from the cases or add an API action
-    // For now, let's stick to the current action if GAS still handles it, 
+    // For now, let's stick to the current action if API still handles it, 
     // or we'll need to implement it in Supabase API later.
-    const result = await postToGas<DashboardStats>({ action: 'dashboardStats' });
+    const result = await apiFetch<DashboardStats>({ action: 'dashboardStats' });
     return { success: result.success, data: result.data, error: result.error };
   } catch (error) {
     return {
@@ -510,7 +540,7 @@ export async function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>
  */
 export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: string, itemCode: string, itemName: string }[]>> {
   try {
-    const result = await postToGas<{ items: { itemNumber: string, itemCode: string, itemName: string }[] }>({
+    const result = await apiFetch<{ items: { itemNumber: string, itemCode: string, itemName: string }[] }>({
       action: 'loadMasterData'
     });
 
@@ -533,8 +563,8 @@ export async function fetchItemMaster(): Promise<ApiResponse<{ itemNumber: strin
  */
 export async function saveItemToMaster(itemNumber: string, itemCode: string, itemName: string): Promise<ApiResponse> {
   try {
-    const result = await postToGas({
-      action: 'saveItemMaster', // This will still proxy to GAS for now unless we add it to Supabase API
+    const result = await apiFetch({
+      action: 'saveItemMaster', // This will still proxy to API for now unless we add it to Supabase API
       itemNumber: String(itemNumber || '').trim(),
       itemCode: String(itemCode || '').trim(),
       itemName: String(itemName || '').trim(),
@@ -608,7 +638,7 @@ export async function fetchImageDataUrl(imageUrl: string): Promise<string> {
  */
 export async function deleteCase(caseId: string): Promise<ApiResponse> {
   try {
-    const result = await postToGas({
+    const result = await apiFetch({
       action: 'deleteCase',
       caseId,
     });

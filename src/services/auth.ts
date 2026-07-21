@@ -14,7 +14,6 @@ const USER_KEY = 'qsms_user';
 const ROLE_KEY = 'qsms_role';
 const TOKEN_EXPIRY_KEY = 'qsms_token_expiry';
 const REFRESH_TOKEN_KEY = 'qsms_refresh_token';
-const GAS_AUTH_URL = '';
 
 export interface User {
   email: string;

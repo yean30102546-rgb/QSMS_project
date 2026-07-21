@@ -210,3 +210,22 @@ Knowledge สำคัญที่ได้:
 ### [System] คลีนอัปและซิงค์ข้อมูล (Git Push)
 - ทำการลบไฟล์และโฟลเดอร์เก่าที่ไม่ได้ใช้งาน (เช่น `archive_docs`, ทดสอบ `gas`, ไฟล์ `.cjs` และ `testsprite_tests`) เพื่อทำความสะอาด Workspace
 - **Git Sync**: ทำการ Add, Commit และ Push งานล่าสุดทั้งหมด (เอกสารวิทยานิพนธ์, แผนภาพ, ไทม์ไลน์ และ FSD Refactoring) ขึ้นสู่ GitHub Branch `main` สมบูรณ์
+
+## 2026-07-21
+
+### [Bug Fix & Feature] แก้ปัญหา Payload Database และเปลี่ยนระบบเป็น Auto-Status
+- **Database & Payload Mapping Issue**: 
+  - แก้บั๊ก "column rework_cases.case_id does not exist" โดยดึง `case_id` ออกจาก Update Payload ก่อนที่จะบันทึกลง Supabase `rework_cases` เพราะตารางนี้ใช้ primary key ชื่อ `id` เท่านั้น
+  - สร้าง Supabase Migration File (`20260720_add_completed_boxes_to_items.sql`) เพื่อเพิ่มคอลัมน์ `completed_boxes` ในตาราง `rework_items` อย่างเป็นทางการ
+  - แก้ไขฟังก์ชัน `normalizeCaseItems` ให้ทำการแปลง `completed_boxes` จากฐานข้อมูลเข้าสู่ตัวแปร `completedBoxes` บน UI เพื่อให้หน้าจอมองเห็นยอดการทำงาน
+- **Auto-Status Rework Logic (แนวทาง 1)**:
+  - ยกเลิกการเลือกสถานะ (Status) แบบ Manual และทำการลบ Segmented Control ออกจากหน้าจอ `UpdateModalView` และ `UpdateModalEdit`
+  - ทำการผูก Logic สถานะ `caseStatus` แบบ Dynamic Computed State อัตโนมัติ โดยคำนวณแบบ Real-time จากยอดการผลิต (`completedBoxes`) เทียบกับยอดรวม (`amount`) ของสินค้าทั้งหมดใน Case
+  - หากยอดกล่องเป็น 0 แสดงเป็น "Pending", ยอดที่ทำไปแล้วบ้าง (แต่ยังไม่ถึง 100%) เป็น "In-Progress", และเมื่อครบ 100% จะแสดงเป็น "Completed"
+  - ถอน Side-effect การกดยืนยันแล้วเติมกล่องเต็มอัตโนมัติออก เพื่อคืนความซื่อตรงของข้อมูล
+- **Validation**: ผ่านการตรวจสอบ Type Check (`tsc --noEmit`) และเตรียมเข้าสู่ขั้นตอน Manual E2E Validation โดยผู้ใช้
+
+### [Knowledge Ingestion] อัปเดตคลังสมอง AI (Second Brain)
+- ดำเนินการ Ingest บันทึกความรู้เรื่องบั๊ก (BUG-020 และ BUG-021) เข้าสู่ `lessons-learned/bugs-and-fixes.md` เพื่อป้องกันโมเดลลืม
+- เพิ่มบันทึกเหตุการณ์วันที่อัปเดตระบบใน `project-history.md` เพื่อสร้างไทม์ไลน์ Phase 3: System Stability
+- อัปเดต Log หน้าไทม์ไลน์การทำงานให้เป็นวันที่ปัจจุบัน (21 กรกฎาคม 2026)

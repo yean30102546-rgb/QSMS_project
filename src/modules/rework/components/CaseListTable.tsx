@@ -20,7 +20,7 @@ interface CaseListTableProps {
 }
 
 function getDeadlineStatus(caseDate: string, status: ReworkCase['status']): 'warning' | 'danger' | null {
-  if (status === 'Completed' || status === 'Awaiting Valuation') return null;
+  if (status === 'Completed') return null;
   const daysSince = Math.floor((Date.now() - new Date(caseDate).getTime()) / (1000 * 60 * 60 * 24));
   if (daysSince > 30) return 'danger';
   if (daysSince > 7) return 'warning';
@@ -166,6 +166,8 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
   const deadlineStatus = getDeadlineStatus(caseItem.date, caseItem.status);
   const firstItem = caseItem.items[0];
   const totalAmount = caseItem.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const totalCompleted = caseItem.status === 'Completed' ? totalAmount : caseItem.items.reduce((sum, item) => sum + (Number(item.completedBoxes) || 0), 0);
+  const progressPercent = totalAmount > 0 ? Math.round((totalCompleted / totalAmount) * 100) : 0;
   const multipleItems = caseItem.items.length > 1;
   const itemNameDisplay = multipleItems 
     ? `${firstItem?.itemName || 'N/A'} (+${caseItem.items.length - 1} รายการ)` 
@@ -237,12 +239,30 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
               ขาดไฟล์ OR
             </span>
           )}
+          {(caseItem.missingBoxes! > 0 || caseItem.missingGallons! > 0 || caseItem.missingOil! > 0) && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600 border border-amber-200" title={`ขาดกล่อง: ${caseItem.missingBoxes || 0}, ขาดแกลลอน: ${caseItem.missingGallons || 0}, ขาดน้ำมัน: ${caseItem.missingOil || 0} ลิตร`}>
+              <AlertCircle size={12} />
+              รอของ
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="mr-2 sm:mr-6 text-right shrink-0 max-w-[100px] sm:max-w-[150px]">
-        <p className="text-sm font-semibold text-primary">{totalAmount} กล่อง</p>
-        <p className="text-[11px] font-medium text-slate-500 mt-0.5 break-words">{reasonsDisplay}</p>
+      <div className="mr-2 sm:mr-6 text-right shrink-0 min-w-[100px] sm:min-w-[130px] flex flex-col items-end">
+        <p className="text-sm font-bold text-primary">{totalAmount} กล่อง</p>
+        <div className="w-full mt-1 mb-0.5">
+          <div className="flex justify-between items-center mb-0.5">
+            <span className="text-[10px] font-medium text-slate-500">{totalCompleted}/{totalAmount}</span>
+            <span className="text-[10px] font-bold text-primary">{progressPercent}%</span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-500 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
+              style={{ width: `${progressPercent}%` }} 
+            />
+          </div>
+        </div>
+        <p className="text-[10px] font-medium text-slate-400 mt-0.5 truncate max-w-full" title={reasonsDisplay}>{reasonsDisplay}</p>
       </div>
 
       <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
@@ -269,14 +289,12 @@ function StatusPill({ status, deadlineStatus }: StatusPillProps) {
   const styles: Record<ReworkCase['status'], string> = {
     Pending: pendingStyle,
     'In-Progress': 'bg-sky-100/90 text-sky-950 border-sky-300/70 shadow-sm shadow-sky-500/5',
-    'Awaiting Valuation': 'bg-violet-100/90 text-violet-950 border-violet-300/70 shadow-sm shadow-violet-500/5',
     Completed: 'bg-emerald-100/90 text-emerald-950 border-emerald-300/70 shadow-sm shadow-emerald-500/5',
   };
 
   const thaiLabels: Record<ReworkCase['status'], string> = {
     Pending: 'รอดำเนินการ',
     'In-Progress': 'กำลังดำเนินการ',
-    'Awaiting Valuation': 'รอประเมินราคา',
     Completed: 'เสร็จสิ้น',
   };
 
@@ -288,7 +306,6 @@ function StatusPill({ status, deadlineStatus }: StatusPillProps) {
     >
       {status === 'Pending' && deadlineStatus === 'danger' && <span className="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5 animate-pulse" />}
       {status === 'Pending' && deadlineStatus === 'warning' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />}
-      {status === 'Awaiting Valuation' && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 mr-1.5 animate-pulse" />}
       {thaiLabels[status]}
     </motion.span>
   );

@@ -119,7 +119,7 @@ export function isSaveDisabled(items: ReworkItem[]): boolean {
 
 /**
  * Sort cases by priority: 
- * 1. Status: Pending > In-Progress > Awaiting Valuation > Completed
+ * 1. Status: Pending > In-Progress > Completed
  * 2. Date/Timestamp: Newest first within each status
  */
 export function sortCasesByStatus(
@@ -128,8 +128,7 @@ export function sortCasesByStatus(
   const statusOrder: Record<ReworkCase['status'], number> = { 
     Pending: 0, 
     'In-Progress': 1, 
-    'Awaiting Valuation': 2,
-    Completed: 3 
+    Completed: 2 
   };
 
   return [...cases].sort((a, b) => {
@@ -307,7 +306,6 @@ export interface CaseStatistics {
   total: number;
   pending: number;
   inProgress: number;
-  awaitingValuation: number;
   completed: number;
   completionRate: number;
   linkedCount: number;
@@ -317,7 +315,6 @@ export function getStatistics(cases: ReworkCase[]): CaseStatistics {
   const total = cases.length;
   const pending = cases.filter((c) => c.status === 'Pending').length;
   const inProgress = cases.filter((c) => c.status === 'In-Progress').length;
-  const awaitingValuation = cases.filter((c) => c.status === 'Awaiting Valuation').length;
   const completed = cases.filter((c) => c.status === 'Completed').length;
   const completionRate = total > 0 ? (completed / total) * 100 : 0;
   const linkedCount = cases.reduce((acc, c) => acc + (c.items?.filter(i => String(i.reason || '').includes('เปื้อน') && i.linkedSourceId).length || 0), 0);
@@ -326,7 +323,6 @@ export function getStatistics(cases: ReworkCase[]): CaseStatistics {
     total,
     pending,
     inProgress,
-    awaitingValuation,
     completed,
     completionRate,
     linkedCount,

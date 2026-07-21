@@ -21,6 +21,7 @@ interface ComboboxProps {
   className?: string;
   searchPlaceholder?: string;
   showSearch?: boolean;
+  disabled?: boolean;
 }
 
 export function Combobox({
@@ -32,6 +33,7 @@ export function Combobox({
   className,
   searchPlaceholder = "ค้นหา...",
   showSearch,
+  disabled,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -80,9 +82,11 @@ export function Combobox({
         <button
           type="button"
           role="combobox"
+          disabled={disabled}
           aria-expanded={open}
           className={cn(
             "flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold transition-all text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left active:scale-[0.99]",
+            disabled && "opacity-50 cursor-not-allowed",
             className
           )}
         >
@@ -94,7 +98,7 @@ export function Combobox({
       </PopoverTrigger>
       
       <PopoverContent 
-        className="w-[var(--radix-popover-trigger-width)] min-w-[240px] p-2 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-xl z-[90] focus:outline-none"
+        className="w-[var(--radix-popover-trigger-width)] min-w-[240px] p-2 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-xl z-[10000] focus:outline-none"
         align="start"
       >
         {shouldShowSearch && (

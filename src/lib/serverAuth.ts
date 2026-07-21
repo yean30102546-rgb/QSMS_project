@@ -2,7 +2,6 @@ import { cookies } from 'next/headers';
 
 const AUTH_SECRET = (
   process.env.AUTH_TOKEN_SECRET ||
-  process.env.GAS_AUTH_TOKEN_SECRET ||
   ''
 ).trim();
 

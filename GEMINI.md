@@ -18,15 +18,14 @@
 ## 2. Architecture (สถาปัตยกรรม)
 ระบบถูกออกแบบด้วยสถาปัตยกรรมแบบ **Hybrid Next.js + React SPA** ควบคู่กับระบบ Backend แบบ Serverless:
 - **Next.js API Boundary (`src/app/api/*/route.ts`):** 
-  ทำหน้าที่เป็น Server Boundary สำหรับจัดการความปลอดภัย, Authentication, ควบคุมการเชื่อมต่อกับ Supabase, รวมถึงการซ่อน Secrets ต่างๆ และ Proxy คำสั่งไปยังระบบ Google Apps Script (GAS)
+  ทำหน้าที่เป็น Server Boundary สำหรับจัดการความปลอดภัย, Authentication, ควบคุมการเชื่อมต่อกับ Supabase, รวมถึงการซ่อน Secrets ต่างๆ
 - **React Client Shell (`src/App.tsx` & Frontend Modules):** 
   ทำงานบนฝั่ง Client เป็นหลัก ดูแลเรื่อง View, Session Restore, Role-based Routing และจัดการ State ภายใน UI อย่างลื่นไหล 
 - **Operational Database (Supabase):** 
   ฐานข้อมูลหลักของระบบที่ใช้เก็บข้อมูลทั้งหมดแบบ Real-time และจัดการ Authentication
 - **Image Storage (Cloudinary):**
   ระบบจัดการและจัดเก็บรูปภาพหลักฐาน Rework (Evidence Images) โดยใช้วิธี Unsigned Upload โดยตรงจาก Frontend (Client-side) เพื่อลดปัญหาข้อจำกัดขนาด Base64 และลดโหลดเซิร์ฟเวอร์
-- **Media/Compatibility Sidecar (Google Apps Script - GAS):** 
-  ทำงานเป็นระบบเบื้องหลังสำหรับงานเฉพาะทาง เช่น Google Sheets หรือ Legacy System บางส่วน (อดีตเคยใช้รับรูปภาพแต่ปัจจุบันย้ายไป Cloudinary แล้ว)
+
 - **DocAI RAG Engine (Gemini & Jina AI):**
   โมดูลสืบค้นปัญญาประดิษฐ์ (Retrieval-Augmented Generation) ค้นหาคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ทำงานโดยใช้ Supabase pgvector ร่วมกับ Jina AI Embeddings (`jina-embeddings-v5-text-small` ขนาด 768 มิติ) และ Gemini ในการสร้างคำตอบที่เป็นธรรมชาติ
   - **Parsing Ingestion:** ใช้ `gemini-3.1-flash-lite` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown โดยมีระบบ Fallback ไปยัง `gemini-2.0-flash` เมื่อเจอปัญหา 503 ในช่วงการทำงานที่มีโหลดสูง
@@ -55,9 +54,9 @@
    - ทุกรายการ rework ต้องมีรูปภาพหลักฐานอย่างน้อย 1 ภาพ (Evidence Integrity) โดยใช้การบีบอัดรูปภาพฝั่ง Client ก่อนอัปโหลด (target 300KB)
    - หากเกิดข้อผิดพลาดในการอัปโหลดรูป ระบบจะ Rollback ธุรกรรมทั้งหมดทันทีเพื่อป้องกันข้อมูลขยะ
 6. **Rework Updates (การจัดการสถานะ & ค่าใช้จ่าย):**
-   - **Operator / Admin:** เพิ่มวิธีแก้ปัญหา (Resolution Method), เบิกวัสดุ (Materials), จับเวลาทำงาน (Labor Hours)
+   - **Operator / Admin:** เบิกวัสดุ (Materials), จับเวลาทำงาน (Labor Hours), อัปเดตยอดกล่อง (Progress)
    - **Finance:** ประเมินและกรอกราคาจริง (Actual Cost) และอัตราค่าแรง (Labor Rate) 
-   - **Status Lifecycle:** `Pending` -> `In-Progress` -> `Awaiting Valuation` -> `Completed`
+   - **Dynamic Auto-Status Lifecycle:** สถานะของเคสจะถูกคำนวณอัตโนมัติจากยอดกล่องที่ทำเสร็จเทียบกับยอดรวมทั้งหมด โดยไม่ต้องเลือกสถานะเอง (`Pending` [0] -> `In-Progress` [>0] -> `Completed` [100%])
 7. **Excel Export with Images (การส่งออกไฟล์ข้อมูล):**
    - ระบบรองรับการ Export ตารางรายงานเคสออกมาเป็นไฟล์ Excel (.xlsx) ที่มีรูปหลักฐานฝังอยู่ด้านในโดยตรง (ผ่านไลบรารี `exceljs`) โดยปรับความสูงแถวเป็น 120px และตกแต่งสีหัวตารางสวยงาม
 8. **RAG Ingestion Pipeline (การนำเข้าคู่มือ):**

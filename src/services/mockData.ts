@@ -1,6 +1,6 @@
 /**
  * Mock Data for Development/Testing
- * When GAS backend is not available, use mock data for UI testing
+ * When API backend is not available, use mock data for UI testing
  */
 
 export const MOCK_CASES = [

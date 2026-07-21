@@ -6,23 +6,12 @@ import { toCorsProxyUrl, toDisplayImageUrl, toInternalProxyUrl } from '../utils/
 import { ReworkCase } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 
-const PNG_SCALE = 2;
-const PDF_SCALE = 2;
-const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
-const PDF_MARGIN_MM = 10;
-const CONTENT_WIDTH_MM = A4_WIDTH_MM - PDF_MARGIN_MM * 2;
-const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - PDF_MARGIN_MM * 2;
 
 async function loadExportLibraries() {
-  const [{ jsPDF }, htmlToImage, ExcelJS, html2canvasModule] = await Promise.all([
-    import('jspdf'),
-    import('html-to-image'),
-    import('exceljs'),
-    import('html2canvas')
-  ]);
-
-  return { jsPDF, htmlToImage, ExcelJS: ExcelJS.default || ExcelJS, html2canvas: html2canvasModule.default };
+  const exceljsModule = await import('exceljs');
+  const ExcelJS = exceljsModule?.default || (exceljsModule as any)?.ExcelJS || exceljsModule;
+  
+  return { ExcelJS };
 }
 
 const IMAGE_TIMEOUT_MS = 5000; // 5 seconds per image
@@ -60,7 +49,7 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   const urlsToTry = [toInternalProxyUrl(displayUrl), displayUrl, toCorsProxyUrl(displayUrl)];
 
   try {
-    // Add a timeout to the GAS fetch
+    // Add a timeout to the API fetch
     const fetchPromise = fetchImageDataUrl(decodedUrl);
     const timeoutPromise = new Promise<never>((_, reject) => 
       setTimeout(() => reject(new Error('Image fetch timeout')), IMAGE_TIMEOUT_MS)
@@ -69,11 +58,11 @@ async function fetchImageAsBase64(url: string): Promise<string> {
     if (result && result.startsWith('data:')) {
       return result;
     } else {
-      console.warn(`GAS image fetch returned a raw URL, falling back to Blob download: ${result}`);
-      throw new Error('GAS fetch did not return base64');
+      console.warn(`API image fetch returned a raw URL, falling back to Blob download: ${result}`);
+      throw new Error('API fetch did not return base64');
     }
   } catch (err) {
-    console.warn(`GAS image fetch failed for ${decodedUrl}:`, err);
+    console.warn(`API image fetch failed for ${decodedUrl}:`, err);
   }
 
   for (const candidateUrl of urlsToTry) {
@@ -144,62 +133,6 @@ async function waitForImages(container: HTMLElement, onProgress?: (msg: string) 
   );
 }
 
-// Helper to preload images for React-PDF
-async function preloadImagesForCaseData(caseData: ReworkCase, onProgress?: (msg: string) => void): Promise<ReworkCase> {
-  const clonedData = JSON.parse(JSON.stringify(caseData)) as ReworkCase;
-  let totalImages = 0;
-  let loadedImages = 0;
-
-  clonedData.items.forEach(item => {
-    if (item.imageUrls) totalImages += item.imageUrls.length;
-  });
-
-  const updateProgress = () => {
-    if (onProgress) {
-      onProgress(`Loading PDF images... (${loadedImages}/${totalImages})`);
-    }
-  };
-  
-  updateProgress();
-
-  for (const item of clonedData.items) {
-    if (item.imageUrls && item.imageUrls.length > 0) {
-      const base64Urls = await Promise.all(
-        item.imageUrls.map(async (url) => {
-          try {
-            const base64 = await fetchImageAsBase64(url);
-            loadedImages++;
-            updateProgress();
-            return base64;
-          } catch (error) {
-            console.error('Error preloading image:', error);
-            loadedImages++;
-            updateProgress();
-            return url; // fallback to original
-          }
-        })
-      );
-      item.imageUrls = base64Urls;
-    }
-  }
-
-  return clonedData;
-}
-
-function prepareExportElement(el: HTMLDivElement) {
-  el.style.display = 'block';
-  el.style.position = 'fixed';
-  el.style.left = '0';
-  el.style.top = '0';
-  el.style.zIndex = '-9999';
-  el.style.width = '1000px';
-  el.style.overflow = 'visible';
-}
-
-function hideExportElement(el: HTMLDivElement | null) {
-  if (!el) return;
-  el.style.display = 'none';
-}
 
 export function useExportReport() {
   const { showAlert } = useNotification();
@@ -207,90 +140,6 @@ export function useExportReport() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState('');
 
-  const exportPNG = useCallback(async (caseId: string) => {
-    const el = exportRef.current;
-    if (!el) return;
-
-    setIsExporting(true);
-    setExportProgress('Preparing export...');
-
-    try {
-      const { html2canvas } = await loadExportLibraries();
-
-      prepareExportElement(el);
-      setExportProgress('Loading images...');
-      await waitForImages(el, setExportProgress);
-
-      setExportProgress('Loading fonts...');
-      await document.fonts.ready;
-
-      setExportProgress('Rendering PNG...');
-      
-      const canvas = await html2canvas(el, {
-        scale: PNG_SCALE,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: true,
-      });
-
-      const dataUrl = canvas.toDataURL('image/png');
-
-      setExportProgress('Downloading PNG...');
-      const sanitizedId = caseId.replace(/[\/\\?%*:|"<>]/g, '-');
-      const filename = `Rework_Report_${sanitizedId}.png`;
-
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('PNG export failed:', error);
-      showAlert('ไม่สามารถ Export PNG ได้ กรุณาลองใหม่อีกครั้ง', 'error');
-    } finally {
-      hideExportElement(exportRef.current);
-      setIsExporting(false);
-      setExportProgress('');
-    }
-  }, []);
-
-  const exportPDF = useCallback(async (caseData: ReworkCase) => {
-    setIsExporting(true);
-    setExportProgress('Preparing PDF...');
-
-    try {
-      // Preload images into Base64 to ensure reliable PDF rendering
-      const preloadedCaseData = await preloadImagesForCaseData(caseData, setExportProgress);
-
-      setExportProgress('Rendering PDF...');
-      
-      const { pdf } = await import('@react-pdf/renderer');
-      const { ExportPDFTemplate } = await import('@/src/modules/drawings/components/ExportPDFTemplate');
-      
-      const blob = await pdf(React.createElement(ExportPDFTemplate, { caseData: preloadedCaseData }) as React.ReactElement<unknown>).toBlob();
-      
-      setExportProgress('Downloading PDF...');
-      const sanitizedId = caseData.id.replace(/[\/\\?%*:|"<>]/g, '-');
-      const filename = `Rework_Report_${sanitizedId}.pdf`;
-      
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('PDF export failed:', error);
-      showAlert('ไม่สามารถ Export PDF ได้ กรุณาลองใหม่อีกครั้ง', 'error');
-    } finally {
-      setIsExporting(false);
-      setExportProgress('');
-    }
-  }, []);
 
   const exportExcel = useCallback(async (caseData: ReworkCase) => {
     setIsExporting(true);
@@ -320,6 +169,9 @@ export function useExportReport() {
         { header: 'Responsible', key: 'responsible', width: 20 },
         { header: 'Responsible Subtype', key: 'responsibleSubtype', width: 15 },
         { header: 'Details', key: 'details', width: 30 },
+        { header: 'Missing Boxes', key: 'missingBoxes', width: 15 },
+        { header: 'Missing Gallons', key: 'missingGallons', width: 15 },
+        { header: 'Missing Oil (L)', key: 'missingOil', width: 15 },
         { header: 'Images', key: 'images', width: 60 }
       ];
 
@@ -351,7 +203,10 @@ export function useExportReport() {
           reasonSubtype: item.reasonSubtype || '',
           responsible: item.responsible || '',
           responsibleSubtype: item.responsibleSubtype || '',
-          details: item.details || ''
+          details: item.details || '',
+          missingBoxes: caseData.missingBoxes || 0,
+          missingGallons: caseData.missingGallons || 0,
+          missingOil: caseData.missingOil || 0
         });
 
         const currentRow = worksheet.getRow(rowNumber);
@@ -361,7 +216,7 @@ export function useExportReport() {
         if (item.imageUrls && item.imageUrls.length > 0) {
           currentRow.height = 120; // Set taller row height to accommodate images
           
-          let colOffset = 15; // Image column is index 15 (0-indexed logic)
+          let colOffset = 18; // Image column is index 18 (0-indexed logic)
           
           setExportProgress(`Loading images for Excel (Row ${rowNumber - 1})...`);
           
@@ -441,8 +296,6 @@ export function useExportReport() {
     exportRef,
     isExporting,
     exportProgress,
-    exportPNG,
-    exportPDF,
     exportExcel,
   };
 }

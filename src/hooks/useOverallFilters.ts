@@ -72,7 +72,6 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
   const statusCounts = useMemo<Record<CaseStatus, number>>(() => ({
     Pending: cases.filter((caseItem) => caseItem.status === 'Pending').length,
     'In-Progress': cases.filter((caseItem) => caseItem.status === 'In-Progress').length,
-    'Awaiting Valuation': cases.filter((caseItem) => caseItem.status === 'Awaiting Valuation').length,
     Completed: cases.filter((caseItem) => caseItem.status === 'Completed').length,
   }), [cases]);
 

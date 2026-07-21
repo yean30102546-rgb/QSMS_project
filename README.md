@@ -1,6 +1,6 @@
 # QSMS Rework & Roster Management System
 
-ระบบจัดการงาน Rework และตารางเวรพนักงาน (Roster) ระดับองค์กร ออกแบบตามแนวคิด **Minimal Monochrome (Apple Pro Style)** ที่มีความเรียบหรู ปราณีต พร้อมการเชื่อมต่อข้อมูลแบบเรียลไทม์ควบคู่กันระหว่าง Google Sheets (ผ่าน Next.js API Proxy ไปยัง GAS Web App) และ Supabase Database
+ระบบจัดการงาน Rework และตารางเวรพนักงาน (Roster) ระดับองค์กร ออกแบบตามแนวคิด **Minimal Monochrome (Apple Pro Style)** ที่มีความเรียบหรู ปราณีต พร้อมการเชื่อมต่อข้อมูลแบบเรียลไทม์กับ Supabase Database
 
 ---
 
@@ -59,18 +59,15 @@
 ### Backend Stack (Hybrid Database Model)
 - **Google Sheets & Google Drive** - ใช้จัดเก็บข้อมูลชีตหลักและโฟลเดอร์รูปภาพของเคสต่างๆ
 - **Supabase Database** - ใช้บันทึกข้อมูลแบบ relational เพื่อการ Query ค้นหาที่รวดเร็วและการจัดสกีมาตารางที่สัมพันธ์กัน (Roster, Rework, Items, RAG Documents, RAG Chunks, RAG Feedback)
-- **Google Apps Script (GAS)** - เว็บบริการฝั่งเซิร์ฟเวอร์ทำหน้าที่เป็นตัวกลางรับข้อมูลและอัปเดตชีต
+
 
 ### Data Flow
 ```
                  [ Workspace Portal / modules ]
                                ↓
                      [ Next.js API Routes ]
-                     /                    \
-                    v                      v
-       [ Supabase Postgres ]         [ Google Apps Script API ]
-                                                 ↓
-                                       [ Google Sheets DB ]
+                               ↓
+                     [ Supabase Postgres ]
 ```
 
 ---
@@ -96,7 +93,7 @@ src/
 │   ├── rag/                   # DocAI RAG (Nong Beepa Chatbot & File Ingestion UI)
 │   └── platform/              # Workspace registries & types
 ├── services/
-│   ├── api.ts                 # Legacy / direct GAS api functions and Rework interfaces
+│   ├── api.ts                 # API functions and Rework interfaces
 │   └── auth.ts                # Session PIN verification and token utilities
 ├── utils/                     # Helpers, image compression, etc.
 └── index.css                  # Global styles (Tailwind v4 theme extensions & layout overrides)
@@ -125,7 +122,7 @@ src/
    - `NEXT_PUBLIC_SUPABASE_URL` และ `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `JINA_API_KEY` (สำหรับ RAG embeddings)
    - `GEMINI_API_KEY` (สำหรับ RAG document parsing & chat responses)
-   - `GAS_WEB_APP_URL` (URL ของ Google Apps Script Web App)
+
 
 3. **รันเซิร์ฟเวอร์สำหรับพัฒนา**
    ```bash
@@ -161,7 +158,7 @@ src/
 - **ADMIN / QSMS** - สิทธิ์สูงสุด สามารถจัดการได้ทุกส่วน รวมถึงการลบเคส การจัดการแดชบอร์ด และสิทธิ์ในการใช้ Roster Module และระบบแก้ไขข้อมูล Edit Mode
 - **FINANCE** - แผนกการเงิน มีสิทธิ์ในการสืบค้นดูรายการ และทำหน้าที่ตรวจสอบประเมินราคาอัปเดตช่อง Rework Cost และ Labor Rate เท่านั้น ไม่สามารถสร้างเคสใหม่หรือแก้ไขรายละเอียดสินค้าด้านในได้
 - **OPERATOR / WFG / PDB (Consolidated Roles)** - กลุ่มงานการผลิตและคลังสินค้า มีสิทธิ์การใช้งานจำกัดเฉพาะโมดูล **Rework** (ซ่อนโมดูล Roster ทั้งหมด)
-  - สิทธิ์ทำงาน: สามารถเพิ่มงาน Rework ได้, อัปเดตสถานะงานเป็น "In-Progress" หรือส่งต่อไปสถานะ "Awaiting Valuation" (รอประเมินราคา) ได้
+  - สิทธิ์ทำงาน: สามารถเพิ่มงาน Rework ได้, อัปเดตสถานะงานเป็น "In-Progress" หรือส่งต่อไปสถานะ "Completed" (เสร็จสิ้น) ได้
   - ข้อจำกัด: **ไม่สามารถมองเห็นหรือแก้ไขฟิลด์ค่าใช้จ่ายใดๆ ได้ (No Pricing/Cost access)** และไม่มีสิทธิ์ในฟังก์ชันการ Export ข้อมูลหรือเรียกดูหน้า Dashboard
 
 ### 🧪 Local Test Accounts (บัญชีทดสอบระบบภายใน)

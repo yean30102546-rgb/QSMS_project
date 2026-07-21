@@ -32,13 +32,11 @@ vi.mock('@/src/contexts/NotificationContext', () => ({
 vi.mock('../../hooks/useExportReport', () => ({
   useExportReport: () => ({
     isExporting: false,
-    exportProgress: 0,
-    exportPNG: vi.fn(),
-    exportPDF: vi.fn()
+    exportProgress: 0
   })
 }));
 
-vi.mock('../../services/auth', () => ({
+vi.mock('@/src/services/auth', () => ({
   getCurrentUserRole: vi.fn(() => 'QSMS')
 }));
 
@@ -95,6 +93,7 @@ describe('UpdateModal Component', () => {
     );
 
     // Find the edit button
+    console.log(document.body.innerHTML);
     const editModeBtn = screen.getByText('แก้ไข');
     fireEvent.click(editModeBtn);
 
@@ -228,14 +227,21 @@ describe('UpdateModal Component', () => {
     );
 
     fireEvent.click(screen.getByText('แก้ไข'));
+    
+    // Change some data to trigger the dirty check
+    const inputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(inputs[0], { target: { value: '5' } });
+
     fireEvent.click(screen.getByText('ยกเลิก'));
 
-    expect(confirmMock).toHaveBeenCalledWith('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการปิดใช่หรือไม่?');
-    expect(onClose).not.toHaveBeenCalled();
+    expect(confirmMock).toHaveBeenCalledWith('ต้องการยกเลิกการแก้ไขใช่หรือไม่? (การเปลี่ยนแปลงจะไม่ได้รับการบันทึก)');
+    expect(screen.queryByText('แก้ไข')).not.toBeInTheDocument(); // Still in edit mode
 
     confirmMock.mockImplementation(() => true);
     fireEvent.click(screen.getByText('ยกเลิก'));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    
+    // Should exit edit mode
+    expect(screen.getByText('แก้ไข')).toBeInTheDocument();
 
     confirmMock.mockRestore();
   });

@@ -56,7 +56,7 @@ function UpdateModalContent() {
               exit={{ opacity: 0, y: 20, scale: 0.98 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               aria-hidden={!!editExitIntent}
-              className="pointer-events-auto w-full max-w-6xl flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
+              className="pointer-events-auto w-full max-w-6xl flex flex-col h-[calc(100dvh-2rem)] sm:h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
             >
               {isEditMode ? <UpdateModalEdit /> : <UpdateModalView />}
             </motion.div>

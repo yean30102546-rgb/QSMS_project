@@ -174,7 +174,6 @@ export function OverallTab({
                 trend={`${Math.round((stats.pending / (stats.total || 1)) * 100)}%`}
               />
               <StatCard label="กำลังดำเนินการ" value={stats.inProgress.toString()} />
-              <StatCard label="รอประเมินราคา" value={stats.awaitingValuation.toString()} />
               <StatCard label="เสร็จสิ้น" value={stats.completed.toString()} />
             </div>
           </div>
@@ -222,7 +221,7 @@ export function OverallTab({
 
                 <div className="flex items-center gap-2 px-1 overflow-x-auto pb-2 scrollbar-hide">
                   <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant/85">สถานะ:</span>
-                  {(['all', 'Pending', 'In-Progress', 'Awaiting Valuation', 'Completed'] as const).map((status) => {
+                  {(['all', 'Pending', 'In-Progress', 'Completed'] as const).map((status) => {
                     const isAll = status === 'all';
                     const isActive = isAll ? statusFilter.length === 0 : statusFilter.includes(status);
                     const count = isAll ? cases.length : statusCounts[status] || 0;
@@ -233,9 +232,7 @@ export function OverallTab({
                           ? 'รอดำเนินการ'
                           : status === 'In-Progress'
                             ? 'กำลังดำเนินการ'
-                            : status === 'Awaiting Valuation'
-                              ? 'รอประเมินราคา'
-                              : 'เสร็จสิ้น';
+                            : 'เสร็จสิ้น';
 
                     const activeColors = isAll
                       ? 'bg-primary text-white shadow-md shadow-primary/20'
@@ -243,9 +240,7 @@ export function OverallTab({
                         ? 'bg-tertiary text-white shadow-md shadow-tertiary/20'
                         : status === 'In-Progress'
                           ? 'bg-[#7c98b3] text-white shadow-md shadow-[#7c98b3]/25'
-                          : status === 'Awaiting Valuation'
-                            ? 'bg-secondary text-white shadow-md shadow-secondary/20'
-                            : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20';
+                          : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20';
 
                     return (
                       <motion.button
@@ -443,7 +438,7 @@ export function OverallTab({
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">กรอง:</span>
                     {statusFilter.map((s) => (
                       <span key={`tag-s-${s}`} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-700">
-                        {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : s === 'Awaiting Valuation' ? 'รอประเมินราคา' : 'เสร็จสิ้น'}
+                        {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : 'เสร็จสิ้น'}
                         <button onClick={() => removeFilter('status', s)} className="hover:text-amber-900"><X size={10} /></button>
                       </span>
                     ))}

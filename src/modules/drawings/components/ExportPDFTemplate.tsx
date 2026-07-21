@@ -363,7 +363,6 @@ export const ExportPDFTemplate = ({ caseData }: ExportPDFTemplateProps) => {
   const statusStyles: Record<string, { bg: string; text: string; label: string; border: string }> = {
     Pending: { bg: '#fffbeb', text: '#b45309', label: 'รอดำเนินการ ', border: '#fde68a' },
     'In-Progress': { bg: '#eff6ff', text: '#1d4ed8', label: 'กำลังดำเนินการ ', border: '#bfdbfe' },
-    'Awaiting Valuation': { bg: '#faf5ff', text: '#7e22ce', label: 'รอประเมินราคา ', border: '#e9d5ff' },
     Completed: { bg: '#ecfdf5', text: '#047857', label: 'เสร็จสิ้น ', border: '#a7f3d0' },
   };
 

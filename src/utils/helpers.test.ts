@@ -56,19 +56,17 @@ describe('Helper Functions', () => {
   })
 
   describe('sortCasesByStatus', () => {
-    it('should sort cases in order: Pending > In-Progress > Awaiting Valuation > Completed', () => {
+    it('should sort cases in order: Pending > In-Progress > Completed', () => {
       const mockCases = [
         { id: '1', status: 'Completed' },
         { id: '2', status: 'Pending' },
-        { id: '3', status: 'Awaiting Valuation' },
-        { id: '4', status: 'In-Progress' },
+        { id: '3', status: 'In-Progress' },
       ] as ReworkCase[]
 
       const sorted = sortCasesByStatus(mockCases)
       expect(sorted[0].status).toBe('Pending')
       expect(sorted[1].status).toBe('In-Progress')
-      expect(sorted[2].status).toBe('Awaiting Valuation')
-      expect(sorted[3].status).toBe('Completed')
+      expect(sorted[2].status).toBe('Completed')
     })
   })
 

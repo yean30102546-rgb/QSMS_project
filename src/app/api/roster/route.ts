@@ -216,9 +216,7 @@ export async function POST(request: Request) {
       }
 
       default:
-
-        // Pass unknown actions to existing GAS proxy logic for backwards compatibility during migration
-        return proxyToGAS(body);
+        return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
     }
   } catch (error: unknown) {
     console.error('Roster API Error:', error);
@@ -234,33 +232,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-/**
- * Fallback proxy to existing Google Apps Script backend
- */
-async function proxyToGAS(body: Record<string, unknown>) {
-  const gasUrl = (process.env.GAS_CALENDAR_WEB_APP_URL || '').trim();
-  if (!gasUrl) {
-    return NextResponse.json(
-      { success: false, error: 'Legacy GAS backend URL not configured.' },
-      { status: 500 }
-    );
-  }
-
-  const response = await fetch(gasUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    return NextResponse.json(
-      { success: false, error: `Legacy backend error: ${response.status}` },
-      { status: response.status }
-    );
-  }
-
-  const data = await response.json();
-  return NextResponse.json(data);
 }

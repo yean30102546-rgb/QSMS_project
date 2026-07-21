@@ -1,5 +1,5 @@
 # Lessons Learned — Bug Fixes & Known Issues
-[วันที่อัปเดต: 2026-05-21]
+[วันที่อัปเดต: 2026-07-21]
 
 ---
 
@@ -325,6 +325,31 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 ---
 
 > 🔄 *อัปเดตเมื่อ 2026-07-14*: เพิ่ม BUG-019 (แก้ไข Relative Imports และกู้คืน Type Inference ของ Auth modules หลังทำ FSD Refactor)
+
+---
+
+## BUG-020: "column rework_cases.case_id does not exist" & Data Mapping Issue
+**Status**: ✅ FIXED (2026-07-21)
+- *Problem*: เกิด Error "column rework_cases.case_id does not exist" ขณะอัปเดตข้อมูล Rework เนื่องจาก Payload ส่งฟิลด์ `case_id` ไปทับในตาราง `rework_cases` (ซึ่งตารางนี้ใช้คอลัมน์ชื่อ `id` ในฐานข้อมูล Supabase) และตัวแปร `completed_boxes` จากฐานข้อมูลไม่ถูก Map ลงมายัง UI (ui ใช้ `completedBoxes`) ทำให้ยอดทำกล่องเสร็จ (Progress) ไม่ขยับในระบบ
+- *Solution*:
+  1. แก้ไข `api.ts` ใน `updateCase` function ให้ทำการ Extract ฟิลด์ `case_id` ออกจาก `caseUpdateData` ก่อนอัปเดตไปที่ `rework_cases` เพื่อไม่ให้ฐานข้อมูล Error (ใช้ rest spread `const { case_id, ...rest } = caseUpdateData;`)
+  2. แก้ไข `normalizeCaseItems` ให้ทำการแปลง `completed_boxes: item.completed_boxes || 0` มายัง `completedBoxes` ให้ถูกต้อง เพื่อให้ Frontend ได้รับข้อมูลยอดที่ทำเสร็จแล้ว
+  3. เพิ่ม Migration file สร้าง column `completed_boxes` ให้กับตาราง `rework_items` อย่างถูกต้อง
+
+---
+
+## BUG-021: Manual Status Conflict vs Auto-Status Logic
+**Status**: ✅ FIXED (2026-07-21)
+- *Problem*: ผู้ใช้สับสนในการจัดการสถานะ (Status) แบบเลือกเอง (Segmented control) กับความเป็นจริงที่ระบบมี Auto-fill กล่องเมื่อกดสถานะ Completed ทำให้เกิดปัญหาข้อมูลความคืบหน้าของสินค้าไม่ตรงกับสถานะเคส (เช่น งานยังไม่เสร็จแต่เผลอกด Completed)
+- *Solution*:
+  1. เปลี่ยน Logic การอัปเดตสถานะให้เป็น **Dynamic Auto-Status (แนวทาง 1)** โดยยกเลิกการเลือกสถานะเองทั้งหมด
+  2. เอาปุ่มเลือกสถานะ Manual (Segmented Control) ออกจาก `UpdateModalView` และ `UpdateModalEdit`
+  3. ระบบจะคำนวณ `caseStatus` อัตโนมัติจากผลรวมของ `completedBoxes` เทียบกับยอดรวม (`amount`) ของไอเทมทั้งหมด (0 = Pending, >0 = In-Progress, 100% = Completed)
+  4. ตัด Side-effect ที่คอยบังคับเติมกล่องอัตโนมัติออกไป เพื่อให้จำนวนที่ทำจริงและสถานะเคสสอดคล้องกันตลอดเวลา
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-07-21*: เพิ่ม BUG-020 และ BUG-021 (แก้ปัญหา Database mapping และปรับ Logic Auto-Status)
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]

@@ -5,9 +5,9 @@ import { extractGoogleDriveFileId } from '../utils/imageUrls';
 
 export function useImageDataUrl(imageUrl: string) {
   const initialUrl = String(imageUrl || '').trim();
-  const shouldFetchFromGas = Boolean(initialUrl) && Boolean(extractGoogleDriveFileId(initialUrl)) && !initialUrl.startsWith('data:');
-  const [dataUrl, setDataUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(shouldFetchFromGas);
+  const shouldFetchFromApi = Boolean(initialUrl) && Boolean(extractGoogleDriveFileId(initialUrl)) && !initialUrl.startsWith('data:');
+  const [dataUrl, setDataUrl] = useState<string>(initialUrl || '');
+  const [isLoading, setIsLoading] = useState(shouldFetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

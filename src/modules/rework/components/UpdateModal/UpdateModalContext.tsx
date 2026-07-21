@@ -15,11 +15,6 @@ interface UpdateModalContextValue {
   inline: boolean;
   onClose: () => void;
   caseStatus: ReworkCase['status'];
-  setCaseStatus: (status: ReworkCase['status']) => void;
-  resolutionMethod: string;
-  setResolutionMethod: (method: string) => void;
-  reworkCost: number | string;
-  setReworkCost: (cost: number | string) => void;
   lightboxUrl: string | null;
   setLightboxUrl: (url: string | null) => void;
   isEditMode: boolean;
@@ -39,8 +34,6 @@ interface UpdateModalContextValue {
   setNewOrFiles: (files: File[]) => void;
   newImages: Record<string, File[]>;
   setNewImages: (images: Record<string, File[]> | ((prev: Record<string, File[]>) => Record<string, File[]>)) => void;
-  materials: MaterialUsage[];
-  setMaterials: (materials: MaterialUsage[] | ((prev: MaterialUsage[]) => MaterialUsage[])) => void;
   editExitIntent: boolean;
   editedCaseNumber: string;
   setEditedCaseNumber: (num: string) => void;
@@ -51,33 +44,27 @@ interface UpdateModalContextValue {
   getCaseNumber: (name?: string, id?: string) => string;
   handleToggleEditMode: () => void;
   handleSaveEdit: () => void;
+  handleCancelEdit: () => void;
   handleRequestClose: () => void;
   handleDownloadImages: (urls: string[], name: string) => Promise<void>;
-  laborCount: number | string;
-  setLaborCount: (count: number | string) => void;
-  laborHours: number | string;
-  setLaborHours: (hours: number | string) => void;
-  laborRate: number | string;
-  setLaborRate: (rate: number | string) => void;
   userRole: UserRole;
   isAdmin: boolean;
-  isFinance: boolean;
   isOperator: boolean;
   isPDB: boolean;
   canManageRows: boolean;
-  canEditMaterialNameQty: boolean;
-  canEditUnitPrice: boolean;
-  canViewFinancialData: boolean;
   exportRef: React.RefObject<any>;
   isExporting: boolean;
   exportProgress: string;
-  exportPNG: (id: string) => void;
-  exportPDF: (data: any) => void;
   exportExcel: (data: any) => void;
-  handleAddMaterial: () => void;
-  handleMaterialChange: (id: string, field: keyof MaterialUsage, value: string | number) => void;
-  handleRemoveMaterial: (id: string) => void;
   handleUpdate: () => Promise<void>;
+  missingBoxes: number;
+  setMissingBoxes: (val: number) => void;
+  missingGallons: number;
+  setMissingGallons: (val: number) => void;
+  missingOil: number;
+  setMissingOil: (val: number) => void;
+  handleGlobalProgressChange: (globalCompleted: number) => void;
+  handleItemProgressChange: (index: number, completedBoxes: number) => void;
   handleDelete: () => void;
   confirmDelete: () => Promise<void>;
   handleRemoveItem: (index: number) => void;
@@ -89,8 +76,6 @@ interface UpdateModalContextValue {
 }
 
 const UpdateModalContext = createContext<UpdateModalContextValue | undefined>(undefined);
-
-export const STANDARD_MATERIALS = ['บรรจุภัณฑ์', 'แกลลอน', 'ฝา', 'สติ๊กเกอร์', 'ชริ้งค์ ลาเบล', 'ของแถม'];
 
 export function UpdateModalProvider({
   children,
@@ -115,25 +100,21 @@ export function UpdateModalProvider({
 }) {
   const { showToast, showAlert, showConfirm } = useNotification();
   const { progress, isSaving, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
-  const [caseStatus, setCaseStatus] = useState<ReworkCase['status']>(caseData?.status || 'Pending');
-  const [resolutionMethod, setResolutionMethod] = useState('');
-  const [reworkCost, setReworkCost] = useState<number | string>('');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedSource, setEditedSource] = useState('');
   const [editedItems, setEditedItems] = useState<ReworkCase['items']>([]);
+  const [missingBoxes, setMissingBoxes] = useState<number>(caseData?.missingBoxes || 0);
+  const [missingGallons, setMissingGallons] = useState<number>(caseData?.missingGallons || 0);
+  const [missingOil, setMissingOil] = useState<number>(caseData?.missingOil || 0);
   const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [newOrFiles, setNewOrFiles] = useState<File[]>([]);
   const [newImages, setNewImages] = useState<Record<string, File[]>>({});
-  const [materials, setMaterials] = useState<MaterialUsage[]>([]);
   const [editExitIntent, setEditExitIntent] = useState(false);
   const [editedCaseNumber, setEditedCaseNumber] = useState('');
-  const [laborCount, setLaborCount] = useState<number | string>('');
-  const [laborHours, setLaborHours] = useState<number | string>('');
-  const [laborRate, setLaborRate] = useState<number | string>('');
 
   const SOURCE_OPTIONS = ['SFC', 'Customer'];
   const caseNamePrefix = String(editedSource).toLowerCase() === 'customer' ? 'RT' : 'RW';
@@ -142,6 +123,28 @@ export function UpdateModalProvider({
   const getCaseNumber = (caseName?: string, id?: string) => caseName || id || 'Unknown';
   const handleToggleEditMode = () => setIsEditMode(!isEditMode);
   const handleSaveEdit = () => handleUpdate();
+  const handleCancelEdit = () => {
+    const hasChanges = JSON.stringify(editedItems) !== JSON.stringify(caseData?.items) ||
+      editedSource !== caseData?.source ||
+      editedCaseNumber !== (caseData?.caseName?.match(/^(?:RT|RW)(\d+)/)?.[1] || '');
+
+    if (hasChanges) {
+      showConfirm('ต้องการยกเลิกการแก้ไขใช่หรือไม่? (การเปลี่ยนแปลงจะไม่ได้รับการบันทึก)', () => {
+        if (caseData) {
+          setEditedSource(caseData.source);
+          setEditedItems([...caseData.items]);
+          setDeletedItemIds([]);
+          setNewOrFiles([]);
+          const idStr = caseData.caseName || caseData.id || '';
+          const match = idStr.match(/^(?:RT|RW)(\d+)/);
+          setEditedCaseNumber(match ? match[1] : '');
+        }
+        setIsEditMode(false);
+      });
+    } else {
+      setIsEditMode(false);
+    }
+  };
 
   const handleRequestClose = () => {
     if (isEditMode) {
@@ -184,16 +187,11 @@ export function UpdateModalProvider({
 
   const userRole = userRoleOverride || getCurrentUserRole();
   const isAdmin = userRole === UserRole.QSMS;
-  const isFinance = userRole === UserRole.FINANCE || isAdmin;
   const isOperator = userRole === UserRole.OPERATOR || isAdmin;
   const isPDB = isOperator;
-  const isStrictOperator = userRole === UserRole.OPERATOR && !isAdmin;
   const canManageRows = isOperator || isAdmin;
-  const canEditMaterialNameQty = isOperator || isAdmin;
-  const canEditUnitPrice = isFinance || isAdmin;
-  const canViewFinancialData = !isStrictOperator;
 
-  const { exportRef, isExporting, exportProgress, exportPNG, exportPDF, exportExcel } = useExportReport();
+  const { exportRef, isExporting, exportProgress, exportExcel } = useExportReport();
 
   useEffect(() => {
     if (isOpen && !inline) {
@@ -209,74 +207,78 @@ export function UpdateModalProvider({
 
   useEffect(() => {
     if (caseData) {
-      setCaseStatus(caseData.status);
-      setResolutionMethod(caseData.resolutionMethod || '');
-      setReworkCost(caseData.reworkCost || '');
       setEditedSource(caseData.source);
       setEditedItems([...caseData.items]);
       setDeletedItemIds([]);
       setNewOrFiles([]);
-      setMaterials(caseData.materials ? [...caseData.materials] : []);
-      setLaborCount(caseData.laborCount ?? '');
-      setLaborHours(caseData.laborHours ?? '');
-      setLaborRate(caseData.laborRate ?? '');
-      
+
       const idStr = caseData.caseName || caseData.id || '';
       const match = idStr.match(/^(?:RT|RW)(\d+)/);
       setEditedCaseNumber(match ? match[1] : '');
+      setMissingBoxes(caseData.missingBoxes || 0);
+      setMissingGallons(caseData.missingGallons || 0);
+      setMissingOil(caseData.missingOil || 0);
     }
   }, [caseData]);
 
+  // Auto-status updates are derived directly from editedItems
+  const totalBoxes = editedItems.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+  const globalCompleted = editedItems.reduce((acc, item) => acc + (Number(item.completedBoxes) || 0), 0);
+
+  let caseStatus: ReworkCase['status'] = 'Pending';
+  if (globalCompleted >= totalBoxes && totalBoxes > 0) {
+    caseStatus = 'Completed';
+  } else if (globalCompleted > 0) {
+    caseStatus = 'In-Progress';
+  } else if (caseData?.status === 'Completed' && totalBoxes === 0) {
+    // Edge case: if it was completed but has no boxes
+    caseStatus = 'Completed';
+  }
+
+  // Effect to reset missing fields when status becomes completed
   useEffect(() => {
-    const matTotal = materials.reduce((sum, mat) => {
-      const qty = Number(mat.quantity) || 0;
-      const price = Number(mat.unitPrice) || 0;
-      return sum + (qty * price);
-    }, 0);
-    const lCount = Number(laborCount) || 0;
-    const lHours = Number(laborHours) || 0;
-    const lRate = Number(laborRate) || 0;
-    const laborTotal = lCount * lHours * lRate;
-    const grandTotal = matTotal + laborTotal;
-    if (materials.length > 0 || laborTotal > 0) {
-      setReworkCost(Number(grandTotal.toFixed(2)));
+    if (caseStatus === 'Completed') {
+      setMissingBoxes(0);
+      setMissingGallons(0);
+      setMissingOil(0);
     }
-  }, [materials, laborCount, laborHours, laborRate]);
+  }, [caseStatus]);
 
-  const handleAddMaterial = () => {
-    const newMat: MaterialUsage = {
-      id: `mat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: STANDARD_MATERIALS[0],
-      quantity: 1,
-      unit: 'ชิ้น',
-      unitPrice: 0,
-      totalPrice: 0
-    };
-    setMaterials(prev => [...prev, newMat]);
+  const handleGlobalProgressChange = (globalCompleted: number) => {
+    let remaining = globalCompleted;
+    setEditedItems(prev => {
+      const newItems = prev.map(item => {
+        const amount = Number(item.amount) || 0;
+        let completedForThisItem = 0;
+        if (remaining > 0) {
+          if (remaining >= amount) {
+            completedForThisItem = amount;
+            remaining -= amount;
+          } else {
+            completedForThisItem = remaining;
+            remaining = 0;
+          }
+        }
+        return { ...item, completedBoxes: completedForThisItem };
+      });
+
+      return newItems;
+    });
   };
 
-  const handleMaterialChange = (id: string, field: keyof MaterialUsage, value: string | number) => {
-    setMaterials(prev => prev.map(mat => {
-      if (mat.id !== id) return mat;
-      const updated = { ...mat, [field]: value };
-      if (field === 'quantity' || field === 'unitPrice') {
-        updated.totalPrice = (Number(updated.quantity) || 0) * (Number(updated.unitPrice) || 0);
-      }
-      return updated;
-    }));
+  const handleItemProgressChange = (index: number, completedBoxes: number) => {
+    setEditedItems(prev => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], completedBoxes };
+      return newItems;
+    });
   };
-
-  const handleRemoveMaterial = (id: string) => setMaterials(prev => prev.filter(mat => mat.id !== id));
 
   const handleUpdate = async () => {
     if (!caseData) return;
     if (isPDB || isAdmin) {
       if (editedItems.some(item => (Number(item.amount) || 0) <= 0)) {
-        showAlert('จำนวนสินค้าต้องมากกว่า 0', 'error');
-        return;
-      }
-      if (editedItems.some(item => item.boxNumber === '0')) {
-        showAlert('จำนวนกล่อง (Box Number) ห้ามเป็น 0', 'error');
+        showAlert('จำนวนกล่องต้องมากกว่า 0', 'error');
         return;
       }
     }
@@ -285,44 +287,65 @@ export function UpdateModalProvider({
     try {
       const updates: any = {};
       let targetStatus = (isAdmin || isOperator) ? caseStatus : caseData.status;
-      const isExplicitOverride = (isAdmin || isOperator) && caseStatus !== caseData.status;
+      let finalItems = [...editedItems];
 
-      if (!isExplicitOverride) {
-        if (caseData.status === 'Pending') {
-          const hasMaterials = materials.length > 0;
-          const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
-          if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) {
-            targetStatus = 'Awaiting Valuation';
-          } else if (!isAdmin) {
-            targetStatus = 'In-Progress';
-          }
-        } else if (caseData.status === 'In-Progress') {
-          const hasMaterials = materials.length > 0;
-          const hasLabor = (Number(laborHours) || 0) > 0 && (Number(laborCount) || 0) > 0;
-          if (resolutionMethod.trim() !== '' || hasMaterials || hasLabor) targetStatus = 'Awaiting Valuation';
-        } else if (caseData.status === 'Awaiting Valuation') {
-          targetStatus = 'Completed';
-        }
+      if (targetStatus === 'Completed') {
+        finalItems = finalItems.map(item => ({
+          ...item,
+          completedBoxes: Number(item.amount) || 0
+        }));
+      }
+
+      const allItemsCompleted = finalItems.every(item => {
+        const amount = Number(item.amount) || 0;
+        const completedBoxes = Number(item.completedBoxes) || 0;
+        return amount > 0 && completedBoxes >= amount;
+      });
+
+      if (allItemsCompleted && targetStatus !== 'Completed') {
+        targetStatus = 'Completed';
       }
 
       updates.status = targetStatus;
-      if (isOperator || isAdmin) updates.resolutionMethod = resolutionMethod;
       if (isAdmin) {
         updates.source = editedSource;
         if (isEditMode) {
           updates.caseName = `${caseNamePrefix}${editedCaseNumber}-${new Date().getFullYear()}`;
         }
       }
-      if (reworkCost !== '' && (isFinance || isAdmin)) updates.reworkCost = Number(reworkCost);
-      if (isPDB || isAdmin) updates.items = editedItems;
-      if (canManageRows || canEditUnitPrice || isAdmin) updates.materials = materials;
-      
+      // Only send items that have been modified or are new
+      const modifiedItems = finalItems.filter(item => {
+        const original = caseData.items.find(i => i.id === item.id);
+        if (!original) return true; // new item
+        
+        // Deep compare relevant fields (converting to strings for safe comparison)
+        return (
+          String(item.amount || '') !== String(original.amount || '') ||
+          String(item.completedBoxes || '') !== String(original.completedBoxes || '') ||
+          String(item.reason || '') !== String(original.reason || '') ||
+          String(item.reasonSubtype || '') !== String(original.reasonSubtype || '') ||
+          String(item.responsible || '') !== String(original.responsible || '') ||
+          String(item.responsibleSubtype || '') !== String(original.responsibleSubtype || '') ||
+          String(item.details || '') !== String(original.details || '') ||
+          String(item.batchNo || '') !== String(original.batchNo || '') ||
+          String(item.packagingDate || '') !== String(original.packagingDate || '') ||
+          String(item.mold || '') !== String(original.mold || '') ||
+          String(item.line || '') !== String(original.line || '') ||
+          String(item.linkedSourceId || '') !== String(original.linkedSourceId || '') ||
+          String(item.itemCode || '') !== String(original.itemCode || '') ||
+          String(item.customerName || '') !== String(original.customerName || '') ||
+          // Also check if any images were added
+          (item.imageUrls && original.imageUrls && item.imageUrls.length !== original.imageUrls.length)
+        );
+      });
+
+      updates.items = modifiedItems;
+      updates.status = caseStatus; // Send computed status
+
       if (isOperator || isAdmin) {
-        updates.laborCount = laborCount !== '' ? Number(laborCount) : 0;
-        updates.laborHours = laborHours !== '' ? Number(laborHours) : 0;
-      }
-      if (isFinance || isAdmin) {
-        updates.laborRate = laborRate !== '' ? Number(laborRate) : 0;
+        updates.missingBoxes = targetStatus === 'Completed' ? 0 : missingBoxes;
+        updates.missingGallons = targetStatus === 'Completed' ? 0 : missingGallons;
+        updates.missingOil = targetStatus === 'Completed' ? 0 : missingOil;
       }
 
       if (newOrFiles.length > 0) updates.newOrFiles = newOrFiles;
@@ -370,7 +393,6 @@ export function UpdateModalProvider({
     switch (status) {
       case 'Pending': return 'รอดำเนินการ';
       case 'In-Progress': return 'กำลังดำเนินการ';
-      case 'Awaiting Valuation': return 'รอประเมินราคา';
       case 'Completed': return 'เสร็จสิ้น';
       default: return status;
     }
@@ -378,18 +400,19 @@ export function UpdateModalProvider({
 
   const value: UpdateModalContextValue = {
     caseData, isLoading, isOpen, inline, onClose,
-    caseStatus, setCaseStatus, resolutionMethod, setResolutionMethod, reworkCost, setReworkCost,
+    caseStatus,
     lightboxUrl, setLightboxUrl, isEditMode, setIsEditMode, editedSource, setEditedSource,
     editedItems, setEditedItems, deletedItemIds, setDeletedItemIds, expandedItemId, setExpandedItemId,
     isDeleteConfirmOpen, setIsDeleteConfirmOpen, isActionLoading, newOrFiles, setNewOrFiles,
-    newImages, setNewImages, materials, setMaterials, editExitIntent, editedCaseNumber, setEditedCaseNumber,
+    newImages, setNewImages, editExitIntent, editedCaseNumber, setEditedCaseNumber,
     SOURCE_OPTIONS, caseNamePrefix, caseNameYear, previewCaseName, getCaseNumber,
-    handleToggleEditMode, handleSaveEdit, handleRequestClose, handleDownloadImages,
-    laborCount, setLaborCount, laborHours, setLaborHours, laborRate, setLaborRate,
-    userRole, isAdmin, isFinance, isOperator, isPDB, canManageRows, canEditMaterialNameQty, canEditUnitPrice, canViewFinancialData,
-    exportRef, isExporting, exportProgress, exportPNG, exportPDF, exportExcel,
-    handleAddMaterial, handleMaterialChange, handleRemoveMaterial, handleUpdate, handleDelete, confirmDelete, handleRemoveItem, getStatusLabel,
-    isSaving, progress, statusText, isComplete
+    handleToggleEditMode, handleSaveEdit, handleCancelEdit, handleRequestClose, handleDownloadImages,
+    userRole, isAdmin, isOperator, isPDB, canManageRows,
+    exportRef, isExporting, exportProgress, exportExcel,
+    handleUpdate, handleDelete, confirmDelete, handleRemoveItem, getStatusLabel,
+    isSaving, progress, statusText, isComplete,
+    missingBoxes, setMissingBoxes, missingGallons, setMissingGallons,
+    missingOil, setMissingOil, handleGlobalProgressChange, handleItemProgressChange
   };
 
   return <UpdateModalContext.Provider value={value}>{children}</UpdateModalContext.Provider>;

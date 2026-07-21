@@ -1,6 +1,6 @@
 /**
  * Canonical frontend validation for rework forms.
- * Keep these rules aligned with gas/Code.gs backend validation.
+ * Keep these rules aligned with backend validation.
  */
 
 export interface ValidationError {

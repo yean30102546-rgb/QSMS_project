@@ -70,7 +70,7 @@ test.describe('Rework Portal - Case Update', () => {
     await page.reload();
   });
 
-  test('should allow admin to edit case name and source and handle GAS warning', async ({ page }) => {
+  test('should allow admin to edit case name and source', async ({ page }) => {
     // 1. Wait for cases to load and click on the mocked case
     const caseCard = page.locator('text=RT084-2026').first();
     await expect(caseCard).toBeVisible();
@@ -92,7 +92,7 @@ test.describe('Rework Portal - Case Update', () => {
     const nameInput = page.locator('input[placeholder="เช่น 084"]');
     await nameInput.fill('999');
 
-    // 6. Handle the alert that will pop up because of the GAS warning
+    // 6. Handle the alert that will pop up
     page.on('dialog', async dialog => {
       expect(dialog.message()).toContain('บันทึกข้อมูลสำเร็จ แต่ไม่สามารถซิงค์ไปยัง Google Sheets ได้');
       await dialog.accept();

@@ -1,6 +1,6 @@
 /**
  * Image Upload Service
- * Handles uploading compressed images to Google Apps Script with progress tracking
+ * Handles uploading compressed images to Cloudinary with progress tracking
  */
 
 interface UploadProgress {
@@ -15,95 +15,6 @@ interface UploadResult {
   error?: string;
 }
 
-/**
- * Upload a single image file to Google Apps Script
- * @param file - The file to upload
- * @param gasUrl - Google Apps Script web app URL
- * @param onProgress - Callback for progress updates
- * @returns Upload result
- */
-export async function uploadImageToGAS(
-  file: File,
-  gasUrl: string,
-  onProgress?: (progress: UploadProgress) => void
-): Promise<UploadResult> {
-  try {
-    if (!gasUrl) {
-      return {
-        success: false,
-        error: 'GAS URL not configured',
-      };
-    }
-
-    // Convert file to base64
-    const base64 = await fileToBase64(file, onProgress);
-
-    // Send to GAS
-    const response = await fetch(gasUrl, {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-      body: JSON.stringify({
-        action: 'uploadImage',
-        imageData: base64,
-        fileName: file.name,
-        fileType: file.type,
-      }),
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: `Upload failed with status ${response.status}`,
-      };
-    }
-
-    const result = await response.json();
-
-    if (result.success) {
-      return {
-        success: true,
-        url: result.url,
-      };
-    } else {
-      return {
-        success: false,
-        error: result.error || 'Unknown error from server',
-      };
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Upload multiple images to Google Apps Script
- * @param files - Array of files to upload
- * @param gasUrl - Google Apps Script web app URL
- * @param onProgress - Callback for overall progress updates
- * @returns Array of upload results
- */
-export async function uploadMultipleImagesToGAS(
-  files: File[],
-  gasUrl: string,
-  onProgress?: (progress: { fileIndex: number; percentage: number }) => void
-): Promise<UploadResult[]> {
-  const results: UploadResult[] = [];
-
-  for (let i = 0; i < files.length; i++) {
-    const result = await uploadImageToGAS(files[i], gasUrl, () => {
-      onProgress?.({ fileIndex: i, percentage: Math.floor(((i + 1) / files.length) * 100) });
-    });
-    results.push(result);
-  }
-
-  return results;
-}
 
 /**
  * Upload a single image file to Cloudinary using unsigned upload

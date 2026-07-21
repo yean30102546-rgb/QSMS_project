@@ -283,7 +283,7 @@ const slides = [
     const s = p.slides.add();
     deckBase(s, "rework module", "Rework module เป็นแกน operation: case, item, evidence, status และ valuation", 15, { accent: C.green });
     card(s, { x: 90, y: 190, w: 300, h: 235, title: "Case creation", body: "รับข้อมูล source, customer, batch, item, reason และรูปหลักฐาน", accent: C.blue });
-    card(s, { x: 425, y: 190, w: 300, h: 235, title: "Status workflow", body: "ติดตาม Pending, In-Progress, Awaiting Valuation และ Completed", accent: C.green });
+    card(s, { x: 425, y: 190, w: 300, h: 235, title: "Status workflow", body: "ติดตาม Pending, In-Progress และ Completed", accent: C.green });
     card(s, { x: 760, y: 190, w: 300, h: 235, title: "Controlled updates", body: "partial update, item upsert/delete, valuation permission และ rework_logs", accent: C.amber });
     text(s, { value: "Demo proof: สร้างเคสหนึ่งรายการ แล้วอัปเดตสถานะและดูว่า evidence ยังตามกลับได้", x: 120, y: 520, w: 1000, h: 38, size: 23, bold: true, align: "center", color: C.green });
     return s;
