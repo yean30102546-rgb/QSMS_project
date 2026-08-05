@@ -54,6 +54,7 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const [imageItems, setImageItems] = useState<ImageWithStatus[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onImagesSelectedRef = useRef(onImagesSelected);
@@ -242,23 +243,31 @@ export function ImageUpload({
     handleFiles(event.target.files);
   };
 
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current = 0;
     setIsDragging(false);
     handleFiles(e.dataTransfer.files);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
+    e.preventDefault(); e.stopPropagation();
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
   };
 
   /**
@@ -334,6 +343,7 @@ export function ImageUpload({
       {/* Upload Area */}
       {imageItems.length < maxImages && (
         <div
+          onDragEnter={handleDragEnter}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

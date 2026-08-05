@@ -5,10 +5,10 @@
 product
 
 ## Users
-Admin, Operator, Finance, and PDB staff who are managing the Rework case workflow. They need to quickly input data, verify item details, upload evidence, and track status.
+Admin and Operator staff who are managing the Rework case workflow. They need to quickly input data, verify item details, upload evidence, and track status.
 
 ## Product Purpose
-A centralized Rework Management System to track items undergoing the rework process. It aims to ensure data accuracy through two-way autofill, maintain transaction integrity, and provide role-based access for different workflow stages. Additionally, it features the **DocAI RAG module**, a friendly AI chat assistant ("Nong Beepa") that allows floor operators and staff to query technical rework manuals, packing guides, and spec documents in natural language.
+A centralized Rework Management System to track items undergoing the rework process. It aims to ensure data accuracy through two-way autofill, maintain transaction integrity, provide role-based access for different workflow stages, and offer a dedicated **Drawing & Master Storage Module** with side-by-side inspection workspaces, decoupled document forms, PDF auto-orientation controls, and intelligent "ตามความเหมาะสม" text normalization for box packing rules. Additionally, it features the **DocAI RAG module**, a friendly AI chat assistant ("Nong Beepa") that allows floor operators and staff to query technical rework manuals, packing guides, and spec documents in natural language, backed by a unified **Platform Registry** architecture and rigorous V&V testing.
 
 ## Brand Personality
 Clear, Modern, Efficient, and Minimal. The system should feel reliable, straightforward, and fast to use, emphasizing content and tasks over decorative elements.

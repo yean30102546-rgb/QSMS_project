@@ -62,8 +62,10 @@ function AuthWrapper() {
             setCurrentView('portal');
           }
         } else {
-          if (savedView && savedView !== 'portal' && savedView !== 'login') {
-            setRedirectAfterLogin(savedView);
+          if (savedView && savedView !== 'portal') {
+            if (savedView !== 'login') {
+              setRedirectAfterLogin(savedView);
+            }
             setCurrentView('login');
           } else {
             setCurrentView('portal');
@@ -230,7 +232,7 @@ function AuthWrapper() {
           damping: 18,
           mass: 0.8
         }}
-        className="w-full h-full min-h-screen"
+        className="w-full h-screen overflow-hidden"
       >
         {content}
       </motion.div>

@@ -58,14 +58,6 @@ interface MasterItem {
 }
 
 
-interface DBMaterial {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  unitPrice?: number;
-  totalPrice?: number;
-}
 
 
 interface DBCase {
@@ -83,12 +75,7 @@ interface DBCase {
   batch_no?: string;
   packaging_date?: string;
   mold?: string;
-  total_rework_cost?: number | string;
   resolution_method?: string;
-  labor_count?: number;
-  labor_hours?: number | string;
-  labor_rate?: number | string;
-  materials?: DBMaterial[];
   items?: DBItem[];
 }
 
@@ -271,12 +258,7 @@ export async function POST(request: Request) {
           batchNo: c.batch_no,
           packagingDate: c.packaging_date,
           mold: c.mold,
-          reworkCost: parseFloat(String(c.total_rework_cost || 0)),
           resolutionMethod: c.resolution_method,
-          laborCount: c.labor_count,
-          laborHours: parseFloat(String(c.labor_hours || 0)),
-          laborRate: parseFloat(String(c.labor_rate || 0)),
-          materials: c.materials || [],
           items: (c.items || []).map((i: DBItem) => ({
             id: i.id,
             itemNumber: i.item_number,
@@ -364,12 +346,7 @@ export async function POST(request: Request) {
             batch_no: caseData.batchNo,
             packaging_date: caseData.packagingDate,
             mold: caseData.mold,
-            total_rework_cost: caseData.reworkCost || 0,
             resolution_method: caseData.resolutionMethod,
-            labor_count: caseData.laborCount || 0,
-            labor_hours: caseData.laborHours || 0,
-            labor_rate: caseData.laborRate || 0,
-            materials: caseData.materials || [],
             created_at: getBangkokISOString(),
             updated_at: getBangkokISOString()
           }]);
@@ -435,17 +412,9 @@ export async function POST(request: Request) {
         assertPermission(auth, 'update_status');
         const { caseId, status, resolutionMethod, reworkCost, performedBy } = body;
         const updates = body.updates || {};
-        const hasValuationChange =
-          reworkCost !== undefined ||
-          updates.reworkCost !== undefined ||
-          updates.laborRate !== undefined;
         const hasResolutionChange =
           resolutionMethod !== undefined ||
           updates.resolutionMethod !== undefined;
-
-        if (hasValuationChange) {
-          assertPermission(auth, 'fill_valuation');
-        }
 
         if (hasResolutionChange) {
           assertPermission(auth, 'fill_resolution');
@@ -462,7 +431,7 @@ export async function POST(request: Request) {
 
         const { data: existingCase, error: existingCaseError } = await supabaseServer
           .from('rework_cases')
-          .select('id, status, resolution_method, total_rework_cost, labor_count, labor_hours, labor_rate, materials, customer_name, source, or_files_urls, or_folder_url, case_name')
+          .select('id, status, resolution_method, customer_name, source, or_files_urls, or_folder_url, case_name')
           .eq('id', caseId)
           .maybeSingle();
 
@@ -556,11 +525,6 @@ export async function POST(request: Request) {
           .update({
             status: status ?? updates.status ?? existingCase.status,
             resolution_method: resolutionMethod ?? updates.resolutionMethod ?? existingCase.resolution_method,
-            total_rework_cost: reworkCost ?? updates.reworkCost ?? existingCase.total_rework_cost,
-            labor_count: updates.laborCount ?? existingCase.labor_count,
-            labor_hours: updates.laborHours ?? existingCase.labor_hours,
-            labor_rate: updates.laborRate ?? existingCase.labor_rate,
-            materials: updates.materials ?? existingCase.materials ?? [],
             customer_name: updates.customerName ?? existingCase.customer_name,
             source: updates.source ?? existingCase.source,
             case_name: updates.caseName ?? existingCase.case_name,
@@ -611,11 +575,20 @@ export async function POST(request: Request) {
       }
 
       case 'verifyItem': {
-        const { itemNumber, itemCode } = body;
+        const cleanNumber = typeof body.itemNumber === 'string' ? body.itemNumber.trim() : '';
+        const cleanCode = typeof body.itemCode === 'string' ? body.itemCode.trim() : '';
 
         const conditions: string[] = [];
-        if (itemNumber) conditions.push(`item_number.eq.${itemNumber}`);
-        if (itemCode) conditions.push(`item_code.eq.${itemCode}`);
+        if (cleanNumber) {
+          conditions.push(`item_number.eq.${cleanNumber}`);
+          conditions.push(`item_number.ilike.${cleanNumber}`);
+          conditions.push(`item_number.ilike.${cleanNumber}%`);
+        }
+        if (cleanCode) {
+          conditions.push(`item_code.eq.${cleanCode}`);
+          conditions.push(`item_code.ilike.${cleanCode}`);
+          conditions.push(`item_code.ilike.${cleanCode}%`);
+        }
 
         if (conditions.length === 0) {
           return NextResponse.json(
@@ -624,13 +597,29 @@ export async function POST(request: Request) {
           );
         }
 
-        const { data, error } = await supabaseServer
+        let { data, error } = await supabaseServer
           .from('rework_master_items')
           .select('*')
           .or(conditions.join(','))
-          .limit(2);
+          .limit(10);
 
         if (error) throw error;
+
+        // Fallback: if no direct match, fetch master items and search in JS with trim()
+        if (!data || data.length === 0) {
+          const { data: allMaster } = await supabaseServer
+            .from('rework_master_items')
+            .select('*')
+            .limit(1000);
+
+          if (allMaster && allMaster.length > 0) {
+            data = allMaster.filter(r => {
+              const rNum = String(r.item_number || '').trim();
+              const rCode = String(r.item_code || '').trim();
+              return (cleanNumber && rNum === cleanNumber) || (cleanCode && rCode === cleanCode);
+            });
+          }
+        }
 
         if (!data || data.length === 0) {
           return NextResponse.json(
@@ -640,9 +629,9 @@ export async function POST(request: Request) {
         }
 
         // Detect identity conflict: itemNumber matches one row, itemCode matches another
-        if (itemNumber && itemCode && data.length > 1) {
-          const matchByNumber = data.find(r => r.item_number === itemNumber);
-          const matchByCode = data.find(r => r.item_code === itemCode);
+        if (cleanNumber && cleanCode && data.length > 1) {
+          const matchByNumber = data.find(r => String(r.item_number || '').trim() === cleanNumber);
+          const matchByCode = data.find(r => String(r.item_code || '').trim() === cleanCode);
 
           if (matchByNumber && matchByCode && matchByNumber.id !== matchByCode.id) {
             return NextResponse.json(
@@ -659,9 +648,9 @@ export async function POST(request: Request) {
             data: {
               found: true,
               id: record.id,
-              itemName: record.item_name,
-              itemCode: record.item_code,
-              itemNumber: record.item_number
+              itemName: String(record.item_name || '').trim(),
+              itemCode: String(record.item_code || '').trim(),
+              itemNumber: String(record.item_number || '').trim()
             }
           },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }

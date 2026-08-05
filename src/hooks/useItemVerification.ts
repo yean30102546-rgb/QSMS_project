@@ -70,14 +70,33 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
     );
 
     if (existingInForm) {
-      setValue(`items.${itemIndex}.itemNumber`, existingInForm.itemNumber);
-      setValue(`items.${itemIndex}.itemCode`, existingInForm.itemCode);
-      setValue(`items.${itemIndex}.itemName`, existingInForm.itemName);
-      setValue(`items.${itemIndex}.verificationStatus`, 'verified');
-      setValue(`items.${itemIndex}.batchNo`, existingInForm.batchNo || allItems[itemIndex].batchNo);
+      setValue(`items.${itemIndex}.itemNumber`, existingInForm.itemNumber, { shouldDirty: true, shouldValidate: true });
+      setValue(`items.${itemIndex}.itemCode`, existingInForm.itemCode, { shouldDirty: true, shouldValidate: true });
+      setValue(`items.${itemIndex}.itemName`, existingInForm.itemName, { shouldDirty: true, shouldValidate: true });
+      setValue(`items.${itemIndex}.verificationStatus`, 'verified', { shouldDirty: true });
+      setValue(`items.${itemIndex}.batchNo`, existingInForm.batchNo || allItems[itemIndex].batchNo, { shouldDirty: true });
       
       onAutofillTriggered(itemId);
       return;
+    }
+
+    // 2. Check local itemMaster in Memory FIRST (Instant Auto-Fill)
+    if (itemMaster && itemMaster.length > 0) {
+      const matchInLocalMaster = itemMaster.find(m => {
+        const mNum = String(m.itemNumber || '').trim().toLowerCase();
+        const mCode = String(m.itemCode || '').trim().toLowerCase();
+        const valLower = value.trim().toLowerCase();
+        return (field === 'itemNumber' && mNum === valLower) || (field === 'itemCode' && mCode === valLower);
+      });
+
+      if (matchInLocalMaster && matchInLocalMaster.itemName) {
+        onAutofillTriggered(itemId);
+        if (matchInLocalMaster.itemNumber) setValue(`items.${itemIndex}.itemNumber`, matchInLocalMaster.itemNumber, { shouldDirty: true, shouldValidate: true });
+        if (matchInLocalMaster.itemCode) setValue(`items.${itemIndex}.itemCode`, matchInLocalMaster.itemCode, { shouldDirty: true, shouldValidate: true });
+        setValue(`items.${itemIndex}.itemName`, matchInLocalMaster.itemName, { shouldDirty: true, shouldValidate: true });
+        setValue(`items.${itemIndex}.verificationStatus`, 'verified', { shouldDirty: true });
+        return;
+      }
     }
 
     try {
@@ -131,7 +150,7 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
       const currentValue = field === 'itemNumber' ? currentItem.itemNumber : currentItem.itemCode;
       
       // Ignore stale result if user changed input while fetching
-      if (currentItem.verificationStatus !== 'checking' || (currentValue || '').trim() !== value || currentItem.lastActiveField !== field) {
+      if ((currentValue || '').trim() !== value || currentItem.lastActiveField !== field) {
         return;
       }
 
@@ -152,7 +171,7 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
 
         if (hasCodeConflict || hasNumConflict || result.data?.conflict === true) {
           onConflict();
-          setValue(`items.${itemIndex}.verificationStatus`, 'conflict');
+          setValue(`items.${itemIndex}.verificationStatus`, 'conflict', { shouldDirty: true });
           return;
         }
 
@@ -169,22 +188,22 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
           // Fire and forget
           performBackgroundMasterUpdate(itemId, itemIndex, cardNum, cardCode, cardName);
           
-          setValue(`items.${itemIndex}.itemNumber`, cardNum);
-          setValue(`items.${itemIndex}.itemCode`, cardCode);
-          setValue(`items.${itemIndex}.itemName`, cardName);
-          setValue(`items.${itemIndex}.verificationStatus`, 'updating');
+          setValue(`items.${itemIndex}.itemNumber`, cardNum, { shouldDirty: true, shouldValidate: true });
+          setValue(`items.${itemIndex}.itemCode`, cardCode, { shouldDirty: true, shouldValidate: true });
+          setValue(`items.${itemIndex}.itemName`, cardName, { shouldDirty: true, shouldValidate: true });
+          setValue(`items.${itemIndex}.verificationStatus`, 'updating', { shouldDirty: true });
           return;
         }
 
-        setValue(`items.${itemIndex}.itemNumber`, dbNum || currentItem.itemNumber);
-        setValue(`items.${itemIndex}.itemCode`, dbCode || currentItem.itemCode);
-        setValue(`items.${itemIndex}.itemName`, dbName || currentItem.itemName);
-        setValue(`items.${itemIndex}.verificationStatus`, 'verified');
+        setValue(`items.${itemIndex}.itemNumber`, dbNum || currentItem.itemNumber, { shouldDirty: true, shouldValidate: true });
+        setValue(`items.${itemIndex}.itemCode`, dbCode || currentItem.itemCode, { shouldDirty: true, shouldValidate: true });
+        setValue(`items.${itemIndex}.itemName`, dbName || currentItem.itemName, { shouldDirty: true, shouldValidate: true });
+        setValue(`items.${itemIndex}.verificationStatus`, 'verified', { shouldDirty: true });
 
       } else {
         if (result.error === 'CONFLICT') {
           onConflict();
-          setValue(`items.${itemIndex}.verificationStatus`, 'conflict');
+          setValue(`items.${itemIndex}.verificationStatus`, 'conflict', { shouldDirty: true });
           return;
         }
 
@@ -213,11 +232,11 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
 
         if (shouldUpdateMaster && trimmedNum && trimmedCode && trimmedName) {
           performBackgroundMasterUpdate(itemId, itemIndex, trimmedNum, trimmedCode, trimmedName);
-          setValue(`items.${itemIndex}.verificationStatus`, 'updating');
+          setValue(`items.${itemIndex}.verificationStatus`, 'updating', { shouldDirty: true });
           return;
         }
 
-        setValue(`items.${itemIndex}.verificationStatus`, (field === 'itemCode' && currentItem.itemName && currentItem.itemNumber) ? 'verified' : 'new');
+        setValue(`items.${itemIndex}.verificationStatus`, (field === 'itemCode' && currentItem.itemName && currentItem.itemNumber) ? 'verified' : 'new', { shouldDirty: true });
       }
     } catch (error) {
       console.error('Error verifying item:', error);
@@ -226,9 +245,9 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
 
       if (isConflict) {
         onConflict();
-        setValue(`items.${itemIndex}.verificationStatus`, 'conflict');
+        setValue(`items.${itemIndex}.verificationStatus`, 'conflict', { shouldDirty: true });
       } else {
-        setValue(`items.${itemIndex}.verificationStatus`, 'failed');
+        setValue(`items.${itemIndex}.verificationStatus`, 'failed', { shouldDirty: true });
       }
     }
   }, [getValues, setValue, itemMaster, onAutofillTriggered, performBackgroundMasterUpdate, onConflict]);
@@ -245,13 +264,15 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
 
     const trimmed = value.trim();
     if (!trimmed) {
-      setValue(`items.${itemIndex}.verificationStatus`, 'idle');
+      setValue(`items.${itemIndex}.verificationStatus`, 'idle', { shouldDirty: true });
       return;
     }
 
+    setValue(`items.${itemIndex}.verificationStatus`, 'checking', { shouldDirty: true });
+
     verificationTimeouts.current[itemId] = setTimeout(() => {
       verifySingleItem(itemId, itemIndex, field, trimmed);
-    }, 600);
+    }, 400);
   }, [verifySingleItem, setValue]);
 
   const clearTimeouts = useCallback(() => {

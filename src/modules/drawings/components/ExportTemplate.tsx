@@ -121,11 +121,11 @@ export const ExportTemplate = React.forwardRef<HTMLDivElement, ExportTemplatePro
           </div>
 
           {/* RESOLUTION SECTION */}
-          {(caseData.resolutionMethod || caseData.reworkCost !== undefined) && (
+          {caseData.resolutionMethod && (
             <div style={{ marginBottom: '45px' }}>
               <div style={{ ...sectionHeaderStyle, color: '#1d1d1f' }}>
                 <div style={{ ...accentBarStyle, backgroundColor: '#0071e3' }} />
-                <h2 style={{ ...sectionTitleStyle, fontWeight: 700 }}>การแก้ไขและผลกระทบทางการเงิน</h2>
+                <h2 style={{ ...sectionTitleStyle, fontWeight: 700 }}>การแก้ไขงาน</h2>
               </div>
               <div style={{ 
                 display: 'flex', 
@@ -137,14 +137,7 @@ export const ExportTemplate = React.forwardRef<HTMLDivElement, ExportTemplatePro
               }}>
                 <div style={{ flex: 1, padding: '28px' }}>
                   <p style={{ ...metaLabelStyle, color: '#86868b', fontWeight: 600 }}>วิธีการแก้ไขปัญหา (Action Taken)</p>
-                  <p style={{ fontSize: '15px', fontWeight: 500, color: '#1d1d1f', margin: 0 }}>{caseData.resolutionMethod || 'อยู่ระหว่างรอการตัดสินใจแก้ไขปัญหา'}</p>
-                </div>
-                <div style={{ width: '260px', backgroundColor: '#fafafc', padding: '28px', borderLeft: '1px solid #e5e5ea', textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <p style={{ ...metaLabelStyle, color: '#86868b', fontWeight: 600 }}>มูลค่าการแก้ไขงานรวม</p>
-                  <p style={{ fontSize: '32px', fontWeight: 700, color: '#1d1d1f', margin: 0 }}>
-                    <span style={{ fontSize: '16px', marginRight: '6px', color: '#86868b' }}>฿</span>
-                    {caseData.reworkCost?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
-                  </p>
+                  <p style={{ fontSize: '15px', fontWeight: 500, color: '#1d1d1f', margin: 0 }}>{caseData.resolutionMethod}</p>
                 </div>
               </div>
             </div>

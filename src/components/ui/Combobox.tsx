@@ -93,7 +93,23 @@ export function Combobox({
           <span className={cn("truncate", !selectedOption && "text-slate-400 font-normal")}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-55 text-slate-500" />
+          <div className="flex items-center gap-1 shrink-0 ml-2">
+            {value && !disabled && (
+              <span
+                role="button"
+                tabIndex={0}
+                title="ล้างค่า"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange("");
+                }}
+                className="p-1 hover:bg-slate-200/80 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </span>
+            )}
+            <ChevronsUpDown className="h-4 w-4 opacity-55 text-slate-500" />
+          </div>
         </button>
       </PopoverTrigger>
       
@@ -124,6 +140,20 @@ export function Combobox({
         )}
 
         <div className="max-h-[220px] overflow-y-auto space-y-0.5 scrollbar-thin">
+          {value && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+                setSearchQuery("");
+              }}
+              className="flex w-full items-center justify-between px-3 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all text-left border-b border-slate-100 mb-1"
+            >
+              <span className="truncate">-- ไม่ระบุ (ล้างค่า) --</span>
+            </button>
+          )}
+
           {filteredOptions.length === 0 ? (
             <div className="py-6 text-center text-xs font-bold text-slate-400">
               {emptyText}

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../../lib/supabaseServer';
 import crypto from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(crypto.scrypt);
 
 const PASSWORD_RULES = {
   minLength: 8,
@@ -30,14 +33,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { username, password, name } = body;
 
-    if (!username || !password || !name) {
+    const usernameClean = (username || '').trim().toLowerCase();
+    const nameClean = (name || '').trim();
+
+    if (!usernameClean || !password || !nameClean) {
       return NextResponse.json(
         { success: false, error: 'กรุณากรอกข้อมูลให้ครบถ้วน' },
         { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       );
     }
-
-    const usernameLower = username.toLowerCase();
 
     // Validate password strength
     const passwordError = validatePassword(password);
@@ -52,7 +56,7 @@ export async function POST(request: Request) {
     const { data: existingUser, error: checkError } = await supabaseServer
       .from('users')
       .select('id')
-      .eq('username', usernameLower)
+      .eq('username', usernameClean)
       .maybeSingle();
 
     if (checkError) {
@@ -70,18 +74,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash the password
+    // Hash the password asynchronously
     const salt = crypto.randomBytes(16).toString('hex');
-    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    const hashBuffer = (await scryptAsync(password, salt, 64)) as Buffer;
+    const hash = hashBuffer.toString('hex');
     const password_hash = `${salt}:${hash}`;
 
     // Insert user — always default to OPERATOR for security
     const { data: newUser, error: insertError } = await supabaseServer
       .from('users')
       .insert({
-        username: usernameLower,
+        username: usernameClean,
         password_hash,
-        name,
+        name: nameClean,
         role: 'OPERATOR',
       })
       .select('id, username, name, role')

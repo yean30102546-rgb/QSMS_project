@@ -97,7 +97,7 @@ const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
 
 const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
-  SFC: ['PDF', 'PDB', 'WPK', 'WFG', 'อื่นๆ'],
+  SFC: ['PDF', 'WPK', 'WFG', 'อื่นๆ'],
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };

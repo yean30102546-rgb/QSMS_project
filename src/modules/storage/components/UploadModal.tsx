@@ -1,62 +1,41 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, UploadCloud, File, Loader2, Sparkles, AlertCircle, Trash2, CheckCircle2, Plus } from 'lucide-react';
+import { X, UploadCloud, File, Loader2, Sparkles, AlertCircle, Trash2, CheckCircle2, Plus, RotateCw, ZoomIn, ZoomOut, Maximize2, Minimize2, RefreshCcw, Filter, LayoutGrid, LayoutList } from 'lucide-react';
 import { useNotification } from '../../../contexts/NotificationContext';
 import type { User } from '../../../services/auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 
-export interface UploadInitialData {
-  type?: 'drawing' | 'master';
-  drawing_number?: string;
-  revision?: string;
-  part_name?: string;
-  customer_name?: string;
-  item_code?: string;
-  item_number?: string;
-  issue_date?: string;
-  package_size?: string;
-  oil_group?: string;
-  pallet_type?: string;
-  boxes_per_pallet?: string;
-  shelf_life?: string;
-}
+import { UploadItem, UploadInitialData } from '../hooks/useUploadQueue';
 
 interface UploadModalProps {
   user: User | null;
   initialData?: UploadInitialData;
-  onClose: () => void;
+  queue: ReturnType<typeof import('../hooks/useUploadQueue').useUploadQueue>;
+  onMinimize: () => void;
+  onClose?: () => void;
   onSuccess: () => void;
 }
 
-interface UploadItem {
-  id: string;
-  file: File;
-  base64: string;
-  status: 'pending' | 'parsing' | 'ready' | 'uploading' | 'success' | 'error';
-  errorMessage?: string;
-  formData: {
-    drawing_number: string;
-    revision: string;
-    part_name: string;
-    customer_name: string;
-    item_code: string;
-    item_number: string;
-    issue_date: string;
-    package_size: string;
-    oil_group: string;
-    pallet_type: string;
-    boxes_per_pallet: string;
-    shelf_life: string;
-    type: 'drawing' | 'master';
-  };
-}
+export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }: UploadModalProps) {
+  const {
+    items, setItems, isUploading, setIsUploading, aiModel, setAiModel,
+    isQuotaPaused, setIsQuotaPaused, quotaCountdown, setQuotaCountdown,
+    addFiles, cancelQueue, clearCompleted, clearAll, resumePausedParsing, triggerAiParsing
+  } = queue;
 
-export function UploadModal({ user, initialData, onClose, onSuccess }: UploadModalProps) {
-  const [items, setItems] = useState<UploadItem[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [aiModel, setAiModel] = useState<string>('gemini-3.5-flash');
   const [usageStats, setUsageStats] = useState<{ rpm: number; tpm: number; rpd: number } | null>(null);
   const [limits, setLimits] = useState<{ rpm: number; tpm: number; rpd: number } | null>(null);
+  const [reparseCooldowns, setReparseCooldowns] = useState<Record<string, number>>({});
+  const [cardRotations, setCardRotations] = useState<Record<string, number>>({});
+  const [cardZooms, setCardZooms] = useState<Record<string, number>>({});
+  const [batchCustomer, setBatchCustomer] = useState('');
+  const [batchDate, setBatchDate] = useState('');
+  
+  const [viewMode, setViewMode] = useState<'detailed' | 'compact'>('detailed');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'incomplete' | 'error'>('all');
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [duplicates, setDuplicates] = useState<Record<string, boolean>>({});
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast, showConfirm } = useNotification();
 
@@ -84,200 +63,189 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
     return () => clearInterval(interval);
   }, [aiModel]);
 
-  const handleCloseAttempt = () => {
-    const hasUnsavedChanges = items.some(
-      item => item.status === 'parsing' || item.status === 'ready' || item.status === 'uploading' || item.status === 'error'
-    );
-    
-    if (hasUnsavedChanges) {
-      showConfirm(
-        "คุณมีไฟล์ที่ยังไม่ได้บันทึกหรือกำลังประมวลผลอยู่ ต้องการปิดและยกเลิกทั้งหมดใช่หรือไม่?",
-        () => {
-          onClose();
-        }
-      );
-    } else {
-      onClose();
-    }
-  };
-
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      const hasUnsavedChanges = items.some(
-        item => item.status === 'parsing' || item.status === 'ready' || item.status === 'uploading' || item.status === 'error'
-      );
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
+    const timer = setTimeout(async () => {
+      const itemsToCheck = items
+        .filter(i => i.status !== 'success' && i.formData.drawing_number && i.formData.revision)
+        .map(i => ({ type: i.formData.type, drawing_number: i.formData.drawing_number, revision: i.formData.revision }));
+      
+      if (itemsToCheck.length === 0) {
+        setDuplicates({});
+        return;
       }
-    };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+      try {
+        const res = await fetch('/api/drawings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'check_duplicates', items: itemsToCheck })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setDuplicates(data.duplicates);
+        }
+      } catch (err) {
+        console.error('Failed to check duplicates', err);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [items]);
 
-  const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(f);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
+  const handleCloseAttempt = () => {
+    onMinimize();
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const newItems: UploadItem[] = [];
-
-    for (const file of files) {
-      if (file.type !== 'application/pdf') {
-        showToast(`Skipped ${file.name} - Not a PDF`, 'warning');
-        continue;
-      }
-
-      const id = Math.random().toString(36).substring(7);
-      const b64 = await toBase64(file);
-      const base64Data = b64.split(',')[1];
-      
-      // Regex parse: 60231323A713P_40001954_rev.00_M_ENEOS...
-      const match = file.name.match(/^([a-zA-Z0-9-]+)_([a-zA-Z0-9-]+)_rev\.([a-zA-Z0-9.-]+)_(M|D)_(.+)\.pdf$/i);
-      
-      let initialType: 'drawing' | 'master' = 'drawing';
-      if (initialData?.type) {
-        initialType = initialData.type;
-      } else if (match && match[4]) {
-        initialType = match[4].toUpperCase() === 'M' ? 'master' : 'drawing';
-      }
-
-      if (match) {
-        newItems.push({
-          id, file, base64: base64Data, status: 'parsing',
-          formData: {
-            drawing_number: match[1],
-            item_code: initialType === 'master' ? '' : match[2],
-            item_number: initialType === 'master' ? match[2] : '',
-            revision: match[3],
-            type: initialType,
-            part_name: match[5].replace(/_/g, ' ').trim(),
-            customer_name: initialData?.customer_name || match[5].split(/[ _-]/)[0] || '',
-            issue_date: initialData?.issue_date || '',
-            package_size: initialData?.package_size || '',
-            oil_group: initialData?.oil_group || '',
-            pallet_type: initialData?.pallet_type || '',
-            boxes_per_pallet: initialData?.boxes_per_pallet || '',
-            shelf_life: initialData?.shelf_life || ''
-          }
-        });
-      } else {
-        newItems.push({
-          id, file, base64: base64Data, status: 'parsing',
-          formData: {
-            drawing_number: initialData?.drawing_number || '',
-            revision: initialData?.revision || '',
-            part_name: initialData?.part_name || '',
-            customer_name: initialData?.customer_name || '',
-            item_code: initialData?.item_code || '',
-            item_number: initialData?.item_number || '',
-            issue_date: initialData?.issue_date || '',
-            package_size: initialData?.package_size || '',
-            oil_group: initialData?.oil_group || '',
-            pallet_type: initialData?.pallet_type || '',
-            boxes_per_pallet: initialData?.boxes_per_pallet || '',
-            shelf_life: initialData?.shelf_life || '',
-            type: initialType,
-          }
-        });
-      }
-    }
-
-    setItems(prev => [...prev, ...newItems]);
-
-    // Trigger AI parsing sequentially to avoid hitting Gemini rate limits (429 Too Many Requests)
-    const processSequentially = async () => {
-      for (const item of newItems) {
-        await triggerAiParsing(item.id, item.base64);
-        // Add 1.5s delay between requests
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
-    };
-    processSequentially();
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(Array.from(e.target.files));
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const triggerAiParsing = async (id: string, base64Data: string) => {
-    try {
-      const res = await fetch('/api/drawings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'parse_drawing',
-          base64Data,
-          aiModel
-        })
-      });
-      const data = await res.json() as {
-        success: boolean;
-        error?: string;
-        data?: {
-          drawing_number?: string;
-          revision?: string;
-          part_name?: string;
-          customer_name?: string;
-          item_code?: string;
-          item_number?: string;
-          issue_date?: string;
-          package_size?: string;
-          oil_group?: string;
-          pallet_type?: string;
-          boxes_per_pallet?: string;
-          shelf_life?: string;
-        };
-      };
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDraggingOver) setIsDraggingOver(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  };
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+      if (filesArray.length > 0) {
+        addFiles(filesArray);
+      } else {
+        showToast('Please upload PDF files only', 'error');
+      }
+    }
+  };
 
-      if (data.success && data.data) {
-        const metadata = data.data;
-        setItems(prev => prev.map(i => {
-          if (i.id === id) {
-            return {
-              ...i,
-              status: 'ready',
-              formData: {
-                ...i.formData,
-                drawing_number: metadata.drawing_number || i.formData.drawing_number,
-                revision: metadata.revision || i.formData.revision,
-                part_name: metadata.part_name || i.formData.part_name,
-                customer_name: metadata.customer_name || i.formData.customer_name,
-                item_code: metadata.item_code || i.formData.item_code,
-                item_number: metadata.item_number || i.formData.item_number,
-                issue_date: metadata.issue_date || i.formData.issue_date,
-                package_size: metadata.package_size || i.formData.package_size,
-                oil_group: metadata.oil_group || i.formData.oil_group,
-                pallet_type: metadata.pallet_type || i.formData.pallet_type,
-                boxes_per_pallet: metadata.boxes_per_pallet || i.formData.boxes_per_pallet,
-                shelf_life: metadata.shelf_life || i.formData.shelf_life,
-              }
-            };
+  const handleReparseSingleItem = async (id: string) => {
+    const item = items.find(i => i.id === id);
+    if (!item || item.status === 'parsing' || item.status === 'uploading' || item.status === 'success') return;
+
+    const now = Date.now();
+    if (reparseCooldowns[id] && now - reparseCooldowns[id] < 5000) {
+      showToast('กรุณารอประมาณ 5 วินาทีก่อนกดลองใหม่อีกครั้ง', 'warning');
+      return;
+    }
+
+    setReparseCooldowns(prev => ({ ...prev, [id]: now }));
+    setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'parsing', errorMessage: undefined } : i));
+    await triggerAiParsing(id, item.base64, aiModel);
+  };
+
+  const handleRetryFailed = async () => {
+    const failedItems = items.filter(i => i.status === 'error' && i.errorMessage && i.errorMessage !== 'Upload failed');
+    if (failedItems.length === 0) return;
+
+    const now = Date.now();
+    setItems(prev => prev.map(i => (i.status === 'error' && i.errorMessage && i.errorMessage !== 'Upload failed') ? { ...i, status: 'parsing', errorMessage: undefined } : i));
+    
+    for (const item of failedItems) {
+      setReparseCooldowns(prev => ({ ...prev, [item.id]: now }));
+      const result = await triggerAiParsing(item.id, item.base64, aiModel);
+      
+      if (result.isQuotaError) {
+        setIsQuotaPaused(true);
+        setQuotaCountdown(60);
+        
+        setItems(currentItems => currentItems.map(i => {
+          if (i.status === 'parsing') {
+            return { ...i, status: 'ready', errorMessage: 'Quota paused' };
           }
           return i;
         }));
-      } else {
-        setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'ready', errorMessage: data.error } : i));
-        if (data.error && data.error.includes('ติดลิมิต')) {
-          showToast(data.error, 'error');
-        }
+        break;
       }
-    } catch (err: unknown) {
-      console.error('Error calling parse_drawing API:', err);
-      setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'ready', errorMessage: 'AI parsing failed' } : i));
-      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ AI กรุณาลองใหม่', 'error');
-    } finally {
-      fetchUsageStats();
+      
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
+  };
+
+  const handleBatchTypeChange = (type: 'drawing' | 'master') => {
+    setItems(prev => prev.map(i => i.status !== 'success' ? {
+      ...i,
+      formData: { ...i.formData, type }
+    } : i));
+  };
+
+  const handleApplyBatchCustomer = () => {
+    if (!batchCustomer.trim()) return;
+    setItems(prev => prev.map(i => (i.status !== 'success' && i.formData.type === 'drawing') ? {
+      ...i,
+      formData: { ...i.formData, customer_name: batchCustomer }
+    } : i));
+    showToast(`Applied customer "${batchCustomer}" to all drawings`, 'success');
+  };
+
+  const handleApplyBatchDate = () => {
+    if (!batchDate.trim()) return;
+    setItems(prev => prev.map(i => (i.status !== 'success' && i.formData.type === 'drawing') ? {
+      ...i,
+      formData: { ...i.formData, issue_date: batchDate }
+    } : i));
+    showToast(`Applied date "${batchDate}" to all drawings`, 'success');
+  };
+
+  const handleRotateCard = (id: string, degrees: number) => {
+    setCardRotations(prev => ({
+      ...prev,
+      [id]: ((prev[id] || 0) + degrees) % 360
+    }));
+  };
+
+  const handleZoomCard = (id: string, factor: number) => {
+    setCardZooms(prev => {
+      const current = prev[id] || 1;
+      let next = current + factor;
+      if (next < 0.5) next = 0.5;
+      if (next > 3) next = 3;
+      return { ...prev, [id]: next };
+    });
+  };
+
+  const handleResetZoomRotate = (id: string) => {
+    setCardZooms(prev => ({ ...prev, [id]: 1 }));
+    setCardRotations(prev => ({ ...prev, [id]: 0 }));
+  };
+
+  const getInputClass = (item: UploadItem, fieldName: keyof UploadItem['formData']) => {
+    const isLowConfidence = item.lowConfidenceFields?.includes(fieldName);
+    const base = "w-full h-8 px-2 text-sm rounded border focus:ring-1 disabled:opacity-50 transition-colors";
+    
+    const isMono = ['drawing_number', 'revision', 'item_code', 'item_number'].includes(fieldName);
+    const typography = isMono ? 'font-mono tracking-tight font-medium' : 'font-medium text-slate-900 dark:text-white';
+    
+    if (isLowConfidence) {
+      return `${base} ${typography} border-amber-400 bg-amber-50 dark:bg-amber-500/10 focus:ring-amber-500 text-amber-900 dark:text-amber-100`;
+    }
+    return `${base} ${typography} border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-blue-500`;
+  };
+
+  const renderLabel = (item: UploadItem, fieldName: keyof UploadItem['formData'], label: string) => {
+    const isLowConfidence = item.lowConfidenceFields?.includes(fieldName);
+    return (
+      <div className="flex items-center gap-1.5 mb-1">
+        <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider leading-none">{label}</label>
+        {isLowConfidence && (
+          <span title="AI is not confident about this field">
+            <AlertCircle className="h-3 w-3 text-amber-500" />
+          </span>
+        )}
+      </div>
+    );
   };
 
 
@@ -306,16 +274,20 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
       try {
         const fileName = `${item.formData.item_code ? item.formData.item_code + ' ' : ''}${item.formData.drawing_number} rev.${item.formData.revision} ${item.formData.part_name}.pdf`;
         
+        const formData = new FormData();
+        formData.append('action', 'save_drawing');
+        formData.append('file_name', fileName);
+        formData.append('file', item.file);
+        
+        Object.entries(item.formData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value as string);
+          }
+        });
+
         const res = await fetch('/api/drawings', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action: 'save_drawing',
-            ...item.formData,
-            file_name: fileName,
-            base64Data: item.base64,
-            created_by: user?.email || 'Unknown'
-          }),
+          body: formData,
         });
         const data = await res.json();
         
@@ -339,6 +311,7 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
       }, 1000);
     } else {
       showToast(`Uploaded ${successCount} out of ${readyItems.length} files. Check errors.`, 'warning');
+      setFilterStatus('error');
     }
   };
 
@@ -355,13 +328,46 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
   const showParseProgress = items.some(i => i.status === 'parsing');
   const showUploadProgress = isUploading;
 
+  const isItemIncomplete = (item: UploadItem) => {
+    const fd = item.formData;
+    if (fd.type === 'drawing') {
+      return !fd.drawing_number || !fd.customer_name || !fd.part_name;
+    } else {
+      return !fd.drawing_number || !fd.item_number || !fd.part_name || !fd.oil_group;
+    }
+  };
+
+  const incompleteCount = items.filter(i => isItemIncomplete(i) && i.status !== 'success').length;
+  const errorCount = items.filter(i => i.status === 'error').length;
+
+  const filteredItems = items.filter(item => {
+    if (filterStatus === 'error') return item.status === 'error';
+    if (filterStatus === 'incomplete') return isItemIncomplete(item) && item.status !== 'success';
+    return true;
+  });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-[60] bg-blue-500/20 backdrop-blur-sm border-4 border-dashed border-blue-500 rounded-xl m-4 flex flex-col items-center justify-center pointer-events-none transition-all">
+          <div className="bg-white dark:bg-black/80 p-8 rounded-2xl flex flex-col items-center justify-center shadow-2xl">
+            <UploadCloud className="h-16 w-16 text-blue-500 animate-bounce mb-4" />
+            <p className="text-xl font-bold text-slate-900 dark:text-white">Drop PDF files here</p>
+            <p className="text-slate-500 mt-2">Release to add them to the queue</p>
+          </div>
+        </div>
+      )}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="w-full max-w-6xl bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-xl overflow-hidden flex flex-col h-[90vh]"
+        className="w-full max-w-[95vw] 2xl:max-w-[1400px] bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-xl overflow-hidden flex flex-col h-[95vh]"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10 shrink-0">
           <div>
@@ -369,30 +375,14 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
             <p className="text-xs text-slate-500 mt-0.5">Upload multiple Drawings & Masters. Filenames will be parsed automatically.</p>
           </div>
           <div className="flex items-center gap-4">
-            {usageStats && limits && (
-              <div className="hidden md:flex items-center gap-3 bg-slate-50 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-white/10 text-xs text-slate-500">
-                <div className="flex flex-col items-end">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    RPM: <span className={usageStats.rpm >= limits.rpm * 0.8 ? 'text-red-500 font-bold' : 'text-slate-600 dark:text-slate-400'}>{usageStats.rpm}</span> / {limits.rpm}
-                  </span>
-                  <span className="text-[9px] text-slate-400">Reqs/min</span>
-                </div>
-                <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
-                <div className="flex flex-col items-end">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    TPM: <span className={usageStats.tpm >= limits.tpm * 0.8 ? 'text-red-500 font-bold' : 'text-slate-600 dark:text-slate-400'}>{(usageStats.tpm / 1000).toFixed(0)}k</span> / {(limits.tpm / 1000).toFixed(0)}k
-                  </span>
-                  <span className="text-[9px] text-slate-400">Tokens/min</span>
-                </div>
-              </div>
-            )}
             <div className="flex items-center w-[220px]">
               <Select value={aiModel} onValueChange={setAiModel} disabled={isUploading || isProcessing}>
                 <SelectTrigger className="h-9 bg-slate-50 dark:bg-[#2c2c2e] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
                   <SelectValue placeholder="Select AI Model" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-[#2c2c2e] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200">
-                  <SelectItem value="gemini-3.5-flash" className="focus:bg-slate-100 dark:focus:bg-white/10 cursor-pointer">Gemini 3.5 Flash (Main)</SelectItem>
+                  <SelectItem value="gemini-3.1-flash" className="focus:bg-slate-100 dark:focus:bg-white/10 cursor-pointer">Gemini 3.1 Flash (Main)</SelectItem>
+                  <SelectItem value="gemini-3.5-flash" className="focus:bg-slate-100 dark:focus:bg-white/10 cursor-pointer">Gemini 3.5 Flash</SelectItem>
                   <SelectItem value="gemini-3.1-flash-lite" className="focus:bg-slate-100 dark:focus:bg-white/10 cursor-pointer">Gemini 3.1 Flash Lite</SelectItem>
                 </SelectContent>
               </Select>
@@ -403,7 +393,7 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           {items.length > 0 && (showParseProgress || showUploadProgress) && (
             <div className="px-6 py-3 bg-blue-50/50 dark:bg-blue-500/5 border-b border-slate-200 dark:border-white/10 shrink-0">
               <div className="flex items-center justify-between mb-1.5">
@@ -428,6 +418,34 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
               </div>
             </div>
           )}
+          {isQuotaPaused && items.some(i => i.status === 'ready' && i.errorMessage === 'Quota paused') && (
+            <div className="px-6 py-3 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/20 shrink-0 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    AI Quota or Service Error Reached
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">
+                    {items.filter(i => i.status === 'ready' && i.errorMessage === 'Quota paused').length} files paused. You can switch AI model, fill data manually, or wait to resume.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {quotaCountdown > 0 ? `Auto-resuming in ${quotaCountdown}s...` : 'Ready'}
+                </span>
+                <button
+                  onClick={resumePausedParsing}
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium transition-colors shadow-sm flex items-center gap-1.5"
+                >
+                  <RotateCw className="h-3.5 w-3.5" />
+                  Resume Now
+                </button>
+              </div>
+            </div>
+          )}
           {items.length === 0 ? (
             <div className="flex-1 p-6 flex items-center justify-center">
               <div 
@@ -449,24 +467,109 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
             </div>
           ) : (
             <div className="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-black/20">
-              <div className="flex justify-between items-end mb-4">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
                 <h3 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
                   <File className="h-4 w-4 text-slate-400" />
                   Selected Files ({items.length})
                 </h3>
-                {!isUploading && !allSuccess && (
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="h-4 w-4" /> Add More Files
-                  </button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {!isUploading && !allSuccess && items.some(i => i.status === 'error' && i.errorMessage && i.errorMessage !== 'Upload failed') && (
+                    <button 
+                      onClick={handleRetryFailed}
+                      className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 dark:text-amber-400 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                      Retry Failed AI ({items.filter(i => i.status === 'error' && i.errorMessage && i.errorMessage !== 'Upload failed').length})
+                    </button>
+                  )}
+                  {!isUploading && !allSuccess && uploadedItemsCount > 0 && (
+                    <button
+                      onClick={() => setItems(prev => prev.filter(i => i.status !== 'success'))}
+                      className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-500/20 dark:hover:bg-green-500/30 dark:text-green-400 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Clear Successful ({uploadedItemsCount})
+                    </button>
+                  )}
+                  {!isUploading && !allSuccess && (
+                    <>
+                      <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden xl:block"></div>
+                      <div className="flex bg-white dark:bg-[#2c2c2e] rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
+                        <button onClick={() => handleBatchTypeChange('drawing')} className="px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/5 border-r border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 transition-colors">Set All Drawing</button>
+                        <button onClick={() => handleBatchTypeChange('master')} className="px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 transition-colors">Set All Master</button>
+                      </div>
+                      <div className="flex bg-white dark:bg-[#2c2c2e] rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
+                        <input 
+                          value={batchCustomer} 
+                          onChange={e => setBatchCustomer(e.target.value)} 
+                          placeholder="Customer..." 
+                          className="w-24 px-2 py-1.5 text-xs bg-transparent border-none outline-none text-slate-700 dark:text-slate-300 placeholder:text-slate-400"
+                        />
+                        <button onClick={handleApplyBatchCustomer} className="px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/5 border-l border-slate-200 dark:border-white/10 text-blue-600 dark:text-blue-400 transition-colors">Apply</button>
+                      </div>
+                      <div className="flex bg-white dark:bg-[#2c2c2e] rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
+                        <input 
+                          type="date"
+                          value={batchDate} 
+                          onChange={e => setBatchDate(e.target.value)} 
+                          className="w-[110px] px-2 py-1.5 text-xs bg-transparent border-none outline-none text-slate-700 dark:text-slate-300"
+                        />
+                        <button onClick={handleApplyBatchDate} className="px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/5 border-l border-slate-200 dark:border-white/10 text-blue-600 dark:text-blue-400 transition-colors">Apply</button>
+                      </div>
+                      
+                      <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden xl:block"></div>
+                      <div className="flex items-center bg-white dark:bg-[#2c2c2e] rounded-lg border border-slate-200 dark:border-white/10 p-0.5 shadow-sm">
+                        <button 
+                          onClick={() => setFilterStatus('all')}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${filterStatus === 'all' ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        >
+                          All
+                        </button>
+                        <button 
+                          onClick={() => setFilterStatus('incomplete')}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${filterStatus === 'incomplete' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'text-slate-500 hover:text-amber-600'}`}
+                        >
+                          Incomplete {incompleteCount > 0 && <span className="px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-[10px]">{incompleteCount}</span>}
+                        </button>
+                        <button 
+                          onClick={() => setFilterStatus('error')}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${filterStatus === 'error' ? 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400' : 'text-slate-500 hover:text-red-600'}`}
+                        >
+                          Errors {errorCount > 0 && <span className="px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-[10px]">{errorCount}</span>}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center bg-white dark:bg-[#2c2c2e] rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
+                        <button 
+                          onClick={() => setViewMode('detailed')}
+                          className={`p-1.5 transition-colors ${viewMode === 'detailed' ? 'bg-slate-100 dark:bg-white/10 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                          title="Detailed View"
+                        >
+                          <LayoutList className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => setViewMode('compact')}
+                          className={`p-1.5 transition-colors ${viewMode === 'compact' ? 'bg-slate-100 dark:bg-white/10 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                          title="Compact View"
+                        >
+                          <LayoutGrid className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 ml-2"
+                      >
+                        <Plus className="h-4 w-4" /> Add Files
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
                 <AnimatePresence>
-                  {items.map((item, index) => (
+                  {filteredItems.map((item, index) => (
                     <motion.div 
                       key={item.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -489,6 +592,11 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
                             {item.status === 'parsing' && <span className="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Analyzing with Gemini...</span>}
                             {item.status === 'uploading' && <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Uploading...</span>}
                             {item.status === 'success' && <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Uploaded</span>}
+                            {item.formData.drawing_number && duplicates[`${item.formData.type}_${item.formData.drawing_number}_${item.formData.revision}`] && (
+                              <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-md">
+                                <AlertCircle className="h-3 w-3" /> Existing Record
+                              </span>
+                            )}
                             {item.status === 'error' && (
                               <span className="text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
                                 Error: {item.errorMessage}
@@ -497,163 +605,274 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
                           </div>
                         </div>
                         {!isUploading && item.status !== 'success' && (
-                          <button 
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {item.status !== 'parsing' && item.status !== 'uploading' && (
+                              <button 
+                                onClick={() => handleReparseSingleItem(item.id)}
+                                title="Re-parse with AI"
+                                className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded transition-colors"
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => handleRemoveItem(item.id)}
+                              title="Remove File"
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         )}
                       </div>
 
-                      <div className="p-5 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white dark:bg-[#1c1c1e]">
-                        {/* Primary Identifiers */}
-                        <div className="lg:col-span-7 space-y-4">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-white/5 pb-1">Primary Identifiers</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-5 flex flex-col xl:flex-row gap-6 bg-white dark:bg-[#1c1c1e]">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Section 1: Identity & Registration */}
+                          <div className="md:col-span-2 flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-1">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                              Identity & Registration ({item.formData.type === 'master' ? 'Master Specification' : 'Customer Drawing'})
+                            </h4>
+                          </div>
+
+                          <div className="space-y-1">
+                            {renderLabel(item, 'type' as keyof UploadItem['formData'], 'Type')}
+                            <Select 
+                              value={item.formData.type}
+                              onValueChange={val => handleUpdateItem(item.id, 'type', val)}
+                              disabled={isProcessing || item.status === 'success'}
+                            >
+                              <SelectTrigger className="w-full h-8 px-3 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50 transition-colors font-medium">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="z-[100]">
+                                <SelectItem value="drawing">Drawing</SelectItem>
+                                <SelectItem value="master">Master</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1">
+                            {renderLabel(item, 'drawing_number', item.formData.type === 'master' ? 'Master Doc No' : 'Drawing No')}
+                            <input 
+                              value={item.formData.drawing_number || ''}
+                              onChange={e => handleUpdateItem(item.id, 'drawing_number', e.target.value)}
+                              disabled={isProcessing || item.status === 'success'}
+                              className={getInputClass(item, 'drawing_number')}
+                              placeholder={item.formData.type === 'master' ? 'e.g. SM-ENTH-0014' : 'e.g. D-0376'}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            {renderLabel(item, 'revision', 'Revision')}
+                            <input 
+                              value={item.formData.revision || ''}
+                              onChange={e => handleUpdateItem(item.id, 'revision', e.target.value)}
+                              disabled={isProcessing || item.status === 'success'}
+                              className={getInputClass(item, 'revision')}
+                              placeholder="e.g. 00"
+                            />
+                          </div>
+
+                          {item.formData.type === 'drawing' && (
                             <div className="space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Type</label>
-                              <select 
-                                value={item.formData.type}
-                                onChange={e => handleUpdateItem(item.id, 'type', e.target.value)}
-                                disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                              >
-                                <option value="drawing">Drawing</option>
-                                <option value="master">Master</option>
-                              </select>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Drawing No</label>
-                              <input 
-                                value={item.formData.drawing_number || ''}
-                                onChange={e => handleUpdateItem(item.id, 'drawing_number', e.target.value)}
-                                disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                placeholder="Req."
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Rev</label>
-                              <input 
-                                value={item.formData.revision || ''}
-                                onChange={e => handleUpdateItem(item.id, 'revision', e.target.value)}
-                                disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                placeholder="Req."
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Customer Item Code</label>
-                              <input 
-                                value={item.formData.item_code || ''}
-                                onChange={e => handleUpdateItem(item.id, 'item_code', e.target.value)}
-                                disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                              />
-                            </div>
-                            {item.formData.type === 'master' && (
-                              <div className="space-y-1">
-                                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Internal Item Number</label>
-                                <input 
-                                  value={item.formData.item_number || ''}
-                                  onChange={e => handleUpdateItem(item.id, 'item_number', e.target.value)}
-                                  disabled={isProcessing || item.status === 'success'}
-                                  className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                  placeholder="e.g. 6036708B71A"
-                                />
-                              </div>
-                            )}
-                            <div className={`${item.formData.type === 'master' ? 'sm:col-span-1' : 'sm:col-span-2'} space-y-1`}>
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Customer</label>
+                              {renderLabel(item, 'customer_name', 'Customer')}
                               <input 
                                 value={item.formData.customer_name || ''}
                                 onChange={e => handleUpdateItem(item.id, 'customer_name', e.target.value)}
                                 disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                placeholder="Req."
+                                className={getInputClass(item, 'customer_name')}
+                                placeholder="e.g. ENEOS"
                               />
                             </div>
+                          )}
+
+                          <div className={`space-y-1 ${item.formData.type === 'drawing' ? 'md:col-span-2' : ''}`}>
+                            {renderLabel(item, 'item_code', 'Customer Item Code')}
+                            <input 
+                              value={item.formData.item_code || ''}
+                              onChange={e => handleUpdateItem(item.id, 'item_code', e.target.value)}
+                              disabled={isProcessing || item.status === 'success'}
+                              className={getInputClass(item, 'item_code')}
+                              placeholder="e.g. 40001809"
+                            />
                           </div>
+
+                          {item.formData.type === 'master' && (
+                            <div className="space-y-1 md:col-span-2">
+                              {renderLabel(item, 'item_number', 'Master Formula Code')}
+                              <input 
+                                value={item.formData.item_number || ''}
+                                onChange={e => handleUpdateItem(item.id, 'item_number', e.target.value)}
+                                disabled={isProcessing || item.status === 'success'}
+                                className={getInputClass(item, 'item_number')}
+                                placeholder="e.g. 61653013A700A"
+                              />
+                            </div>
+                          )}
+
+                          {viewMode === 'detailed' && (
+                            <>
+                              {/* Section 2: Technical & Packaging Specifications */}
+                              <div className="md:col-span-2 flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-1 pt-2">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  Technical & Packaging Specifications
+                                </h4>
+                              </div>
+
+                              <div className="md:col-span-2 space-y-1">
+                                {renderLabel(item, 'part_name', 'Part Name')}
+                                <input 
+                                  value={item.formData.part_name || ''}
+                                  onChange={e => handleUpdateItem(item.id, 'part_name', e.target.value)}
+                                  disabled={isProcessing || item.status === 'success'}
+                                  className={getInputClass(item, 'part_name')}
+                                  placeholder="Product description"
+                                />
+                              </div>
+
+                              {item.formData.type === 'drawing' ? (
+                                <>
+                                  <div className="space-y-1">
+                                    {renderLabel(item, 'issue_date', 'Issue Date')}
+                                    <input 
+                                      type="date"
+                                      value={item.formData.issue_date || ''}
+                                      onChange={e => handleUpdateItem(item.id, 'issue_date', e.target.value)}
+                                      disabled={isProcessing || item.status === 'success'}
+                                      className={getInputClass(item, 'issue_date')}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    {renderLabel(item, 'package_size', 'Package Size')}
+                                    <input 
+                                      value={item.formData.package_size || ''}
+                                      onChange={e => handleUpdateItem(item.id, 'package_size', e.target.value)}
+                                      disabled={isProcessing || item.status === 'success'}
+                                      className={getInputClass(item, 'package_size')}
+                                      placeholder="e.g. 1 x 24 L."
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="space-y-1">
+                                    {renderLabel(item, 'oil_group', 'Oil Group')}
+                                    <Select 
+                                      value={item.formData.oil_group || ''}
+                                      onValueChange={val => handleUpdateItem(item.id, 'oil_group', val)}
+                                      disabled={isProcessing || item.status === 'success'}
+                                    >
+                                      <SelectTrigger className="w-full h-8 px-3 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50 transition-colors font-medium">
+                                        <SelectValue placeholder="-- Select --" />
+                                      </SelectTrigger>
+                                      <SelectContent className="z-[100]">
+                                        <SelectItem value="ENGINE OIL">ENGINE OIL</SelectItem>
+                                        <SelectItem value="GEAR OIL">GEAR OIL</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    {renderLabel(item, 'pallet_type', 'Pallet Type')}
+                                    <input 
+                                      value={item.formData.pallet_type || ''}
+                                      onChange={e => handleUpdateItem(item.id, 'pallet_type', e.target.value)}
+                                      disabled={isProcessing || item.status === 'success'}
+                                      className={getInputClass(item, 'pallet_type')}
+                                      placeholder="ไม้ / พลาสติก / CHEP"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    {renderLabel(item, 'boxes_per_pallet', 'Boxes / Pallet')}
+                                    <input 
+                                      type="number"
+                                      value={item.formData.boxes_per_pallet || ''}
+                                      onChange={e => handleUpdateItem(item.id, 'boxes_per_pallet', e.target.value)}
+                                      disabled={isProcessing || item.status === 'success'}
+                                      className={getInputClass(item, 'boxes_per_pallet')}
+                                      placeholder="e.g. 30"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    {renderLabel(item, 'shelf_life', 'Shelf Life')}
+                                    <input 
+                                      value={item.formData.shelf_life || ''}
+                                      onChange={e => handleUpdateItem(item.id, 'shelf_life', e.target.value)}
+                                      disabled={isProcessing || item.status === 'success'}
+                                      className={getInputClass(item, 'shelf_life')}
+                                      placeholder="e.g. 2 years"
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          )}
                         </div>
 
-                        {/* Technical Specifications */}
-                        <div className="lg:col-span-5 space-y-4 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-white/5 pt-4 lg:pt-0 lg:pl-6">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-white/5 pb-1">Technical Specifications</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="sm:col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Part Name</label>
-                              <input 
-                                value={item.formData.part_name || ''}
-                                onChange={e => handleUpdateItem(item.id, 'part_name', e.target.value)}
-                                disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                placeholder="Req."
-                              />
+                        {/* PDF Preview Split Pane using iframe Blob URL */}
+                        <div className="w-full xl:w-[460px] 2xl:w-[520px] h-[450px] xl:h-auto min-h-[420px] border border-slate-200 dark:border-white/10 rounded-xl bg-slate-50 dark:bg-black/50 overflow-hidden shrink-0 shadow-inner flex flex-col">
+                          <div className="flex items-center justify-between p-2 border-b border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur">
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                              <File className="h-3.5 w-3.5" /> Preview
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => handleZoomCard(item.id, -0.25)}
+                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded text-slate-500 dark:text-slate-400 transition-colors"
+                                title="Zoom Out"
+                              >
+                                <ZoomOut className="h-3.5 w-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => handleZoomCard(item.id, 0.25)}
+                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded text-slate-500 dark:text-slate-400 transition-colors"
+                                title="Zoom In"
+                              >
+                                <ZoomIn className="h-3.5 w-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => handleResetZoomRotate(item.id)}
+                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded text-slate-500 dark:text-slate-400 transition-colors"
+                                title="Reset View"
+                              >
+                                <RefreshCcw className="h-3.5 w-3.5" />
+                              </button>
+                              <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                              <button 
+                                onClick={() => handleRotateCard(item.id, -90)}
+                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded text-slate-500 dark:text-slate-400 transition-colors"
+                                title="Rotate Left"
+                              >
+                                <RotateCw className="h-3.5 w-3.5 -scale-x-100" />
+                              </button>
+                              <button 
+                                onClick={() => handleRotateCard(item.id, 90)}
+                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded text-slate-500 dark:text-slate-400 transition-colors"
+                                title="Rotate Right"
+                              >
+                                <RotateCw className="h-3.5 w-3.5" />
+                              </button>
                             </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Issue Date</label>
-                              <input 
-                                type="date"
-                                value={item.formData.issue_date || ''}
-                                onChange={e => handleUpdateItem(item.id, 'issue_date', e.target.value)}
-                                disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Pkg Size</label>
-                              <input 
-                                value={item.formData.package_size || ''}
-                                onChange={e => handleUpdateItem(item.id, 'package_size', e.target.value)}
-                                disabled={isProcessing || item.status === 'success'}
-                                className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                              />
-                            </div>
-                            {item.formData.type === 'master' && (
-                              <>
-                                <div className="space-y-1">
-                                  <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Oil Group</label>
-                                  <select 
-                                    value={item.formData.oil_group || ''}
-                                    onChange={e => handleUpdateItem(item.id, 'oil_group', e.target.value)}
-                                    disabled={isProcessing || item.status === 'success'}
-                                    className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                  >
-                                    <option value="">-- Select --</option>
-                                    <option value="ENGINE OIL">ENGINE OIL</option>
-                                    <option value="GEAR OIL">GEAR OIL</option>
-                                  </select>
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Pallet</label>
-                                  <input 
-                                    value={item.formData.pallet_type || ''}
-                                    onChange={e => handleUpdateItem(item.id, 'pallet_type', e.target.value)}
-                                    disabled={isProcessing || item.status === 'success'}
-                                    className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Boxes/Pallet</label>
-                                  <input 
-                                    type="number"
-                                    value={item.formData.boxes_per_pallet || ''}
-                                    onChange={e => handleUpdateItem(item.id, 'boxes_per_pallet', e.target.value)}
-                                    disabled={isProcessing || item.status === 'success'}
-                                    className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Shelf Life</label>
-                                  <input 
-                                    value={item.formData.shelf_life || ''}
-                                    onChange={e => handleUpdateItem(item.id, 'shelf_life', e.target.value)}
-                                    disabled={isProcessing || item.status === 'success'}
-                                    className="w-full h-8 px-2 text-sm rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-black focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                                  />
-                                </div>
-                              </>
+                          </div>
+                          <div className="flex-1 relative overflow-hidden bg-white flex items-center justify-center">
+                            {item.previewUrl ? (
+                                <iframe 
+                                  src={item.previewUrl} 
+                                  title={item.file.name}
+                                  className="w-full h-full border-0 transition-transform duration-300"
+                                  style={{ 
+                                    transform: `scale(${cardZooms[item.id] || 1}) rotate(${cardRotations[item.id] || 0}deg)`,
+                                    transformOrigin: 'center center'
+                                  }} 
+                                />
+                            ) : (
+                              <div className="flex items-center justify-center h-full text-slate-400 text-sm p-4">
+                                Loading PDF preview...
+                              </div>
                             )}
                           </div>
                         </div>
@@ -701,7 +920,7 @@ export function UploadModal({ user, initialData, onClose, onSuccess }: UploadMod
               ) : (
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={onMinimize}
                   className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-sm"
                 >
                   Done

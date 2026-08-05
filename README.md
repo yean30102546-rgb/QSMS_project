@@ -17,7 +17,7 @@
 - **Cross-Item Link** - ระบบช่วยเชื่อมโยงสินค้าประเภท "เปื้อน" ไปหาไอเทมต้นเหตุที่เป็น "รั่ว" ภายในเคสเดียวกัน (ฟิลด์ `linkedSourceId`) เพื่อวิเคราะห์สาเหตุอย่างมีประสิทธิภาพ
 - **OR Documents & Validation Gating** - เคสที่มีแหล่งที่มาหรือลูกค้าเป็น "OR" จะรองรับการแนบเอกสารอ้างอิงของ OR สูงสุด 2 ไฟล์ (.xlsx, .xls, .pdf, .png) หากลืมแนบ ระบบจะแจ้งเตือน "ขาดไฟล์ OR" สีแดงบนตาราง Case List
 - **Frosted Image Upload & Gallery** - อัปโหลดรูปภาพหลักฐานได้สูงสุด 5 ภาพต่อรายการ พร้อมคาร์รูเซลแกลเลอรีรูปภาพและการย่อขนาดไฟล์อัจฉริยะ (Client-side compression target 300KB)
-- **Status & Document Action Gate** - ควบคุมสิทธิ์การกดเปลี่ยนสถานะหรือแนบไฟล์เอกสารสั่งแก้งาน (OR Document) ตามระดับตำแหน่ง (User, Supervisor, Manager) และบทบาทผู้ใช้งาน (Admin, Operator, Finance, PDB)
+- **Status & Document Action Gate** - ควบคุมสิทธิ์การกดเปลี่ยนสถานะหรือแนบไฟล์เอกสารสั่งแก้งาน (OR Document) ตามระดับตำแหน่ง (User, Supervisor, Manager) และบทบาทผู้ใช้งาน (Admin, Operator)
 - **Apple Shimmer Progress Cards** - กล่องแสดงสถานะการบันทึกข้อมูลสตรีมมิ่งที่ใช้กลาสมอร์ฟิสซึ่มและแสงวิ่งวิ่งวิบวับแบบแคปซูลสไตล์ Apple Pro
 - **PDF Template Export** - ส่งออกรายงานเคส rework ออกเป็นไฟล์ PDF ที่จัดหน้าตาจัดพิมพ์ไว้อย่างเรียบร้อยสวยงาม
 - **Styled Excel Export with Images** - ส่งออกตารางรายการสินค้า rework ออกเป็นไฟล์ Excel (.xlsx) ที่มีรูปภาพหลักฐานฝังอยู่ด้านในโดยตรง (ผ่าน `exceljs`) พร้อมสไตล์สีสันตารางเป็นสากลและจัดความสูงแถว 120px เมื่อมีรูปภาพ
@@ -35,7 +35,11 @@
 - **Streaming Responses** - แสดงผลลัพธ์การตอบสนองแบบตัวอักษรสตรีมมิ่งสดตามสไตล์แชทบอท พร้อม **Suggestion Chips** คำถามแนะนำด้านล่างของข้อความตอบกลับ
 
 ### 📁 Drawing & Master Module (ระบบจัดการแบบแปลนและใบมาสเตอร์)
-- **AI-Assisted PDF Parsing** - ระบบอ่านไฟล์ PDF อัตโนมัติ (รองรับ Scanned PDF) เมื่อพนักงานเลือกไฟล์ PDF ระบบจะส่งข้อมูลไปให้ Gemini 3.5 Flash (และ fallback 2.0 Flash) ทางเซิร์ฟเวอร์ เพื่อดึงข้อมูล Metadata สำคัญทั้งหมดแบบ Structured JSON (Structured Outputs) เช่น หมายเลขแบบแปลน, เวอร์ชัน (Revision), ขนาดบรรจุ (Package Size), กลุ่มน้ำมัน (Oil Group), ประเภทพาเลท (Pallet Type), จำนวนกล่อง และอายุผลิตภัณฑ์ ช่วยกรอกฟอร์มอัตโนมัติและลด Human Error โดยมีการระงับปุ่มบันทึกและป้อนค่าฟิลด์ชั่วคราวจนกว่าจะประมวลผลเสร็จ (`isProcessing = true`)
+- **AI-Assisted PDF Parsing** - ระบบอ่านไฟล์ PDF อัตโนมัติ (รองรับ Scanned PDF) เมื่อเลือกไฟล์ PDF ระบบจะส่งข้อมูลไปให้ Gemini 3.5 Flash (และ fallback `gemini-3.1-flash-lite` ➔ `gemini-2.0-flash`) เพื่อดึงข้อมูล Metadata สำคัญทั้งหมดแบบ Structured JSON
+- **Decoupled Document Schema Forms** - แยกแบบฟอร์ม Drawing (7 ฟิลด์) และ Master Sheet (8 ฟิลด์) ตามความจริงของเอกสาร ป้องกันปัญหาการแสดงฟิลด์ N/A สับสน
+- **Boxes Per Pallet Normalization ("ตามความเหมาะสม")** - ระบบปรับแปลงค่าจำนวนกล่องต่อพาเลทหากเจอมวลคำว่า "ตามความเหมาะสม" ทั้งใน Gemini OCR Prompt และ Normalizer ให้แสดงผลข้อความอย่างถูกต้องโดยไม่สุ่มเดาตัวเลข
+- **Side-by-Side Master-Detail Inspection Workspace** - แผงตรวจทานเอกสารแบบ Split View 55/45 สไลด์เปิดฝั่งขวาทันทีเมื่อคลิกเลือกแถว รองรับการสลับแบบแปลนด้วยคีย์บอร์ด `ArrowUp` / `ArrowDown` และกด `Escape` เพื่อปิด
+- **PDF Auto-Orientation & Rotation Persistence Engine** - เครื่องมือหมุน PDF 0°, 90°, 180°, 270° พร้อมปุ่ม **Landscape View** 1-click และบันทึกองศาการหมุนลงใน `localStorage` (`qsms_pdf_rot_<id>`) เพื่อคงทิศทางเดิมเมื่อเปิดดูครั้งถัดไป
 
 ### 🎨 Apple Premium UI/UX & accessibility
 - **Frosted Glassmorphism** - ใช้เอฟเฟกต์กระจกเบลอระดับสูง (`.glass-panel`, `.glass-input` + `backdrop-blur-xl`) และขอบโปร่งแสงสะท้อนเงา
@@ -57,7 +61,7 @@
 - **Radix UI Primitives** - พื้นฐานคอมโพเนนต์ Dialog, Popover, Select, Tabs
 
 ### Backend Stack (Hybrid Database Model)
-- **Google Sheets & Google Drive** - ใช้จัดเก็บข้อมูลชีตหลักและโฟลเดอร์รูปภาพของเคสต่างๆ
+- **Supabase & Cloudinary** - ใช้จัดเก็บข้อมูลหลักและโฟลเดอร์รูปภาพของเคสต่างๆ
 - **Supabase Database** - ใช้บันทึกข้อมูลแบบ relational เพื่อการ Query ค้นหาที่รวดเร็วและการจัดสกีมาตารางที่สัมพันธ์กัน (Roster, Rework, Items, RAG Documents, RAG Chunks, RAG Feedback)
 
 
@@ -105,7 +109,7 @@ src/
 
 ### Prerequisites
 - Node.js 18+ และ npm/yarn
-- บัญชี Google สำหรับ Sheets & Apps Script
+- บัญชี Cloudinary สำหรับระบบอัปโหลดรูปภาพ
 - ฐานข้อมูล Supabase (พร้อมติดตั้ง DB Schema)
 
 ### Local Development
@@ -156,16 +160,13 @@ src/
 ### Access Control & Roles
 ระบบใช้การคัดแยกสิทธิ์ตามบทบาทผู้ใช้งาน (RBAC) ทั้งในส่วนของ UI (Frontend) และ API Endpoints (Backend):
 - **ADMIN / QSMS** - สิทธิ์สูงสุด สามารถจัดการได้ทุกส่วน รวมถึงการลบเคส การจัดการแดชบอร์ด และสิทธิ์ในการใช้ Roster Module และระบบแก้ไขข้อมูล Edit Mode
-- **FINANCE** - แผนกการเงิน มีสิทธิ์ในการสืบค้นดูรายการ และทำหน้าที่ตรวจสอบประเมินราคาอัปเดตช่อง Rework Cost และ Labor Rate เท่านั้น ไม่สามารถสร้างเคสใหม่หรือแก้ไขรายละเอียดสินค้าด้านในได้
-- **OPERATOR / WFG / PDB (Consolidated Roles)** - กลุ่มงานการผลิตและคลังสินค้า มีสิทธิ์การใช้งานจำกัดเฉพาะโมดูล **Rework** (ซ่อนโมดูล Roster ทั้งหมด)
+- **OPERATOR / WFG (Consolidated Roles)** - กลุ่มงานการผลิตและคลังสินค้า มีสิทธิ์การใช้งานจำกัดเฉพาะโมดูล **Rework** (ซ่อนโมดูล Roster ทั้งหมด)
   - สิทธิ์ทำงาน: สามารถเพิ่มงาน Rework ได้, อัปเดตสถานะงานเป็น "In-Progress" หรือส่งต่อไปสถานะ "Completed" (เสร็จสิ้น) ได้
   - ข้อจำกัด: **ไม่สามารถมองเห็นหรือแก้ไขฟิลด์ค่าใช้จ่ายใดๆ ได้ (No Pricing/Cost access)** และไม่มีสิทธิ์ในฟังก์ชันการ Export ข้อมูลหรือเรียกดูหน้า Dashboard
 
 ### 🧪 Local Test Accounts (บัญชีทดสอบระบบภายใน)
 สำหรับการทดสอบระบบบนเครื่อง Local หรือสภาพแวดล้อมจำลอง สามารถเข้าสู่ระบบด้วยบัญชีจำลองด้านล่างนี้ได้โดยตรง:
-- **QSMS / Admin Account:** Username: `qsms`, Password: `Qsms123`
-- **Operator / WFG / PDB Account:** Username: `operator`, Password: `Operator123`
-- **Finance Account:** Username: `finance`, Password: `Finance123`
+- **Operator / WFG Account:** Username: `operator`, Password: `Operator123`
 
 ---
 
@@ -184,5 +185,5 @@ src/
 
 ---
 
-Last Updated: July 2026
-Version: 1.2.0
+Last Updated: August 2026
+Version: 1.3.0

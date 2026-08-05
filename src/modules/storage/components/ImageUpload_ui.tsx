@@ -71,6 +71,7 @@ export function ImageUpload({
     }));
   });
   const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editingImage, setEditingImage] = useState<{ id: string; preview: string; name: string } | null>(null);
@@ -220,20 +221,31 @@ export function ImageUpload({
     [imageItems.length, maxImages, processImage]
   );
 
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault(); e.stopPropagation();
+    dragCounter.current = 0;
     setIsDragging(false);
     handleFiles(e.dataTransfer.files);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault(); e.stopPropagation();
-    setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault(); e.stopPropagation();
-    setIsDragging(false);
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
   };
 
   /**
@@ -378,6 +390,7 @@ export function ImageUpload({
       {/* Modern Upload Area - Apple Minimalist */}
       {imageItems.length < maxImages && (
         <div
+          onDragEnter={handleDragEnter}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

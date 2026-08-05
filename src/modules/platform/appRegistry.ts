@@ -71,3 +71,11 @@ export const modularizationBoundaries: ModularizationBoundary[] = [
     notes: 'Proxy and API contract remain shared platform infrastructure even after the UI is modularized.',
   },
 ];
+
+export function getPortalAppById(id: string): PortalAppDefinition | undefined {
+  return portalAppRegistry.find(app => app.id === id);
+}
+
+export function getActivePortalApps(): PortalAppDefinition[] {
+  return portalAppRegistry.filter(app => app.status === 'active');
+}

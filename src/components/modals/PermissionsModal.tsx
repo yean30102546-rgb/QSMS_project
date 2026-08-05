@@ -64,21 +64,6 @@ export function PermissionsModal({
             { text: 'กรอกประเมินราคาค่า Rework (Valuation)', allowed: false },
           ],
         };
-      case UserRole.FINANCE:
-        return {
-          title: 'สิทธิ์ฝ่ายบัญชีและการเงิน (Finance & Valuation)',
-          desc: 'รับผิดชอบการประเมินมูลค่าและตรวจสอบค่าใช้จ่าย Rework ของเคสที่เสร็จสิ้น',
-          icon: <Landmark className="w-8 h-8 text-amber-500" />,
-          colorClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-          permissions: [
-            { text: 'ดูรายการเคส Rework ทั้งหมด', allowed: true },
-            { text: 'กรอกประเมินราคาค่า Rework (Valuation)', allowed: true },
-            { text: 'สร้างเคส Rework ใหม่เข้าระบบ', allowed: false },
-            { text: 'อัปเดตสถานะการดำเนินงาน (Status)', allowed: false },
-            { text: 'บันทึกวิธีแก้ไขปัญหา (Resolution)', allowed: false },
-            { text: 'ลบเคสออกจากฐานข้อมูลถาวร', allowed: false },
-          ],
-        };
       default:
         return {
           title: 'ไม่ระบุสิทธิ์ (Guest User)',

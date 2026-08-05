@@ -3,7 +3,7 @@
  * Handles user administration, roles, and permissions for small organizations
  * 
  * For organizations with up to 20 users:
- * - Stores user data in Google Sheets
+ * - Stores user data (simulated/cached locally or fetched from auth server)
  * - Manages roles and permissions
  * - Provides user CRUD operations
  */
@@ -238,11 +238,6 @@ export function getAvailableRoles(): Array<{ value: UserRole; label: string; des
       value: UserRole.OPERATOR,
       label: 'Operator',
       description: 'Production operator role, case recording, and updates',
-    },
-    {
-      value: UserRole.FINANCE,
-      label: 'Finance',
-      description: 'Valuation evaluation and cost management',
     },
   ];
 }

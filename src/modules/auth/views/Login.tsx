@@ -83,7 +83,7 @@ export function Login({
   };
 
   return (
-    <div className="apple-shell flex min-h-screen items-center justify-center overflow-y-auto bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] px-4 py-8 md:px-8">
+    <div className="apple-shell flex h-full w-full items-center justify-center overflow-y-auto custom-scrollbar bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] px-4 py-8 md:px-8">
       <div className="pointer-events-none absolute inset-0 opacity-30">
         <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.05),transparent_70%)]" />
         <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.04),transparent_70%)]" />

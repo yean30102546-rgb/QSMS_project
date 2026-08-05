@@ -349,7 +349,39 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-07-21*: เพิ่ม BUG-020 และ BUG-021 (แก้ปัญหา Database mapping และปรับ Logic Auto-Status)
+---
+
+## BUG-022: SyntaxError: Unexpected end of JSON input on Document Inspection PDF Fetch
+**Status**: ✅ FIXED (2026-07-23)
+- *Problem*: เกิดข้อผิดพลาด `SyntaxError: Failed to execute 'json' on 'Response': Unexpected end of JSON input` ขณะคลิกเลือกแบบแปลนเพื่อดูพรีวิว PDF ในแผง `DocumentInspectionPanel.tsx` สาเหตุเกิดจากโค้ดฝั่ง Client ยิง HTTP GET ไปยัง `/api/drawings?action=get_drawing_url&key=...` แต่ตัวรับคำขอใน API Server ([route.ts](file:///c:/Workplace/Mytask/Projects/QSMS_project/src/app/api/drawings/route.ts)) ถูกกำหนดให้รองรับเฉพาะ HTTP POST และชื่อ Action ที่ถูกต้องคือ `get_download_url` ทำให้ Next.js ส่งกลับข้อผิดพลาด Response เปล่า (Empty body response) และเมื่อเรียก `.json()` จึงเกิด SyntaxError
+- *Solution*:
+  1. ปรับปรุงฟังก์ชัน `fetchPdf` ใน `DocumentInspectionPanel.tsx` ให้ใช้ HTTP POST Method พร้อมระบุ Payload `{ action: 'get_download_url', r2_key: document.r2_key, preview: true }`
+  2. เพิ่มการตรวจสอบ `if (!res.ok)` เพื่อป้องกันการสั่ง `.json()` บน HTTP Response ที่ล้มเหลวหรือหมดเซสชัน Auth (HTTP 401)
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-07-23*: เพิ่ม BUG-022 (แก้ไข HTTP Method & Action Name Mismatch ใน Document Inspection Panel)
+
+## BUG-023: V&V Quality Engineering Defect Remediation (Modules Rework, Auth, Drawings, Storage, Guide, Platform)
+**Status**: ✅ FIXED (2026-08-05)
+- *Problem*: V&V assessment uncovered 24 module bugs across 6 core modules (SLA calculation timezones, password strength validation, normalizer edge cases, `ResizeObserver` initialization, slide index `NaN` closure scope, Gemini embedding property extraction path `embedResponse.embedding.values`, missing platform lookup helpers).
+- *Solution*:
+  1. Fixed all 24 defects across `src/modules/rework/`, `src/modules/auth/`, `src/modules/drawings/`, `src/modules/storage/`, `src/modules/guide/`, `src/modules/platform/`, and `src/app/api/rag/route.ts`.
+  2. Built 12 Vitest unit test files (113 passing tests) and 5 Playwright E2E spec files (9 passing specs).
+
+---
+
+## BUG-024: Gemini OCR Boxes Per Pallet Numeric Hallucination on "ตามความเหมาะสม" Text
+**Status**: ✅ FIXED (2026-08-05)
+- *Problem*: When Master sheets specified box layout as "ตามความเหมาะสม", Gemini OCR attempted to guess arbitrary digits, and `normalizeBoxesPerPallet` stripped non-numeric characters returning empty `null`.
+- *Solution*:
+  1. Updated Gemini system prompts in `src/app/api/drawings/route.ts` instructing AI to output "ตามความเหมาะสม" directly when stated.
+  2. Updated `normalizeBoxesPerPallet` in `src/app/api/drawings/normalizers.ts` to detect keyword variations of "ความเหมาะสม" / "appropriate" and return "ตามความเหมาะสม".
+  3. Updated `DocumentList.tsx` table renderer to show raw string value directly.
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-08-05*: บันทึก BUG-023 (V&V Quality Engineering Defect Remediation) และ BUG-024 (Boxes Per Pallet Normalization "ตามความเหมาะสม")
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]

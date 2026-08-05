@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ShieldAlert, Upload } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, Upload, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import { useNotification } from '../../../contexts/NotificationContext';
 
 interface DocumentRecord {
@@ -10,6 +11,7 @@ interface DocumentRecord {
   customer_name: string;
   item_code: string | null;
   type: 'drawing' | 'master';
+  package_details?: { volume?: number; unit?: string; qty?: number; free?: number } | null;
 }
 
 interface GapAnalysisProps {
@@ -32,7 +34,7 @@ export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
       const res = await fetch('/api/drawings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'list_drawings' }),
+        body: JSON.stringify({ action: 'list_drawings', pageSize: 10000 }),
       });
       const data = await res.json();
       if (data.success) {
@@ -47,36 +49,102 @@ export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
     }
   };
 
-  // Logic: Find 'drawing' (customer) that has NO corresponding 'master' (internal)
-  // We match by item_code if present, otherwise by drawing_number
   const gaps = documents.filter(doc => doc.type === 'drawing').filter(drawing => {
-    return !documents.some(master => 
-      master.type === 'master' && 
-      ((drawing.item_code && master.item_code === drawing.item_code) || 
-       (!drawing.item_code && master.drawing_number === drawing.drawing_number))
-    );
+    const drawingCode = drawing.item_code;
+    
+    // Only analyze drawings that have a valid numeric item_code
+    // (Documents without item_code are considered 'incomplete_code' in DocumentList, not 'missing_master')
+    if (!drawingCode || !/^\d+$/.test(drawingCode)) return false;
+    
+    return !documents.some(master => {
+      return master.type === 'master' && master.item_code === drawingCode;
+    });
   });
+
+  const handleExportExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Gap Analysis');
+
+      worksheet.columns = [
+        { header: 'Customer Drawing', key: 'drawing', width: 25 },
+        { header: 'Rev', key: 'rev', width: 10 },
+        { header: 'Part Name', key: 'part', width: 40 },
+        { header: 'Customer Name', key: 'customer', width: 25 },
+        { header: 'Expected Match Code', key: 'match', width: 30 },
+        { header: 'Status', key: 'status', width: 20 },
+      ];
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E293B' }
+      };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      gaps.forEach((doc) => {
+        const row = worksheet.addRow({
+          drawing: doc.drawing_number,
+          rev: doc.revision,
+          part: doc.part_name,
+          customer: doc.customer_name,
+          match: doc.item_code ? `Item Code: ${doc.item_code}` : `Drawing No: ${doc.drawing_number}`,
+          status: 'Master Missing'
+        });
+        row.alignment = { vertical: 'middle' };
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Gap_Analysis_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      
+      showToast('Exported Gap Analysis Report successfully', 'success');
+    } catch (error) {
+      console.error('Export Error:', error);
+      showToast('Failed to export report', 'error');
+    }
+  };
 
   if (loading) {
     return <div className="flex justify-center py-20 text-slate-500">Running analysis...</div>;
   }
 
   return (
-    <div className="w-full">
-      <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/20 p-4 flex gap-4">
-        <div className="flex-shrink-0 mt-0.5">
-          <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+    <div className="w-full h-full flex flex-col">
+      <div className="shrink-0 mb-6 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/20 p-4 flex gap-4 justify-between items-start">
+        <div className="flex gap-4">
+          <div className="flex-shrink-0 mt-0.5">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Missing Master Documents ({gaps.length})</h3>
+            <p className="text-sm text-amber-700 dark:text-amber-400/80 mt-1">
+              The following customer drawings do not have a corresponding internal Master file in the system. Please create and upload a Master file to ensure production alignment.
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Missing Master Documents ({gaps.length})</h3>
-          <p className="text-sm text-amber-700 dark:text-amber-400/80 mt-1">
-            The following customer drawings do not have a corresponding internal Master file in the system. Please create and upload a Master file to ensure production alignment.
-          </p>
-        </div>
+        
+        {gaps.length > 0 && (
+          <button
+            onClick={handleExportExcel}
+            className="flex-shrink-0 flex items-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 px-3 py-1.5 text-sm font-medium text-white transition-all shadow-sm active:scale-95"
+          >
+            <Download className="h-4 w-4" />
+            <span>Export Report</span>
+          </button>
+        )}
       </div>
 
-      <div className="bg-white dark:bg-[#1c1c1e] rounded-xl shadow-sm border border-slate-200 dark:border-white/10 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white dark:bg-[#1c1c1e] rounded-xl shadow-sm border border-slate-200 dark:border-white/10 flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="overflow-x-auto overflow-y-auto flex-1">
           <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
               <tr>

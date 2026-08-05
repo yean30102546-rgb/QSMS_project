@@ -163,8 +163,6 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       }
       initialStats.trendByDate[dateStr].cases++;
 
-      initialStats.totalCost += caseItem.reworkCost || 0;
-
       const source = String(caseItem.source || '').trim();
       if (source) {
         initialStats.sources[source] = (initialStats.sources[source] || 0) + 1;
@@ -619,13 +617,13 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <div className="flex bg-slate-50 p-1 rounded-xl w-fit border border-slate-100">
                 <button
                   onClick={() => setViewMode('units')}
-                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'units' ? 'bg-indigo-500 text-foreground shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'units' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
                 >
                   ปริมาณ (Units)
                 </button>
                 <button
                   onClick={() => setViewMode('defects')}
-                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'defects' ? 'bg-indigo-500 text-foreground shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
+                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'defects' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-foreground'}`}
                 >
                   ความถี่ (Defects)
                 </button>

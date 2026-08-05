@@ -40,7 +40,7 @@ export function useSaveProgress() {
 
         if (newProgress < 25) setStatusText('Compressing images...');
         else if (newProgress < 50) setStatusText('Syncing with Supabase...');
-        else if (newProgress < 85) setStatusText('Updating Google Sheets...');
+        else if (newProgress < 85) setStatusText('Updating Database...');
         else setStatusText('Finalizing...');
 
         return newProgress;

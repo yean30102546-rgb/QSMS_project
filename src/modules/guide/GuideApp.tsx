@@ -47,19 +47,6 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
     return () => window.removeEventListener("resize", handleResize);
   }, [handleResize]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "ArrowRight" || e.key === " ") {
-        setCurrentIdx(prev => Math.min(prev + 1, slides.length - 1));
-      } else if (e.key === "ArrowLeft") {
-        setCurrentIdx(prev => Math.max(prev - 1, 0));
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
   const slides: Slide[] = [
     // 1. Introduction
     {
@@ -336,6 +323,19 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       ]
     }
   ];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "ArrowRight" || e.key === " " || e.code === "ArrowRight" || e.code === "Space") {
+        setCurrentIdx(prev => Math.min(prev + 1, slides.length - 1));
+      } else if (e.key === "ArrowLeft" || e.code === "ArrowLeft") {
+        setCurrentIdx(prev => Math.max(prev - 1, 0));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [slides.length]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 overflow-hidden font-sans">

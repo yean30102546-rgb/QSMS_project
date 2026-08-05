@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { ReworkCase, MaterialUsage, CUSTOMER_OPTIONS } from '@/src/services/api';
+import { ReworkCase, CUSTOMER_OPTIONS } from '@/src/services/api';
 import { useNotification } from '@/src/contexts/NotificationContext';
 import { useSaveProgress } from '@/src/hooks/useSaveProgress';
 import { useExportReport } from '@/src/hooks/useExportReport';
@@ -50,7 +50,6 @@ interface UpdateModalContextValue {
   userRole: UserRole;
   isAdmin: boolean;
   isOperator: boolean;
-  isPDB: boolean;
   canManageRows: boolean;
   exportRef: React.RefObject<any>;
   isExporting: boolean;
@@ -188,7 +187,6 @@ export function UpdateModalProvider({
   const userRole = userRoleOverride || getCurrentUserRole();
   const isAdmin = userRole === UserRole.QSMS;
   const isOperator = userRole === UserRole.OPERATOR || isAdmin;
-  const isPDB = isOperator;
   const canManageRows = isOperator || isAdmin;
 
   const { exportRef, isExporting, exportProgress, exportExcel } = useExportReport();
@@ -276,7 +274,7 @@ export function UpdateModalProvider({
 
   const handleUpdate = async () => {
     if (!caseData) return;
-    if (isPDB || isAdmin) {
+    if (isOperator || isAdmin) {
       if (editedItems.some(item => (Number(item.amount) || 0) <= 0)) {
         showAlert('จำนวนกล่องต้องมากกว่า 0', 'error');
         return;
@@ -407,7 +405,7 @@ export function UpdateModalProvider({
     newImages, setNewImages, editExitIntent, editedCaseNumber, setEditedCaseNumber,
     SOURCE_OPTIONS, caseNamePrefix, caseNameYear, previewCaseName, getCaseNumber,
     handleToggleEditMode, handleSaveEdit, handleCancelEdit, handleRequestClose, handleDownloadImages,
-    userRole, isAdmin, isOperator, isPDB, canManageRows,
+    userRole, isAdmin, isOperator, canManageRows,
     exportRef, isExporting, exportProgress, exportExcel,
     handleUpdate, handleDelete, confirmDelete, handleRemoveItem, getStatusLabel,
     isSaving, progress, statusText, isComplete,

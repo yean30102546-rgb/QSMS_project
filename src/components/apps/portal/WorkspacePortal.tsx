@@ -102,32 +102,15 @@ export function WorkspacePortal({
         const res = await fetch('/api/drawings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'list_drawings' }),
+          body: JSON.stringify({ action: 'get_overview_stats' }),
         });
         const resJson = await res.json();
         if (resJson.success && resJson.data) {
-          type StorageDoc = { type: string; item_code?: string; drawing_number?: string; [key: string]: unknown };
-          const docs = resJson.data as StorageDoc[];
-          const drawings = docs.filter((d: StorageDoc) => d.type === 'drawing');
-          const masters = docs.filter((d: StorageDoc) => d.type === 'master');
-          
-          const gaps = drawings.filter((drawing: StorageDoc) => {
-            return !masters.some((master: StorageDoc) => 
-              (drawing.item_code && master.item_code === drawing.item_code) || 
-              (!drawing.item_code && master.drawing_number === drawing.drawing_number)
-            );
-          });
-          
-          const total = drawings.length;
-          const missing = gaps.length;
-          const completed = total - missing;
-          const coverage = total > 0 ? Math.round((completed / total) * 100) : 0;
-          
           setStorageStats({
-            totalDrawings: total,
-            completedMasters: completed,
-            missingMasters: missing,
-            coverageRate: coverage,
+            totalDrawings: resJson.data.totalDrawings,
+            completedMasters: resJson.data.completedMasters,
+            missingMasters: resJson.data.missingMasters,
+            coverageRate: resJson.data.coverageRate,
             hasData: true
           });
         }
@@ -139,7 +122,7 @@ export function WorkspacePortal({
   }, []);
 
   return (
-    <div className="apple-shell flex min-h-screen flex-col overflow-y-auto bg-slate-50">
+    <div className="apple-shell flex h-full w-full flex-col overflow-y-auto custom-scrollbar bg-slate-50">
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col px-5 py-6 md:px-8 lg:px-12">
         <header className="mb-10 flex items-center justify-between rounded-2xl bg-white px-5 py-4 shadow-sm border border-slate-200 md:px-7">
           <div className="flex items-center gap-3">

@@ -37,7 +37,6 @@ export const AUTH_CONFIG = {
 export enum UserRole {
   QSMS = 'QSMS',             // Full access, Delete, Edit
   OPERATOR = 'OPERATOR',     // Operator Role / Production Rework
-  FINANCE = 'FINANCE',       // Overall (Valuation only)
 }
 
 export const ROLE_PERMISSIONS = {
@@ -49,7 +48,6 @@ export const ROLE_PERMISSIONS = {
     'delete_case',
     'update_status',
     'fill_resolution',
-    'fill_valuation',
     'export_data',
   ],
   [UserRole.OPERATOR]: [
@@ -57,10 +55,6 @@ export const ROLE_PERMISSIONS = {
     'create_case',
     'update_status',
     'fill_resolution',
-  ],
-  [UserRole.FINANCE]: [
-    'view_overall',
-    'fill_valuation',
   ],
 };
 

@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UploadModal } from './UploadModal';
+import type { UploadItem } from '../hooks/useUploadQueue';
 
 // Mock NotificationContext
 const mockShowConfirm = vi.fn();
@@ -21,84 +22,77 @@ if (typeof global.ResizeObserver === 'undefined') {
   };
 }
 
+function createMockQueue(overrides: Record<string, unknown> = {}) {
+  return {
+    items: [] as UploadItem[],
+    setItems: vi.fn(),
+    isUploading: false,
+    setIsUploading: vi.fn(),
+    aiModel: 'gemini-3.1-flash',
+    setAiModel: vi.fn(),
+    isQuotaPaused: false,
+    setIsQuotaPaused: vi.fn(),
+    quotaCountdown: 0,
+    setQuotaCountdown: vi.fn(),
+    addFiles: vi.fn(),
+    cancelQueue: vi.fn(),
+    clearCompleted: vi.fn(),
+    clearAll: vi.fn(),
+    resumePausedParsing: vi.fn(),
+    triggerAiParsing: vi.fn(),
+    ...overrides,
+  } as ReturnType<typeof import('../hooks/useUploadQueue').useUploadQueue>;
+}
+
 describe('UploadModal Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('calls onClose immediately when there are no items', () => {
-    const onClose = vi.fn();
+  it('calls onMinimize when clicking the close button with no items', () => {
+    const onMinimize = vi.fn();
+    const mockQueue = createMockQueue();
 
     const { container } = render(
-      <UploadModal user={null} onClose={onClose} onSuccess={vi.fn()} />
+      <UploadModal user={null} queue={mockQueue} onMinimize={onMinimize} onSuccess={vi.fn()} />
     );
 
-    // Find the X button in the header. It has 'rounded-full' class.
-    const closeBtn = container.querySelector('button.rounded-full');
+    // The close button has lucide-x icon inside
+    const closeBtn = container.querySelector('.lucide-x')?.closest('button');
     expect(closeBtn).not.toBeNull();
-    
+
     if (closeBtn) {
       fireEvent.click(closeBtn);
     }
 
-    expect(mockShowConfirm).not.toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onMinimize).toHaveBeenCalledTimes(1);
   });
 
-  it('warns before closing when there are unsaved files via UI confirm', async () => {
-    const onClose = vi.fn();
-    mockShowConfirm.mockImplementation((msg, onConfirm) => {
-      // Do nothing by default to simulate waiting
-    });
+  it('calls addFiles when a file is selected via file input', () => {
+    const mockAddFiles = vi.fn();
+    const mockQueue = createMockQueue({ addFiles: mockAddFiles });
 
     const { container } = render(
-      <UploadModal user={null} onClose={onClose} onSuccess={vi.fn()} />
+      <UploadModal user={null} queue={mockQueue} onMinimize={vi.fn()} onSuccess={vi.fn()} />
     );
 
-    // Add a file to trigger the state change
     const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+
     const file = new File(['fake content'], 'DWG123_CODE1_rev.1_M_Part.pdf', { type: 'application/pdf' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    // Wait for the item to appear in the UI
-    await waitFor(() => {
-      expect(screen.getByText(/DWG123_CODE1_rev\.1_M_Part\.pdf/)).toBeInTheDocument();
-    });
-
-    // Now click Cancel button (since items > 0, "Cancel" button is rendered)
-    const cancelBtn = screen.getByText('Cancel');
-    fireEvent.click(cancelBtn);
-
-    expect(mockShowConfirm).toHaveBeenCalledWith(
-      'คุณมีไฟล์ที่ยังไม่ได้บันทึกหรือกำลังประมวลผลอยู่ ต้องการปิดและยกเลิกทั้งหมดใช่หรือไม่?',
-      expect.any(Function)
-    );
-    expect(onClose).not.toHaveBeenCalled();
-
-    // Simulate accepting the confirm dialog
-    mockShowConfirm.mockImplementation((msg, onConfirm) => {
-      onConfirm(); // Simulate clicking 'Yes'
-    });
-    fireEvent.click(cancelBtn);
-    
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(mockAddFiles).toHaveBeenCalledTimes(1);
   });
-  
-  it('registers beforeunload event listener', () => {
-    const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
-    const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
-    const { unmount } = render(
-      <UploadModal user={null} onClose={vi.fn()} onSuccess={vi.fn()} />
+  it('renders empty state when queue has no items', () => {
+    const mockQueue = createMockQueue();
+
+    const { container } = render(
+      <UploadModal user={null} queue={mockQueue} onMinimize={vi.fn()} onSuccess={vi.fn()} />
     );
 
-    expect(addEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-    
-    unmount();
-    
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-    
-    addEventListenerSpy.mockRestore();
-    removeEventListenerSpy.mockRestore();
+    // Should show the drag & drop empty state with "Browse Files" button
+    expect(container.textContent).toContain('Browse Files');
   });
 });

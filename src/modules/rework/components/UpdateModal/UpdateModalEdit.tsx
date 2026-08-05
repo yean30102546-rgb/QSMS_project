@@ -16,7 +16,7 @@ const LEAK_SUBTYPES = [
 ] as const;
 
 const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
-  SFC: ['PDF', 'PDB', 'WPK', 'WFG', 'อื่นๆ'],
+  SFC: ['PDF', 'WPK', 'WFG', 'อื่นๆ'],
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
 };
 
@@ -337,10 +337,13 @@ export function UpdateModalEdit() {
                                   <FieldLabel>จำนวน</FieldLabel>
                                   <input
                                     type="number"
+                                    min="1"
                                     value={item.amount || ''}
                                     onChange={(e) => {
+                                      const rawVal = Number(e.target.value);
+                                      const val = isNaN(rawVal) ? 1 : Math.max(1, rawVal);
                                       const n = [...editedItems];
-                                      n[index] = { ...n[index], amount: Number(e.target.value) };
+                                      n[index] = { ...n[index], amount: val };
                                       setEditedItems(n);
                                     }}
                                     className="w-full border border-divider-color bg-system-background px-2 py-2.5 text-center text-sm font-bold text-on-surface rounded-lg focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]/30 transition-all"

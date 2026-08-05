@@ -10,6 +10,7 @@ import { CaseListTable } from '@/src/modules/rework/components/CaseListTable';
 import { Pagination } from '@/src/components/shared/Pagination';
 import { Tooltip } from '@/src/components/ui/Tooltip';
 import { UpdateModal } from '@/src/modules/rework/components/UpdateModal';
+import { CaseUpdateView } from '@/src/modules/rework/views/CaseUpdateView';
 
 interface OverallTabProps {
   userRole?: string;
@@ -31,8 +32,9 @@ export function OverallTab({
     updateCasesLocally,
   } = useReworkData();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeView, setActiveView] = useState<'list' | 'update'>('list');
   const [selectedCase, setSelectedCase] = useState<ReworkCase | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
 
   const {
@@ -69,7 +71,7 @@ export function OverallTab({
 
   const openUpdateModal = (caseItem: ReworkCase) => {
     setSelectedCase(caseItem);
-    setIsModalOpen(true);
+    setActiveView('update');
   };
 
   const handleUpdateCase = async (
@@ -118,7 +120,9 @@ export function OverallTab({
         updateCasesLocally((prevCases) => prevCases.filter((c) => c.id !== caseId));
         setIsModalOpen(false);
         setSelectedCase(null);
+        setActiveView('list');
         showToast('ลบรายการเรียบร้อยแล้ว', 'success');
+        loadCases();
       } else {
         showAlert(`ไม่สามารถลบรายการได้: ${result.error || 'Unknown error'}`, 'error');
       }
@@ -130,24 +134,31 @@ export function OverallTab({
   };
 
   return (
-    <>
-      <div className="flex h-full flex-col overflow-hidden bg-transparent">
-        <div className="flex-shrink-0 border-b border-white/20 bg-white/20 backdrop-blur-md px-0 py-6 md:py-8 lg:py-10 shadow-sm shadow-primary/5">
-          <div className="px-4 md:px-10 lg:px-12">
-            <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="mb-1 text-xs font-medium text-on-surface-variant/80 uppercase tracking-wider">
-                  {new Date().toLocaleDateString('th-TH', {
-                    weekday: 'long',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </p>
-                <h1 className="text-2xl font-semibold tracking-tight text-primary md:text-3xl">
+    <div className="relative h-full w-full overflow-hidden">
+      <AnimatePresence initial={false} mode="wait">
+        {activeView === 'list' && (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="flex h-full flex-col overflow-hidden bg-transparent"
+          >
+            <div className="flex-shrink-0 border-b border-white/20 bg-white/20 backdrop-blur-md px-0 py-6 md:py-8 lg:py-10 shadow-sm shadow-primary/5">
+              <div className="px-4 md:px-10 lg:px-12">
+                <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-on-surface-variant/80 uppercase tracking-wider">
+                      {new Date().toLocaleDateString('th-TH', {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </p>
+                    <h1 className="text-2xl font-semibold tracking-tight text-primary md:text-3xl">
                   สวัสดี {
                     userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
                     userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
-                    userRole.toLowerCase() === 'finance' ? 'แผนกการเงิน' :
                     userRole.toLowerCase() === 'management' ? 'ฝ่ายบริหาร' :
                     userRole.toUpperCase()
                   }
@@ -499,8 +510,30 @@ export function OverallTab({
             isFiltered={hasActiveFilters}
           />
         )}
-      </div>
+      </motion.div>
+        )}
 
+        {activeView === 'update' && selectedCase && (
+          <CaseUpdateView
+            key="update"
+            caseData={selectedCase}
+            onBack={() => {
+              setActiveView('list');
+              setSelectedCase(null);
+            }}
+            onSuccess={() => {
+              setActiveView('list');
+              setSelectedCase(null);
+              loadCases();
+            }}
+            onDelete={handleDeleteCase}
+            isAdmin={userRole.toLowerCase() === 'qsms' || userRole.toLowerCase() === 'admin'}
+            isOperator={userRole.toLowerCase() === 'operator'}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Legacy update modal for other actions if any remain */}
       <UpdateModal
         isOpen={isModalOpen}
         caseData={selectedCase}
@@ -512,7 +545,7 @@ export function OverallTab({
         onUpdate={handleUpdateCase}
         onDelete={handleDeleteCase}
       />
-    </>
+    </div>
   );
 }
 

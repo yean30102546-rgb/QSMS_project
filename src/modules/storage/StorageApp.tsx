@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
@@ -9,12 +9,17 @@ import {
   AlertCircle,
   Database,
   RefreshCw,
-  Plus
+  Plus,
+  Keyboard,
+  X,
+  Command
 } from 'lucide-react';
 import type { User } from '../../services/auth';
 import { DocumentList } from './components/DocumentList';
 import { GapAnalysis } from './components/GapAnalysis';
-import { UploadModal, UploadInitialData } from './components/UploadModal';
+import { UploadModal } from './components/UploadModal';
+import { useUploadQueue, UploadInitialData } from './hooks/useUploadQueue';
+import { UploadMiniDock } from './components/UploadMiniDock';
 
 
 
@@ -29,8 +34,12 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
   const [activeTab, setActiveTab] = useState<StorageTab>('documents');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadInitialData, setUploadInitialData] = useState<UploadInitialData | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState('');
+  const uploadQueue = useUploadQueue(uploadInitialData);
+    const [searchQuery, setSearchQuery] = useState('');
   const [refreshKey, setRefreshKey] = useState(0); // Used to force refetch
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
 
   const handleUploadSuccess = () => {
     setIsUploadOpen(false);
@@ -48,8 +57,61 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
     setIsUploadOpen(true);
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    if (files.length > 0) {
+      uploadQueue.addFiles(files);
+      setIsUploadOpen(true);
+    }
+  };
+
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-slate-50 dark:bg-[#111111]">
+    <div 
+      className="relative flex h-screen w-full flex-col overflow-hidden bg-slate-50 dark:bg-[#111111]"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag & Drop Overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-indigo-500/10 backdrop-blur-sm border-4 border-dashed border-indigo-500">
+          <div className="flex flex-col items-center bg-white dark:bg-black/80 p-8 rounded-2xl shadow-2xl pointer-events-none">
+            <Upload className="h-12 w-12 text-indigo-600 dark:text-indigo-400 mb-4 animate-bounce" />
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Drop PDF files here</h2>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">Release to open upload modal</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 dark:border-white/10 bg-white/70 dark:bg-black/50 px-4 backdrop-blur-xl md:px-6">
         <div className="flex items-center gap-4">
@@ -88,8 +150,17 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
           <button
             onClick={() => setRefreshKey(prev => prev + 1)}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300"
+            title="Refresh Data"
           >
             <RefreshCw className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => setIsShortcutsOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300"
+            title="Keyboard Shortcuts"
+          >
+            <Keyboard className="h-4 w-4" />
           </button>
 
           <button
@@ -131,7 +202,7 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
         </div>
 
         {/* Tab Content */}
-        <main className="relative flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8">
+        <main className="relative flex-1 overflow-hidden p-3 md:p-4 lg:p-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -157,9 +228,80 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
           <UploadModal
             user={user}
             initialData={uploadInitialData}
-            onClose={handleCloseUpload}
+            queue={uploadQueue}
+            onMinimize={() => setIsUploadOpen(false)}
             onSuccess={handleUploadSuccess}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Mini Dock */}
+      <AnimatePresence>
+        {!isUploadOpen && uploadQueue.items.length > 0 && (
+          <UploadMiniDock
+            items={uploadQueue.items}
+            isQuotaPaused={uploadQueue.isQuotaPaused}
+            onExpand={() => setIsUploadOpen(true)}
+            onCancel={uploadQueue.clearAll}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Keyboard Shortcuts Modal */}
+      <AnimatePresence>
+        {isShortcutsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-md bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <Keyboard className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Keyboard Shortcuts</h2>
+                </div>
+                <button 
+                  onClick={() => setIsShortcutsOpen(false)}
+                  className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-500"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600 dark:text-slate-300">Navigate Documents List</span>
+                    <div className="flex gap-1.5">
+                      <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">↑</kbd>
+                      <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">↓</kbd>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600 dark:text-slate-300">Close Inspection Panel</span>
+                    <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">Esc</kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600 dark:text-slate-300">Rotate PDF</span>
+                    <div className="flex gap-1.5 items-center">
+                      <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">R</kbd>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600 dark:text-slate-300">Search Documents</span>
+                    <div className="flex gap-1.5 items-center">
+                      <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">Ctrl</kbd>
+                      <span className="text-xs text-slate-400">+</span>
+                      <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">K</kbd>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

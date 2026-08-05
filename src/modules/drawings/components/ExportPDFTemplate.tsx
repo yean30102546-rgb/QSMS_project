@@ -366,7 +366,8 @@ export const ExportPDFTemplate = ({ caseData }: ExportPDFTemplateProps) => {
     Completed: { bg: '#ecfdf5', text: '#047857', label: 'เสร็จสิ้น ', border: '#a7f3d0' },
   };
 
-  const statusInfo = statusStyles[caseData.status] || statusStyles.Pending;
+  const statusKey = Object.keys(statusStyles).find(k => k.toLowerCase() === (caseData.status || '').toLowerCase()) || 'Pending';
+  const statusInfo = statusStyles[statusKey];
 
   return (
     <Document>
@@ -411,7 +412,7 @@ export const ExportPDFTemplate = ({ caseData }: ExportPDFTemplateProps) => {
         </View>
 
         {/* RESOLUTION SECTION */}
-        {(caseData.resolutionMethod || caseData.reworkCost !== undefined) && (
+        {caseData.resolutionMethod && (
           <View style={{ marginBottom: 30 }}>
             <View style={styles.sectionHeader}>
               <View style={styles.accentBar} />
@@ -421,13 +422,6 @@ export const ExportPDFTemplate = ({ caseData }: ExportPDFTemplateProps) => {
               <View style={styles.resolutionLeft}>
                 <Text style={styles.infoLabel}>วิธีการแก้ไขปัญหา (Action Taken) </Text>
                 <Text style={[styles.infoValue, { fontSize: 13, fontWeight: 400 }]}>{caseData.resolutionMethod ? addThaiWordBreaks(caseData.resolutionMethod) : 'อยู่ระหว่างรอการตัดสินใจแก้ไขปัญหา'}</Text>
-              </View>
-              <View style={styles.resolutionRight}>
-                <Text style={styles.infoLabel}>มูลค่าการแก้ไขงานรวม </Text>
-                <Text style={[styles.titleText, { fontSize: 24 }]}>
-                  <Text style={{ fontSize: 14, color: '#94a3b8' }}>฿ </Text>
-                  {caseData.reworkCost?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
-                </Text>
               </View>
             </View>
           </View>

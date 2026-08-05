@@ -99,7 +99,7 @@ describe('UpdateModal Component', () => {
 
     // Should reveal source dropdown and editable case number input
     await waitFor(() => {
-      expect(screen.getByText('แหล่งที่มา')).toBeInTheDocument();
+      expect(screen.getByText('Source')).toBeInTheDocument();
     });
 
     // Check if the select exists
@@ -149,7 +149,7 @@ describe('UpdateModal Component', () => {
     fireEvent.change(caseNameInput, { target: { value: '999' } });
 
     // Find save button
-    const saveButton = screen.getByText('บันทึกการแก้ไข');
+    const saveButton = screen.getByText('บันทึก');
     fireEvent.click(saveButton);
 
     await waitFor(() => {
@@ -180,7 +180,7 @@ describe('UpdateModal Component', () => {
 
     const caseNameInput = screen.getByDisplayValue('001');
     fireEvent.change(caseNameInput, { target: { value: '084' } });
-    fireEvent.click(screen.getByText('บันทึกการแก้ไข'));
+    fireEvent.click(screen.getByText('บันทึก'));
 
     await waitFor(() => {
       expect(mockOnUpdate).toHaveBeenCalledWith('RT001-2026', expect.objectContaining({
@@ -206,7 +206,8 @@ describe('UpdateModal Component', () => {
     fireEvent.click(screen.getByText('แก้ไข'));
     expect(screen.getByText('โหมดแก้ไข')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('ยกเลิก'));
+    const cancelBtn = document.querySelector('.lucide-x')?.closest('button')!;
+    fireEvent.click(cancelBtn);
     expect(screen.getByText('Update Status')).toBeInTheDocument();
 
     confirmMock.mockRestore();
@@ -232,13 +233,14 @@ describe('UpdateModal Component', () => {
     const inputs = screen.getAllByRole('spinbutton');
     fireEvent.change(inputs[0], { target: { value: '5' } });
 
-    fireEvent.click(screen.getByText('ยกเลิก'));
+    const cancelBtn = document.querySelector('.lucide-x')?.closest('button')!;
+    fireEvent.click(cancelBtn);
 
     expect(confirmMock).toHaveBeenCalledWith('ต้องการยกเลิกการแก้ไขใช่หรือไม่? (การเปลี่ยนแปลงจะไม่ได้รับการบันทึก)');
-    expect(screen.queryByText('แก้ไข')).not.toBeInTheDocument(); // Still in edit mode
+    expect(screen.getByText('โหมดแก้ไข')).toBeInTheDocument(); // Still in edit mode
 
     confirmMock.mockImplementation(() => true);
-    fireEvent.click(screen.getByText('ยกเลิก'));
+    fireEvent.click(cancelBtn);
     
     // Should exit edit mode
     expect(screen.getByText('แก้ไข')).toBeInTheDocument();

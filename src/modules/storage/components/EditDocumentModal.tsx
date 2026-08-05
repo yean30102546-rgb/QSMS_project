@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, FileText, Loader2 } from 'lucide-react';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 
 export interface EditableDocument {
   id: string;
@@ -116,14 +117,18 @@ export function EditDocumentModal({ isOpen, onClose, document, onSuccess }: Edit
           <div className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Document No. <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {isMaster ? 'Master Doc No.' : 'Drawing No.'} <span className="text-red-500">*</span>
+                </label>
                 <input 
                   type="text" 
                   value={formData.drawing_number} 
                   onChange={(e) => handleChange('drawing_number', e.target.value)}
                   className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                  placeholder={isMaster ? 'e.g. SM-ENTH-0014' : 'e.g. D-0376'}
                 />
               </div>
+
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Revision</label>
                 <input 
@@ -131,8 +136,47 @@ export function EditDocumentModal({ isOpen, onClose, document, onSuccess }: Edit
                   value={formData.revision} 
                   onChange={(e) => handleChange('revision', e.target.value)}
                   className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                  placeholder="e.g. 00"
                 />
               </div>
+
+              {!isMaster && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Customer Name <span className="text-red-500">*</span></label>
+                  <input 
+                    type="text" 
+                    value={formData.customer_name} 
+                    onChange={(e) => handleChange('customer_name', e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                    placeholder="e.g. ENEOS"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Customer Item Code</label>
+                <input 
+                  type="text" 
+                  value={formData.item_code || ''} 
+                  onChange={(e) => handleChange('item_code', e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                  placeholder="e.g. 40001809"
+                />
+              </div>
+
+              {isMaster && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Master Formula Code</label>
+                  <input 
+                    type="text" 
+                    value={formData.item_number || ''} 
+                    onChange={(e) => handleChange('item_number', e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                    placeholder="e.g. 61653013A700A"
+                  />
+                </div>
+              )}
+
               <div className="space-y-1.5 sm:col-span-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Part Name <span className="text-red-500">*</span></label>
                 <input 
@@ -140,43 +184,16 @@ export function EditDocumentModal({ isOpen, onClose, document, onSuccess }: Edit
                   value={formData.part_name} 
                   onChange={(e) => handleChange('part_name', e.target.value)}
                   className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Customer Name <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  value={formData.customer_name} 
-                  onChange={(e) => handleChange('customer_name', e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Item Code (Customer)</label>
-                <input 
-                  type="text" 
-                  value={formData.item_code || ''} 
-                  onChange={(e) => handleChange('item_code', e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                  placeholder="Product description"
                 />
               </div>
 
-              {isMaster && (
+              {!isMaster ? (
                 <>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Item Number (Own)</label>
-                    <input 
-                      type="text" 
-                      value={formData.item_number || ''} 
-                      onChange={(e) => handleChange('item_number', e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
-                    />
-                  </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Issue Date</label>
                     <input 
-                      type="text" 
-                      placeholder="e.g. 2026-07-13 or DD/MM/YYYY"
+                      type="date" 
                       value={formData.issue_date || ''} 
                       onChange={(e) => handleChange('issue_date', e.target.value)}
                       className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
@@ -189,19 +206,26 @@ export function EditDocumentModal({ isOpen, onClose, document, onSuccess }: Edit
                       value={formData.package_size || ''} 
                       onChange={(e) => handleChange('package_size', e.target.value)}
                       className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                      placeholder="e.g. 1 x 24 L."
                     />
                   </div>
+                </>
+              ) : (
+                <>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Oil Group</label>
-                    <select 
+                    <Select 
                       value={formData.oil_group || ''} 
-                      onChange={(e) => handleChange('oil_group', e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                      onValueChange={(val) => handleChange('oil_group', val)}
                     >
-                      <option value="">-- Select Oil Group --</option>
-                      <option value="ENGINE OIL">ENGINE OIL</option>
-                      <option value="GEAR OIL">GEAR OIL</option>
-                    </select>
+                      <SelectTrigger className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white">
+                        <SelectValue placeholder="-- Select Oil Group --" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[100]">
+                        <SelectItem value="ENGINE OIL">ENGINE OIL</SelectItem>
+                        <SelectItem value="GEAR OIL">GEAR OIL</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Pallet Type</label>
@@ -210,6 +234,7 @@ export function EditDocumentModal({ isOpen, onClose, document, onSuccess }: Edit
                       value={formData.pallet_type || ''} 
                       onChange={(e) => handleChange('pallet_type', e.target.value)}
                       className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                      placeholder="ไม้ / พลาสติก / CHEP"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -219,15 +244,17 @@ export function EditDocumentModal({ isOpen, onClose, document, onSuccess }: Edit
                       value={formData.boxes_per_pallet || ''} 
                       onChange={(e) => handleChange('boxes_per_pallet', e.target.value)}
                       className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                      placeholder="e.g. 30"
                     />
                   </div>
-                  <div className="space-y-1.5 sm:col-span-2">
+                  <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Shelf Life</label>
                     <input 
                       type="text" 
                       value={formData.shelf_life || ''} 
                       onChange={(e) => handleChange('shelf_life', e.target.value)}
                       className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                      placeholder="e.g. 2 years"
                     />
                   </div>
                 </>

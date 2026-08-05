@@ -10,7 +10,7 @@
   - การบันทึกและจัดการ Rework Case (Case ID) และรายการสินค้า (Rework Item)
   - การดึงข้อมูลอัตโนมัติและการตรวจสอบความถูกต้องของสินค้าจากฐานข้อมูลกลาง (Item Master)
   - การอัปโหลดรูปภาพหลักฐานและการยืนยันความสมบูรณ์ของข้อมูล (Evidence & Transaction Integrity)
-  - การแบ่งสิทธิการทำงาน (Role-Based Access Control) ระหว่าง Admin, Operator, Finance, และ PDB
+  - การแบ่งสิทธิการทำงาน (Role-Based Access Control) ระหว่าง Admin, Operator, Management และ QSMS
   - ระบบถามตอบคู่มือเทคนิคและแนวทาง Rework อัจฉริยะ (DocAI RAG) ที่มีบุคลิกภาพแบบเป็นมืออาชีพและเพียบพร้อมด้วยข้อมูลสถิติ
 
 ---
@@ -30,7 +30,7 @@
   โมดูลสืบค้นปัญญาประดิษฐ์ (Retrieval-Augmented Generation) ค้นหาคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ทำงานโดยใช้ Supabase pgvector ร่วมกับ Jina AI Embeddings (`jina-embeddings-v5-text-small` ขนาด 768 มิติ) และ Gemini ในการสร้างคำตอบที่เป็นธรรมชาติ
   - **Parsing Ingestion:** ใช้ `gemini-3.1-flash-lite` สำหรับแปลงเอกสาร PDF และรูปภาพคู่มือเป็น Markdown โดยมีระบบ Fallback ไปยัง `gemini-2.0-flash` เมื่อเจอปัญหา 503 ในช่วงการทำงานที่มีโหลดสูง
   - **Chat Interface:** ใช้ `gemini-3.1-flash-lite` ในการตอบคำถามผู้ใช้งานผ่าน SSE Stream ร่วมกับระบบ Function Calling (`get_rework_statistics`) สำหรับเรียกดูสถิติสดย้อนหลัง
-  - **Drawing & Master Metadata Extraction:** ระบบวิเคราะห์แบบแปลนวิศวกรรม (Engineering Drawings) และใบมาสเตอร์ภายใน (Internal Master Sheets) ผ่าน API Endpoint `src/app/api/drawings` โดยใช้ **`gemini-3.5-flash`** เป็นโมเดลหลัก (และ **`gemini-3.1-flash-lite`** เป็นตัวสำรอง) เพื่อทำ OCR และสกัด Metadata ต่างๆ กลับคืนมาในแบบ Structured JSON (Structured Outputs) ทันทีหลังพนักงานอัปโหลดไฟล์ PDF
+  - **Drawing & Master Metadata Extraction:** ระบบวิเคราะห์แบบแปลนวิศวกรรม (Engineering Drawings) และใบมาสเตอร์ภายใน (Internal Master Sheets) ผ่าน API Endpoint `src/app/api/drawings` โดยใช้ **`gemini-3.1-flash`** เป็นโมเดลหลัก (และ **`gemini-3.1-flash-lite`** เป็นตัวสำรอง) เพื่อทำ OCR และสกัด Metadata ต่างๆ กลับคืนมาในแบบ Structured JSON (Structured Outputs) ทันทีหลังพนักงานอัปโหลดไฟล์ PDF
 
 ---
 
@@ -53,9 +53,8 @@
 5. **Transaction & Evidence Integrity (ยืนยันรูปภาพ):**
    - ทุกรายการ rework ต้องมีรูปภาพหลักฐานอย่างน้อย 1 ภาพ (Evidence Integrity) โดยใช้การบีบอัดรูปภาพฝั่ง Client ก่อนอัปโหลด (target 300KB)
    - หากเกิดข้อผิดพลาดในการอัปโหลดรูป ระบบจะ Rollback ธุรกรรมทั้งหมดทันทีเพื่อป้องกันข้อมูลขยะ
-6. **Rework Updates (การจัดการสถานะ & ค่าใช้จ่าย):**
-   - **Operator / Admin:** เบิกวัสดุ (Materials), จับเวลาทำงาน (Labor Hours), อัปเดตยอดกล่อง (Progress)
-   - **Finance:** ประเมินและกรอกราคาจริง (Actual Cost) และอัตราค่าแรง (Labor Rate) 
+6. **Rework Updates (การอัปเดตงาน & จัดการสถานะ):**
+   - **Operator / Admin:** อัปเดตรายละเอียดวิธีแก้ไข (Resolution Method), อัปเดตยอดกล่องผลิตเสร็จ (Progress)
    - **Dynamic Auto-Status Lifecycle:** สถานะของเคสจะถูกคำนวณอัตโนมัติจากยอดกล่องที่ทำเสร็จเทียบกับยอดรวมทั้งหมด โดยไม่ต้องเลือกสถานะเอง (`Pending` [0] -> `In-Progress` [>0] -> `Completed` [100%])
 7. **Excel Export with Images (การส่งออกไฟล์ข้อมูล):**
    - ระบบรองรับการ Export ตารางรายงานเคสออกมาเป็นไฟล์ Excel (.xlsx) ที่มีรูปหลักฐานฝังอยู่ด้านในโดยตรง (ผ่านไลบรารี `exceljs`) โดยปรับความสูงแถวเป็น 120px และตกแต่งสีหัวตารางสวยงาม
@@ -64,7 +63,16 @@
    - **RAG Bulk Deletion:** ผู้ดูแลสามารถเลือกเอกสารหลายรายการใน Checklist เพื่อสั่งลบเอกสารและข้อมูลเวกเตอร์ชิ้นส่วนที่เกี่ยวข้องพร้อมกันผ่าน API (`bulk_delete_documents`)
 9. **AI-Assisted Drawing & Master Parsing (การดึงข้อมูลแบบแปลนอัตโนมัติ):**
    - เมื่อผู้ใช้ทำการอัปโหลดไฟล์ PDF เข้าสู่ระบบในหน้าจอ Drawing/Master ระบบจะส่งไฟล์ Base64 ไปยังเซิร์ฟเวอร์
-   - Gemini AI จะทำหน้าที่ทำ OCR และวิเคราะห์เอกสารสแกนเพื่อแกะข้อมูลฟิลด์ต่าง ๆ เช่น เลขแบบแปลน (drawing_number), รหัสสินค้าลูกค้า (item_code), ชื่อชิ้นงาน (part_name), ขนาดบรรจุ (package_size), กลุ่มน้ำมัน (oil_group), ประเภทพาเลท (pallet_type), จำนวนกล่อง (boxes_per_pallet) และอายุผลิตภัณฑ์ (shelf_life) เพื่อกรอกฟอร์มอัปโหลดโดยอัตโนมัติ ช่วยลดปัญหาความผิดพลาดจากการพิมพ์ (Human Error) ตัวฟิลด์ที่ดึงไม่พบจะเว้นว่างไว้ให้ผู้ใช้ตรวจสอบเพิ่มเติมได้ และการแก้ไขฟิลด์จะถูกบล็อกชั่วคราวระหว่างประมวลผลวิเคราะห์ข้อมูล (`isProcessing = true`)
+   - Gemini AI จะทำหน้าที่ทำ OCR และวิเคราะห์เอกสารสแกนเพื่อแกะข้อมูลฟิลด์ต่าง ๆ โดยมีระบบ Fallback อัตโนมัติ (`gemini-3.1-flash` ➔ `gemini-3.1-flash-lite` ➔ `gemini-2.0-flash`) เพื่อรองรับ 503 high demand spikes
+10. **Decoupled Document Schema Forms (แยกฟอร์มเอกสารตามสเปกจริง):**
+    - แยกสีกำกับและโครงสร้างแบบฟอร์ม Drawing (7 ฟิลด์) และ Master Sheet (8 ฟิลด์) ออกจากกันอย่างเด็ดขาดเพื่อไม่ให้มีฟิลด์ N/A สับสน
+    - **Drawing PDF:** `drawing_number`, `revision`, `customer_name`, `item_code` (รหัสสินค้าลูกค้า 4000xxxx), `part_name`, `issue_date`, `package_size`
+    - **Master Sheet:** `drawing_number` (Doc No), `revision`, `item_code`, `item_number` (รหัสสูตรการผลิต 61653013A700A), `part_name`, `oil_group`, `pallet_type`, `boxes_per_pallet`, `shelf_life`
+11. **Side-by-Side Inspection Workspace & PDF Auto-Orientation (แผงตรวจทานเอกสาร & ระบบหมุนภาพ):**
+    - **55/45 Split View Panel:** เมื่อคลิกเลือกแถวในตาราง หน้าจอจะสไลด์เปิดแผงตรวจทานฝั่งขวาทันที รองรับการสลับแบบแปลนด้วยปุ่มลูกศร `ArrowUp` / `ArrowDown` และกด `Escape` เพื่อปิด
+    - **PDF Orientation Toolbar:** เครื่องมือหมุน PDF 0°, 90°, 180°, 270° พร้อมปุ่ม **Landscape View** 1-click และบันทึกองศาการหมุนลงใน `localStorage` (`qsms_pdf_rot_<id>`) เพื่อคงทิศทางให้อ่านง่ายตลอดเวลา
+12. **Boxes Per Pallet Normalization ("ตามความเหมาะสม"):**
+    - หากเอกสารระบุจำนวนกล่องเป็นข้อความแบบ "ตามความเหมาะสม" หรือ "appropriate" ทั้งระบบ Gemini OCR Prompt และฟังก์ชัน `normalizeBoxesPerPallet` จะคืนค่าเป็นข้อความ "ตามความเหมาะสม" โดยตรง ป้องกันการสุ่มเดาตัวเลขผิดพลาด
 
 
 ---

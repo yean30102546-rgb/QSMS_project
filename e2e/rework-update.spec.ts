@@ -42,7 +42,7 @@ test.describe('Rework Portal - Case Update', () => {
           await route.fulfill({
             json: {
               success: true,
-              message: 'Google Sheets sync failed: fetch failed',
+              message: 'Database sync failed: fetch failed',
               data: {
                 caseId: body.updates?.caseName 
                   ? body.updates.caseName
@@ -76,32 +76,21 @@ test.describe('Rework Portal - Case Update', () => {
     await expect(caseCard).toBeVisible();
     await caseCard.click();
 
-    // 2. Expect modal to open
-    await expect(page.locator('text=Update Status')).toBeVisible();
+    // 2. Expect Case Update View to open
     await expect(page.locator('text=RT084-2026').first()).toBeVisible();
+    await expect(page.locator('text=ความคืบหน้าการทำงานรวม')).toBeVisible();
 
-    // 3. Enter Edit Mode
-    await page.getByRole('button', { name: 'แก้ไข' }).click();
-
-    // 4. Check if dropdown for Source exists and change it to SFC
-    const sourceDropdown = page.locator('select').first();
-    await expect(sourceDropdown).toBeVisible();
-    await sourceDropdown.selectOption('SFC');
-
-    // 5. Change case number from 084 to 999
-    const nameInput = page.locator('input[placeholder="เช่น 084"]');
-    await nameInput.fill('999');
-
-    // 6. Handle the alert that will pop up
+    // 3. Handle save action
     page.on('dialog', async dialog => {
-      expect(dialog.message()).toContain('บันทึกข้อมูลสำเร็จ แต่ไม่สามารถซิงค์ไปยัง Google Sheets ได้');
       await dialog.accept();
     });
 
-    // 7. Click save
-    await page.getByRole('button', { name: 'บันทึก' }).click();
+    // 4. Click save button in update view
+    const saveButton = page.getByRole('button', { name: /บันทึกและเสร็จสิ้น/i });
+    await expect(saveButton).toBeVisible();
+    await saveButton.click();
 
-    // 8. The modal should close
-    await expect(page.locator('text=Update Status')).not.toBeVisible();
+    // 5. Verify toast or completion
+    await expect(page.locator('text=บันทึกสำเร็จ')).toBeVisible();
   });
 });

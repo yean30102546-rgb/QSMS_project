@@ -62,9 +62,10 @@ test.describe('Rework Portal - Case Initiation', () => {
     await caseInput.fill('999');
     await expect(caseInput).toHaveValue('999');
 
-    // Fill Item Name
+    // Fill Item Name using click + pressSequentially for react-hook-form compatibility
     const itemNameInput = page.getByRole('textbox', { name: /ชื่อรายการ/i }).first();
-    await itemNameInput.fill('Test Product', { force: true });
+    await itemNameInput.click();
+    await itemNameInput.pressSequentially('Test Product', { delay: 20 });
     await expect(itemNameInput).toHaveValue('Test Product');
 
     // Try submitting disabled form

@@ -140,6 +140,12 @@ export async function loginWithPassword(userId: string, password: string): Promi
     });
 
     if (!response.ok) {
+      try {
+        const errorData = await response.json();
+        if (errorData?.error) {
+          return { success: false, error: errorData.error };
+        }
+      } catch {}
       return { success: false, error: 'Cannot connect to authentication service' };
     }
 

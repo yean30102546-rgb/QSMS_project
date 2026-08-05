@@ -288,7 +288,8 @@ export async function POST(request: Request) {
                   model: 'text-embedding-004',
                   contents: chunk
                 });
-                const embeddingValues = embedResponse.embeddings?.[0]?.values;
+                const rawResp = embedResponse as any;
+                const embeddingValues = rawResp.embedding?.values || rawResp.embeddings?.[0]?.values;
                 if (!embeddingValues || embeddingValues.length !== 768) {
                   throw new Error(`Invalid Gemini embedding size: ${embeddingValues?.length}`);
                 }
@@ -419,7 +420,8 @@ export async function POST(request: Request) {
                 model: 'text-embedding-004',
                 contents: q
               });
-              return embedResponse.embeddings?.[0]?.values;
+              const rawResp = embedResponse as any;
+              return rawResp.embedding?.values || rawResp.embeddings?.[0]?.values;
             });
             
             const embeddingsList = await Promise.all(embedPromises);

@@ -31,7 +31,7 @@ export interface ReworkItem {
   responsibleSubtype?: string;
   details?: string;
   imageUrls?: string[];
-  imageFolderUrl?: string; // URL ของ folder ใน Google Drive ที่เก็บรูปทั้งหมดของ case นี้
+  imageFolderUrl?: string; // URL ของ folder ที่เก็บรูปทั้งหมดของ case นี้ (Legacy)
   status?: 'Pending' | 'In-Progress' | 'Completed';
   batchNo?: string;
   gallonDate?: string;
@@ -57,15 +57,6 @@ export const CUSTOMER_OPTIONS = [
   'Others',
 ];
 
-export interface MaterialUsage {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  unitPrice?: number;
-  totalPrice?: number;
-}
-
 export interface ReworkCase {
   id: string;
   caseName?: string;
@@ -76,13 +67,8 @@ export interface ReworkCase {
   status: 'Pending' | 'In-Progress' | 'Completed';
   items: ReworkItem[];
   resolutionMethod?: string;
-  reworkCost?: number;
   orFilesUrls?: string[];
   orFolderUrl?: string;
-  materials?: MaterialUsage[];
-  laborCount?: number;
-  laborHours?: number;
-  laborRate?: number;
   missingBoxes?: number;
   missingGallons?: number;
   missingOil?: number;
@@ -408,20 +394,8 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
     status: caseItem.status || 'Pending',
     items: normalizeCaseItems(caseItem),
     resolutionMethod: normalizeString(caseItem.resolutionMethod),
-    reworkCost: normalizeAmount(caseItem.reworkCost),
     orFilesUrls: Array.isArray(caseItem.orFilesUrls) ? caseItem.orFilesUrls : [],
     orFolderUrl: normalizeString(caseItem.orFolderUrl),
-    materials: Array.isArray(caseItem.materials) ? caseItem.materials.map(m => ({
-      id: normalizeString(m.id),
-      name: normalizeString(m.name),
-      quantity: normalizeAmount(m.quantity),
-      unit: normalizeString(m.unit),
-      unitPrice: m.unitPrice !== undefined ? normalizeAmount(m.unitPrice) : undefined,
-      totalPrice: m.totalPrice !== undefined ? normalizeAmount(m.totalPrice) : undefined,
-    })) : [],
-    laborCount: caseItem.laborCount !== undefined ? normalizeAmount(caseItem.laborCount) : undefined,
-    laborHours: caseItem.laborHours !== undefined ? normalizeAmount(caseItem.laborHours) : undefined,
-    laborRate: caseItem.laborRate !== undefined ? normalizeAmount(caseItem.laborRate) : undefined,
     missingBoxes: caseItem.missingBoxes !== undefined ? normalizeAmount(caseItem.missingBoxes) : undefined,
     missingGallons: caseItem.missingGallons !== undefined ? normalizeAmount(caseItem.missingGallons) : undefined,
     missingOil: caseItem.missingOil !== undefined ? normalizeAmount(caseItem.missingOil) : undefined,
@@ -459,9 +433,10 @@ export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
  */
 export async function updateCase(
   caseId: string,
-  updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[] }
+  updates: Partial<ReworkCase> & { newOrFiles?: File[]; deleteItemIds?: string[]; newImages?: Record<string, File[]> }
 ): Promise<ApiResponse> {
-  // Process OR files if they exist in updates
+  // Process OR files and item images if they exist in updates
+  let allUploadedUrls: string[] = [];
   let processedOrFilesUrls: string[] = [];
   try {
     if (updates.newOrFiles && updates.newOrFiles.length > 0) {
@@ -471,29 +446,54 @@ export async function updateCase(
         const uploadResult = await uploadImageToCloudinary(fileToUpload);
         if (uploadResult.success && uploadResult.url) {
           processedOrFilesUrls.push(uploadResult.url);
+          allUploadedUrls.push(uploadResult.url);
+        }
+      }
+    }
+
+    // Process new item images
+    const items = updates.items ? [...updates.items] : undefined;
+    if (items && updates.newImages) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const files = updates.newImages[item.id || ''];
+        if (files && files.length > 0) {
+          const newUrls: string[] = [];
+          for (const file of files) {
+            const compression = await compressImage(file, { maxSizeMB: 0.3 });
+            const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
+            const uploadResult = await uploadImageToCloudinary(fileToUpload);
+            if (uploadResult.success && uploadResult.url) {
+              newUrls.push(uploadResult.url);
+              allUploadedUrls.push(uploadResult.url);
+            }
+          }
+          item.imageUrls = [...(item.imageUrls || []), ...newUrls];
         }
       }
     }
 
     // Prepare the payload, excluding the raw File objects
-    const { newOrFiles, ...restUpdates } = updates;
+    const { newOrFiles, newImages, ...restUpdates } = updates;
+    if (items) {
+      restUpdates.items = items;
+    }
 
     const result = await apiFetch({
       action: 'updateCaseStatus',
       caseId,
       status: updates.status,
       resolutionMethod: updates.resolutionMethod,
-      reworkCost: updates.reworkCost,
       performedBy: getCurrentUser()?.name || 'User',
       updates: restUpdates,
       orFilesUrls: processedOrFilesUrls.length > 0 ? processedOrFilesUrls : undefined
     });
 
-    if (!result.success && processedOrFilesUrls.length > 0) {
+    if (!result.success && allUploadedUrls.length > 0) {
       fetch('/api/cloudinary/rollback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: processedOrFilesUrls })
+        body: JSON.stringify({ urls: allUploadedUrls })
       }).catch(e => console.error('Rollback API failed:', e));
     }
 
@@ -503,11 +503,11 @@ export async function updateCase(
       error: result.error,
     };
   } catch (error) {
-    if (processedOrFilesUrls && processedOrFilesUrls.length > 0) {
+    if (allUploadedUrls && allUploadedUrls.length > 0) {
       fetch('/api/cloudinary/rollback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: processedOrFilesUrls })
+        body: JSON.stringify({ urls: allUploadedUrls })
       }).catch(e => console.error('Rollback API failed:', e));
     }
     return {

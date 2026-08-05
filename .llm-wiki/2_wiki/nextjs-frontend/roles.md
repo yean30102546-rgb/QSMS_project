@@ -1,33 +1,30 @@
 # User Roles & Permissions — QSMS
-[วันที่อัปเดต: 2026-07-07]
+[วันที่อัปเดต: 2026-07-21]
 
 ## 1. Summary & Current Implementation
-ระบบใช้ Role-Based Access Control (RBAC) กำหนดใน `src/config/auth.config.ts`
-Role ถูกกำหนดโดย GAS ตอน login และเก็บใน `sessionStorage` ตลอด session
+ระบบใช้ Role-Based Access Control (RBAC) กำหนดใน `src/config/auth.config.ts` โดยเหลือบทบาทปฏิบัติงานจริง 2 บทบาทหลัก (QSMS และ OPERATOR)
 
 ## 2. UserRole Enum
 ```typescript
 // src/config/auth.config.ts (Current)
 export enum UserRole {
-  QSMS     = 'QSMS',     // Full access + Delete
-  OPERATOR = 'OPERATOR',  // Production Rework
-  FINANCE  = 'FINANCE',   // Overall (Valuation only)
+  QSMS     = 'QSMS',     // Full access + Delete + Management
+  OPERATOR = 'OPERATOR',  // Production Rework & Case Entry
 }
 ```
-> [Deprecated 2026-07-07] ระบบเดิมเคยมี 6 roles (ADMIN, QSMS, PDB, OPERATOR, FINANCE, WFG) แต่ถูก consolidate เหลือ 3 roles ตาม auth.config.ts ปัจจุบัน โดย PDB/WFG map เป็น OPERATOR ผ่าน PROFILE_ALIASES ใน serverAuth.ts
+> [Deprecated 2026-07-21] ถอดบทบาท `FINANCE` และการประเมินราคาออกอย่างสมบูรณ์ และยกเลิก `PDB` โดยควบรวมเข้ากับ `OPERATOR` 100%
 
 ## 3. Permission Matrix
-| Permission | QSMS | OPERATOR | FINANCE |
-|---|:---:|:---:|:---:|
-| `view_dashboard` | ✅ | ❌ | ❌ |
-| `view_overall` | ✅ | ✅ | ✅ |
-| `create_case` | ✅ | ✅ | ❌ |
-| `edit_case` | ✅ | ❌ | ❌ |
-| `delete_case` | ✅ | ❌ | ❌ |
-| `update_status` | ✅ | ✅ | ❌ |
-| `fill_resolution` | ✅ | ✅ | ❌ |
-| `fill_valuation` | ✅ | ❌ | ✅ |
-| `export_data` | ✅ | ❌ | ❌ |
+| Permission | QSMS | OPERATOR |
+|---|:---:|:---:|
+| `view_dashboard` | ✅ | ❌ |
+| `view_overall` | ✅ | ✅ |
+| `create_case` | ✅ | ✅ |
+| `edit_case` | ✅ | ❌ |
+| `delete_case` | ✅ | ❌ |
+| `update_status` | ✅ | ✅ |
+| `fill_resolution` | ✅ | ✅ |
+| `export_data` | ✅ | ❌ |
 
 ## 4. วิธีตรวจสิทธิ์ในโค้ด
 ```typescript

@@ -1,13 +1,12 @@
 import { cookies } from 'next/headers';
 
-const AUTH_SECRET = (
-  process.env.AUTH_TOKEN_SECRET ||
-  ''
-).trim();
+function getAuthSecret(): string {
+  return (process.env.AUTH_TOKEN_SECRET || '').trim();
+}
 
 const PROFILE_ALIASES: Record<string, string> = {
+  ADMIN: 'QSMS',
   WFG: 'OPERATOR',
-  PDB: 'OPERATOR',
 };
 
 const PROFILE_PERMISSIONS: Record<string, string[]> = {
@@ -19,7 +18,6 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'delete_case',
     'update_status',
     'fill_resolution',
-    'fill_valuation',
     'export_data',
   ],
   QSMS: [
@@ -30,11 +28,9 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'delete_case',
     'update_status',
     'fill_resolution',
-    'fill_valuation',
     'export_data',
   ],
-  OPERATOR: ['view_overall', 'create_case', 'update_status', 'fill_resolution', 'export_data'],
-  FINANCE: ['view_overall', 'fill_valuation'],
+  OPERATOR: ['view_overall', 'create_case', 'update_status', 'fill_resolution'],
 };
 
 export class AuthError extends Error {
@@ -103,9 +99,13 @@ function safeEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 export async function signToken(unsignedToken: string): Promise<string> {
+  const secret = getAuthSecret();
+  if (!secret) {
+    throw new AuthError('AUTH_TOKEN_SECRET is not configured on the Next.js server.', 500);
+  }
   const key = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(AUTH_SECRET),
+    new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
@@ -132,7 +132,8 @@ export async function generateToken(profileLower: string, role: string): Promise
 }
 
 export async function verifyToken(token: string): Promise<TokenPayload> {
-  if (!AUTH_SECRET) {
+  const secret = getAuthSecret();
+  if (!secret) {
     throw new AuthError('AUTH_TOKEN_SECRET is not configured on the Next.js server.', 500);
   }
 
@@ -152,6 +153,10 @@ export async function verifyToken(token: string): Promise<TokenPayload> {
   const now = Math.floor(Date.now() / 1000);
   if (!payload.exp || now > Number(payload.exp)) {
     throw new AuthError('Token expired');
+  }
+
+  if (!payload.sub || !String(payload.sub).trim()) {
+    throw new AuthError('Token subject is missing');
   }
 
   if (payload.type && payload.type !== 'auth_token') {

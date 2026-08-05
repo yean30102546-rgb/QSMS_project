@@ -13,7 +13,7 @@ export interface PortalAppDefinition {
 }
 
 export interface ModularizationBoundary {
-  area: 'auth' | 'portal' | 'shared-ui' | 'rework-module' | 'transport';
+  area: 'auth' | 'portal' | 'shared-ui' | 'rework-module' | 'storage-module' | 'rag-module' | 'guide-module' | 'drawings-module' | 'transport';
   source: string;
   target: string;
   notes: string;

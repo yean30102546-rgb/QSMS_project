@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { parseOrExcelFile, findOrMatch, type OrItemInfo } from '@/src/utils/orExcelParser';
 import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -43,7 +44,7 @@ const STAIN_SUBTYPES = ['ขวดเปื้อน', 'กล่องเปื
 const RESPONSIBLE_MAIN_OPTIONS = ['SFC', 'Supplier', 'Customer', 'อื่นๆ'] as const;
 
 const RESPONSIBLE_SUBDIVISIONS: Record<string, string[]> = {
-  SFC: ['PDF', 'PDB', 'WPK', 'WFG', 'อื่นๆ'],
+  SFC: ['PDF', 'WPK', 'WFG', 'อื่นๆ'],
   Supplier: ['SP', 'PJW', 'Polymer', 'ธนกร', 'Fuchs', 'อื่นๆ'],
   Customer: ['Customer'],
 };
@@ -70,10 +71,10 @@ const initialFormItem = {
   itemName: '',
   batchNo: '',
   gallonDate: '',
-  boxNumber: '',
+  boxNumber: '1',
   mold: '',
   line: '',
-  amount: 0,
+  amount: 1,
   reason: '',
   reasonSubtype: '',
   responsible: '',
@@ -88,18 +89,18 @@ const initialFormItem = {
 const reworkItemSchema = z.object({
   id: z.string(),
   customerName: z.string(),
-  itemNumber: z.string(),
-  itemCode: z.string(),
+  itemNumber: z.string().optional().nullable(),
+  itemCode: z.string().optional().nullable(),
   itemName: z.string(),
   batchNo: z.string().optional().nullable(),
   gallonDate: z.string().optional().nullable(),
   boxNumber: z.string().optional().nullable().refine((val) => !val || parseInt(val, 10) > 0, { message: 'จำนวนกล่องต้องมากกว่า 0' }),
   mold: z.string().optional().nullable(),
   line: z.string().optional().nullable(),
-  amount: z.union([z.number().min(1, 'จำนวนต้องมากกว่า 0'), z.nan()]).optional().nullable(),
-  reason: z.string(),
+  amount: z.union([z.number(), z.nan()]).optional().nullable(),
+  reason: z.string().optional().nullable(),
   reasonSubtype: z.string().optional().nullable(),
-  responsible: z.string(),
+  responsible: z.string().optional().nullable(),
   responsibleSubtype: z.string().optional().nullable(),
   details: z.string().optional().nullable(),
   linkedSourceId: z.string().optional().nullable(),
@@ -129,6 +130,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
   const [uploadedImages, setUploadedImages] = useState<Record<string, File[]>>({});
   const [orFiles, setOrFiles] = useState<File[]>([]);
+  const [orParsedMap, setOrParsedMap] = useState<Record<string, OrItemInfo>>({});
+  const [orItemsList, setOrItemsList] = useState<OrItemInfo[]>([]);
+  const [isParsingOr, setIsParsingOr] = useState(false);
 
   const [selectionModal, setSelectionModal] = useState<SelectionModalState>(null);
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
@@ -200,24 +204,81 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     }
   }, [caseSource, formItems]);
 
+  // Handle OR File Upload & Auto-Parsing
+  const handleOrFileUpload = async (files: File[]) => {
+    setOrFiles(files);
+    const excelFile = files.find(f => f.name.endsWith('.xlsx') || f.name.endsWith('.xls'));
+    if (!excelFile) {
+      setOrParsedMap({});
+      setOrItemsList([]);
+      return;
+    }
+
+    try {
+      setIsParsingOr(true);
+      const result = await parseOrExcelFile(excelFile);
+      if (result.success && Object.keys(result.itemMap).length > 0) {
+        setOrParsedMap(result.itemMap);
+        setOrItemsList(result.itemsList);
+
+        let matchedCount = 0;
+        const currentItems = getValues('items') || [];
+        currentItems.forEach((item, idx) => {
+          const match = findOrMatch(item.itemCode || '', item.itemNumber || '', result.itemMap);
+          if (match && match.qir) {
+            matchedCount++;
+            const tagText = `[QIR: ${match.qir}]`;
+            const currentDetails = item.details || '';
+            if (!currentDetails.includes(tagText)) {
+              setValue(`items.${idx}.details`, currentDetails ? `${tagText} ${currentDetails}` : tagText, { shouldDirty: true });
+            }
+            if (match.batchNo && !item.batchNo) {
+              setValue(`items.${idx}.batchNo`, match.batchNo, { shouldDirty: true });
+            }
+          }
+        });
+
+        showToast(`✓ อ่าน Sheet 2 สำเร็จ: พบข้อมูล QIR ${result.itemsList.length} รายการ (จับคู่ตรงกับฟอร์ม ${matchedCount} รายการ)`, 'success');
+      } else if (result.error) {
+        showToast(`ไม่สามารถอ่านข้อมูล QIR จากไฟล์ Excel ได้: ${result.error}`, 'warning');
+      }
+    } catch (err) {
+      console.error('Failed to parse OR file:', err);
+    } finally {
+      setIsParsingOr(false);
+    }
+  };
+
+  // Reactive matching when typing ItemCode or ItemNumber (Flow B)
+  useEffect(() => {
+    if (Object.keys(orParsedMap).length > 0 && formItems.length > 0) {
+      formItems.forEach((item, idx) => {
+        const match = findOrMatch(item.itemCode || '', item.itemNumber || '', orParsedMap);
+        if (match && match.qir) {
+          const tagText = `[QIR: ${match.qir}]`;
+          const currentDetails = item.details || '';
+          if (!currentDetails.includes(tagText)) {
+            setValue(`items.${idx}.details`, currentDetails ? `${tagText} ${currentDetails}` : tagText, { shouldDirty: true });
+          }
+          if (match.batchNo && !item.batchNo) {
+            setValue(`items.${idx}.batchNo`, match.batchNo, { shouldDirty: true });
+          }
+        }
+      });
+    }
+  }, [formItems, orParsedMap, setValue]);
+
   const existingCaseIds = cases.map(c => c.id);
 
   const isSaveDisabled = (items: typeof formItems) => {
     return items.some((item) => {
-      const imgCount = (uploadedImages[item.id] || []).length + (item.imageUrls || []).length;
-      const isZeroBox = String(item.boxNumber).trim() === '0';
-      const isZeroAmount = item.amount === 0;
+      const isZeroBox = !item.boxNumber || String(item.boxNumber).trim() === '0';
 
       return (
         !item.customerName ||
-        !item.reason ||
-        !item.responsible ||
         (!item.itemNumber && !item.itemCode) ||
         !item.itemName ||
-        imgCount === 0 ||
-        isZeroBox ||
-        isZeroAmount ||
-        ((item.reason === 'รั่ว' || item.reason === 'เปื้อน') && !item.reasonSubtype)
+        isZeroBox
       );
     });
   };
@@ -236,7 +297,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
   const onSubmit = async (data: FormValues) => {
     if (isSaveDisabled(data.items)) {
-      showAlert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้อง (ห้ามใส่จำนวนเป็น 0, ต้องระบุรหัสสินค้า, ชื่อสินค้า และแนบรูปภาพอย่างน้อย 1 รูป)', 'error');
+      showAlert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วน (ต้องระบุชื่อลูกค้า, รหัสสินค้า, ชื่อสินค้า และจำนวนกล่องห้ามเป็น 0)', 'error');
       return;
     }
 
@@ -263,7 +324,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       // Transform items for API
       const apiItems = data.items.map(item => ({
         ...item,
-        amount: Number(item.amount) || 0
+        amount: Number(item.boxNumber) || Number(item.amount) || 1
       })) as ReworkItem[];
 
       setProgress(40);
@@ -477,7 +538,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         accept=".xlsx,.xls,.pdf,.png"
                         onChange={(e) => {
                           const files = Array.from(e.target.files || []);
-                          setOrFiles(files.slice(0, 2));
+                          handleOrFileUpload(files.slice(0, 2));
                         }}
                         className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
                       />
@@ -487,7 +548,10 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         {orFiles.map((file, i) => (
                           <div key={i} className="px-3 py-1 bg-white border border-amber-200 rounded-lg text-xs font-medium text-amber-800 flex items-center gap-2">
                             {file.name}
-                            <button onClick={() => setOrFiles(orFiles.filter((_, idx) => idx !== i))} className="text-amber-400 hover:text-amber-600">
+                            <button onClick={() => {
+                              const remaining = orFiles.filter((_, idx) => idx !== i);
+                              handleOrFileUpload(remaining);
+                            }} className="text-amber-400 hover:text-amber-600">
                               <X size={14} />
                             </button>
                           </div>
@@ -495,6 +559,41 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                       </div>
                     )}
                   </div>
+                  {isParsingOr && (
+                    <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-amber-700">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" /> กำลังสกัดคอลัมน์ QIR จาก Sheet 2...
+                    </div>
+                  )}
+                  {orItemsList.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-amber-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
+                        <FileSpreadsheet size={16} className="text-amber-600" />
+                        <span>พบรายการใน Sheet 2 ทั้งหมด {orItemsList.length} รายการ</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const generatedItems = orItemsList.map((orItem, index) => ({
+                            ...initialFormItem,
+                            id: `or-gen-${Date.now()}-${index}`,
+                            customerName: 'OR',
+                            itemCode: orItem.itemCode || '',
+                            itemName: orItem.description || '',
+                            batchNo: orItem.batchNo || '',
+                            boxNumber: String(orItem.amount || 1),
+                            amount: orItem.amount || 1,
+                            details: `[QIR: ${orItem.qir}]`,
+                            verificationStatus: 'verified' as const,
+                          }));
+                          setValue('items', generatedItems);
+                          showToast(`✓ ดึงรายการสินค้า ${generatedItems.length} รายการจากไฟล์ OR สำเร็จ!`, 'success');
+                        }}
+                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                      >
+                        <Sparkles size={14} /> ดึงรายการสินค้าทั้งหมดจากไฟล์ OR ({orItemsList.length} รายการ)
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -539,6 +638,16 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
                             </span>
                           )}
+                          {(() => {
+                            const qirMatch = (item.details || '').match(/\[QIR:\s*([^\]]+)\]/);
+                            const qirVal = qirMatch ? qirMatch[1] : null;
+                            if (!qirVal) return null;
+                            return (
+                              <span className="text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                <Tag size={12} className="text-purple-600" /> QIR: {qirVal}
+                              </span>
+                            );
+                          })()}
                         </h3>
                       </div>
 
@@ -626,7 +735,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         <InputField label="ชื่อรายการ (Item Name) *" {...register(`items.${idx}.itemName`)} disabled={isSaving} />
                       </div>
 
-                      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                         <div className="col-span-2 sm:col-span-1">
                           <Controller
                             control={control}
@@ -657,13 +766,12 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         </div>
                         <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
                         <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                        <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
-                        <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนกล่อง (ลัง) *" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
                       </div>
 
                       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
                         <div className="space-y-2">
-                          <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ *</label>
+                          <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ (Optional)</label>
                           <div className="space-y-2">
                             <Controller
                               control={control}
@@ -686,7 +794,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                         setValue(`items.${idx}.reasonSubtype`, '');
                                       }
                                     }}
-                                    placeholder="เลือกสาเหตุ..."
+                                    placeholder="เลือกสาเหตุ (ระบุภายหลังได้)..."
                                     className="bg-slate-50/50 font-normal"
                                   />
                                 );
@@ -696,7 +804,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ *</label>
+                          <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ (Optional)</label>
                           <div className="space-y-2">
                             <Controller
                               control={control}
@@ -721,7 +829,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                         setValue(`items.${idx}.responsibleSubtype`, '');
                                       }
                                     }}
-                                    placeholder="เลือกผู้รับผิดชอบ..."
+                                    placeholder="เลือกผู้รับผิดชอบ (ระบุภายหลังได้)..."
                                     className="bg-slate-50/50 font-normal"
                                   />
                                 );
@@ -731,7 +839,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         </div>
                       </div>
 
-                      {item.reason === 'เปื้อน' && formItems.some((i, iidx) => i.reason === 'รั่ว' && iidx !== idx) && (
+                      {(item.reason === 'เปื้อน' || item.reason?.startsWith('เปื้อน')) && formItems.some((i, iidx) => (i.reason === 'รั่ว' || i.reason?.startsWith('รั่ว')) && iidx !== idx) && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-8 overflow-hidden">
                           <div className="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-5 transition-all">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -748,7 +856,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                       onChange={(e) => {
                                         if (!e.target.checked) setValue(`items.${idx}.linkedSourceId`, '');
                                         else {
-                                          const leaks = formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx);
+                                          const leaks = formItems.filter((i, iidx) => (i.reason === 'รั่ว' || i.reason?.startsWith('รั่ว')) && iidx !== idx);
                                           if (leaks.length === 1) setValue(`items.${idx}.linkedSourceId`, leaks[0].id);
                                         }
                                       }}
@@ -768,7 +876,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                       className="min-w-[200px] rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm focus:border-amber-500 focus:outline-none"
                                     >
                                       <option value="">-- เลือกรายการ --</option>
-                                      {formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx).map(leak => (
+                                      {formItems.filter((i, iidx) => (i.reason === 'รั่ว' || i.reason?.startsWith('รั่ว')) && iidx !== idx).map(leak => (
                                         <option key={leak.id} value={leak.id}>
                                           {leak.itemNumber || 'ไม่ระบุเบอร์'} - {leak.itemName || 'ไม่ระบุชื่อ'}
                                         </option>

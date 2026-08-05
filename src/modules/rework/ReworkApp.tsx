@@ -66,7 +66,7 @@ function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
             </motion.div>
           )}
 
-          {activeTab === 'add' && String(user?.role || '').toUpperCase() !== 'FINANCE' && (
+          {activeTab === 'add' && (
             <motion.div
               key="add"
               initial={{ opacity: 0, y: 10 }}

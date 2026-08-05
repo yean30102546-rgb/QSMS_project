@@ -46,7 +46,7 @@ export function UpdateModalView() {
     newImages, setNewImages, editExitIntent, editedCaseNumber, setEditedCaseNumber,
     SOURCE_OPTIONS, caseNamePrefix, caseNameYear, previewCaseName, getCaseNumber,
     handleToggleEditMode, handleSaveEdit, handleRequestClose, handleDownloadImages,
-    userRole, isAdmin, isOperator, isPDB, canManageRows,
+    userRole, isAdmin, isOperator, canManageRows,
     exportRef, isExporting, exportProgress, exportExcel,
     handleUpdate, handleDelete, confirmDelete, handleRemoveItem, getStatusLabel,
     handleRequestClose: onClose, isSaving, progress, statusText, isComplete,
@@ -503,7 +503,7 @@ export function UpdateModalView() {
                               disabled={(() => {
                                 if (isLoading || !caseData) return true;
                                 if (newOrFiles.length > 0 && (isOperator || isAdmin)) return false;
-                                if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isPDB && !isOperator && !isAdmin) return true;
+                                if ((caseData.status === 'Pending' || caseData.status === 'In-Progress') && !isOperator && !isAdmin) return true;
                                 if (caseData.status === 'Completed' && !isAdmin) return true;
                                 return false;
                               })()}

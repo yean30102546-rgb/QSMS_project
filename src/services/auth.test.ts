@@ -61,13 +61,13 @@ describe('Auth Service', () => {
     });
 
     it('should return role if logged in', async () => {
-      const mockUser = { email: 'test@example.com', name: 'Test User', role: 'finance' };
+      const mockUser = { email: 'test@example.com', name: 'Test User', role: 'qsms' };
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ success: true, data: { user: mockUser } })
       }));
       await restoreSession();
-      expect(getCurrentUserRole()).toBe(UserRole.FINANCE);
+      expect(getCurrentUserRole()).toBe(UserRole.QSMS);
     });
   });
 
@@ -101,9 +101,9 @@ describe('Auth Service', () => {
         json: async () => ({ success: true, data: { user: mockUser } })
       }));
       await restoreSession();
-      // Operator should have view_overall but NOT fill_valuation
+      // Operator should have view_overall but NOT edit_case
       expect(hasPermission('view_overall').hasPermission).toBe(true);
-      expect(hasPermission('fill_valuation').hasPermission).toBe(false);
+      expect(hasPermission('edit_case').hasPermission).toBe(false);
     });
   });
 

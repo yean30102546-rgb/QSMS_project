@@ -229,3 +229,52 @@ Knowledge สำคัญที่ได้:
 - ดำเนินการ Ingest บันทึกความรู้เรื่องบั๊ก (BUG-020 และ BUG-021) เข้าสู่ `lessons-learned/bugs-and-fixes.md` เพื่อป้องกันโมเดลลืม
 - เพิ่มบันทึกเหตุการณ์วันที่อัปเดตระบบใน `project-history.md` เพื่อสร้างไทม์ไลน์ Phase 3: System Stability
 - อัปเดต Log หน้าไทม์ไลน์การทำงานให้เป็นวันที่ปัจจุบัน (21 กรกฎาคม 2026)
+
+### [Refactor] ถอดระบบการเงิน (Finance Role & Valuation)
+- **ลบ Role FINANCE**: ถอดบทบาท FINANCE ออกจากระบบ RBAC ทั้งหมด (`auth.config.ts`, `serverAuth.ts`, `PermissionsModal.tsx`, `ReworkApp.tsx`)
+- **ลบฟิลด์ประเมินราคา**: ถอด `reworkCost`, `laborRate`, `laborHours`, `laborCount`, `materials`, `actualCost` ออกจากการคำนวณและการแสดงผลในทุกจุด (Dashboard, UpdateModal, API layer, Export PDF/Excel)
+
+### [Refactor] ควบรวม PDB และล้างการเชื่อมโยง Google Apps Script (GAS)
+- **Consolidate PDB Role**: ลบตัวแปร `isPDB` ออกจาก `UpdateModalContext` และ `UpdateModalView` โดยเปลี่ยนไปใช้ `isOperator` / `isAdmin` ทั้งหมด ถอดตัวเลือก PDB ออกจาก SFC subdivision และลบ alias ใน `serverAuth.ts`
+- **GAS & Google Sheets Cleanup**: เปลี่ยนข้อความสถานะ `Updating Google Sheets...` ใน `useSaveProgress.ts` เป็น `Updating Database...`, ปรับแก้ Mock message ใน `e2e/rework-update.spec.ts`, และอัปเดตคำอธิบายใน `README.md` และ `system_flow_diagrams.md` ให้ระบุว่าใช้ Cloudinary และ Supabase 100%
+
+## 2026-07-23
+
+### [Feature & Refactor] Decoupled Drawings vs Master Schema & Master-Detail Inspection Workspace
+- **Decoupled Document Schema Forms**:
+  - แยกแบบฟอร์ม Drawing และ Master Sheet ออกจากกันตามความจริงของเอกสาร
+  - **Drawing PDF Form (7 ฟิลด์)**: `drawing_number` (Drawing No), `revision`, `customer_name`, `item_code` (Customer Item Code `4000xxxx`), `part_name`, `issue_date`, `package_size`
+  - **Master Sheet Form (8 ฟิลด์)**: `drawing_number` (Doc No), `revision`, `item_code`, `item_number` (Master Formula Code `61653013A700A`), `part_name`, `oil_group`, `pallet_type`, `boxes_per_pallet`, `shelf_life`
+  - อัปเดต `UploadModal.tsx`, `EditDocumentModal.tsx`, และ `DocumentInspectionPanel.tsx` ให้ปรับเปลี่ยนฟิลด์ที่แสดงและส่งบันทึกตามประเภทเอกสาร
+- **Side-by-Side Master-Detail Inspection Workspace Panel**:
+  - สร้างคอมโพเนนต์ `DocumentInspectionPanel.tsx` และอัปเดต `DocumentList.tsx` ให้แสดงผลแบบ 55/45 Split View Workspace ทันทีเมื่อคลิกเลือกแถวในตาราง
+  - รองรับการกดปุ่มลูกศร `ArrowUp` / `ArrowDown` เพื่อเปลี่ยนสลับรายการตรวจทาน และ `Escape` เพื่อปิดแผง
+- **PDF Auto-Orientation & Rotation Persistence Engine**:
+  - ติดตั้ง Toolbar หมุนเอกสาร PDF (0°, 90°, 180°, 270°) พร้อมปุ่ม **Landscape View** 1-click
+  - บันทึกองศาการหมุนลงใน `localStorage` (`qsms_pdf_rot_<id>`) เพื่อคงทิศทางเดิมเมื่อกลับมาเปิดดูอีกครั้ง
+
+---
+
+## 2026-08-05
+
+### [V&V & Quality] Verification & Validation Across All Core Modules
+- **Module Rework V&V**: Fixed 6 defects (BUG-R01..R06) covering SLA calculation timezones, date formatting inconsistencies, zero-value restrictions, cross-item link source cleanups, and image upload error handling.
+- **Module Auth V&V**: Fixed 4 defects (BUG-A01..A04) covering password strength validation, role casing normalization, session restore fallback, and toast notifications.
+- **Module Drawings V&V**: Fixed 4 defects (BUG-D01..D04) covering package size normalizer edge cases, oil group inference, revision padding, and customer name alias matching.
+- **Module Storage V&V**: Fixed 4 defects (BUG-S01..S04) covering `ResizeObserver` initialization, duplicate pagination network calls, and modal keydown listener guards.
+- **Module Guide & RAG V&V**: Fixed 3 defects (BUG-G01..G03) covering slide index `NaN` closure scope in `GuideApp.tsx` and Gemini embedding property extraction path in `/api/rag/route.ts`.
+- **Module Platform V&V**: Fixed 3 defects (BUG-P01..P03) adding helper utilities `getPortalAppById` and `getActivePortalApps` in `appRegistry.ts` and expanding `ModularizationBoundary.area` type union in `types.ts`.
+- **Testing Suite Expansion**: Expanded unit test suite to 12 files (113 passing tests) and 5 Playwright E2E spec files (9 passing specs).
+
+### [Feature & Normalization] Boxes Per Pallet Normalization ("ตามความเหมาะสม")
+- **Gemini OCR Prompt Update**: Updated system prompts in `src/app/api/drawings/route.ts` instructing AI to return "ตามความเหมาะสม" directly when specified in document remarks without guessing numeric values.
+- **Normalizer Enhancement**: Updated `normalizeBoxesPerPallet` in `src/app/api/drawings/normalizers.ts` to detect keyword variations of "ความเหมาะสม" / "appropriate" and normalize to "ตามความเหมาะสม".
+- **UI Table Renderer Update**: Updated `DocumentList.tsx` table column renderer to display raw string value directly without hardcoded "boxes/pallet" suffix.
+- **Unit Tests Added**: Added 3 unit test assertions in `src/app/api/drawings/normalizers.test.ts`.
+
+### [Ingestion & Root Context Sync] Mandatory Project Knowledge Sync
+- Synchronized all 5 root context files (`CONTEXT.md`, `GEMINI.md`, `README.md`, `USER_GUIDE.md`, `PRODUCT.md`) to 100% match active codebase implementation.
+- Updated `.llm-wiki/2_wiki/log.md`, `lessons-learned/bugs-and-fixes.md`, and `index.md`.
+
+
+

@@ -3,18 +3,28 @@ import { generateToken } from '../../../../lib/serverAuth';
 import { cookies } from 'next/headers';
 import { supabaseServer } from '../../../../lib/supabaseServer';
 import crypto from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(crypto.scrypt);
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { profile, password } = body;
-    const profileLower = (profile || '').toLowerCase();
+    const profileClean = (profile || '').trim().toLowerCase();
+
+    if (!profileClean || !password) {
+      return NextResponse.json(
+        { success: false, error: 'รหัสผ่านหรือชื่อผู้ใช้ไม่ถูกต้อง' },
+        { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    }
 
     // Query user from Supabase
     const { data: user, error: fetchError } = await supabaseServer
       .from('users')
       .select('id, username, password_hash, name, role')
-      .eq('username', profileLower)
+      .eq('username', profileClean)
       .single();
 
     if (fetchError || !user) {
@@ -24,13 +34,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify password
+    // Verify password asynchronously
     const [salt, hash] = user.password_hash.split(':');
-    const verifyHash = crypto.scryptSync(password, salt, 64).toString('hex');
+    const hashBuffer = (await scryptAsync(password, salt, 64)) as Buffer;
+    const verifyHash = hashBuffer.toString('hex');
 
     if (hash === verifyHash) {
       const role = user.role.toLowerCase();
-      const token = await generateToken(profileLower, role);
+      const token = await generateToken(profileClean, role);
 
       // Set HTTP-Only Cookie
       const cookieStore = await cookies();
@@ -49,7 +60,7 @@ export async function POST(request: Request) {
           success: true,
           data: {
             user: {
-              email: profileLower,
+              email: profileClean,
               name: user.name,
               role: role
             },
