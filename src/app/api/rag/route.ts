@@ -553,6 +553,7 @@ Instructions:
 4. If the information is not in the context or system data, state politely that you do not have that specific detail, and offer to help with something else.
 5. DO NOT use markdown asterisks (* or **) for text formatting (like bolding or bullet points). Use plain text, numbers, or dashes (-) instead.
 6. Suggestion Chips: At the very end of your response, you MUST append a hidden JSON block containing 3 suggested follow-up questions relevant to the topic. Format exactly like this: \`\`\`json\n{"suggested_questions": ["Question 1?", "Question 2?", "Question 3?"]}\n\`\`\`
+7. File Attachments: If System Data contains drawing/master PDF file links [📄 filename](url), include them cleanly in your answer so users can view the attached document.
 `;
 
         console.log('🤖 Requesting streaming response from Gemini chat model (using gemini-3.1-flash-lite)...');
@@ -565,8 +566,8 @@ Instructions:
 
         let functionResponseContext = '';
         try {
-          // Pre-flight Agentic Tool Check
-          console.log('🔍 Checking if query requires system data tools...');
+          // Pre-flight Agentic Tool Check across All Modules
+          console.log('🔍 Checking if query requires system data tools across modules...');
           const toolResponse = await ai.models.generateContent({
             model: 'gemini-3.1-flash-lite',
             contents: [
@@ -577,12 +578,36 @@ Instructions:
               tools: [{
                 functionDeclarations: [
                   {
+                    name: 'query_rework_analytics',
+                    description: 'Fetch real-time statistics and details about rework cases, defects (leak/รั่ว or stain/เปื้อน), box counts, case status (Pending, In-Progress, Completed), and resolution progress from the operational database.'
+                  },
+                  {
+                    name: 'lookup_item_master',
+                    description: 'Lookup item specifications from the central Item Master database (item_master), including item code, item number, oil group, pallet type, boxes per pallet, and shelf life.',
+                    parameters: {
+                      type: Type.OBJECT,
+                      properties: {
+                        keyword: { type: Type.STRING, description: 'Item code or item number to search for (e.g. 40001234 or 61653013A700A)' }
+                      }
+                    }
+                  },
+                  {
+                    name: 'search_engineering_drawings',
+                    description: 'Search engineering drawings and internal master sheets (engineering_drawings), including drawing numbers, customer names, revisions, issue dates, and package sizes.',
+                    parameters: {
+                      type: Type.OBJECT,
+                      properties: {
+                        query: { type: Type.STRING, description: 'Search term for drawing number, customer name, or part name' }
+                      }
+                    }
+                  },
+                  {
                     name: 'get_rework_statistics',
-                    description: 'Fetch real-time statistics about rework cases from the system database (e.g., total rework items, counts of defects like leak (รั่ว) or stain (เปื้อน)). Call this ONLY when the user specifically asks for statistics, data, or counts.'
+                    description: 'Fetch real-time statistics about rework cases from the system database (e.g., total rework items, counts of defects like leak (รั่ว) or stain (เปื้อน)).'
                   },
                   {
                     name: 'search_rework_history',
-                    description: 'Search recent rework cases from the operational database to get actual rework history, issues, and resolutions. Use this when the user asks about recent rework cases or specific problems.',
+                    description: 'Search recent rework cases from the operational database.',
                     parameters: {
                       type: Type.OBJECT,
                       properties: {
@@ -608,17 +633,64 @@ Instructions:
 
           if (toolResponse.functionCalls && toolResponse.functionCalls.length > 0) {
             const call = toolResponse.functionCalls[0];
-            if (call.name === 'get_rework_statistics') {
-              console.log('🔧 Model requested get_rework_statistics tool. Executing query...');
-              const { data: statsData, error: statsError } = await supabaseServer.from('rework_items').select('reason');
+            
+            if (call.name === 'query_rework_analytics' || call.name === 'get_rework_statistics') {
+              console.log('🔧 Model requested rework analytics tool. Executing query...');
+              const { data: statsData, error: statsError } = await supabaseServer.from('rework_items').select('reason, amount, completed_boxes');
+              const { data: casesData, error: casesError } = await supabaseServer.from('rework_cases').select('status');
+
               if (!statsError && statsData) {
                 const total = statsData.length;
                 const leaks = statsData.filter(d => d.reason === 'รั่ว').length;
                 const stains = statsData.filter(d => d.reason === 'เปื้อน').length;
-                functionResponseContext = `\n\n[System Data (Real-time)]:\n- Total Rework Items: ${total}\n- Leaks (รั่ว): ${leaks}\n- Stains (เปื้อน): ${stains}\n`;
-                console.log(`📊 Tool executed. Total: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
+                
+                let pending = 0, inProgress = 0, completed = 0;
+                if (!casesError && casesData) {
+                  pending = casesData.filter(c => c.status === 'Pending').length;
+                  inProgress = casesData.filter(c => c.status === 'In-Progress').length;
+                  completed = casesData.filter(c => c.status === 'Completed').length;
+                }
+
+                functionResponseContext = `\n\n[System Data - Real-Time Rework Analytics]:\n- Total Rework Items: ${total}\n- Defect Breakdown: Leak (รั่ว): ${leaks}, Stain (เปื้อน): ${stains}\n- Case Status Breakdown: Pending: ${pending}, In-Progress: ${inProgress}, Completed: ${completed}\n`;
+                console.log(`📊 Analytics tool executed. Total items: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
               } else {
-                console.error('Failed to fetch statistics:', statsError);
+                console.error('Failed to fetch rework analytics:', statsError);
+              }
+            } else if (call.name === 'lookup_item_master') {
+              console.log('🔧 Model requested lookup_item_master tool. Executing query...');
+              const args = call.args as Record<string, unknown> | undefined;
+              const keyword = typeof args?.keyword === 'string' ? args.keyword.trim() : '';
+
+              let query = supabaseServer.from('item_master').select('*').limit(5);
+              if (keyword) {
+                query = query.or(`item_code.ilike.%${keyword}%,item_number.ilike.%${keyword}%,item_name.ilike.%${keyword}%`);
+              }
+
+              const { data: itemsData, error: itemsError } = await query;
+              if (!itemsError && itemsData && itemsData.length > 0) {
+                const itemStr = itemsData.map(i => `- ItemCode: ${i.item_code}, ItemNo: ${i.item_number || 'N/A'}, Name: ${i.item_name || 'N/A'}, OilGroup: ${i.oil_group || 'N/A'}, PalletType: ${i.pallet_type || 'N/A'}, Boxes/Pallet: ${i.boxes_per_pallet || 'N/A'}, ShelfLife: ${i.shelf_life || 'N/A'}`).join('\n');
+                functionResponseContext = `\n\n[System Data - Central Item Master (${keyword || 'All'})]:\n${itemStr}\n`;
+                console.log(`📊 Item master lookup executed. Found ${itemsData.length} items.`);
+              } else {
+                functionResponseContext = `\n\n[System Data - Item Master]: No matching item master specifications found for keyword '${keyword}'.\n`;
+              }
+            } else if (call.name === 'search_engineering_drawings') {
+              console.log('🔧 Model requested search_engineering_drawings tool. Executing query...');
+              const args = call.args as Record<string, unknown> | undefined;
+              const searchQuery = typeof args?.query === 'string' ? args.query.trim() : '';
+
+              let query = supabaseServer.from('engineering_drawings').select('doc_type, drawing_number, revision, customer_name, item_code, item_number, part_name, oil_group, pallet_type, boxes_per_pallet, issue_date, package_size, r2_key, file_name').order('created_at', { ascending: false }).limit(5);
+              if (searchQuery) {
+                query = query.or(`drawing_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,part_name.ilike.%${searchQuery}%,item_code.ilike.%${searchQuery}%`);
+              }
+
+              const { data: drawData, error: drawError } = await query;
+              if (!drawError && drawData && drawData.length > 0) {
+                const drawStr = drawData.map(d => `- Type: ${d.doc_type}, DrawingNo: ${d.drawing_number}, Rev: ${d.revision || 'N/A'}, Customer: ${d.customer_name || 'N/A'}, Part: ${d.part_name || 'N/A'}, ItemCode: ${d.item_code || 'N/A'}, Boxes/Pallet: ${d.boxes_per_pallet || 'N/A'}, File: [📄 ${d.file_name || d.drawing_number + '.pdf'}](/api/drawings?action=view&key=${d.r2_key || ''})`).join('\n');
+                functionResponseContext = `\n\n[System Data - Engineering Drawings & Master Sheets (${searchQuery || 'Recent'})]:\n${drawStr}\n`;
+                console.log(`📊 Drawing search executed. Found ${drawData.length} records.`);
+              } else {
+                functionResponseContext = `\n\n[System Data - Engineering Drawings]: No drawings found matching '${searchQuery}'.\n`;
               }
             } else if (call.name === 'search_rework_history') {
               console.log('🔧 Model requested search_rework_history tool. Executing query...');

@@ -51,7 +51,7 @@ interface UploadQueueItem {
   error?: string;
 }
 
-const WELCOME_MESSAGE = 'สวัสดีครับ ผมคือ QSMS AI Assistant ยินดีให้บริการครับ \n\nผมสามารถช่วยคุณค้นหาข้อมูลจากคู่มือ (PDF/Excel) หรือตรวจสอบสถิติข้อมูลจริงในระบบได้ พิมพ์คำถามของคุณได้เลยครับ';
+const WELCOME_MESSAGE = 'สวัสดีครับ ผมคือ QSMS Enterprise AI Assistant ยินดีให้บริการครับ \n\nผมสามารถช่วยคุณสืบค้นและวิเคราะห์ข้อมูลสดจากทุกโมดูลในระบบ:\n1. 📊 สถิติเคส Rework & รายการสินค้าชำรุด (รั่ว/เปื้อน)\n2. 📦 สเปกสินค้ากลาง (Item Master / พาเลท / กลุ่มน้ำมัน)\n3. 📐 แบบแปลนวิศวกรรม & Master Sheets (Drawing No / Revision)\n4. 📖 คู่มือการปฏิบัติงาน & เอกสารเทคนิค RAG PDF\n\nพิมพ์คำถามของคุณได้เลยครับ!';
 
 export function RagApp({ user, open, onOpenChange }: RagAppProps) {
   const { showAlert, showConfirm } = useNotification();
@@ -413,11 +413,14 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
     });
   };
 
-  // Simple renderer to extract markdown-like links and images dynamically
+  // Role-Based Upload Restriction (Only QSMS / Admin can upload documents)
+  const canUploadDocs = (user?.role as string) === 'QSMS' || (user?.role as string) === 'Admin';
+
+  // Enhanced Message Renderer: Handles Markdown Images, Interactive Action Cards, and Visual Analytics Badges
   const renderMessageContent = (text: string) => {
     const lines = text.split('\n');
     return lines.map((line, idx) => {
-      // Check for markdown image syntax: ![alt](url)
+      // 1. Check for markdown image syntax: ![alt](url)
       const imgRegex = /!\[(.*?)\]\((.*?)\)/g;
       const match = imgRegex.exec(line);
 
@@ -439,6 +442,86 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
           </div>
         );
       }
+
+      // 2. Render Visual Analytics Progress Bar for System Defect Breakdown
+      if (line.includes('Defect Breakdown:') || line.includes('Leaks (รั่ว):')) {
+        const leaksMatch = line.match(/Leak[s\s]*\(รั่ว\):\s*(\d+)/i) || line.match(/รั่ว:\s*(\d+)/);
+        const stainsMatch = line.match(/Stain[s\s]*\(เปื้อน\):\s*(\d+)/i) || line.match(/เปื้อน:\s*(\d+)/);
+        
+        if (leaksMatch || stainsMatch) {
+          const leaks = leaksMatch ? parseInt(leaksMatch[1], 10) : 0;
+          const stains = stainsMatch ? parseInt(stainsMatch[1], 10) : 0;
+          const total = leaks + stains || 1;
+
+          return (
+            <div key={idx} className="my-2.5 rounded-xl border border-blue-100 bg-white/80 dark:bg-slate-800/80 p-3 shadow-sm space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                  <Sparkles size={14} />
+                  สัดส่วนข้อผิดพลาด (Defect Analytics)
+                </span>
+                <span className="text-[11px] text-slate-500">รวม {total} รายการ</span>
+              </div>
+              <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex">
+                <div className="bg-red-500 h-full transition-all duration-500" style={{ width: `${(leaks / total) * 100}%` }} title={`รั่ว: ${leaks}`} />
+                <div className="bg-amber-500 h-full transition-all duration-500" style={{ width: `${(stains / total) * 100}%` }} title={`เปื้อน: ${stains}`} />
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-medium pt-0.5">
+                <span className="text-red-600 dark:text-red-400 flex items-center gap-1">🔴 รั่ว: {leaks} ({Math.round((leaks / total) * 100)}%)</span>
+                <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">🟡 เปื้อน: {stains} ({Math.round((stains / total) * 100)}%)</span>
+              </div>
+            </div>
+          );
+        }
+      }
+
+      // 3. Render Interactive Quick Action Cards for Drawing & Item mentions
+      if (line.includes('DrawingNo:') || line.includes('ItemCode:')) {
+        const fileLinkRegex = /\[📄?\s*(.*?)\]\((.*?\/api\/drawings.*?)\)/g;
+        const fileMatch = fileLinkRegex.exec(line);
+
+        return (
+          <div key={idx} className="my-1.5 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-slate-700 dark:text-slate-300 font-medium">{line}</span>
+              <button
+                onClick={() => showAlert(`เปิดดูรายละเอียดข้อมูล ${line.trim()} เรียบร้อยแล้ว`, 'info')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300 transition-colors shadow-2xs"
+              >
+                <Eye size={12} />
+                ดูรายละเอียด
+              </button>
+            </div>
+            {fileMatch && (
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 dark:bg-slate-800/80 dark:border-slate-700/80 p-3 shadow-xs space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-100">
+                  <FileText size={16} className="text-red-500 shrink-0" />
+                  <span className="truncate flex-1 font-mono">{fileMatch[1] || 'แบบแปลนวิศวกรรม PDF'}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <a
+                    href={fileMatch[2]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-xs"
+                  >
+                    <Eye size={13} />
+                    เปิดดูเอกสาร PDF
+                  </a>
+                  <a
+                    href={fileMatch[2].replace('action=view', 'action=download')}
+                    download
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors shadow-2xs"
+                  >
+                    ดาวน์โหลด
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
       return <p key={idx} className="leading-relaxed mb-1.5">{line}</p>;
     });
   };
@@ -479,40 +562,46 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                     </div>
                     <div>
                       <DialogPrimitive.Title className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">QSMS Assistant</DialogPrimitive.Title>
-                      <DialogPrimitive.Description className="text-xs text-blue-600 dark:text-blue-400 font-medium">DocAI & Data Analyst</DialogPrimitive.Description>
+                      <DialogPrimitive.Description className="text-xs text-blue-600 dark:text-blue-400 font-medium">Enterprise AI Assistant</DialogPrimitive.Description>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    {/* Tab Switcher */}
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg relative">
-                      <button
-                        onClick={() => setActiveTab('chat')}
-                        className={`relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors z-10 ${
-                          activeTab === 'chat'
-                            ? 'text-slate-900 dark:text-white'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-                        }`}
-                      >
-                        {activeTab === 'chat' && (
-                          <motion.div layoutId="rag-tab-indicator" className="absolute inset-0 bg-white dark:bg-slate-700 shadow-sm rounded-md -z-10" transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} />
-                        )}
-                        <Bot className="h-3.5 w-3.5" /> แชท
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('documents')}
-                        className={`relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors z-10 ${
-                          activeTab === 'documents'
-                            ? 'text-slate-900 dark:text-white'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-                        }`}
-                      >
-                        {activeTab === 'documents' && (
-                          <motion.div layoutId="rag-tab-indicator" className="absolute inset-0 bg-white dark:bg-slate-700 shadow-sm rounded-md -z-10" transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} />
-                        )}
-                        <FileText className="h-3.5 w-3.5" /> เอกสาร
-                      </button>
-                    </div>
+                    {/* Tab Switcher - Restricted to Admin / QSMS */}
+                    {canUploadDocs ? (
+                      <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg relative">
+                        <button
+                          onClick={() => setActiveTab('chat')}
+                          className={`relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors z-10 ${
+                            activeTab === 'chat'
+                              ? 'text-slate-900 dark:text-white'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                          }`}
+                        >
+                          {activeTab === 'chat' && (
+                            <motion.div layoutId="rag-tab-indicator" className="absolute inset-0 bg-white dark:bg-slate-700 shadow-sm rounded-md -z-10" transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} />
+                          )}
+                          <Bot className="h-3.5 w-3.5" /> แชท
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('documents')}
+                          className={`relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors z-10 ${
+                            activeTab === 'documents'
+                              ? 'text-slate-900 dark:text-white'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                          }`}
+                        >
+                          {activeTab === 'documents' && (
+                            <motion.div layoutId="rag-tab-indicator" className="absolute inset-0 bg-white dark:bg-slate-700 shadow-sm rounded-md -z-10" transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} />
+                          )}
+                          <FileText className="h-3.5 w-3.5" /> เอกสาร
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md">
+                        โหมดแชท
+                      </span>
+                    )}
 
                     {activeTab === 'chat' && (
                       <button 

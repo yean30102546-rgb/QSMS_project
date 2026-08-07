@@ -221,3 +221,45 @@ export function getAuthHeaders(): Record<string, string> {
     'Content-Type': 'application/json',
   };
 }
+
+export async function requestPasswordReset(username: string, employeeId: string): Promise<{ success: boolean; error?: string; message?: string; token?: string }> {
+  try {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'request_reset', profile: username, employee_id: employeeId }),
+    });
+    const result = await res.json();
+    return result;
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Cannot request password reset' };
+  }
+}
+
+export async function verifyResetToken(profileOrContact: string, token: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verify_token', profile: profileOrContact, token }),
+    });
+    const result = await res.json();
+    return result;
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Token verification failed' };
+  }
+}
+
+export async function resetPasswordWithToken(profileOrContact: string, token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_password', profile: profileOrContact, token, newPassword }),
+    });
+    const result = await res.json();
+    return result;
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to reset password' };
+  }
+}

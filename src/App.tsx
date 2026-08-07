@@ -15,10 +15,12 @@ import { getCurrentUser, isAuthenticated as authIsAuthenticated, logout as authL
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ToastContainer } from '@/src/components/shared/Toast';
 import { AlertModal } from '@/src/components/shared/AlertModal';
+import { Bot, Sparkles } from 'lucide-react';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
 const Login = dynamic(() => import('@/src/modules/auth/views/Login').then(mod => mod.Login), { ssr: false });
 const Register = dynamic(() => import('@/src/modules/auth/views/Register').then(mod => mod.Register), { ssr: false });
+const ForgotPassword = dynamic(() => import('@/src/modules/auth/views/ForgotPassword').then(mod => mod.ForgotPassword), { ssr: false });
 const StorageApp = dynamic(() => import('./modules/storage/StorageApp').then(mod => mod.StorageApp), { ssr: false });
 const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
 const GuideApp = dynamic(() => import('./modules/guide/GuideApp').then(mod => mod.GuideApp), { ssr: false });
@@ -48,7 +50,7 @@ function AuthWrapper() {
 
       setIsAuthenticated(authenticated);
       setAppUser(currentUser);
-      
+
       if (typeof window !== 'undefined') {
         const savedView = sessionStorage.getItem('currentView') as AppView | null;
         if (authenticated) {
@@ -128,7 +130,7 @@ function AuthWrapper() {
       setIsAuthenticated(false);
       setAppUser(null);
       setCurrentView('portal');
-      
+
       // Keep overlay active briefly while page switches, then fade out
       setTimeout(() => {
         setIsLoggingOut(false);
@@ -159,6 +161,16 @@ function AuthWrapper() {
           setCurrentView('portal');
         }}
         onNavigateToRegister={() => setCurrentView('register')}
+        onNavigateToForgotPassword={() => setCurrentView('forgot-password')}
+      />
+    );
+  } else if (currentView === 'forgot-password') {
+    content = (
+      <ForgotPassword
+        onSuccess={() => {
+          setCurrentView('login');
+        }}
+        onBackToLogin={() => setCurrentView('login')}
       />
     );
   } else if (currentView === 'register') {
@@ -210,7 +222,8 @@ function AuthWrapper() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-transparent">
       {/* iOS style spinner keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes ios-spinner-fade {
           0% { opacity: 1; }
           100% { opacity: 0.15; }
@@ -239,6 +252,27 @@ function AuthWrapper() {
 
       {/* Global RAG Chat Modal */}
       <RagApp user={appUser} open={isRagOpen} onOpenChange={setIsRagOpen} />
+
+      {/* Global Floating Glassmorphic AI Pill Button */}
+      {currentView !== 'login' && currentView !== 'register' && currentView !== 'forgot-password' && (
+        <motion.button
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsRagOpen(true)}
+          className="fixed bottom-6 right-44 z-[99] flex items-center gap-2 px-3.5 py-2.5 rounded-full border border-blue-200/60 dark:border-blue-700/50 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-lg hover:shadow-xl text-slate-800 dark:text-white transition-all duration-300 font-semibold text-xs group cursor-pointer"
+          title="กดเรียกใช้ DocAI Assistant (Ctrl+K)"
+        >
+          <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white group-hover:bg-blue-700 transition-colors">
+            <Bot size={13} />
+          </div>
+          <span>DocAI Assistant</span>
+          <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600">
+            Ctrl+K
+          </span>
+        </motion.button>
+      )}
 
       {/* Premium Apple-Style Glassmorphic Logout Overlay */}
       <AnimatePresence>
@@ -279,7 +313,7 @@ function AuthWrapper() {
                 </div>
               </div>
 
-              <motion.h3 
+              <motion.h3
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.3 }}
@@ -287,8 +321,8 @@ function AuthWrapper() {
               >
                 กำลังออกจากระบบอย่างปลอดภัย
               </motion.h3>
-              
-              <motion.p 
+
+              <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.5 }}
                 transition={{ delay: 0.3, duration: 0.3 }}

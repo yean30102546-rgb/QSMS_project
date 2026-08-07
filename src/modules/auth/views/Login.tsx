@@ -13,11 +13,13 @@ import { loginWithPassword } from '@/src/services/auth';
 export function Login({ 
   onSuccess,
   onBack,
-  onNavigateToRegister
+  onNavigateToRegister,
+  onNavigateToForgotPassword
 }: { 
   onSuccess: (authenticated?: boolean) => void;
   onBack?: () => void;
   onNavigateToRegister?: () => void;
+  onNavigateToForgotPassword?: () => void;
 }) {
   const handleBack = onBack || (() => {
     window.location.href = '/';
@@ -167,17 +169,28 @@ export function Login({
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 px-1">
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="rememberMe" className="text-xs font-medium text-[#6e6e73] cursor-pointer hover:text-[#1d1d1f] transition-colors">
-                  จดจำชื่อผู้ใช้งานไว้ในเครื่องนี้
-                </label>
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="rememberMe" className="text-xs font-medium text-[#6e6e73] cursor-pointer hover:text-[#1d1d1f] transition-colors">
+                    จดจำชื่อผู้ใช้งาน
+                  </label>
+                </div>
+                {onNavigateToForgotPassword && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToForgotPassword}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    ลืมรหัสผ่าน?
+                  </button>
+                )}
               </div>
 
               {error && (

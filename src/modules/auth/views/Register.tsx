@@ -35,6 +35,7 @@ export function Register({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +54,7 @@ export function Register({
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    if (!username.trim() || !password.trim() || !name.trim()) {
+    if (!username.trim() || !password.trim() || !name.trim() || !employeeId.trim()) {
       setError('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
@@ -68,7 +69,8 @@ export function Register({
         body: JSON.stringify({
           username: username.trim(),
           password,
-          name: name.trim()
+          name: name.trim(),
+          employee_id: employeeId.trim()
         })
       });
 
@@ -178,6 +180,20 @@ export function Register({
               </motion.div>
 
               <motion.div variants={itemVariants} className="relative group">
+                <ShieldCheck size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <input
+                  type="text"
+                  value={employeeId}
+                  onChange={(e) => {
+                    setEmployeeId(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="รหัสพนักงาน (เช่น EMP1002)"
+                  className="glass-input w-full rounded-2xl py-3.5 pl-11 pr-4 text-[15px]"
+                />
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="relative group">
                 <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -270,7 +286,7 @@ export function Register({
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                disabled={!username.trim() || !password.trim() || !name.trim() || !isPasswordValid || isLoading}
+                disabled={!username.trim() || !password.trim() || !name.trim() || !employeeId.trim() || !isPasswordValid || isLoading}
                 className="apple-btn-primary mt-3 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold shadow-lg shadow-blue-600/20 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {isLoading ? (

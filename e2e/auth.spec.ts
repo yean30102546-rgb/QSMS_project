@@ -49,13 +49,15 @@ test.describe('Authentication & Access Control Portal Flow', () => {
     // Verify Register View title
     await expect(page.locator('text=สร้างบัญชีใหม่').first()).toBeVisible();
 
-    // Fill username & name
+    // Fill username, name & employee_id
     const usernameInput = page.locator('input[placeholder="Username (สำหรับใช้ล็อกอิน)"]');
     const nameInput = page.locator('input[placeholder="ชื่อ-นามสกุลจริง"]');
+    const employeeIdInput = page.locator('input[placeholder*="รหัสพนักงาน"]');
     const passwordInput = page.locator('input[placeholder="รหัสผ่าน"]');
 
     await usernameInput.fill('new_operator');
     await nameInput.fill('Somchai Newuser');
+    await employeeIdInput.fill('EMP1002');
 
     // Fill weak password first
     await passwordInput.fill('weak');
@@ -67,5 +69,43 @@ test.describe('Authentication & Access Control Portal Flow', () => {
     // Fill valid strong password
     await passwordInput.fill('StrongPass123!');
     await expect(confirmBtn).toBeEnabled();
+  });
+
+  test('should allow user to navigate to forgot password view and progress through 2-step reset flow', async ({ page }) => {
+    // Mock reset API response
+    await page.route('/api/auth/reset-password', async route => {
+      const payload = route.request().postDataJSON();
+      if (payload.action === 'request_reset') {
+        await route.fulfill({
+          json: { success: true, message: 'ยืนยันข้อมูลเรียบร้อยแล้ว', token: 'TOKEN_849201' }
+        });
+      } else if (payload.action === 'update_password') {
+        await route.fulfill({
+          json: { success: true, message: 'รีเซ็ทรหัสผ่านเรียบร้อยแล้ว' }
+        });
+      }
+    });
+
+    await expect(page.locator('text=One login for Rework').first()).toBeVisible();
+
+    // Click "ลืมรหัสผ่าน?"
+    const forgotBtn = page.getByRole('button', { name: /ลืมรหัสผ่าน\?/i });
+    await expect(forgotBtn).toBeVisible();
+    await forgotBtn.click();
+
+    // Step 1: Verify Identity
+    await expect(page.locator('text=ยืนยันตัวตน').first()).toBeVisible();
+    await page.locator('input[placeholder*="Username"]').fill('qsms_operator');
+    await page.locator('input[placeholder*="รหัสพนักงาน"]').fill('EMP1002');
+    await page.getByRole('button', { name: /ยืนยันตัวตน/i }).click();
+
+    // Step 2: Set New Password
+    await expect(page.locator('text=ตั้งรหัสผ่านใหม่').first()).toBeVisible();
+    await page.locator('input[placeholder*="อย่างน้อย 8 ตัวอักษร"]').fill('SecureP@ss2026');
+    await page.locator('input[placeholder="ยืนยันรหัสผ่านใหม่"]').fill('SecureP@ss2026');
+
+    const updateBtn = page.getByRole('button', { name: /อัปเดตรหัสผ่านใหม่/i });
+    await expect(updateBtn).toBeEnabled();
+    await updateBtn.click();
   });
 });

@@ -31,10 +31,11 @@ function validatePassword(password: string): string | null {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { username, password, name } = body;
+    const { username, password, name, employee_id } = body;
 
     const usernameClean = (username || '').trim().toLowerCase();
     const nameClean = (name || '').trim();
+    const employeeIdClean = (employee_id || '').trim().toUpperCase();
 
     if (!usernameClean || !password || !nameClean) {
       return NextResponse.json(
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
         username: usernameClean,
         password_hash,
         name: nameClean,
+        employee_id: employeeIdClean || null,
         role: 'OPERATOR',
       })
       .select('id, username, name, role')

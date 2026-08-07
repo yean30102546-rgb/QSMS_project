@@ -1,4 +1,4 @@
-export type AppView = 'login' | 'register' | 'portal' | 'rework' | 'storage' | 'rag' | 'guide';
+export type AppView = 'login' | 'register' | 'forgot-password' | 'portal' | 'rework' | 'storage' | 'rag' | 'guide';
 
 export type PortalAppId = 'rework' | 'storage' | 'rag' | 'guide';
 

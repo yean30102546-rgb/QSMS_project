@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLeft } from 'lucide-react';
+import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLeft, Bot } from 'lucide-react';
 
 import type { ReworkCase, ReworkItem } from '@/src/services/api';
 import type { User } from '../../services/auth';
@@ -40,6 +40,7 @@ interface MainLayoutProps {
   userRole?: User['role'] | '';
   onOpenTutorial: () => void;
   onBackToPortal: () => void;
+  onOpenRag?: () => void;
   children: React.ReactNode;
 }
 
@@ -51,6 +52,7 @@ export function MainLayout({
   userRole = '',
   onOpenTutorial,
   onBackToPortal,
+  onOpenRag,
   children,
 }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -128,6 +130,17 @@ export function MainLayout({
             }}
             label="คู่มือการใช้งาน"
             icon={<HelpCircle size={16} />}
+          />
+          <SidebarItem
+            active={false}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+              }
+              closeSidebar();
+            }}
+            label="DocAI Assistant"
+            icon={<Bot size={16} className="text-blue-600" />}
           />
         </nav>
 

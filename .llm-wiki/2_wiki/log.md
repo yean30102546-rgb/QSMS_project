@@ -3,6 +3,13 @@
 
 ---
 
+## 2026-08-05
+
+### [WI] จัดทำเอกสารมาตรฐานวิธีปฏิบัติงาน WI-QSMS-AUTH-001
+- จัดทำเอกสาร [WI_QSMS_AUTH_001.md](file:///c:/Workplace/Mytask/Projects/QSMS_project/docs/WI_QSMS_AUTH_001.md) ครอบคลุม Login, Register, และ Streamlined 2-Step Password Reset พร้อม Mermaid Flowcharts และ Visual Layout Schematics
+
+---
+
 ## 2026-05-21
 
 ### [Init] สร้างโครงสร้าง web-app-wiki ครั้งแรก

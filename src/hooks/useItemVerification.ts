@@ -165,9 +165,17 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
         const cardCode = currentItem.itemCode.trim();
         const cardName = currentItem.itemName.trim() || dbName || '';
 
-        // Mismatch check
-        const hasCodeConflict = dbCode && cardCode && dbCode.trim().toLowerCase() !== cardCode.toLowerCase();
-        const hasNumConflict = dbNum && cardNum && dbNum.trim().toLowerCase() !== cardNum.toLowerCase();
+        // Mismatch check (Ignore partial/prefix typing to prevent false conflict popups)
+        const dbCodeLower = (dbCode || '').trim().toLowerCase();
+        const cardCodeLower = cardCode.toLowerCase();
+        const dbNumLower = (dbNum || '').trim().toLowerCase();
+        const cardNumLower = cardNum.toLowerCase();
+
+        const isPartialCodeMatch = dbCodeLower && cardCodeLower && (dbCodeLower.startsWith(cardCodeLower) || cardCodeLower.startsWith(dbCodeLower));
+        const isPartialNumMatch = dbNumLower && cardNumLower && (dbNumLower.startsWith(cardNumLower) || cardNumLower.startsWith(dbNumLower));
+
+        const hasCodeConflict = Boolean(dbCodeLower && cardCodeLower && !isPartialCodeMatch && dbCodeLower !== cardCodeLower);
+        const hasNumConflict = Boolean(dbNumLower && cardNumLower && !isPartialNumMatch && dbNumLower !== cardNumLower);
 
         if (hasCodeConflict || hasNumConflict || result.data?.conflict === true) {
           onConflict();
@@ -263,7 +271,7 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
     }
 
     const trimmed = value.trim();
-    if (!trimmed) {
+    if (!trimmed || trimmed.length < 3) {
       setValue(`items.${itemIndex}.verificationStatus`, 'idle', { shouldDirty: true });
       return;
     }
@@ -272,7 +280,7 @@ export function useItemVerification({ onConflict, onAutofillTriggered, getValues
 
     verificationTimeouts.current[itemId] = setTimeout(() => {
       verifySingleItem(itemId, itemIndex, field, trimmed);
-    }, 400);
+    }, 600);
   }, [verifySingleItem, setValue]);
 
   const clearTimeouts = useCallback(() => {
