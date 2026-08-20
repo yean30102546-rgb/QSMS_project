@@ -48,7 +48,7 @@
 
 ## 📂 4. Lessons Learned & Bug Fixes (บทเรียนแก้บั๊กและการพัฒนา)
 - [[lessons-learned/development-learnings.md]] - สรุปบทเรียนพัฒนาการ 36 รายการในอดีต (React, Next.js, Google Apps Script)
-- [[lessons-learned/bugs-and-fixes.md]] - ประวัติบั๊กสำคัญ BUG-001 ถึง BUG-018 และตัวอย่างโค้ดก่อน/หลังปรับปรุง
+- [[lessons-learned/bugs-and-fixes.md]] - ประวัติบั๊กสำคัญ BUG-001 ถึง BUG-027 และตัวอย่างโค้ดก่อน/หลังปรับปรุง
 - [[lessons-learned/bug-review-2026-05-28.md]] - รีวิวข้อบกพร่องและปัญหารายสัปดาห์ ณ สิ้นเดือนพฤษภาคม 2026
 - [[lessons-learned/debugging-practices.md]] - กฎและแนวปฏิบัติการสืบสวนหาสาเหตุบั๊กอย่างปลอดภัย (Systematic Debugging)
 - [[lessons-learned/mobile-fast-track-ui.md]] - การสร้างหน้าจอ Fast-Track มือถือ การทำ Watermark และ react-hook-form Bridge

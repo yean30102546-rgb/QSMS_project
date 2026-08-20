@@ -18,18 +18,19 @@ ReworkApp.tsx
 การรวมข้อมูลเข้ากับศูนย์ควบคุมกลาง (**ศูนย์ควบคุมกลาง - Workspace Portal**):
 - **Dynamic Stats Retrieval**: ดึงข้อมูลและคำนวณสถิติจริงจาก Supabase Database แบบ Real-time
 - **Segmented Progress Bar**: แสดงแถบสัดส่วนสีกำหนดตามสถานะงาน:
-  - `bg-amber-400`: รอดำเนินการ (Pending)
+  - `bg-slate-400`: รอดำเนินการ (Pending)
   - `bg-sky-400`: กำลังดำเนินการ (In-Progress)
-  - `bg-violet-400`: รอประเมินราคา (Awaiting Valuation)
   - `bg-emerald-500`: เสร็จสิ้น (Completed)
 - **Status Legend Grid**: แผงแสดงจำนวนแยกตามสถานะ และเปอร์เซ็นต์ความเสร็จสิ้นจริง (Real Completion Rate)
 
-## 3. Data Schema & Syncing (Updated 2026-05-21)
+## 3. Data Schema & Syncing (Updated 2026-08-14)
 ข้อมูลเคสและรายการ (items) รองรับฟิลด์ระดับ item ดังนี้:
 - `customerName` (ลูกค้า): เช่น Eneos, BCP, OR (รองรับการตั้งค่ายืดหยุ่นราย item)
 - `batchNo` (Batch number): เลขการผลิตราย item (ปรับปรุงให้ใช้ช่อง input ประเภท Date เลือกวันผลิต และจัดเก็บในฟอร์แมตสากล `DD/MM/YYYY`)
-- `packagingDate` (วันบรรจุ): วันที่ผลิตบรรจุ
+- `packagingDate` / `gallonDate` (วันผลิตแกลลอน): วันที่ผลิตบรรจุ
 - `mold` (แม่พิมพ์): หมายเลขหรือชื่อโมลด์
+- `line` (สายการผลิต): สายการผลิต
+- `missingBoxes`, `missingGallons`, `missingOil`: ฟิลด์บันทึกอุปสรรค/วัสดุที่ขาด (ล้างค่าอัตโนมัติเมื่อ Completed)
 - `uid` (Unique ID): รหัสเฉพาะของ item เพื่อการทำ syncing อย่างถูกต้องระหว่าง Supabase และ Sheets
 
 **Sync Behavior:**
@@ -50,7 +51,7 @@ ReworkApp.tsx
 
 ## 5. Retroactive OR Files Upload
 - หากทุกรายการในเคสมีลูกค้าระบุเป็น `"OR"` (เช่น `editedItems.every(i => i.customerName === 'OR')`) ระบบจะแสดงอินพุตอัปโหลดเอกสาร OR ทันทีใน `UpdateModal` แม้ไม่ได้อยู่ในโหมด Edit ก็ตาม
-- ผู้ใช้ (ระดับ Operator, Finance, Admin) สามารถเลือกไฟล์และกดบันทึกเพื่อแนบไฟล์ตามหลังได้ทันที โดยจะ sync ขึ้น Google Drive และบันทึก URL ลงฐานข้อมูล
+- ผู้ใช้ (ระดับ Operator, QSMS Admin) สามารถเลือกไฟล์และกดบันทึกเพื่อแนบไฟล์ตามหลังได้ทันที โดยจะ sync ขึ้น Google Drive และบันทึก URL ลงฐานข้อมูล
 
 ## 6. Timezone Management (+07:00)
 - เวลาและ Timestamp ทั้งหมดในระบบอ้างอิงเขตเวลา `Asia/Bangkok` (+07:00)

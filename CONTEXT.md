@@ -171,5 +171,27 @@ A specialized data extraction and normalization rule in `normalizers.ts` for the
 ### Unified Platform Registry (`appRegistry.ts`)
 The central platform module (`src/modules/platform/`) providing structural definitions (`PortalAppDefinition`), lookup helpers (`getPortalAppById`, `getActivePortalApps`), and architectural domain boundaries (`ModularizationBoundary`) for launching and routing modular applications (`rework`, `storage`, `rag`, `guide`).
 
+### Apple Liquid Glass Design System (`.liquid-glass-card`, `.liquid-glass-pill`)
+A dedicated CSS-based styling system (`src/index.css`) designed to emulate Apple Liquid Glass / VisionOS materials. It leverages multi-layer refraction gradients (`linear-gradient(135deg, ...)`), high-density backdrop blur (40px) and saturation (200%), crisp 1.5px specular rim borders (`rgba(255, 255, 255, 0.9)`), inset bevel reflections, and ambient colorful backlights to deliver authentic glass refraction without browser compositing clipping.
 
+### Presentation Deck & Interactive Sandbox (`GuideApp.tsx`)
+A 30/70 Side-by-Side presentation system built for interactive walkthroughs of QSMS modules. The left side houses compact floating Liquid Glass cards with clear typography, while the right side provides a 100% interactive, scrollable Mac OS sandbox window rendering authentic live replicas of production screens.
 
+### Interactive Hotspot Multi-Targeting (`Hotspot`)
+An interactive guidance component enabling contextual tooltips with upward popup positioning (`bottom-full mb-4`) to eliminate visual obscuration of highlighted form fields, supporting array-based `targetId` to glow and outline multiple linked fields (e.g. `barcode-container` and `itemcode-container`) simultaneously upon hover.
+
+### Direct-Manipulation Zoom & Pan Engine (`GuideApp.tsx`)
+An interactive viewport navigation system that allows users to zoom (75% to 200%) and pan smoothly across the 2560x1440 canvas. It utilizes screen-space hardware transforms (`translate3d(panOffset.x, panOffset.y, 0) scale(...)`), disables CSS transitions during active mouse dragging (`transition-none pointer-events-none select-none`), and attaches global window event listeners with dynamic boundary clamping to provide an instantaneous 1:1 direct-manipulation feel without lag or event drops.
+
+### Interactive Excel Form Preview Modal (`MockUpdateModal`)
+A full-featured Microsoft Excel spreadsheet simulation modal rendered within the Presentation Deck. It features an authentic Excel Ribbon header (`#107C41`), formal SFC Quality Rework Report metadata, Quick Info bar, table grid, and live embedded evidence photos with 120px cell heights, allowing stakeholders to preview the exact output of exported `.xlsx` files directly in the browser.
+
+### 4-Month Development Timeline Roadmap (Nov 2025 - Feb 2026)
+The official structured timeline for the QSMS platform across 4 phases:
+- **Phase 1 (Nov 2025)**: Core Foundation & Rework System (Case ID, Item Master, Verification, Evidence Storage).
+- **Phase 2 (Dec 2025)**: AI OCR & Engineering Drawings Repository (Gemini OCR, Document Inspection, Decoupled Schemas).
+- **Phase 3 (Jan 2026)**: DocAI RAG Engine & Jina Embeddings (Vector Search, Multi-turn Chat, Statistics Function Calling).
+- **Phase 4 (Feb 2026)**: Enterprise Analytics, Mobile FastTrack & Security Hardening (SLA Dashboard, Local Draft Queue, Auth Cookies).
+
+### Simulation Lifecycle Scoping & Mounting Guard
+A state isolation pattern implemented in the Guide presentation system ensuring that simulations only run when explicitly triggered by the user. State transitions reset `simTrigger` to `0` upon slide or category navigation, and mock components employ `prevSimTriggerRef` mounting guards to ignore stale trigger props on initial mount.

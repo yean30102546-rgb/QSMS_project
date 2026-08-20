@@ -1,6 +1,55 @@
 # 📋 Work Log — QSMS Rework Management
 > บันทึกประวัติการทำงานเรียงตามเวลา (Chronological Log)
 
+## 2026-08-19
+
+### [Presentation Deck & Engine Optimization] อัปเกรดเนื้อหา PPTX, ไทม์ไลน์ 4 เดือน, การจำลอง Excel และ Direct-Manipulation Zoom/Pan
+- **4-Month Development Timeline (Slide 04)**:
+  * บันทึกไทม์ไลน์และระเบียบวิธีพัฒนาโครงการ 4 เดือน (พ.ย. 2568 – ก.พ. 2569) ครอบคลุม Phase 1 (Core Foundation & Rework System), Phase 2 (AI OCR & Drawing Master Repo), Phase 3 (DocAI RAG Engine & Jina Embeddings) และ Phase 4 (Enterprise Analytics, Mobile FastTrack & Security Hardening)
+  * ไฮไลท์ดัชนีคุณภาพ: 130+ Automated Tests Passed, 0 High Vulnerabilities, 100% Real-time Sync
+- **CaseUpdateView Header Polish & Collapsible Blockers**:
+  * เพิ่ม `whitespace-nowrap shrink-0` ให้กับปุ่มและ Badge ใน Header ของ `CaseUpdateView.tsx` และ `MockScreens.tsx` ป้องกันปัญหาข้อความตัดบรรทัดและปุ่มเบียดกัน
+  * ปรับแต่งส่วนรายงานอุปสรรคหน้างานให้เป็นแบบพับเก็บได้ (`รายละเอียดเพิ่มเติม / อุปสรรคหน้างาน`) เพื่อลด Visual Clutter
+- **Dynamic Auto-Status, Blockers & Excel Export Simulation (Slide 14)**:
+  * เพิ่มการจำลอง Step 6-7 ใน `MockUpdateModal` (Slide 14): ปุ่ม [ส่งออก Excel] กะพริบเรืองแสง, แสดงแถบ Export Progress Overlay, และ Toast แจ้งเตือนดาวน์โหลด
+  * พัฒนา **Interactive Excel Spreadsheet Preview Modal**: หน้าต่างพรีวิวเอกสาร Excel จริง สไตล์ Microsoft Excel Ribbon (`bg-[#107C41]`) แสดงหัวตาราง SFC Rework Report, Quick Info Grid, ตารางสินค้า และรูปถ่ายหลักฐานฝังในเซลล์ความสูง 120px พร้อมปุ่ม [ปิดตัวอย่าง] และ [ดาวน์โหลดไฟล์ .xlsx]
+- **Slide Transition Smoothness & Simulation Lifecycle Scoping**:
+  * แก้ไขปัญหา Simulation Auto-Run เมื่อเลื่อนสไลด์ โดย Reset ค่า `simTrigger = 0` ทุกครั้งที่มีการเปลี่ยนสไลด์ และเพิ่ม `prevSimTriggerRef` ป้องกัน Component Mount รันก่อนได้รับคำสั่ง
+  * ลบ CSS `filter: blur(...)` ออกจาก `slideVariants` และเปลี่ยน Fluid Blobs เป็น GPU-Accelerated Static Radiant Gradients (`transform-gpu will-change-transform`) ทำให้ Slide Transition รันได้อย่างลื่นไหลที่ 60/120fps
+- **Direct-Manipulation Zoom & Pan Engine**:
+  * ปรับระบบคลิกลากในโหมด Zoom เป็น Screen-Space 1:1 Translation (`translate3d(panOffset.x, panOffset.y, 0) scale(...)`)
+  * ยกเลิก CSS Transition ขณะกำลังลาก (`transition-none pointer-events-none select-none`) ทำให้ Canvas เคลื่อนที่ตามเมาส์ได้ทันทีแบบไม่มีดีเลย์
+  * ผูก Window Global Event Listeners (`window.addEventListener('mousemove'/'mouseup')`) ทำให้ลากต่อเนื่องได้ทั่วหน้าจอโดยไม่หลุดขอบ พร้อมระบบ Dynamic Boundary Clamping
+
+---
+
+## 2026-08-17
+
+### [Presentation Deck & Liquid Glass UI] ปรับปรุงระบบสไลด์และดีไซน์ Liquid Glass
+- **Interactive Hotspot Component (`Hotspot`)**:
+  * เพิ่ม `popupPosition?: 'top' | 'bottom'` ให้กล่อง Tooltip เด้งขึ้นด้านบน (`bottom-full mb-4`) ป้องกันการตกมาบังฟิลด์กรอกข้อมูลสำคัญและพื้นที่อัปโหลดรูปภาพ
+  * ปรับ `targetId: string | string[]` รองรับการไฮไลท์หลาย Element พร้อมกัน เช่น ไฮไลท์ทั้งช่อง Barcode และ Item Code เมื่อชี้ Hotspot "Smart Auto-fill"
+- **Apple Liquid Glass Design System (`.liquid-glass-card`, `.liquid-glass-pill`)**:
+  * เพิ่ม CSS Utilities ใน `src/index.css` ได้แก่ `.liquid-glass-card` (Multi-layer Refraction Gradient, 1.5px Specular Rim, Inset Depth Reflections, Backdrop Blur 40px + Saturate 200%) และ `.liquid-glass-pill`
+  * ออกแบบ Glare Highlight ด้านบนและการ์ดสะท้อนแสงมุมขวาบนแบบมีมิติ
+- **Tour Slide Layout Optimization (Side-by-Side 30/70)**:
+  * ปรับผังหน้าจอแบบ Side-by-Side (30/70) ที่มีระยะขอบ `px-14 pt-28 pb-12 gap-10` พอดีกับ Canvas 2560x1440
+  * ฝั่งซ้าย: Compact Floating Liquid Glass Card (430px) พร้อม Ambient Glowing Orbs ด้านหลัง
+  * ฝั่งขวา: Fit & Scrollable Mac OS Sandbox Window พร้อม Traffic Lights Header และระบบ Internal Scroll
+- **Mock Login Replica (`MockScreens.tsx`)**:
+  * ปรับแต่งหน้าต่างจำลอง Login ใน Slide ให้เป็นแบบ 1:1 กับ `Login.tsx` จริงของระบบ (ปุ่ม Apple Dark Primary, ป้าย Central Workspace, ลิงก์สร้างบัญชี, และจัดกึ่งกลางความสูง 100%)
+
+---
+
+## 2026-08-14
+
+### [Context & Spec Sync] เคลียร์บริบทเก่าและซิงค์ข้อมูลให้ตรงกับโปรเจกต์ปัจจุบัน
+- **ถอดถอนบทบาทและฟีเจอร์เก่าที่ไม่มีอยู่จริง**: ตรวจสอบและเคลียร์บริบท `FINANCE` / `การประเมินราคา` / `คำนวณค่าแรง` ออกจากเอกสารและโค้ด ได้แก่ `GEMINI.md`, `docs/presentation-ecosystem-spec.md`, `.llm-wiki/2_wiki/nextjs-frontend/rework-module.md`, `src/components/layout/MainLayout.tsx`, และ `src/app/api/rework/route.ts`
+- **ยืนยัน Ground Truth ปัจจุบัน**:
+  * User Roles เหลือ 2 บทบาทจริง: **`QSMS`** (Admin / Management / Full Access) และ **`OPERATOR`**
+  * Workflow การอัปเดตเคสจริง: **Dynamic Auto-Status Lifecycle** (`Pending ➔ In-Progress ➔ Completed`), Global & Item Progress ยอดกล่อง, และ **Material Shortage Blockers** (บันทึกอุปสรรค ขาดกล่อง/แกลลอน/น้ำมัน)
+- **อัปเดต Presentation Deck**: ปรับ Slide 4 และ Slide 10 (`GuideApp.tsx` & `MockScreens.tsx`) ให้สะท้อนบทบาท QSMS และระบบ Dynamic Auto-Status & Blockers พร้อม Realistic Case Data สมบูรณ์แบบ
+
 ---
 
 ## 2026-08-05

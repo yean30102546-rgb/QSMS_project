@@ -403,7 +403,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     if (newFormItems.length > 0) {
       // Get current items and filter out the initial empty template if it's completely blank
       const currentItems = getValues('items') || [];
-      const validCurrentItems = currentItems.filter(item => 
+      const validCurrentItems = currentItems.filter(item =>
         item.itemNumber || item.itemName || item.customerName || (item.imageUrls && item.imageUrls.length > 0) || item.amount > 0
       );
 
@@ -682,7 +682,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                 onChange: (e) => {
                                   const val = e.target.value.replace(/[<>]/g, '').slice(0, 50);
                                   setValue(`items.${idx}.lastActiveField`, 'itemNumber');
-                                  triggerDebouncedVerification(item.id, idx, 'itemNumber', val);
+                                  if (item.verificationStatus && item.verificationStatus !== 'idle') {
+                                    setValue(`items.${idx}.verificationStatus`, 'idle');
+                                  }
                                 }
                               })}
                               placeholder="เช่น 60001234A"
@@ -712,7 +714,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                 onChange: (e) => {
                                   const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 50);
                                   setValue(`items.${idx}.lastActiveField`, 'itemCode');
-                                  triggerDebouncedVerification(item.id, idx, 'itemCode', val);
+                                  if (item.verificationStatus && item.verificationStatus !== 'idle') {
+                                    setValue(`items.${idx}.verificationStatus`, 'idle');
+                                  }
                                 }
                               })}
                               placeholder="เช่น 40001234"
@@ -812,8 +816,8 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               render={({ field }) => {
                                 const respVal = watch(`items.${idx}.responsible`);
                                 const subtypeVal = watch(`items.${idx}.responsibleSubtype`);
-                                const composedValue = (respVal === 'Customer' || respVal === 'อื่นๆ') 
-                                  ? respVal 
+                                const composedValue = (respVal === 'Customer' || respVal === 'อื่นๆ')
+                                  ? respVal
                                   : (subtypeVal ? `${respVal}:${subtypeVal}` : respVal);
                                 return (
                                   <Combobox

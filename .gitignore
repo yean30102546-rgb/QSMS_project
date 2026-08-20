@@ -4,6 +4,8 @@ dist/
 coverage/
 .DS_Store
 *.log
+test_output*.txt
+.temp_*
 .env*
 !.env.example
 .next/
@@ -14,4 +16,9 @@ coverage/
 .agents/
 .cursor/
 .impeccable/
-scratch/
+# Temporary files & test artifacts
+~$*
+*.tmp
+test_omml.docx
+test-results/
+.playwright-artifacts-*/

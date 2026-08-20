@@ -891,7 +891,6 @@ export async function POST(request: Request) {
         const mockAccounts: Record<string, { pass: string, role: string, name: string }> = {
           'qsms': { pass: 'Qsms123', role: 'qsms', name: 'QSMS Test' },
           'operator': { pass: 'Operator123', role: 'operator', name: 'Operator Test' },
-          'finance': { pass: 'Finance123', role: 'finance', name: 'Finance Test' }
         };
 
         if (mockAccounts[profileLower]) {

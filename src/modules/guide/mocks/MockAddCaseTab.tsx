@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, Sparkles } from 'lucide-react';
 import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,6 +16,8 @@ import { ImageUpload } from '@/src/modules/storage/components/ImageUpload';
 import { AppleProgressBar } from '@/src/components/shared/AppleProgressBar';
 import { convertDMYToYMD, convertYMDToDMY, findDuplicateItemNumbers } from '../../../utils/helpers';
 import { ConflictModal } from '@/src/components/modals/ConflictModal';
+import { Combobox } from '@/src/components/ui/Combobox';
+import { RecentDatePicker } from '@/src/components/shared/RecentDatePicker';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -33,31 +35,36 @@ interface AddCaseTabProps {
   onOpenTutorial?: () => void;
   preset?: 'empty' | 'ptt-or' | 'cross-link' | 'with-item';
   onCaseInfoChange?: (source: string, number: string) => void;
+  simulationTrigger?: number;
+  onSimulationComplete?: () => void;
 }
 
-export const Hotspot = ({ top, left, right, bottom, title, content, targetId, align = 'center' }: { top?: string | number; left?: string | number; right?: string | number; bottom?: string | number; title?: React.ReactNode; content?: React.ReactNode; targetId?: string; align?: string }) => {
+export const Hotspot = ({ top, left, right, bottom, title, content, targetId, align = 'center', popupPosition = 'bottom' }: { top?: string | number; left?: string | number; right?: string | number; bottom?: string | number; title?: React.ReactNode; content?: React.ReactNode; targetId?: string | string[]; align?: string; popupPosition?: 'top' | 'bottom' }) => {
   const [isHovered, setIsHovered] = useState(false);
-  
+
   useEffect(() => {
     if (targetId) {
-      const el = document.getElementById(targetId);
-      if (el) {
-        if (isHovered) {
-          el.style.outline = '4px solid rgba(59,130,246,0.3)';
-          el.style.borderRadius = '12px';
-          el.style.transition = 'all 0.3s ease';
-          el.style.boxShadow = '0 0 20px rgba(59,130,246,0.15)';
-        } else {
-          el.style.outline = '';
-          el.style.borderRadius = '';
-          el.style.boxShadow = '';
+      const ids = Array.isArray(targetId) ? targetId : [targetId];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          if (isHovered) {
+            el.style.outline = '4px solid rgba(59,130,246,0.3)';
+            el.style.borderRadius = '12px';
+            el.style.transition = 'all 0.3s ease';
+            el.style.boxShadow = '0 0 20px rgba(59,130,246,0.15)';
+          } else {
+            el.style.outline = '';
+            el.style.borderRadius = '';
+            el.style.boxShadow = '';
+          }
         }
-      }
+      });
     }
   }, [isHovered, targetId]);
 
   return (
-    <div 
+    <div
       className="absolute z-50 flex items-center justify-center cursor-pointer"
       style={{ top, left, right, bottom }}
       onMouseEnter={() => setIsHovered(true)}
@@ -71,17 +78,13 @@ export const Hotspot = ({ top, left, right, bottom, title, content, targetId, al
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: popupPosition === 'top' ? 10 : -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            exit={{ opacity: 0, y: popupPosition === 'top' ? 10 : -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className={`absolute top-full mt-3 w-64 rounded-2xl bg-white p-4 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-100/60 backdrop-blur-sm pointer-events-none ${
-              align === 'left' ? 'left-0' : align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'
-            }`}
+            className={`absolute ${popupPosition === 'top' ? 'bottom-full mb-4' : 'top-full mt-4'} w-64 rounded-2xl bg-white p-4 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-100/60 backdrop-blur-sm pointer-events-none ${align === 'left' ? 'left-0' : align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'}`}
           >
-            <div className={`absolute -top-1.5 h-3 w-3 rotate-45 border-l border-t border-slate-100 bg-white ${
-              align === 'left' ? 'left-4' : align === 'right' ? 'right-4' : 'left-1/2 -translate-x-1/2'
-            }`}></div>
+            <div className={`absolute ${popupPosition === 'top' ? '-bottom-1.5 border-r border-b' : '-top-1.5 border-l border-t'} h-3 w-3 rotate-45 border-slate-100 bg-white ${align === 'left' ? 'left-4' : align === 'right' ? 'right-4' : 'left-1/2 -translate-x-1/2'}`}></div>
             <h4 className="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><HelpCircle size={14} className="text-blue-500" /> {title}</h4>
             <p className="text-[13px] text-slate-600 leading-relaxed font-medium">{content}</p>
           </motion.div>
@@ -153,22 +156,24 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoChange }: AddCaseTabProps) {
+export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoChange, simulationTrigger, onSimulationComplete }: AddCaseTabProps) {
   const { cases, loadCases } = useReworkData();
   const { showToast, showAlert, showConfirm } = useNotification();
-  
+
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const [saveMessage, setSaveMessage] = useState<SaveMessage>(null);
-  
+
   const [uploadedImages, setUploadedImages] = useState<Record<string, File[]>>({});
   const [orFiles, setOrFiles] = useState<File[]>([]);
-  
+  const [isParsingOr, setIsParsingOr] = useState(false);
+
   const [selectionModal, setSelectionModal] = useState<SelectionModalState>(null);
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [autoFillTriggeredItem, setAutoFillTriggeredItem] = useState<string | null>(null);
+  const [simHighlightedFields, setSimHighlightedFields] = useState<string[]>([]);
 
   const [expandedReasonSelection, setExpandedReasonSelection] = useState<number | null>(null);
   const [expandedResponsibleSelection, setExpandedResponsibleSelection] = useState<number | null>(null);
@@ -200,7 +205,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
   });
 
   const { control, register, handleSubmit, watch, setValue, getValues, reset } = methods;
-  
+
   const { fields, append, remove, insert, update } = useFieldArray({
     control,
     name: 'items'
@@ -232,25 +237,209 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
           if (Array.isArray(parsed) && parsed.length > 0) {
             setValue('items', parsed);
           }
-        } catch(e) {}
+        } catch (e) { }
       }
     }
-    
+
     // Allow DOM to update with restored state before enabling animations
     requestAnimationFrame(() => {
       setTimeout(() => setIsRestoring(false), 10);
     });
   }, [setValue, preset]);
 
-  // Auto-scroll for presets
+  // Auto-run interactive simulation if explicitly triggered while mounted
+  const prevSimTriggerRef = useRef(simulationTrigger);
   useEffect(() => {
-    if (preset === 'ptt-or') {
+    if (!simulationTrigger || simulationTrigger <= 0 || simulationTrigger === prevSimTriggerRef.current) {
+      prevSimTriggerRef.current = simulationTrigger;
+      return;
+    }
+    prevSimTriggerRef.current = simulationTrigger;
+
+    let isCancelled = false;
+
+    const runSim = async () => {
+      setSimHighlightedFields([]);
+
+      // 1. Reset form item
+      setValue('caseSource', 'SFC');
+      setValue('caseNumber', '012');
+      setValue('items.0.customerName', 'PTT OR');
+      setValue('items.0.itemNumber', '');
+      setValue('items.0.itemCode', '');
+      setValue('items.0.itemName', '');
+      setValue('items.0.batchNo', '');
+      setValue('items.0.gallonDate', '');
+      setValue('items.0.mold', '');
+      setValue('items.0.line', '');
+      setValue('items.0.amount', 0);
+      setValue('items.0.boxNumber', '');
+      setValue('items.0.verificationStatus', 'idle');
+      setValue('items.0.lastActiveField', undefined);
+
+      await new Promise((r) => setTimeout(r, 500));
+      if (isCancelled) return;
+
+      // 2. Focus & highlight barcode field, type 60001234A character by character
+      setSimHighlightedFields(['itemNumber']);
+      setValue('items.0.lastActiveField', 'itemNumber');
+
+      const barcodeTarget = '60001234A';
+      for (let i = 1; i <= barcodeTarget.length; i++) {
+        if (isCancelled) return;
+        setValue('items.0.itemNumber', barcodeTarget.slice(0, i));
+        await new Promise((r) => setTimeout(r, 150));
+      }
+
+      await new Promise((r) => setTimeout(r, 500));
+      if (isCancelled) return;
+
+      // 3. Trigger verification search loading state
+      setValue('items.0.verificationStatus', 'checking');
+      await new Promise((r) => setTimeout(r, 1200));
+      if (isCancelled) return;
+
+      // 4. Auto-populate Item Code & Item Name from Item Master
+      setValue('items.0.verificationStatus', 'verified');
+      setValue('items.0.itemCode', '40001234');
+      setValue('items.0.itemName', 'น้ำมันเครื่อง Dynamic Synthetic Plus 5W-30 (1L)');
+
+      // 5. Highlight auto-filled fields with gentle pulse
+      setSimHighlightedFields(['itemNumber', 'itemCode', 'itemName']);
+
+      await new Promise((r) => setTimeout(r, 3000));
+      if (isCancelled) return;
+
+      setSimHighlightedFields([]);
+      if (onSimulationComplete) {
+        onSimulationComplete();
+      }
+    };
+
+    runSim();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [simulationTrigger, setValue, onSimulationComplete]);
+
+  // Auto-run ptt-or simulation (Smart Features: OR Upload + Cross-Link)
+  const prevPttOrSimTriggerRef = useRef(simulationTrigger);
+  useEffect(() => {
+    if (!simulationTrigger || simulationTrigger <= 0 || preset !== 'ptt-or' || simulationTrigger === prevPttOrSimTriggerRef.current) {
+      prevPttOrSimTriggerRef.current = simulationTrigger;
+      return;
+    }
+    prevPttOrSimTriggerRef.current = simulationTrigger;
+
+    let isCancelled = false;
+
+    const runPttOrSim = async () => {
+      setSimHighlightedFields([]);
+
+      // Reset: 2 items, customer blank, reason blank
+      setValue('caseSource', 'Customer');
+      setValue('caseNumber', '999');
+      setValue('items.0.customerName', '');
+      setValue('items.0.itemNumber', '60001234A');
+      setValue('items.0.verificationStatus', 'verified');
+      setValue('items.0.reason', 'รั่ว');
+      setValue('items.0.reasonSubtype', 'รั่วซึม');
+      setValue('items.1.customerName', '');
+      setValue('items.1.itemNumber', '60001234B');
+      setValue('items.1.verificationStatus', 'verified');
+      setValue('items.1.reason', '');
+      setValue('items.1.reasonSubtype', '');
+      setValue('items.1.linkedSourceId', '');
+      setValue('items.0.details', '');
+      setValue('items.1.details', '');
+      setOrFiles([]);
+      setIsParsingOr(false);
+
+      await new Promise((r) => setTimeout(r, 800));
+      if (isCancelled) return;
+
+      // Step 1: Change customer to OR → Upload Zone appears
+      setSimHighlightedFields(['customerName-0']);
+      setValue('items.0.customerName', 'OR');
+      setValue('items.1.customerName', 'OR');
+
+      await new Promise((r) => setTimeout(r, 1400));
+      if (isCancelled) return;
+
+      // Highlight OR Upload Zone
+      setSimHighlightedFields(['customerName-0', 'or-upload']);
+
+      // Scroll to OR upload area
+      setTimeout(() => {
+        const el = document.getElementById('or-upload-container');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+
+      await new Promise((r) => setTimeout(r, 1800));
+      if (isCancelled) return;
+
+      // Fake "attached" state + parsing QIR indicator
+      const fakeFile = new File([''], 'OR_Document.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      setOrFiles([fakeFile]);
+      setIsParsingOr(true);
+
+      await new Promise((r) => setTimeout(r, 1200));
+      if (isCancelled) return;
+
+      setIsParsingOr(false);
+
+      // Auto-attach QIR Tags from Sheet 2 to matched items
+      setValue('items.0.details', '[QIR: 67-00123]');
+      setValue('items.1.details', '[QIR: 67-00124]');
+      setSimHighlightedFields(['customerName-0', 'or-upload', 'qir-badge-0', 'qir-badge-1']);
+
+      await new Promise((r) => setTimeout(r, 2000));
+      if (isCancelled) return;
+
+      // Step 2: Change item 2 reason to 'เปื้อน' → Cross-Link appears
+      setSimHighlightedFields(['reason-1']);
+      setValue('items.1.reason', 'เปื้อน');
+      setValue('items.1.reasonSubtype', 'ขวดเปื้อน');
+
+      await new Promise((r) => setTimeout(r, 1500));
+      if (isCancelled) return;
+
+      // Scroll to Cross-Link area
+      setTimeout(() => {
+        const el = document.getElementById('cross-link-container-1');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+
+      // Auto-select linked item
+      setSimHighlightedFields(['reason-1', 'cross-link-1']);
+      setValue('items.1.linkedSourceId', 'form-1');
+
+      await new Promise((r) => setTimeout(r, 3000));
+      if (isCancelled) return;
+
+      setSimHighlightedFields([]);
+      if (onSimulationComplete) {
+        onSimulationComplete();
+      }
+    };
+
+    runPttOrSim();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [simulationTrigger, setValue, onSimulationComplete, preset]);
+
+  // Auto-scroll for presets (only when no simulation is running)
+  useEffect(() => {
+    if (preset === 'ptt-or' && !simulationTrigger) {
       setTimeout(() => {
         const el = document.getElementById('or-upload-container');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 600);
     }
-  }, [preset]);
+  }, [preset, simulationTrigger]);
 
   useEffect(() => {
     if (onCaseInfoChange) {
@@ -262,7 +451,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
     const handleFastTrackComplete = (e: Event) => {
       const customEvent = e as CustomEvent;
       const { source, caseId, items } = customEvent.detail;
-      
+
       if (source && !getValues('caseSource')) setValue('caseSource', source);
       if (caseId && !getValues('caseNumber')) setValue('caseNumber', caseId);
 
@@ -365,13 +554,13 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
       // Mock delay instead of insertCase
       await new Promise(resolve => setTimeout(resolve, 1500));
       const result: { success: boolean; error: string | null } = { success: true, error: null };
-      
+
       if (result.success) {
         setProgress(100);
         setStatusText('บันทึกสำเร็จ!');
         setIsComplete(true);
         setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
-        
+
         // Reset form
         setTimeout(() => {
           reset({
@@ -402,7 +591,7 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
   return (
     <FormProvider {...methods}>
       <div
-        className="relative mx-auto max-w-5xl space-y-6 md:space-y-10 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]"
+        className="relative mx-auto max-w-5xl space-y-6 md:space-y-10 pb-8"
       >
         {/* Hotspots layer */}
         <div className="absolute inset-0 pointer-events-none z-50">
@@ -410,40 +599,23 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
             <div className="pointer-events-auto">
               {preset === 'empty' && (
                 <>
-                  <Hotspot 
-                    top="180px" left="-20px" 
+                  <Hotspot
+                    top="180px" left="-20px"
                     align="left"
-                    title="ระบบจ่าย Case ID อัตโนมัติ" 
-                    content="ระบบจะสร้างรหัสเคสโดยอัตโนมัติตามแหล่งที่มา เช่น RT สำหรับ Customer และ RW สำหรับ SFC เพื่อป้องกันการซ้ำซ้อน" 
-                    targetId="case-id-container" 
+                    title="ระบบจ่าย Case ID อัตโนมัติ"
+                    content="ระบบจะสร้างรหัสเคสโดยอัตโนมัติตามแหล่งที่มา เช่น RT สำหรับ Customer และ RW สำหรับ SFC เพื่อป้องกันการซ้ำซ้อน"
+                    targetId="case-id-container"
                   />
-                  <Hotspot 
-                    top="550px" left="-20px" 
+                  <Hotspot
+                    top="550px" left="-20px"
                     align="left"
-                    title="Autofill System" 
-                    content="เมื่อกรอก Barcode หรือ Item Code ระบบจะค้นหาและเติมข้อมูลที่เหลือให้อัตโนมัติ" 
-                    targetId="barcode-container" 
-                  />
-                </>
-              )}
-              {preset === 'ptt-or' && (
-                <>
-                  <Hotspot 
-                    top="160px" left="-20px" 
-                    align="left"
-                    title="การแนบไฟล์อ้างอิง PTT OR" 
-                    content="เมื่อระบุลูกค้าเป็น PTT OR (OR) ระบบจะบังคับให้แนบไฟล์เอกสารอ้างอิง (เช่น Excel, PDF) เพื่อความสมบูรณ์ของข้อมูล" 
-                    targetId="or-upload-container" 
-                  />
-                  <Hotspot 
-                    top="950px" left="-20px" 
-                    align="left"
-                    title="Cross-Item Link" 
-                    content="เนื่องจากรายการที่ 2 เป็นสินค้า 'เปื้อน' ระบบจึงเปิดเมนูให้เลือกว่า เปื้อนมาจากสินค้ารั่วรายการใดในเคสเดียวกัน" 
-                    targetId="cross-link-container-1" 
+                    title="Autofill System"
+                    content="เมื่อกรอก Barcode หรือ Item Code ระบบจะค้นหาและเติมข้อมูลที่เหลือให้อัตโนมัติ"
+                    targetId="barcode-container"
                   />
                 </>
               )}
+              {/* ptt-or Hotspots removed — replaced by Interactive Simulation */}
             </div>
           </div>
         </div>
@@ -515,10 +687,10 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
                 })()}
               </div>
             </div>
-            
+
             {formItems.length > 0 && formItems.every(item => item.customerName === 'OR') && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mt-6 border-t border-slate-100 pt-6">
-                <div id="or-upload-container" className="rounded-2xl bg-amber-50 p-6 border border-amber-100 relative">
+                <div id="or-upload-container" className={`rounded-2xl bg-amber-50 p-6 border relative transition-all duration-500 ${simHighlightedFields.includes('or-upload') ? 'border-blue-400 ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]' : 'border-amber-100'}`}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
                       <HelpCircle size={20} />
@@ -555,6 +727,11 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
                       </div>
                     )}
                   </div>
+                  {isParsingOr && (
+                    <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-amber-700 animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" /> กำลังสกัดคอลัมน์ QIR จาก Sheet 2...
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -562,403 +739,441 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
 
           <div className="flex flex-col">
             <AnimatePresence initial={false}>
-            {fields.map((field, idx) => {
-              const item = formItems[idx];
-              if (!item) return null;
-              
-              return (
-              <motion.div
-                key={field.id}
-                id={`form-card-wrapper-${item.id}`}
-                initial={isRestoring ? false : { opacity: 0, height: 0, scale: 0.98, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 'auto', scale: 1, marginBottom: 24 }}
-                exit={{ opacity: 0, height: 0, scale: 0.95, marginBottom: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="relative overflow-hidden"
-              >
-                <div 
-                  id={`form-card-${item.id}`}
-                  className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
-                  <div className="mb-8 flex items-center justify-between">
-                  <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
-                    <Plus size={16} /> รายการที่ {idx + 1}
-                    {item.verificationStatus === 'verified' && (
-                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> พบในระบบ
-                      </span>
-                    )}
-                    {item.verificationStatus === 'new' && (
-                      <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> สินค้าใหม่
-                      </span>
-                    )}
-                    {item.verificationStatus === 'checking' && (
-                      <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
-                      </span>
-                    )}
-                  </h3>
-                </div>
+              {fields.map((field, idx) => {
+                const item = formItems[idx];
+                if (!item) return null;
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  <div className="space-y-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
-                    <select
-                      {...register(`items.${idx}.customerName`)}
-                      className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none disabled:opacity-50 h-[46px]"
-                      disabled={isSaving}
+                return (
+                  <motion.div
+                    key={field.id}
+                    id={`form-card-wrapper-${item.id}`}
+                    initial={isRestoring ? false : { opacity: 0, height: 0, scale: 0.98, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: 'auto', scale: 1, marginBottom: 24 }}
+                    exit={{ opacity: 0, height: 0, scale: 0.95, marginBottom: 0 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative overflow-hidden"
+                  >
+                    <div
+                      id={`form-card-${item.id}`}
+                      className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
                     >
-                      <option value="">กรุณาเลือก</option>
-                      {CUSTOMER_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between ml-1 mb-1.5">
-                      <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
-                    </div>
-                    <div id={`barcode-container-${idx}`} className="relative flex items-center">
-                      {(preset === 'with-item' && idx === 0) && (
-                        <Hotspot 
-                          top="-10px" left="-10px" align="left"
-                          title="Smart Auto-fill"
-                          content="พิมพ์บาร์โค้ดแล้วระบบจะเชื่อมต่อ Item Master ดึงข้อมูลให้อัตโนมัติ"
-                          targetId={`barcode-container-${idx}`}
-                        />
-                      )}
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        {...register(`items.${idx}.itemNumber`, {
-                          onChange: (e) => {
-                            const val = e.target.value.replace(/[<>]/g, '').slice(0, 50);
-                            setValue(`items.${idx}.lastActiveField`, 'itemNumber');
-                            triggerDebouncedVerification(item.id, idx, 'itemNumber', val);
-                          }
-                        })}
-                        placeholder="เช่น 60001234A"
-                        disabled={isSaving}
-                        className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
-                        disabled={isSaving || !item.itemNumber}
-                        className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
-                      >
-                        <Search size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between ml-1 mb-1.5">
-                      <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
-                    </div>
-                    <div className="relative flex items-center">
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        {...register(`items.${idx}.itemCode`, {
-                          onChange: (e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 50);
-                            setValue(`items.${idx}.lastActiveField`, 'itemCode');
-                            triggerDebouncedVerification(item.id, idx, 'itemCode', val);
-                          }
-                        })}
-                        placeholder="เช่น 40001234"
-                        disabled={isSaving}
-                        className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
-                        disabled={isSaving || !item.itemCode}
-                        className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
-                      >
-                        <Search size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <InputField label="ชื่อรายการ (Item Name) *" {...register(`items.${idx}.itemName`)} disabled={isSaving} />
-                </div>
-
-                <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                  <div className="col-span-2 sm:col-span-1">
-                    <Controller
-                      control={control}
-                      name={`items.${idx}.batchNo`}
-                      render={({ field }) => (
-                        <InputField label="หมายเลขล็อต (Batch no.)" type="date" value={convertDMYToYMD(field.value || '')} onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(convertYMDToDMY(e.target.value))} disabled={isSaving} />
-                      )}
-                    />
-                  </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <Controller
-                      control={control}
-                      name={`items.${idx}.gallonDate`}
-                      render={({ field }) => (
-                        <InputField label="วันที่ผลิตแกลลอน" type="date" value={convertDMYToYMD(field.value || '')} onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(convertYMDToDMY(e.target.value))} disabled={isSaving} />
-                      )}
-                    />
-                  </div>
-                  <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
-                  <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
-                </div>
-
-                <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ *</label>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <select
-                          {...register(`items.${idx}.reason`, {
-                            onChange: (e) => {
-                              setValue(`items.${idx}.reasonSubtype`, '');
-                              if (e.target.value !== 'รั่ว' && e.target.value !== 'เปื้อน') setExpandedReasonSelection(null);
-                            }
-                          })}
-                          className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
-                        >
-                          <option value="">กรุณาเลือก</option>
-                          {REASON_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedReasonSelection(expandedReasonSelection === idx ? null : idx)}
-                            className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20"
-                          >
-                            เลือก
-                          </button>
-                        )}
-                      </div>
-                      <AnimatePresence>
-                        {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && expandedReasonSelection === idx && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
-                            {(item.reason === 'รั่ว' ? LEAK_SUBTYPES : STAIN_SUBTYPES).map(subtype => {
-                              const isSelected = item.reason === 'รั่ว' ? item.reasonSubtype === subtype : (item.reasonSubtype || '').split(', ').includes(subtype);
-                              return (
-                                <button
-                                  key={subtype}
-                                  type="button"
-                                  onClick={() => {
-                                    if (item.reason === 'รั่ว') {
-                                      setValue(`items.${idx}.reasonSubtype`, subtype);
-                                      setExpandedReasonSelection(null);
-                                    } else {
-                                      const current = (item.reasonSubtype || '').split(', ').filter(Boolean);
-                                      const pos = current.indexOf(subtype);
-                                      if (pos > -1) current.splice(pos, 1);
-                                      else current.push(subtype);
-                                      setValue(`items.${idx}.reasonSubtype`, current.join(', '));
-                                    }
-                                  }}
-                                  className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isSelected ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
-                                >{subtype}</button>
-                              );
-                            })}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {item.reasonSubtype && (
-                        <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
-                          <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
-                          <p className="text-sm font-semibold text-accent">{item.reasonSubtype}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ *</label>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <select
-                          {...register(`items.${idx}.responsible`, {
-                            onChange: (e) => {
-                              setValue(`items.${idx}.responsibleSubtype`, '');
-                              if (e.target.value !== 'SFC' && e.target.value !== 'Supplier') setExpandedResponsibleSelection(null);
-                            }
-                          })}
-                          className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
-                        >
-                          <option value="">กรุณาเลือก</option>
-                          {RESPONSIBLE_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        {(item.responsible === 'SFC' || item.responsible === 'Supplier') && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedResponsibleSelection(expandedResponsibleSelection === idx ? null : idx)}
-                            className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent"
-                          >
-                            เลือก
-                          </button>
-                        )}
-                      </div>
-                      <AnimatePresence>
-                        {(item.responsible === 'SFC' || item.responsible === 'Supplier') && expandedResponsibleSelection === idx && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
-                            {(RESPONSIBLE_SUBDIVISIONS[item.responsible] || []).map(subtype => (
-                              <button
-                                key={subtype}
-                                type="button"
-                                onClick={() => {
-                                  setValue(`items.${idx}.responsibleSubtype`, subtype);
-                                  setExpandedResponsibleSelection(null);
-                                }}
-                                className={`rounded-xl px-4 py-3 text-sm font-semibold ${item.responsibleSubtype === subtype ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
-                              >{subtype}</button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {item.responsibleSubtype && (
-                        <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
-                          <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
-                          <p className="text-sm font-semibold text-accent">{item.responsibleSubtype}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {item.reason === 'เปื้อน' && formItems.some((i, iidx) => i.reason === 'รั่ว' && iidx !== idx) && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-8 overflow-hidden">
-                    <div id={"cross-link-container-" + idx} className="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-5 transition-all relative">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                            <HelpCircle size={20} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-amber-900">ระบุความเชื่อมโยง (Cross-Item Link)</p>
-                            <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-amber-700">
-                              <input
-                                type="checkbox"
-                                checked={!!item.linkedSourceId}
-                                onChange={(e) => {
-                                  if (!e.target.checked) setValue(`items.${idx}.linkedSourceId`, '');
-                                  else {
-                                    const leaks = formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx);
-                                    if (leaks.length === 1) setValue(`items.${idx}.linkedSourceId`, leaks[0].id);
-                                  }
-                                }}
-                                className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                              />
-                              สาเหตุมาจากไอเทมที่รั่วในเคสนี้
-                            </label>
-                          </div>
-                        </div>
-
-                        <AnimatePresence>
-                          {item.linkedSourceId && (
-                            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1.5">
-                              <label className="text-xs font-semibold text-amber-900/60">ไอเทมต้นเหตุ *</label>
-                              <select
-                                {...register(`items.${idx}.linkedSourceId`)}
-                                className="min-w-[200px] rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm focus:border-amber-500 focus:outline-none"
-                              >
-                                <option value="">-- เลือกรายการ --</option>
-                                {formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx).map(leak => (
-                                  <option key={leak.id} value={leak.id}>
-                                    {leak.itemNumber || 'ไม่ระบุเบอร์'} - {leak.itemName || 'ไม่ระบุชื่อ'}
-                                  </option>
-                                ))}
-                              </select>
-                            </motion.div>
+                      <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
+                      <div className="mb-8 flex items-center justify-between">
+                        <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
+                          <Plus size={16} /> รายการที่ {idx + 1}
+                          {item.verificationStatus === 'verified' && (
+                            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> พบในระบบ
+                            </span>
                           )}
-                        </AnimatePresence>
+                          {item.verificationStatus === 'new' && (
+                            <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> สินค้าใหม่
+                            </span>
+                          )}
+                          {item.verificationStatus === 'checking' && (
+                            <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
+                            </span>
+                          )}
+                          {(() => {
+                            const qirMatch = (item.details || '').match(/\[QIR:\s*([^\]]+)\]/);
+                            const qirVal = qirMatch ? qirMatch[1] : null;
+                            if (!qirVal) return null;
+                            return (
+                              <span className={`text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 transition-all duration-500 ${
+                                simHighlightedFields.includes(`qir-badge-${idx}`)
+                                  ? 'ring-4 ring-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.4)] scale-105'
+                                  : ''
+                              }`}>
+                                <Tag size={12} className="text-purple-600" /> QIR: {qirVal}
+                              </span>
+                            );
+                          })()}
+                        </h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <div className={`space-y-2 rounded-xl transition-all duration-500 ${simHighlightedFields.includes(`customerName-${idx}`) ? 'ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]' : ''}`}>
+                          <label className="ml-1 text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
+                          <Controller
+                            control={control}
+                            name={`items.${idx}.customerName`}
+                            render={({ field }) => (
+                              <Combobox
+                                options={[...CUSTOMER_OPTIONS]}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="กรุณาเลือก"
+                                searchPlaceholder="ค้นหาชื่อลูกค้า..."
+                                className="bg-slate-50/50 font-normal"
+                              />
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between ml-1 mb-1.5">
+                            <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
+                          </div>
+                          <div id={`barcode-container-${idx}`} className="relative flex items-center">
+                            <input
+                              type="text"
+                              autoComplete="off"
+                              {...register(`items.${idx}.itemNumber`, {
+                                onChange: (e) => {
+                                  const val = e.target.value.replace(/[<>]/g, '').slice(0, 50);
+                                  setValue(`items.${idx}.lastActiveField`, 'itemNumber');
+                                  if (item.verificationStatus && item.verificationStatus !== 'idle') {
+                                    setValue(`items.${idx}.verificationStatus`, 'idle');
+                                  }
+                                }
+                              })}
+                              placeholder="เช่น 60001234A"
+                              disabled={isSaving}
+                              className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-300 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${
+                                simHighlightedFields.includes('itemNumber')
+                                  ? 'border-blue-500 bg-white ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]'
+                                  : item.lastActiveField === 'itemNumber'
+                                  ? 'border-blue-500 bg-white ring-4 ring-blue-500/10'
+                                  : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
+                              disabled={isSaving || !item.itemNumber}
+                              className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                            >
+                              <Search size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between ml-1 mb-1.5">
+                            <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
+                          </div>
+                          <div id={`itemcode-container-${idx}`} className="relative flex items-center">
+                            <input
+                              type="text"
+                              autoComplete="off"
+                              {...register(`items.${idx}.itemCode`, {
+                                onChange: (e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 50);
+                                  setValue(`items.${idx}.lastActiveField`, 'itemCode');
+                                  if (item.verificationStatus && item.verificationStatus !== 'idle') {
+                                    setValue(`items.${idx}.verificationStatus`, 'idle');
+                                  }
+                                }
+                              })}
+                              placeholder="เช่น 40001234"
+                              disabled={isSaving}
+                              className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-300 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${
+                                simHighlightedFields.includes('itemCode')
+                                  ? 'border-blue-500 bg-white ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]'
+                                  : item.lastActiveField === 'itemCode'
+                                  ? 'border-blue-500 bg-white ring-4 ring-blue-500/10'
+                                  : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
+                              disabled={isSaving || !item.itemCode}
+                              className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                            >
+                              <Search size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mb-8">
+                        <InputField
+                          label="ชื่อรายการ (Item Name) *"
+                          {...register(`items.${idx}.itemName`)}
+                          disabled={isSaving}
+                          className={simHighlightedFields.includes('itemName') ? 'border-blue-500 bg-white ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]' : ''}
+                        />
+                      </div>
+
+                      <div className={`mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 p-4 rounded-2xl border transition-all duration-300 ${
+                        simHighlightedFields.includes('batchNo')
+                          ? 'bg-blue-50/40 border-blue-400 ring-4 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)]'
+                          : 'bg-slate-50/50 border-slate-100'
+                      }`}>
+                        <div className="col-span-2 sm:col-span-1">
+                          <Controller
+                            control={control}
+                            name={`items.${idx}.batchNo`}
+                            render={({ field }) => (
+                              <RecentDatePicker
+                                label="หมายเลขล็อต (Batch no.)"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                disabled={isSaving}
+                              />
+                            )}
+                          />
+                        </div>
+                        <div className="col-span-2 sm:col-span-1">
+                          <Controller
+                            control={control}
+                            name={`items.${idx}.gallonDate`}
+                            render={({ field }) => (
+                              <RecentDatePicker
+                                label="วันที่ผลิตแกลลอน"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                disabled={isSaving}
+                              />
+                            )}
+                          />
+                        </div>
+                        <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
+                      </div>
+
+                      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ *</label>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <select
+                                {...register(`items.${idx}.reason`, {
+                                  onChange: (e) => {
+                                    setValue(`items.${idx}.reasonSubtype`, '');
+                                    if (e.target.value !== 'รั่ว' && e.target.value !== 'เปื้อน') setExpandedReasonSelection(null);
+                                  }
+                                })}
+                                className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
+                              >
+                                <option value="">กรุณาเลือก</option>
+                                {REASON_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                              </select>
+                              {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedReasonSelection(expandedReasonSelection === idx ? null : idx)}
+                                  className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20"
+                                >
+                                  เลือก
+                                </button>
+                              )}
+                            </div>
+                            <AnimatePresence>
+                              {(item.reason === 'รั่ว' || item.reason === 'เปื้อน') && expandedReasonSelection === idx && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
+                                  {(item.reason === 'รั่ว' ? LEAK_SUBTYPES : STAIN_SUBTYPES).map(subtype => {
+                                    const isSelected = item.reason === 'รั่ว' ? item.reasonSubtype === subtype : (item.reasonSubtype || '').split(', ').includes(subtype);
+                                    return (
+                                      <button
+                                        key={subtype}
+                                        type="button"
+                                        onClick={() => {
+                                          if (item.reason === 'รั่ว') {
+                                            setValue(`items.${idx}.reasonSubtype`, subtype);
+                                            setExpandedReasonSelection(null);
+                                          } else {
+                                            const current = (item.reasonSubtype || '').split(', ').filter(Boolean);
+                                            const pos = current.indexOf(subtype);
+                                            if (pos > -1) current.splice(pos, 1);
+                                            else current.push(subtype);
+                                            setValue(`items.${idx}.reasonSubtype`, current.join(', '));
+                                          }
+                                        }}
+                                        className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isSelected ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
+                                      >{subtype}</button>
+                                    );
+                                  })}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                            {item.reasonSubtype && (
+                              <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
+                                <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
+                                <p className="text-sm font-semibold text-accent">{item.reasonSubtype}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ *</label>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <select
+                                {...register(`items.${idx}.responsible`, {
+                                  onChange: (e) => {
+                                    setValue(`items.${idx}.responsibleSubtype`, '');
+                                    if (e.target.value !== 'SFC' && e.target.value !== 'Supplier') setExpandedResponsibleSelection(null);
+                                  }
+                                })}
+                                className="flex-1 rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
+                              >
+                                <option value="">กรุณาเลือก</option>
+                                {RESPONSIBLE_MAIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                              </select>
+                              {(item.responsible === 'SFC' || item.responsible === 'Supplier') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedResponsibleSelection(expandedResponsibleSelection === idx ? null : idx)}
+                                  className="whitespace-nowrap rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent"
+                                >
+                                  เลือก
+                                </button>
+                              )}
+                            </div>
+                            <AnimatePresence>
+                              {(item.responsible === 'SFC' || item.responsible === 'Supplier') && expandedResponsibleSelection === idx && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 gap-2">
+                                  {(RESPONSIBLE_SUBDIVISIONS[item.responsible] || []).map(subtype => (
+                                    <button
+                                      key={subtype}
+                                      type="button"
+                                      onClick={() => {
+                                        setValue(`items.${idx}.responsibleSubtype`, subtype);
+                                        setExpandedResponsibleSelection(null);
+                                      }}
+                                      className={`rounded-xl px-4 py-3 text-sm font-semibold ${item.responsibleSubtype === subtype ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
+                                    >{subtype}</button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                            {item.responsibleSubtype && (
+                              <div className="rounded-lg border border-accent bg-accent/10 px-3 py-2">
+                                <p className="mb-1 text-xs font-semibold text-slate-500">เลือก:</p>
+                                <p className="text-sm font-semibold text-accent">{item.responsibleSubtype}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {item.reason === 'เปื้อน' && formItems.some((i, iidx) => i.reason === 'รั่ว' && iidx !== idx) && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-8 overflow-hidden">
+                          <div id={"cross-link-container-" + idx} className={`rounded-2xl border-2 bg-amber-50/50 p-5 transition-all duration-500 relative ${simHighlightedFields.includes(`cross-link-${idx}`) ? 'border-blue-400 ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]' : 'border-amber-100'}`}>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                                  <HelpCircle size={20} />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-amber-900">ระบุความเชื่อมโยง (Cross-Item Link)</p>
+                                  <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-amber-700">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!item.linkedSourceId}
+                                      onChange={(e) => {
+                                        if (!e.target.checked) setValue(`items.${idx}.linkedSourceId`, '');
+                                        else {
+                                          const leaks = formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx);
+                                          if (leaks.length === 1) setValue(`items.${idx}.linkedSourceId`, leaks[0].id);
+                                        }
+                                      }}
+                                      className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                    />
+                                    สาเหตุมาจากไอเทมที่รั่วในเคสนี้
+                                  </label>
+                                </div>
+                              </div>
+
+                              <AnimatePresence>
+                                {item.linkedSourceId && (
+                                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-semibold text-amber-900/60">ไอเทมต้นเหตุ *</label>
+                                    <select
+                                      {...register(`items.${idx}.linkedSourceId`)}
+                                      className="min-w-[200px] rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm focus:border-amber-500 focus:outline-none"
+                                    >
+                                      <option value="">-- เลือกรายการ --</option>
+                                      {formItems.filter((i, iidx) => i.reason === 'รั่ว' && iidx !== idx).map(leak => (
+                                        <option key={leak.id} value={leak.id}>
+                                          {leak.itemNumber || 'ไม่ระบุเบอร์'} - {leak.itemName || 'ไม่ระบุชื่อ'}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="ml-1 text-xs font-semibold text-slate-500">รายละเอียดเพิ่มเติม</label>
+                          <textarea
+                            rows={3}
+                            {...register(`items.${idx}.details`)}
+                            placeholder="ระบุรายละเอียดเพิ่มเติม..."
+                            className="w-full resize-none rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="md:col-span-1 relative" id={`mock-evidence-zone-${idx}`}>
+                          <ImageUpload
+                            itemIndex={idx}
+                            onImagesSelected={(files) => setUploadedImages(prev => ({ ...prev, [item.id]: files }))}
+                            currentImages={uploadedImages[item.id] || []}
+                            maxImages={5}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ duration: 0.12 }}
+                          onClick={() => {
+                            const dup = { ...item, id: `form-${Date.now()}` };
+                            insert(idx + 1, dup);
+                          }}
+                          className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition-colors"
+                        >
+                          <Copy size={16} /> คัดลอกรายการ
+                        </motion.button>
+                        {fields.length > 1 ? (
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ duration: 0.12 }}
+                            onClick={() => {
+                              remove(idx);
+                              setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
+                            }}
+                            className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                          >
+                            <Trash2 size={16} /> ลบรายการ
+                          </motion.button>
+                        ) : (
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ duration: 0.12 }}
+                            onClick={() => {
+                              update(idx, { ...initialFormItem, id: item.id });
+                              setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
+                            }}
+                            className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
+                          >
+                            <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
+                          </motion.button>
+                        )}
                       </div>
                     </div>
                   </motion.div>
-                )}
-
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="ml-1 text-xs font-semibold text-slate-500">รายละเอียดเพิ่มเติม</label>
-                    <textarea
-                      rows={3}
-                      {...register(`items.${idx}.details`)}
-                      placeholder="ระบุรายละเอียดเพิ่มเติม..."
-                      className="w-full resize-none rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-1 relative" id={`mock-evidence-zone-${idx}`}>
-                    {(preset === 'with-item' && idx === 0) && (
-                      <Hotspot 
-                        top="-10px" right="-10px" align="right"
-                        title="Evidence Integrity"
-                        content="บังคับแนบรูปภาพทุกครั้ง พร้อมระบบบีบอัดไฟล์ภาพอัตโนมัติก่อนส่งขึ้น Cloud"
-                        targetId={`mock-evidence-zone-${idx}`}
-                      />
-                    )}
-                    <ImageUpload
-                      itemIndex={idx}
-                      onImagesSelected={(files) => setUploadedImages(prev => ({ ...prev, [item.id]: files }))}
-                      currentImages={uploadedImages[item.id] || []}
-                      maxImages={5}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ duration: 0.12 }}
-                    onClick={() => {
-                      const dup = { ...item, id: `form-${Date.now()}` };
-                      insert(idx + 1, dup);
-                    }}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition-colors"
-                  >
-                    <Copy size={16} /> คัดลอกรายการ
-                  </motion.button>
-                  {fields.length > 1 ? (
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ duration: 0.12 }}
-                      onClick={() => {
-                        remove(idx);
-                        setUploadedImages(prev => { const n = {...prev}; delete n[item.id]; return n; });
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                    >
-                      <Trash2 size={16} /> ลบรายการ
-                    </motion.button>
-                  ) : (
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ duration: 0.12 }}
-                      onClick={() => {
-                        update(idx, { ...initialFormItem, id: item.id });
-                        setUploadedImages(prev => { const n = {...prev}; delete n[item.id]; return n; });
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
-                    >
-                      <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
-                    </motion.button>
-                  )}
-                  </div>
-                </div>
-              </motion.div>
-            );})}
+                );
+              })}
             </AnimatePresence>
 
             <AnimatePresence mode="wait">

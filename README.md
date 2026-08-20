@@ -41,7 +41,13 @@
 - **Side-by-Side Master-Detail Inspection Workspace** - แผงตรวจทานเอกสารแบบ Split View 55/45 สไลด์เปิดฝั่งขวาทันทีเมื่อคลิกเลือกแถว รองรับการสลับแบบแปลนด้วยคีย์บอร์ด `ArrowUp` / `ArrowDown` และกด `Escape` เพื่อปิด
 - **PDF Auto-Orientation & Rotation Persistence Engine** - เครื่องมือหมุน PDF 0°, 90°, 180°, 270° พร้อมปุ่ม **Landscape View** 1-click และบันทึกองศาการหมุนลงใน `localStorage` (`qsms_pdf_rot_<id>`) เพื่อคงทิศทางเดิมเมื่อเปิดดูครั้งถัดไป
 
-### 🎨 Apple Premium UI/UX & accessibility
+### 🎨 Apple Premium UI/UX, Liquid Glass & Interactive Deck
+- **Apple Liquid Glass Material** - นำเสนอดีไซน์สไตล์ Liquid Glass ยุคใหม่ (`.liquid-glass-card`, `.liquid-glass-pill`) ด้วย Multi-layer Refraction Gradient, 1.5px Specular Rim, Inset Depth Reflections, Backdrop Blur 40px + Saturate 200% และ Ambient Glowing Orbs
+- **Interactive Presentation Deck (30/70 Side-by-Side)** - โมดูลสไลด์คู่มือระบบ 20 สไลด์ พร้อมไทม์ไลน์ 4 เดือน (Nov 2025 - Feb 2026) เชื่อมโยงกับ Live Interactive Sandbox บน Mac OS Window Header พร้อมระบบเลื่อน Scroll ภายในอย่างลื่นไหล
+- **Direct-Manipulation Zoom & Pan Engine** - เครื่องมือซูม 75%–200% และระบบคลิกลาก Pan แบบ Screen-Space 1:1 ปลดล็อก Transition หน่วงเวลาขณะลาก พร้อม Window Event Listeners ลากได้ทั่วจอไม่หลุดขอบ
+- **Interactive Excel Spreadsheet Preview Modal** - หน้าต่างจำลองไฟล์ส่งออก Excel สไตล์ Microsoft Ribbon พร้อมตารางรายงาน SFC Rework และรูปถ่ายหลักฐานฝังในเซลล์ 120px
+- **Hardware-Accelerated Slide Transitions** - การเรนเดอร์สไลด์แบบ 60/120fps โดยตัด CSS Blur Filter ออก และใช้ GPU Spring Translation (`transform-gpu will-change-transform`)
+- **Interactive Hotspot Multi-Targeting** - จุดเรืองแสงนำชมที่เด้งขึ้นด้านบน (`bottom-full mb-4`) ไม่บดบังฟิลด์ และสามารถไฮไลท์เรืองแสงช่องที่เกี่ยวข้องพร้อมกัน (เช่น Barcode และ Item Code)
 - **Frosted Glassmorphism** - ใช้เอฟเฟกต์กระจกเบลอระดับสูง (`.glass-panel`, `.glass-input` + `backdrop-blur-xl`) และขอบโปร่งแสงสะท้อนเงา
 - **Tactile Spring Micro-animations** - การกดปุ่มหรือเปลี่ยนหน้าต่างมาพร้อมการยุบตัวขยายตัวตามกฎฟิสิกส์สปริงที่ลื่นไหล (รองรับ `willChange: opacity, transform` และ Framer Motion จาก `motion/react`)
 - **Reduced Motion Support** - รองรับการปิดหรือจำกัดแอนิเมชันสำหรับผู้ที่เปิดใช้คุณสมบัติจำกัดแอนิเมชันบน OS (ตรวจจับผ่าน `@media (prefers-reduced-motion: reduce)` ใน `index.css`)

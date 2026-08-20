@@ -381,7 +381,47 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-08-05*: บันทึก BUG-023 (V&V Quality Engineering Defect Remediation) และ BUG-024 (Boxes Per Pallet Normalization "ตามความเหมาะสม")
+## BUG-025: Interactive Hotspot Tooltip Obscuration & CSS Transform Glass Invisibility
+**Status**: ✅ FIXED (2026-08-17)
+- *Problem*:
+  1. กล่องข้อความ Tooltip ในคอมโพเนนต์ `Hotspot` สำหรับหน้า Guide Tour เดิมแสดงผลตกลงด้านล่าง (`top-full mt-3`) ทำให้บดบังฟิลด์กรอกข้อมูลและกล่องอัปโหลดรูปภาพที่กำลังโฟกัสอยู่
+  2. `Hotspot` เดิมรองรับเพียง single `targetId` ทำให้ไม่สามารถสั่งไฮไลท์ฟิลด์ที่มีความเกี่ยวข้องกันพร้อมกันได้ (เช่น Item Number และ Item Code ในคราวเดียว)
+  3. เอฟเฟกต์ Glassmorphism แบบมาตรฐาน (`backdrop-filter`) ไม่ทำงานบนพื้นหลังเรียบ `#f5f5f7` และภายในคอนเทนเนอร์ที่มี CSS `transform: scale(...)` ส่งผลให้การ์ดแสดงผลเป็นเพียงกล่องสีขาวทึบธรรมดา
+- *Solution*:
+  1. เพิ่มคุณสมบัติ `popupPosition?: 'top' | 'bottom'` ใน `Hotspot` โดยกำหนดให้เด้งขึ้นด้านบน (`bottom-full mb-4`) ป้องกันการบดบังอินพุต
+  2. ปรับปรุง `targetId` ให้รองรับ `string | string[]` เพื่อวนลูปใส่สไตล์ Outline Glow ให้กับทุกฟิลด์ที่ส่งเข้ามา
+  3. พัฒนาคลาส CSS `.liquid-glass-card` และ `.liquid-glass-pill` ใน `src/index.css` ผสาน Multi-layer Refraction Gradient, 1.5px Specular Rim, Inset Depth Reflections และ Ambient Soft Blobs เพื่อสร้างเอฟเฟกต์ Liquid Glass ที่คมชัดและมีมิติสมจริง
+
+---
+
+## BUG-026: Simulation Auto-Execution and Slide Transition Stutter
+**Status**: ✅ FIXED (2026-08-19)
+- *Problem*:
+  1. เมื่อผู้ใช้กดเล่นจำลองในสไลด์ใดสไลด์หนึ่ง ค่า State `simTrigger` จะเป็นตัวเลขสะสม `> 0` และค้างอยู่ข้ามสไลด์ เมื่อเปลี่ยนสไลด์ไปเจอ Mock Component ถัดไป (เช่น `MockUpdateModal`, `MockMobileFastTrack`, `MockDrawingMaster`, `MockDocAIChat`) ตัว Component จะตรวจพบ `simulationTrigger > 0` บน Mount ทันที และเริ่มรัน Timeline จำลองอัตโนมัติพร้อมกับจังหวะที่สไลด์กำลัง Transition ทำให้ CPU/GPU แย่งทรัพยากรกันจนเกิดอาการสะดุด (Jank)
+  2. `slideVariants` มีการใช้ `filter: 'blur(3px)'` และพื้นหลัง Fluid Blobs มีการรัน `motion.div` แบบ Keyframe Animation วนลูปต่อเนื่องด้วย Blur 120px-140px บน Canvas ขนาด 2560x1440 พิกเซล บังคับให้เบราว์เซอร์ต้อง Rasterize พิกเซลขนาดใหญ่ตลอดเวลา
+- *Solution*:
+  1. เพิ่มคำสั่ง Reset ค่าจำลอง (`simTrigger = 0`, `isSimulating = false`, `hasSimulated = false`) ทุกครั้งที่มีการเปลี่ยนสไลด์ (`currentIdx`), สลับหมวดหมู่, หรือกดปุ่มลูกศร
+  2. เพิ่ม `prevSimTriggerRef` ป้องกันไม่ให้ Component รัน Simulation บน Mount เว้นแต่จะได้รับ Pulse ใหม่ขณะที่ยังคง Mount อยู่
+  3. ลบ CSS Blur Filter ออกจาก `slideVariants` และเปลี่ยนมาใช้ GPU Spring Translation (`x`), `opacity` และ `scale` แบบ Hardware Compositing (`transform-gpu`, `will-change-transform`)
+  4. ปรับ Background Fluid Blobs ให้เป็น Static Radiant Gradients ร่วมกับ `transform-gpu` ลดภาระ GPU Repaint
+
+---
+
+## BUG-027: Presentation Zoom & Pan Desynchronization & Drag Interruption
+**Status**: ✅ FIXED (2026-08-19)
+- *Problem*:
+  1. กล่องสไลด์หลัก `<main className="deck-stage">` มีคลาส `transition-transform duration-300` ค้างอยู่ตลอดเวลา ทำให้ทุกครั้งที่ลากเมาส์ พิกัด `panOffset` ที่ส่งมาแบบเรียลไทม์จะถูก CSS Transition 300ms หน่วงเวลา ส่งผลให้ Canvas เคลื่อนที่ไม่ทันเมาส์ เกิดอาการหน่วง กระตุก และสะบัดกลับ (Rubber-banding)
+  2. โค้ดเดิมใช้ `transform: scale(...) translate(${panOffset.x / (scale * userZoom)}px, ...)` ซึ่งมีอัตราทดไม่ตรงกับพิกเซลบนหน้าจอจริง
+  3. `onMouseMove` และ `onMouseUp` ถูกผูกไว้เฉพาะบน `<div className="deck-viewport">` เมื่อผู้ใช้ลากเมาส์เร็วหรือหลุดขอบ Event `onMouseLeave` จะสั่งหยุดลากทันที ทั้งๆ ที่ผู้ใช้ยังกดคลิกค้างอยู่
+- *Solution*:
+  1. ขณะกำลังลาก (`isDragging = true`): สลับคลาสเป็น `transition-none pointer-events-none select-none` ทำให้เมาส์ลากติดมือ 1:1 ทันทีแบบ 60/120fps ไม่มีอาการดีเลย์
+  2. ปรับการคำนวณ Transform มาใช้ `transform: translate3d(${panOffset.x}px, ${panOffset.y}px, 0px) scale(${scale * userZoom})` เป็น Screen-Space 1:1 Direct Manipulation
+  3. ผูก Window Global Event Listeners (`window.addEventListener('mousemove'/'mouseup')`) ขณะลากเมาส์ เพื่อให้สามารถลากต่อเนื่องได้ทั่วทั้งหน้าจอโดยไม่หลุด
+  4. เพิ่ม Dynamic Boundary Clamping ตามระดับ Zoom ป้องกัน Canvas หลุดลอยออกนอกหน้าจอ
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-08-19*: บันทึก BUG-026 (Simulation Auto-Execution & Stutter) และ BUG-027 (Zoom & Pan Desynchronization)
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]

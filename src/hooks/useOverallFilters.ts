@@ -17,6 +17,18 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
   const [dateFromFilter, setDateFromFilter] = useState('');
   const [dateToFilter, setDateToFilter] = useState('');
 
+  // One-shot initial status filter check from Central Portal jumping
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const initialStatus = sessionStorage.getItem('rework_initial_status_filter') as CaseStatus | null;
+      if (initialStatus) {
+        setStatusFilter([initialStatus]);
+        setShowFilters(true);
+        sessionStorage.removeItem('rework_initial_status_filter');
+      }
+    }
+  }, []);
+
   const uniqueSources = useMemo(() => {
     const sources = new Set<string>();
     cases.forEach((caseItem) => {

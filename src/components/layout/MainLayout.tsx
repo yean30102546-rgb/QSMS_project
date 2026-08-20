@@ -67,7 +67,7 @@ export function MainLayout({
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans">
+    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans">
       {/* Mobile Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -105,14 +105,12 @@ export function MainLayout({
             label="ภาพรวม (Overall)"
             icon={<LayoutDashboard size={16} />}
           />
-          {String(userRole || '').toUpperCase() !== 'FINANCE' && (
-            <SidebarItem
-              active={activeTab === 'add'}
-              onClick={() => handleTabChange('add')}
-              label="เพิ่มงานใหม่ (Add Case)"
-              icon={<Plus size={16} />}
-            />
-          )}
+          <SidebarItem
+            active={activeTab === 'add'}
+            onClick={() => handleTabChange('add')}
+            label="เพิ่มงานใหม่ (Add Case)"
+            icon={<Plus size={16} />}
+          />
           <SidebarItem
             active={false}
             onClick={() => {

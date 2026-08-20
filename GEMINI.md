@@ -10,7 +10,7 @@
   - การบันทึกและจัดการ Rework Case (Case ID) และรายการสินค้า (Rework Item)
   - การดึงข้อมูลอัตโนมัติและการตรวจสอบความถูกต้องของสินค้าจากฐานข้อมูลกลาง (Item Master)
   - การอัปโหลดรูปภาพหลักฐานและการยืนยันความสมบูรณ์ของข้อมูล (Evidence & Transaction Integrity)
-  - การแบ่งสิทธิการทำงาน (Role-Based Access Control) ระหว่าง Admin, Operator, Management และ QSMS
+  - การแบ่งสิทธิการทำงาน (Role-Based Access Control) ระหว่าง **QSMS (Admin/Full Access)** และ **OPERATOR**
   - ระบบถามตอบคู่มือเทคนิคและแนวทาง Rework อัจฉริยะ (DocAI RAG) ที่มีบุคลิกภาพแบบเป็นมืออาชีพและเพียบพร้อมด้วยข้อมูลสถิติ
 
 ---
@@ -54,8 +54,8 @@
    - ทุกรายการ rework ต้องมีรูปภาพหลักฐานอย่างน้อย 1 ภาพ (Evidence Integrity) โดยใช้การบีบอัดรูปภาพฝั่ง Client ก่อนอัปโหลด (target 300KB)
    - หากเกิดข้อผิดพลาดในการอัปโหลดรูป ระบบจะ Rollback ธุรกรรมทั้งหมดทันทีเพื่อป้องกันข้อมูลขยะ
 6. **Rework Updates (การอัปเดตงาน & จัดการสถานะ):**
-   - **Operator / Admin:** อัปเดตรายละเอียดวิธีแก้ไข (Resolution Method), อัปเดตยอดกล่องผลิตเสร็จ (Progress)
-   - **Dynamic Auto-Status Lifecycle:** สถานะของเคสจะถูกคำนวณอัตโนมัติจากยอดกล่องที่ทำเสร็จเทียบกับยอดรวมทั้งหมด โดยไม่ต้องเลือกสถานะเอง (`Pending` [0] -> `In-Progress` [>0] -> `Completed` [100%])
+   - **Operator / Admin (QSMS):** อัปเดตยอดกล่องผลิตเสร็จ (Progress) ผ่าน Global/Item inputs พร้อมปุ่ม "สูงสุด" และบันทึกอุปสรรคหน้างาน/วัสดุที่ขาด (ขาดกล่อง, ขาดแกลลอน, ขาดน้ำมัน) ซึ่งจะล้างค่าอัตโนมัติเมื่อสถานะเปลี่ยนเป็น Completed
+   - **Dynamic Auto-Status Lifecycle:** สถานะของเคสจะถูกคำนวณอัตโนมัติจากยอดกล่องที่ทำเสร็จจริงเทียบกับยอดรวมทั้งหมด โดยไม่ต้องเลือกสถานะเอง (`Pending` [0%] -> `In-Progress` [>0%] -> `Completed` [100%])
 7. **Excel Export with Images (การส่งออกไฟล์ข้อมูล):**
    - ระบบรองรับการ Export ตารางรายงานเคสออกมาเป็นไฟล์ Excel (.xlsx) ที่มีรูปหลักฐานฝังอยู่ด้านในโดยตรง (ผ่านไลบรารี `exceljs`) โดยปรับความสูงแถวเป็น 120px และตกแต่งสีหัวตารางสวยงาม
 8. **RAG Ingestion Pipeline (การนำเข้าคู่มือ):**
@@ -73,7 +73,23 @@
     - **PDF Orientation Toolbar:** เครื่องมือหมุน PDF 0°, 90°, 180°, 270° พร้อมปุ่ม **Landscape View** 1-click และบันทึกองศาการหมุนลงใน `localStorage` (`qsms_pdf_rot_<id>`) เพื่อคงทิศทางให้อ่านง่ายตลอดเวลา
 12. **Boxes Per Pallet Normalization ("ตามความเหมาะสม"):**
     - หากเอกสารระบุจำนวนกล่องเป็นข้อความแบบ "ตามความเหมาะสม" หรือ "appropriate" ทั้งระบบ Gemini OCR Prompt และฟังก์ชัน `normalizeBoxesPerPallet` จะคืนค่าเป็นข้อความ "ตามความเหมาะสม" โดยตรง ป้องกันการสุ่มเดาตัวเลขผิดพลาด
-
+13. **Presentation Deck & Interactive Sandboxes (คู่มือนำเสนอสไลด์ & หน้าต่างจำลองสด):**
+    - **30/70 Side-by-Side Canvas:** จัดวางผังหน้าจอแบบ Side-by-Side (30/70) ใน Canvas 2560x1440 พร้อมระยะขอบที่สมดุล ไม่ล้นจอ
+    - **Apple Liquid Glass Design System:** การ์ดคำอธิบายใช้ `.liquid-glass-card` (Multi-layer Refraction Gradient, 1.5px Specular Rim, Inset Depth Reflections, Backdrop Blur 40px + Saturate 200%) พร้อม `.liquid-glass-pill` badge และ Ambient Glowing Orbs
+    - **Fit & Scrollable Mac Sandbox Window:** หน้าต่างจำลองสไตล์ Mac OS Window Header พร้อม Live Interactive Sandbox status และระบบ Scroll ภายในสมบูรณ์แบบ
+14. **Interactive Hotspot & Multi-Field Glow Highlighting (ระบบนำชมแบบอินเตอร์แอคทีฟ):**
+    - Hotspot Tooltip เด้งขึ้นด้านบน (`bottom-full mb-4`) ป้องกันการตกมาบดบังอินพุตและกล่องอัปโหลดรูปภาพ
+    - รองรับ `targetId` แบบอาร์เรย์ (`string | string[]`) ช่วยให้สามารถไฮไลท์เรืองแสงช่อง Item Number และ Item Code พร้อมกันเมื่อชี้ Hotspot "Smart Auto-fill"
+15. **Interactive Excel Form Preview Modal (การจำลองฟอร์ม Excel จริง):**
+    - หน้าต่างพรีวิวเอกสาร `.xlsx` จริงใน Slide 14 สไตล์ Microsoft Excel Ribbon (`bg-[#107C41]`)
+    - แสดงโครงสร้างหัวตารางรายงาน SFC Rework Report, Quick Info Grid, ตารางสินค้า และรูปถ่ายหลักฐานฝังในเซลล์ความสูง 120px พร้อมปุ่มปิดตัวอย่างและดาวน์โหลด
+16. **Slide Transition Hardware Acceleration (การเรนเดอร์สไลด์แบบ 60/120fps):**
+    - ลบ CSS `filter: blur(...)` ออกจาก `slideVariants` และใช้ GPU Spring Translation (`x`), `opacity` และ `scale` แบบ Hardware Compositing (`transform-gpu`, `will-change-transform`)
+    - ตัดวงจร Simulation Auto-Run ข้ามสไลด์ด้วย `prevSimTriggerRef` และ Reset Trigger ทุกครั้งที่เปลี่ยนสไลด์
+17. **Direct-Manipulation Zoom & Pan Engine (ระบบซูมและเลื่อนแบบไร้รอยต่อ):**
+    - ปรับปรุงการคำนวณ Screen-Space 1:1 Translation (`translate3d(panOffset.x, panOffset.y, 0) scale(...)`)
+    - ยกเลิก CSS Transition ขณะกำลังลาก (`transition-none pointer-events-none select-none`) ทำให้เมาส์ลากติดมือทันทีไม่มีอาการดีเลย์
+    - ผูก Window Global Event Listeners (`window.addEventListener('mousemove'/'mouseup')`) ทำให้ลากต่อเนื่องได้ทั่วหน้าจอโดยไม่หลุดขอบ พร้อมระบบ Dynamic Boundary Clamping
 
 ---
 

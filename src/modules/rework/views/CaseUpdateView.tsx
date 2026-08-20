@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, Save, FileText, ExternalLink, PenTool, Trash2, Plus, 
   ChevronDown, AlertCircle, Camera, CheckCircle2, Image as ImageIcon, X,
-  Package, Wrench, Edit3, Check, HelpCircle, Tag
+  Package, Wrench, Edit3, Check, HelpCircle, Tag, FileSpreadsheet, Download, Loader2
 } from 'lucide-react';
 import { ReworkCase, ReworkItem, updateCase, CUSTOMER_OPTIONS } from '@/src/services/api';
 import { useNotification } from '@/src/contexts/NotificationContext';
@@ -13,6 +13,8 @@ import { CopyButton } from '@/src/components/ui/CopyButton';
 import { Combobox } from '@/src/components/ui/Combobox';
 import { useSaveProgress } from '@/src/hooks/useSaveProgress';
 import { useReworkData } from '@/src/contexts/ReworkDataContext';
+import { useExportReport } from '@/src/hooks/useExportReport';
+import { ExportTemplate } from '@/src/modules/drawings/components/ExportTemplate';
 
 const LEAK_SUBTYPES = [
   'รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน',
@@ -111,14 +113,14 @@ function StatusBadge({ status }: { status: ReworkCase['status'] }) {
   };
 
   const thaiLabels: Record<ReworkCase['status'], string> = {
-    Pending: 'รอดำเนินการ (Pending)',
-    'In-Progress': 'กำลังดำเนินการ (In-Progress)',
-    Completed: 'เสร็จสิ้น (Completed)',
+    Pending: 'รอดำเนินการ (PENDING)',
+    'In-Progress': 'กำลังดำเนินการ (IN-PROGRESS)',
+    Completed: 'เสร็จสิ้น (COMPLETED)',
   };
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider ${styles[status]}`}>
-      <span className="w-2 h-2 rounded-full bg-current mr-1.5 animate-pulse" />
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider whitespace-nowrap shrink-0 ${styles[status]}`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse" />
       {thaiLabels[status]}
     </span>
   );
@@ -144,6 +146,7 @@ export function CaseUpdateView({
   const { showToast, showAlert, showConfirm } = useNotification();
   const { progress, isSaving, statusText, isComplete, startSaving, finishSaving, failSaving } = useSaveProgress();
   const { itemMaster } = useReworkData();
+  const { exportRef, isExporting, exportProgress, exportExcel } = useExportReport();
   
   const [editedItems, setEditedItems] = useState<ReworkItem[]>([]);
   const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
@@ -158,6 +161,7 @@ export function CaseUpdateView({
   const [missingGallons, setMissingGallons] = useState<number>(0);
   const [missingOil, setMissingOil] = useState<number>(0);
   const [resolutionMethod, setResolutionMethod] = useState<string>('');
+  const [isObstaclesOpen, setIsObstaclesOpen] = useState<boolean>(false);
 
   const handleDeleteCaseClick = () => {
     const caseName = caseData.caseName || caseData.id;
@@ -187,6 +191,8 @@ export function CaseUpdateView({
       setMissingGallons(caseData.missingGallons || 0);
       setMissingOil(caseData.missingOil || 0);
       setResolutionMethod(caseData.resolutionMethod || '');
+      const hasBlockers = (caseData.missingBoxes || 0) > 0 || (caseData.missingGallons || 0) > 0 || (caseData.missingOil || 0) > 0;
+      setIsObstaclesOpen(hasBlockers);
     }
   }, [caseData]);
 
@@ -335,57 +341,90 @@ export function CaseUpdateView({
       className="absolute inset-0 z-30 flex flex-col w-full h-full bg-system-background overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-divider-color bg-white/80 backdrop-blur-xl shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-6 py-3.5 border-b border-divider-color bg-white/90 backdrop-blur-xl shrink-0 gap-4">
+        {/* Left Side: Back button + Title + Case ID + Status Badge */}
+        <div className="flex items-center gap-3.5 min-w-0">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-surface-secondary rounded-full transition-colors text-on-surface-variant"
+            className="p-2 hover:bg-surface-secondary rounded-full transition-colors text-on-surface-variant shrink-0 cursor-pointer"
+            title="ย้อนกลับ"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={19} />
           </button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold tracking-tight text-on-surface flex items-center gap-2">
-                <PenTool size={18} className="text-primary" />
-                จัดการงาน Rework / แนบรูปภาพ & อัปเดตความคืบหน้า
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-on-surface flex items-center gap-1.5 whitespace-nowrap">
+                <PenTool size={16} className="text-primary shrink-0" />
+                <span>จัดการงาน Rework</span>
               </h1>
               <StatusBadge status={caseStatus} />
             </div>
-            <p className="text-sm text-on-surface-variant mt-0.5 flex items-center gap-1.5">
-              <span>{caseData.caseName || caseData.id}</span>
-              <CopyButton text={caseData.caseName || caseData.id} size={13} />
-            </p>
+            <div className="text-xs text-on-surface-variant mt-0.5 flex items-center gap-1.5 font-mono whitespace-nowrap">
+              <span className="font-semibold text-slate-700">{caseData.caseName || caseData.id}</span>
+              <CopyButton text={caseData.caseName || caseData.id} size={12} />
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Right Side: Action Buttons Toolbar */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Export to Excel Button */}
+          <button
+            type="button"
+            onClick={() => caseData && exportExcel({
+              ...caseData,
+              status: caseStatus,
+              items: editedItems,
+              missingBoxes,
+              missingGallons,
+              missingOil,
+              resolutionMethod
+            })}
+            disabled={isExporting || !caseData}
+            title="ส่งออกรายงาน Rework เป็นไฟล์ Excel พร้อมฝังรูปภาพ"
+            className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-full transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
+          >
+            {isExporting ? (
+              <>
+                <Loader2 size={13} className="animate-spin text-emerald-600" />
+                <span>กำลังส่งออก...</span>
+              </>
+            ) : (
+              <>
+                <FileSpreadsheet size={13} className="text-emerald-600" />
+                <span>ส่งออก Excel</span>
+              </>
+            )}
+          </button>
+
           {onDelete && (
             <button
               type="button"
               onClick={handleDeleteCaseClick}
               disabled={isSaving}
-              className="px-3.5 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200 flex items-center gap-1.5 disabled:opacity-50"
+              className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200/80 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
-              <Trash2 size={14} /> ลบเคสนี้
+              <Trash2 size={13} /> <span>ลบเคสนี้</span>
             </button>
           )}
+
           {isSaving ? (
-            <div className="w-48">
+            <div className="w-44 shrink-0">
               <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
             </div>
           ) : (
             <>
               <button
                 onClick={() => handleSave(true)}
-                className="px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-full transition-all"
+                className="whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer"
               >
-                บันทึกร่าง (Draft)
+                <span>บันทึกร่าง (Draft)</span>
               </button>
               <button
                 onClick={() => handleSave(false)}
-                className="px-5 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-full shadow-sm transition-all flex items-center gap-2"
+                className="whitespace-nowrap shrink-0 px-4 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-black rounded-full shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <Save size={16} /> บันทึกและเสร็จสิ้น
+                <Save size={13} /> <span>บันทึกและเสร็จสิ้น</span>
               </button>
             </>
           )}
@@ -440,50 +479,108 @@ export function CaseUpdateView({
             </div>
           </div>
 
-          {/* SECTION 2: Material Shortage Blockers Banner */}
-          <div className="bg-[#fff9eb] border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-amber-900 flex items-center gap-2">
-                <AlertCircle size={18} className="text-amber-600" />
-                รายงานอุปสรรค / วัสดุที่ขาดในกระบวนการ Rework
-              </h4>
-              <span className="text-[11px] text-amber-700 font-medium">(จะล้างข้อมูลอัตโนมัติเมื่อเคสเสร็จสิ้น)</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-amber-800 mb-1">ขาดกล่อง (ใบ)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={missingBoxes || ''}
-                  onChange={(e) => setMissingBoxes(Number(e.target.value) || 0)}
-                  className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500"
-                  placeholder="0"
-                />
+          {/* SECTION 2: Material Shortage Blockers Banner (Collapsible Accordion) */}
+          <div className="bg-[#fff9eb] border border-amber-200/80 rounded-2xl overflow-hidden shadow-sm transition-all">
+            {/* Accordion Toggle Header */}
+            <button
+              type="button"
+              onClick={() => setIsObstaclesOpen(!isObstaclesOpen)}
+              className="w-full px-5 py-3.5 flex items-center justify-between gap-3 text-left hover:bg-amber-100/50 transition-colors cursor-pointer select-none"
+            >
+              <div className="flex items-center flex-wrap gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-700">
+                  <AlertCircle size={17} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-amber-900">
+                      รายงานอุปสรรค / วัสดุที่ขาดในกระบวนการ Rework
+                    </h4>
+                    <span className="text-[11px] text-amber-700/80 font-medium hidden sm:inline">
+                      (รายละเอียดเพิ่มเติม / ไม่บังคับ)
+                    </span>
+                  </div>
+                  {/* Summary badge if has data */}
+                  {(missingBoxes > 0 || missingGallons > 0 || missingOil > 0) && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 bg-amber-200/70 px-2 py-0.5 rounded-md border border-amber-300">
+                        <span>มีบันทึกวัสดุที่ขาด:</span>
+                        {missingBoxes > 0 && <span>กล่อง {missingBoxes}</span>}
+                        {missingGallons > 0 && <span>แกลลอน {missingGallons}</span>}
+                        {missingOil > 0 && <span>น้ำมัน {missingOil} ลิตร</span>}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-amber-800 mb-1">ขาดแกลลอน (ใบ)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={missingGallons || ''}
-                  onChange={(e) => setMissingGallons(Number(e.target.value) || 0)}
-                  className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500"
-                  placeholder="0"
-                />
+
+              <div className="flex items-center gap-2 text-amber-800">
+                <span className="text-xs font-semibold hidden md:inline">
+                  {isObstaclesOpen ? 'ย่อซ่อน' : 'คลิกเพื่อระบุ'}
+                </span>
+                <motion.div
+                  animate={{ rotate: isObstaclesOpen ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDown size={18} className="text-amber-700" />
+                </motion.div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-amber-800 mb-1">ขาดน้ำมัน (ลิตร/ถัง)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={missingOil || ''}
-                  onChange={(e) => setMissingOil(Number(e.target.value) || 0)}
-                  className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500"
-                  placeholder="0"
-                />
-              </div>
-            </div>
+            </button>
+
+            {/* Collapsible Content */}
+            <AnimatePresence initial={false}>
+              {isObstaclesOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-5 pb-5 pt-2 border-t border-amber-200/60 space-y-3">
+                    <div className="flex items-center justify-between text-[11px] text-amber-700 font-medium">
+                      <span>กรอกจำนวนวัสดุที่ขาดเพื่อให้ทีมที่เกี่ยวข้องเตรียมความพร้อม</span>
+                      <span>(ระบบจะล้างข้อมูลอัตโนมัติเมื่อเคสเสร็จสิ้น 100%)</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                      <div>
+                        <label className="block text-xs font-bold text-amber-800 mb-1">ขาดกล่อง (ใบ)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={missingBoxes || ''}
+                          onChange={(e) => setMissingBoxes(Number(e.target.value) || 0)}
+                          className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500 shadow-2xs"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-amber-800 mb-1">ขาดแกลลอน (ใบ)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={missingGallons || ''}
+                          onChange={(e) => setMissingGallons(Number(e.target.value) || 0)}
+                          className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500 shadow-2xs"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-amber-800 mb-1">ขาดน้ำมัน (ลิตร/ถัง)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={missingOil || ''}
+                          onChange={(e) => setMissingOil(Number(e.target.value) || 0)}
+                          className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500 shadow-2xs"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* SECTION 3: Item Workspace & Photo Attachment */}
@@ -978,6 +1075,47 @@ export function CaseUpdateView({
 
         </div>
       </div>
+
+      {/* Export Overlay */}
+      <AnimatePresence>
+        {isExporting && (
+          <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-8">
+            <div className="bg-white rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full text-center">
+              <div className="relative">
+                <div className="w-20 h-20 border-4 border-emerald-500/10 border-t-emerald-500 rounded-full animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Download size={24} className="text-emerald-600 animate-pulse" />
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-black text-slate-900 mb-1">กำลังเตรียมเอกสาร Excel...</h4>
+                <p className="text-sm text-slate-500">{exportProgress}</p>
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-full bg-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <ExportTemplate
+        ref={exportRef}
+        caseData={caseData ? {
+          ...caseData,
+          status: caseStatus,
+          items: editedItems,
+          missingBoxes,
+          missingGallons,
+          missingOil,
+          resolutionMethod
+        } : null}
+      />
     </motion.div>
   );
 }

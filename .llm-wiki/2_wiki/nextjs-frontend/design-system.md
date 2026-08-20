@@ -1,57 +1,32 @@
-# Design System — Minimal Monochrome (Apple Pro Style)
-[วันที่อัปเดต: 2026-05-27]
+# Design System — Apple Pro Operations Aesthetic
+[วันที่อัปเดต: 2026-08-13]
 
 ## 1. Summary — ปรัชญาการดีไซน์
-ปรับปรุง UI จากเดิมที่เป็นสีน้ำเงิน/ดำ ให้กลายเป็น **Minimal Monochrome** ที่เน้นความเรียบหรูสไตล์ Apple "Pro" โดยใช้โทนสีดำ-ขาว-เทา เป็นหลัก เพื่อลดมลภาวะทางสายตาและสร้างภาพลักษณ์ที่เป็นมืออาชีพ (Premium Factory Tools)
+ระบบการออกแบบของ QSMS (Central Control Center, QSMS Rework, Drawing Storage, Guide, และ DocAI RAG) ยึดถือมาตรฐาน **Apple Pro Operations Aesthetic** สอดคล้องตามข้อกำหนดใน [[DESIGN.md]] และ [[apple/DESIGN.md]]
 
-## 2. Color Palette (Grayscale Primary)
-- **Primary Accent:** `#1d1d1f` (Midnight Black) — ใช้สำหรับปุ่มกดหลัก และจุดที่ต้องการความเด่น
-- **Interactive Background:** `bg-black/5` ถึง `bg-black/10` — สำหรับ Hover states และปุ่มรอง
-- **Background Gradient:** `from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED]` (Apple Grey) — พื้นหลังแบบไล่เฉดสีเทาจางๆ
-- **Status Colors (Softened):**
-    - Success: Emerald/Green
-    - Warning: Amber
-    - Error: Rose/Red (ใช้เงาสีฟุ้ง 20% เพื่อความพรีเมียม)
+เน้นความประณีต สะอาด อ่านง่าย และไม่สร้างภาระทางสายตาให้แก่ผู้ใช้งานในโรงงาน (Premium Factory Operations Workspace)
 
-## 3. UI Components (Glassmorphism V2)
-- **`.glass-panel`:** พื้นหลังขาวใส 40% + `backdrop-blur-xl` + ขอบขาวบาง
-- **`.glass-input`:** ช่องกรอกข้อมูลกึ่งโปร่งใส + วงแหวนเรืองแสงสีน้ำเงินจางๆ เมื่อ Focus (หลีกเลี่ยงการใช้ขอบดำเข้มหรือความเข้มสูงเพื่อความเนียนตา)
-- **Focus Rings & States (Apple Style):** เพื่อหลีกเลี่ยงขอบโฟกัสสีดำเข้มขัดตา (harsh dark borders) ให้ใช้ focus ring สีน้ำเงินสว่างแบบจางๆ (macOS Active Blue): `focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10` หรือใช้ `focus-within` กับกรอบ Input Group เพื่อยกระดับความพรีเมียม
-- **Professional Dialogs:**
-    - เปลี่ยนจาก `window.confirm` เป็น Custom Pro Modals
-    - ความทึบแสงสูง (`bg-white/98`) เพื่อป้องกันข้อมูลซ้อนทับ (Visual Overlapping)
+## 2. Core Tokens & Palette
+- **Canvas Background:** `#f5f5f7` (Signature Apple Parchment Off-white)
+- **Card Surface (`store-utility-card`):** `#ffffff` (Pure White) + ขอบ 1px Hairline `#e0e0e0` + ความโค้งมน `rounded-[18px]` (18px)
+- **Primary Interactive Accent:** `#0066cc` (Action Blue) — สีโต้ตอบหลักสีเดียวบนปุ่มกดแบบแคปซูล (`rounded-full`), ลิงก์, และสถานะ Active Focus
+- **Text Ink:** `#1d1d1f` (Near-black Ink) สำหรับหัวข้อและข้อความหลัก
+- **Muted Ink:** `#7a7a7a` สำหรับ Captions และ Meta labels
 
-## 4. Typography & Spacing
-- **Font:** Sarabun (Thai) + San Francisco inspired (English)
-- **Rounding:** `rounded-[20px]` ถึง `rounded-[36px]` เพื่อความโค้งมนที่ดูเป็นมิตรแต่แข็งแรง
-- **Letter Spacing:** `tracking-[0.22em]` สำหรับ Label หัวข้อใหญ่ (Uppercase)
-- **Weight Contrast & Hierarchy (UX Optimization):**
-  - **Headings & Key Metrics:** `font-semibold` หรือ `font-bold` เพื่อแสดงหัวเรื่องหลักหลัก
-  - **Supporting & Meta Details:** `font-normal` หรือ `font-medium` (เช่น วันที่, ID เคส, แหล่งที่มา, ข้อมูลแถม) เพื่อลดความลายตาของการใช้ตัวหนาทั้งหน้าจอ
-  - **Status Tags / StatusPill:** `font-semibold` + `tracking-[0.06em]`
-  - **Stat Cards (KPIs):** หัวข้อการ์ดใช้ `text-[10px] font-semibold tracking-[0.12em] text-on-surface-variant/70` และค่าใช้ `text-2xl font-semibold md:text-3xl`
+## 3. UI Component Tokens
+- **`button-primary`**: Action Blue `#0066cc` background, white text, full pill `rounded-full`, padding `11px 22px`, press physics `whileTap={{ scale: 0.97 }}`
+- **`sub-nav-frosted`**: Parchment `#f5f5f7`/90 + `backdrop-blur-md` + ขอบล่าง 1px `#e0e0e0`
+- **`store-utility-card`**: Pure white `#ffffff`, 1px `#e0e0e0` hairline border, 18px radius (`rounded-[18px]`), padding 24px
 
-## 5. Interactions (motion/react)
-- **Smooth Entry:** การค่อยๆ Slide up และ Fade in เมื่อโหลดหน้า
-- **Tactile Feedback:** ปุ่มหลักมี `whileHover={{ scale: 1.01 }}` และ `whileTap={{ scale: 0.98 }}`
-- **Group Focus:** ไอคอนในช่อง Input เปลี่ยนสีตามสถานะ Focus ภายใน Container
+## 4. Typography Rules (SF Pro & Sarabun)
+- **Font Stack:** Sarabun (Thai), -apple-system, BlinkMacSystemFont, SF Pro Display, SF Pro Text, sans-serif
+- **Headings & Key Metrics:** `font-semibold text-[#1d1d1f] tracking-[-0.02em]`
+- **Body Copy:** `text-[17px] leading-[1.47] text-[#1d1d1f]`
 
-## 6. DESIGN.md Protocol (AI & Design Agents)
-ในระบบการพัฒนาด้วย AI Agent (เช่น Google Stitch, VoltAgent) เอกสารบอกคุณลักษณะการออกแบบหลักจะมี 2 ประเภท:
-1. `AGENTS.md` (สำหรับ Coding Agents): บอกพฤติกรรม ข้อตกลง และโครงสร้างการเขียนโค้ดของโปรเจกต์
-2. `DESIGN.md` (สำหรับ Design Agents): บอกหน้าตา อารมณ์ (Mood & Tone) และสไตล์ไกด์ของ UI ทั้งหมด เพื่อให้โมเดลสร้างโค้ดหน้าตาตรงปกและพรีเมียมที่สุด (Pixel-Perfect UI)
-
-### โครงสร้างหลักของ `DESIGN.md`
-- **Visual Theme & Atmosphere**: นิยาม Mood & Density (เช่น Minimal Grayscale / Void Black)
-- **Color Palette & Roles**: แยกบทบาทหน้าที่ของแต่ละเฉดสี (Primary, Secondary, Background, Softened Statuses)
-- **Typography Rules**: ตาราง Type Scale และการใช้ Weight Contrast ที่ชัดเจน
-- **Component Stylings**: ข้อตกลงเกี่ยวกับ Buttons, Cards, Inputs, และ Focus States
-- **Do's and Don'ts**: กฎเหล็กที่ห้ามทำ (เช่น ห้ามใช้สีฉูดฉาดเกินจำเป็น, ห้ามทำขอบเหลี่ยมจัด)
-- **Agent Prompt Guide**: ชุด Prompt สำเร็จรูปเพื่อให้ Design Agents จัดการสไตล์ได้แม่นยำ
-
----
-> 🔄 *อัปเดตเมื่อ 2026-05-27*: เพิ่มแนวทาง Focus Rings & States (Apple Style) หลีกเลี่ยงขอบดำเข้ม และเพิ่มข้อมูลโปรโตคอล `DESIGN.md` ของ VoltAgent เพื่อสนับสนุนการพัฒนา UI ร่วมกับ Design Agents
-
-
-## Ingested Raw Sources
-- Ingested Raw Source: [[1_raw/VoltAgentawesome-design-md A collection of DESIGN.md files inspired by popular brand design systems. Drop one into your project and let coding agents generate a matching UI.md]]
+## 5. Knowledge Relationships
+- **Source of Truth Specification**: [[DESIGN.md]] (Root Workspace Design System)
+- **Reference Spec**: [[apple/DESIGN.md]] (Apple Design Analysis)
+- **Depends On**: [[nextjs-frontend/ui-ux-principles.md]] — หลักการ Hierarchy, Proximity และ Accessibility
+- **Impacted By**: 
+  - [[nextjs-frontend/portal-shell.md]] — หน้า Central Portal Hub
+  - [[nextjs-frontend/rework-module.md]] — หน้า Rework Case Table & Forms
