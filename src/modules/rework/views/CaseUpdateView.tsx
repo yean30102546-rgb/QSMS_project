@@ -341,33 +341,35 @@ export function CaseUpdateView({
       className="absolute inset-0 z-30 flex flex-col w-full h-full bg-system-background overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3.5 border-b border-divider-color bg-white/90 backdrop-blur-xl shrink-0 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-b border-divider-color bg-white/95 backdrop-blur-xl shrink-0 gap-2.5 sm:gap-4">
         {/* Left Side: Back button + Title + Case ID + Status Badge */}
-        <div className="flex items-center gap-3.5 min-w-0">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-surface-secondary rounded-full transition-colors text-on-surface-variant shrink-0 cursor-pointer"
-            title="ย้อนกลับ"
-          >
-            <ArrowLeft size={19} />
-          </button>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-on-surface flex items-center gap-1.5 whitespace-nowrap">
-                <PenTool size={16} className="text-primary shrink-0" />
-                <span>จัดการงาน Rework</span>
-              </h1>
-              <StatusBadge status={caseStatus} />
-            </div>
-            <div className="text-xs text-on-surface-variant mt-0.5 flex items-center gap-1.5 font-mono whitespace-nowrap">
-              <span className="font-semibold text-slate-700">{caseData.caseName || caseData.id}</span>
-              <CopyButton text={caseData.caseName || caseData.id} size={12} />
+        <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3.5 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <button
+              onClick={onBack}
+              className="p-1.5 sm:p-2 hover:bg-surface-secondary rounded-full transition-colors text-on-surface-variant shrink-0 cursor-pointer"
+              title="ย้อนกลับ"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-sm sm:text-base font-bold tracking-tight text-on-surface flex items-center gap-1.5 truncate">
+                  <PenTool size={15} className="text-primary shrink-0" />
+                  <span>จัดการงาน Rework</span>
+                </h1>
+                <StatusBadge status={caseStatus} />
+              </div>
+              <div className="text-[11px] sm:text-xs text-on-surface-variant mt-0.5 flex items-center gap-1.5 font-mono">
+                <span className="font-semibold text-slate-700">{caseData.caseName || caseData.id}</span>
+                <CopyButton text={caseData.caseName || caseData.id} size={11} />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Action Buttons Toolbar */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right Side: Action Buttons Toolbar (Horizontally scrollable on mobile if needed) */}
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-0.5">
           {/* Export to Excel Button */}
           <button
             type="button"
@@ -382,11 +384,11 @@ export function CaseUpdateView({
             })}
             disabled={isExporting || !caseData}
             title="ส่งออกรายงาน Rework เป็นไฟล์ Excel พร้อมฝังรูปภาพ"
-            className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-full transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
+            className="whitespace-nowrap shrink-0 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-full transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer shadow-2xs"
           >
             {isExporting ? (
               <>
-                <Loader2 size={13} className="animate-spin text-emerald-600" />
+                <Loader2 size={12} className="animate-spin text-emerald-600" />
                 <span>กำลังส่งออก...</span>
               </>
             ) : (
@@ -402,29 +404,29 @@ export function CaseUpdateView({
               type="button"
               onClick={handleDeleteCaseClick}
               disabled={isSaving}
-              className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200/80 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="whitespace-nowrap shrink-0 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200/80 flex items-center gap-1 disabled:opacity-50 cursor-pointer"
             >
-              <Trash2 size={13} /> <span>ลบเคสนี้</span>
+              <Trash2 size={12} /> <span>ลบเคสนี้</span>
             </button>
           )}
 
           {isSaving ? (
-            <div className="w-44 shrink-0">
+            <div className="w-36 sm:w-44 shrink-0">
               <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
             </div>
           ) : (
             <>
               <button
                 onClick={() => handleSave(true)}
-                className="whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer"
+                className="whitespace-nowrap shrink-0 px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer"
               >
-                <span>บันทึกร่าง (Draft)</span>
+                <span>บันทึกร่าง</span>
               </button>
               <button
                 onClick={() => handleSave(false)}
-                className="whitespace-nowrap shrink-0 px-4 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-black rounded-full shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                className="whitespace-nowrap shrink-0 px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold text-white bg-slate-900 hover:bg-black rounded-full shadow-xs transition-all flex items-center gap-1 cursor-pointer"
               >
-                <Save size={13} /> <span>บันทึกและเสร็จสิ้น</span>
+                <Save size={12} /> <span>บันทึกเสร็จสิ้น</span>
               </button>
             </>
           )}
@@ -432,7 +434,7 @@ export function CaseUpdateView({
       </div>
 
       {/* Content Container */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-surface-bright">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-6 bg-surface-bright">
         <div className="w-full space-y-6 pb-20">
           
           {/* SECTION 1: Overall Progress & Quick Completion Tracker */}
@@ -449,20 +451,20 @@ export function CaseUpdateView({
               </div>
 
               {/* Quick Global Progress Input */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <input
                   type="number"
                   min="0"
                   max={totalBoxes}
                   placeholder="ระบุยอดรวมที่เสร็จแล้ว..."
-                  className="w-48 border border-divider-color bg-system-background rounded-lg py-2 px-3 text-sm font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                  className="flex-1 sm:w-48 border border-divider-color bg-system-background rounded-lg py-2 px-3 text-sm font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
                   value={globalCompleted || ''}
                   onChange={(e) => handleGlobalProgressChange(Number(e.target.value) || 0)}
                 />
                 <button
                   type="button"
                   onClick={() => handleGlobalProgressChange(totalBoxes)}
-                  className="bg-primary/10 text-primary hover:bg-primary/20 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
+                  className="bg-primary/10 text-primary hover:bg-primary/20 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                 >
                   <CheckCircle2 size={14} />
                   เสร็จทั้งหมด
@@ -584,7 +586,7 @@ export function CaseUpdateView({
           </div>
 
           {/* SECTION 3: Item Workspace & Photo Attachment */}
-          <div className="flex items-center justify-between pb-2 border-b border-divider-color text-on-surface">
+          <div className="flex flex-wrap items-center justify-between pb-2 border-b border-divider-color text-on-surface gap-2">
             <div className="flex items-center gap-2">
               <Package size={20} className="text-primary" />
               <span className="text-base sm:text-lg font-semibold">รายการสินค้า ({editedItems.length})</span>
