@@ -998,6 +998,39 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
     setCurrentIdx(prev => Math.min(prev + 1, activeSlides.length - 1));
   }, [activeSlides.length]);
 
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const target = e.target as HTMLElement;
+      if (target.closest('button, input, textarea, select, a, [role="button"], .interactive-control, .deck-ignore-touch')) return;
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || e.changedTouches.length === 0) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const dx = touchEndX - touchStartRef.current.x;
+    const dy = touchEndY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.time;
+    touchStartRef.current = null;
+
+    // Swipe detection: moved > 40px, mostly horizontal, within 600ms
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.1 && dt < 600) {
+      if (dx < 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+  }, [handleNext, handlePrev]);
+
   const handleSelectCategory = useCallback((catId: SlideCategory) => {
     setDirection(0);
     setSimTrigger(0);
@@ -1054,9 +1087,24 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] overflow-hidden font-sans">
-      {/* Navbar Wrapper with dynamic hit area */}
+      {/* Always-Visible Floating Exit Button for Touch & Mobile Users */}
+      {onBackToPortal && (
+        <div className="fixed top-3 left-3 sm:top-4 sm:left-4 z-[99999]">
+          <button
+            type="button"
+            onClick={onBackToPortal}
+            className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-lg hover:bg-white text-slate-800 font-bold text-xs active:scale-95 transition cursor-pointer select-none"
+            title="ออกจากหน้าสไลด์ (กลับสู่พอร์ทัล)"
+          >
+            <ArrowLeft size={15} className="text-blue-600 shrink-0" />
+            <span className="font-sans">ออก / Back</span>
+          </button>
+        </div>
+      )}
+
+      {/* Navbar Wrapper with dynamic hit area (Desktop Hover) */}
       <div 
-        className={`fixed top-0 left-0 right-0 z-[9999] transition-all ${isNavVisible ? 'h-24' : 'h-6'}`}
+        className={`fixed top-0 left-0 right-0 z-[9999] transition-all hidden md:block ${isNavVisible ? 'h-24' : 'h-6'}`}
         onMouseEnter={() => setIsNavVisible(true)}
         onMouseLeave={() => setIsNavVisible(false)}
       >
@@ -1154,12 +1202,14 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         </motion.nav>
       </div>
 
-      {/* Stage Viewport */}
+      {/* Stage Viewport with Touch Swiping */}
       <div 
-        className={`deck-viewport relative flex items-center justify-center w-full h-screen bg-[#f5f5f7] overflow-hidden pt-12 select-none ${
+        className={`deck-viewport relative flex items-center justify-center w-full h-screen bg-[#f5f5f7] overflow-hidden select-none ${
           userZoom > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <main
           className={`deck-stage relative shrink-0 bg-[#f5f5f7] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] rounded-[48px] overflow-hidden will-change-transform transform-gpu ${
@@ -1782,8 +1832,33 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         </main>
       </div>
 
-      {/* Floating Zoom Controls (Bottom Left) */}
-      <div className="fixed bottom-6 left-6 z-[9990] flex items-center gap-1.5 p-1.5 rounded-full bg-white/80 backdrop-blur-2xl backdrop-saturate-150 border border-white/80 shadow-[0_10px_30px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] text-slate-800 transition-all select-none">
+      {/* Floating Mobile Touch Controls (Bottom Center - Touch Friendly) */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9995] md:hidden flex items-center gap-1.5 p-1.5 rounded-full bg-white/95 backdrop-blur-2xl border border-white/80 shadow-[0_12px_36px_rgba(0,0,0,0.18)] text-slate-800 select-none">
+        <button
+          type="button"
+          onClick={handlePrev}
+          disabled={currentIdx === 0}
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 active:scale-90 disabled:opacity-30 disabled:pointer-events-none text-slate-800 transition cursor-pointer"
+          title="สไลด์ก่อนหน้า"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <div className="px-3 py-1 text-xs font-bold font-mono text-slate-800 min-w-[70px] text-center">
+          {currentIdx + 1} / {activeSlides.length}
+        </div>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={currentIdx === activeSlides.length - 1}
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 active:scale-90 disabled:opacity-30 disabled:pointer-events-none text-white shadow-sm transition cursor-pointer"
+          title="สไลด์ถัดไป"
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      {/* Floating Zoom Controls (Bottom Left - Desktop) */}
+      <div className="fixed bottom-6 left-6 z-[9990] hidden md:flex items-center gap-1.5 p-1.5 rounded-full bg-white/80 backdrop-blur-2xl backdrop-saturate-150 border border-white/80 shadow-[0_10px_30px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] text-slate-800 transition-all select-none">
         <button
           type="button"
           onClick={handleZoomOut}
@@ -1832,8 +1907,8 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         )}
       </div>
 
-      {/* Floating Present / Fullscreen Quick Trigger */}
-      <div className="fixed bottom-6 right-6 z-[9990] flex items-center gap-2">
+      {/* Floating Present / Fullscreen Quick Trigger (Bottom Right - Desktop) */}
+      <div className="fixed bottom-6 right-6 z-[9990] hidden md:flex items-center gap-2">
         <button
           type="button"
           onClick={toggleFullscreen}

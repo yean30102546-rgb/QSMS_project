@@ -150,7 +150,7 @@ export function CaseUpdateView({
   
   const [editedItems, setEditedItems] = useState<ReworkItem[]>([]);
   const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
-  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [expandedItemIds, setExpandedItemIds] = useState<Record<string, boolean>>({});
   const [editingItemIds, setEditingItemIds] = useState<Record<string, boolean>>({});
   const [newOrFiles, setNewOrFiles] = useState<File[]>([]);
   const [newImages, setNewImages] = useState<Record<string, File[]>>({});
@@ -584,17 +584,35 @@ export function CaseUpdateView({
           </div>
 
           {/* SECTION 3: Item Workspace & Photo Attachment */}
-          <div className="flex items-center gap-2 pb-2 border-b border-divider-color text-on-surface">
-            <Package size={20} className="text-primary" />
-            <span className="text-lg font-semibold">รายการสินค้า ({editedItems.length})</span>
+          <div className="flex items-center justify-between pb-2 border-b border-divider-color text-on-surface">
+            <div className="flex items-center gap-2">
+              <Package size={20} className="text-primary" />
+              <span className="text-base sm:text-lg font-semibold">รายการสินค้า ({editedItems.length})</span>
+            </div>
+            {editedItems.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const allOpen = editedItems.every((item, idx) => expandedItemIds[item.id || idx.toString()]);
+                  const nextState: Record<string, boolean> = {};
+                  editedItems.forEach((item, idx) => {
+                    nextState[item.id || idx.toString()] = !allOpen;
+                  });
+                  setExpandedItemIds(nextState);
+                }}
+                className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+              >
+                {editedItems.every((item, idx) => expandedItemIds[item.id || idx.toString()]) ? 'พับข้อมูลทั้งหมด' : 'ขยายข้อมูลทั้งหมด'}
+              </button>
+            )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <AnimatePresence initial={false}>
               {editedItems.map((item, index) => {
-                const isExpanded = expandedItemId === item.id || expandedItemId === index.toString();
-                const toggleExpand = () => setExpandedItemId(isExpanded ? null : (item.id || index.toString()));
                 const itemIdStr = item.id || index.toString();
+                const isExpanded = !!expandedItemIds[itemIdStr];
+                const toggleExpand = () => setExpandedItemIds(prev => ({ ...prev, [itemIdStr]: !prev[itemIdStr] }));
                 const amount = Number(item.amount) || 0;
                 const completed = Number(item.completedBoxes) || 0;
                 const isItemComplete = amount > 0 && completed >= amount;
@@ -606,24 +624,32 @@ export function CaseUpdateView({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white border border-[rgba(0,0,0,0.08)] rounded-2xl overflow-hidden shadow-sm"
+                    className="bg-white border border-[rgba(0,0,0,0.08)] rounded-2xl overflow-hidden shadow-xs hover:border-divider-color transition-all"
                   >
-                    {/* Item Card Progress Header */}
-                    <div className="bg-surface-secondary/40 px-5 py-3 border-b border-divider-color/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center flex-wrap gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${isItemComplete ? 'bg-emerald-500' : completed > 0 ? 'bg-sky-500' : 'bg-slate-300'}`} />
-                        <span className="font-bold text-sm text-on-surface flex items-center gap-1.5">
+                    {/* Item Card Header (Always visible & actionable) */}
+                    <div className="bg-surface-secondary/40 px-3.5 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 select-none">
+                      {/* Clickable Title & Badges */}
+                      <div 
+                        onClick={toggleExpand}
+                        className="flex items-center flex-wrap gap-2 cursor-pointer flex-1 min-w-0 hover:opacity-85 transition-opacity"
+                        title={isExpanded ? "คลิกเพื่อย่อซ่อน" : "คลิกเพื่อดูรายละเอียด"}
+                      >
+                        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                          <ChevronDown size={18} className="text-on-surface-variant shrink-0" />
+                        </motion.div>
+                        <span className={`w-2.5 h-2.5 rounded-full ${isItemComplete ? 'bg-emerald-500' : completed > 0 ? 'bg-sky-500' : 'bg-slate-300'} shrink-0`} />
+                        <span className="font-bold text-xs sm:text-sm text-on-surface flex items-center gap-1.5 truncate">
                           <span>รายการที่ {index + 1}: {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}</span>
                           {item.itemCode && <span className="text-on-surface-variant font-medium text-xs">({item.itemCode})</span>}
                         </span>
-                        <span className="text-xs text-on-surface-variant font-medium">({completed} / {amount} กล่อง)</span>
+                        <span className="text-xs text-on-surface-variant font-medium shrink-0">({completed} / {amount} กล่อง)</span>
                         {activeImageCount === 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-xs">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-xs shrink-0">
                             <AlertCircle size={12} className="text-amber-600 shrink-0" />
-                            <span>ยังไม่แนบรูปหลักฐาน</span>
+                            <span>ยังไม่แนบรูป</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
                             <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
                             <span>แนบรูปแล้ว ({activeImageCount})</span>
                           </span>
@@ -633,7 +659,7 @@ export function CaseUpdateView({
                           const qirVal = qirMatch ? qirMatch[1] : null;
                           if (!qirVal) return null;
                           return (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
                               <Tag size={12} className="text-purple-600 shrink-0" />
                               <span>QIR: {qirVal}</span>
                             </span>
@@ -642,11 +668,17 @@ export function CaseUpdateView({
                       </div>
 
                       {/* Quick Item Completion Button & Edit Toggle */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
                         <button
                           type="button"
-                          onClick={() => setEditingItemIds(prev => ({ ...prev, [itemIdStr]: !prev[itemIdStr] }))}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border shadow-2xs ${
+                          onClick={() => {
+                            const nextEditing = !editingItemIds[itemIdStr];
+                            setEditingItemIds(prev => ({ ...prev, [itemIdStr]: nextEditing }));
+                            if (nextEditing) {
+                              setExpandedItemIds(prev => ({ ...prev, [itemIdStr]: true }));
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 border shadow-2xs ${
                             editingItemIds[itemIdStr] 
                               ? 'bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100' 
                               : 'bg-white text-on-surface-variant border-divider-color hover:bg-surface-secondary'
@@ -655,17 +687,17 @@ export function CaseUpdateView({
                           {editingItemIds[itemIdStr] ? (
                             <>
                               <Check size={13} className="text-sky-600" />
-                              <span>เสร็จสิ้นการแก้ไข</span>
+                              <span>เสร็จสิ้น</span>
                             </>
                           ) : (
                             <>
                               <Edit3 size={13} className="text-on-surface-variant/80" />
-                              <span>แก้ไขข้อมูล</span>
+                              <span>แก้ไข</span>
                             </>
                           )}
                         </button>
 
-                        <div className="h-4 w-[1px] bg-divider-color/60 mx-1 hidden sm:block" />
+                        <div className="h-4 w-[1px] bg-divider-color/60 mx-0.5 hidden sm:block" />
 
                         <label className="text-xs font-semibold text-on-surface-variant">ยอดเสร็จ:</label>
                         <input
@@ -674,12 +706,12 @@ export function CaseUpdateView({
                           max={amount}
                           value={completed || ''}
                           onChange={(e) => handleItemProgressChange(index, Number(e.target.value) || 0)}
-                          className="w-24 border border-divider-color bg-white rounded-lg py-1 px-2 text-xs font-bold focus:outline-none focus:border-primary"
+                          className="w-16 sm:w-20 border border-divider-color bg-white rounded-lg py-1 px-1.5 text-xs font-bold focus:outline-none focus:border-primary text-center"
                         />
                         <button
                           type="button"
                           onClick={() => handleItemProgressChange(index, amount)}
-                          className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1"
+                          className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
                         >
                           <CheckCircle2 size={12} />
                           เสร็จแล้ว
@@ -687,277 +719,256 @@ export function CaseUpdateView({
                       </div>
                     </div>
 
-                    <div className="p-5">
-                      <div className="flex flex-col xl:flex-row gap-6">
-                        
-                        {/* Data Inputs / Read-Only View (Left Column) */}
-                        <div className="flex-1 space-y-4 min-w-0">
-                          {editingItemIds[itemIdStr] ? (
-                            <div className="space-y-4">
-                              {/* Row 1: Item Name & Item Code */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="md:col-span-2">
-                                  <FieldLabel>ชื่อสินค้า / Item Name</FieldLabel>
-                                  <FieldInput
-                                    value={item.itemName || ''}
-                                    onChange={(e) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], itemName: e.target.value };
-                                      setEditedItems(n);
-                                    }}
-                                    placeholder="ระบุชื่อสินค้า..."
-                                  />
-                                </div>
-                                <div>
-                                  <FieldLabel>รหัสสินค้า / Item Code</FieldLabel>
-                                  <FieldInput
-                                    value={item.itemCode || ''}
-                                    onChange={(e) => handleItemCodeChange(index, e.target.value)}
-                                    placeholder="เช่น 40001355"
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Row 2: Customer Name, Amount & Batch No */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="relative z-[40]">
-                                  <FieldLabel>ลูกค้า / Customer</FieldLabel>
-                                  <Combobox
-                                    options={CUSTOMER_OPTIONS.map(c => ({ label: c, value: c }))}
-                                    value={item.customerName || ''}
-                                    onChange={(val) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], customerName: val };
-                                      setEditedItems(n);
-                                    }}
-                                    placeholder="เลือกลูกค้า..."
-                                  />
-                                </div>
-                                <div>
-                                  <FieldLabel>จำนวนทั้งหมด (ลัง/กล่อง)</FieldLabel>
-                                  <FieldInput
-                                    type="number"
-                                    value={item.amount || ''}
-                                    onChange={(e) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], amount: Number(e.target.value) };
-                                      setEditedItems(n);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <FieldLabel>Batch No.</FieldLabel>
-                                  <FieldInput
-                                    value={item.batchNo || ''}
-                                    onChange={(e) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], batchNo: e.target.value };
-                                      setEditedItems(n);
-                                    }}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Row 3: Mold & Line */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <FieldLabel>Mold</FieldLabel>
-                                  <FieldInput
-                                    value={item.mold || ''}
-                                    onChange={(e) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], mold: e.target.value };
-                                      setEditedItems(n);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <FieldLabel>Line</FieldLabel>
-                                  <FieldInput
-                                    value={item.line || ''}
-                                    onChange={(e) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], line: e.target.value };
-                                      setEditedItems(n);
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                              
-                              <div>
-                                 <FieldLabel>อาการเสีย / รายละเอียดการวิเคราะห์</FieldLabel>
-                                 <FieldInput
-                                    value={item.details || ''}
-                                    onChange={(e) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], details: e.target.value };
-                                      setEditedItems(n);
-                                    }}
-                                    rows={2}
-                                 />
-                              </div>
-                            </div>
-                          ) : (
-                            /* Read-Only Summary Mode */
-                            <div className="bg-surface/50 border border-divider-color/50 rounded-xl p-4 space-y-3.5 shadow-2xs">
-                              <div>
-                                <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">ชื่อสินค้า / Item Name</span>
-                                <p className="text-base font-bold text-on-surface bg-white px-3.5 py-2 rounded-lg border border-divider-color/40 shadow-3xs">
-                                  {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}
-                                </p>
-                              </div>
-
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                  <span className="text-[10px] font-bold text-on-surface-variant uppercase block">รหัสสินค้า / Code</span>
-                                  <span className="text-xs font-bold text-primary mt-0.5 block">{item.itemCode || '-'}</span>
-                                </div>
-                                <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                  <span className="text-[10px] font-bold text-on-surface-variant uppercase block">ลูกค้า / Customer</span>
-                                  <span className="text-xs font-bold text-on-surface mt-0.5 block">{item.customerName || '-'}</span>
-                                </div>
-                                <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                  <span className="text-[10px] font-bold text-on-surface-variant uppercase block">จำนวนทั้งหมด</span>
-                                  <span className="text-xs font-bold text-on-surface mt-0.5 block">{item.amount || 0} ลัง/กล่อง</span>
-                                </div>
-                                <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                  <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Batch No.</span>
-                                  <span className={`text-xs font-semibold mt-0.5 block ${item.batchNo ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.batchNo || 'ไม่ได้ระบุ'}</span>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                  <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Mold</span>
-                                  <span className={`text-xs font-semibold mt-0.5 block ${item.mold ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.mold || 'ไม่ได้ระบุ'}</span>
-                                </div>
-                                <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                  <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Line</span>
-                                  <span className={`text-xs font-semibold mt-0.5 block ${item.line ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.line || 'ไม่ได้ระบุ'}</span>
-                                </div>
-                              </div>
-
-                              <div className="bg-white p-3 rounded-lg border border-divider-color/40 shadow-3xs">
-                                <span className="text-[10px] font-bold text-on-surface-variant uppercase block mb-1">อาการเสีย / รายละเอียดการวิเคราะห์</span>
-                                <p className={`text-xs font-medium leading-relaxed ${item.details ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>
-                                  {item.details || 'ยังไม่มีการระบุรายละเอียดอาการเสีย'}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Photo Uploader Workspace (Right Column) */}
-                        <div className="xl:w-[320px] shrink-0 bg-surface-secondary/40 rounded-xl p-4 border border-divider-color/60">
-                          <div className="flex items-center justify-between mb-3">
-                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
-                              <Camera size={14} /> 
-                              รูปภาพหลักฐานหลังวิเคราะห์
-                            </p>
-                            <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                              {activeImageCount} รูป
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-2">
-                            {/* Existing Images */}
-                            {(item.imageUrls || []).map((url, i) => {
-                              const isDeleted = deletedItemIds.includes(url);
-                              return (
-                                <div key={i} className="relative group aspect-square rounded-lg overflow-hidden bg-white shadow-sm border border-divider-color/50">
-                                  <img src={url} alt="item" className={`w-full h-full object-cover ${isDeleted ? 'opacity-30 grayscale' : ''}`} />
-                                  <button
-                                    onClick={() => {
-                                      if (isDeleted) setDeletedItemIds(prev => prev.filter(u => u !== url));
-                                      else setDeletedItemIds(prev => [...prev, url]);
-                                    }}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    {isDeleted ? <Plus size={20} className="text-white" /> : <Trash2 size={20} className="text-white" />}
-                                  </button>
-                                  {isDeleted && <div className="absolute inset-0 border-2 border-error rounded-lg" />}
-                                </div>
-                              );
-                            })}
-
-                            {/* New Images */}
-                            {(newImages[itemIdStr] || []).map((file, i) => (
-                              <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden bg-blue-50 border-2 border-primary/40">
-                                <img src={URL.createObjectURL(file)} alt="new" className="w-full h-full object-cover" />
-                                <button
-                                  onClick={() => {
-                                    const imgs = { ...newImages };
-                                    imgs[itemIdStr] = imgs[itemIdStr].filter((_, idx) => idx !== i);
-                                    setNewImages(imgs);
-                                  }}
-                                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <X size={20} className="text-white" />
-                                </button>
-                                <div className="absolute top-1 right-1 bg-primary text-white text-[9px] px-1 rounded-sm font-bold">NEW</div>
-                              </div>
-                            ))}
-
-                            {/* Upload Button */}
-                            <label className="aspect-square rounded-lg border-2 border-dashed border-primary/50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 transition-colors text-primary bg-primary/5">
-                              <Plus size={24} />
-                              <span className="text-[10px] font-semibold">เพิ่มรูป</span>
-                              <input
-                                type="file"
-                                multiple
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const files = Array.from(e.target.files || []);
-                                  if (files.length > 0) {
-                                    setNewImages(prev => ({
-                                      ...prev,
-                                      [itemIdStr]: [...(prev[itemIdStr] || []), ...files],
-                                    }));
-                                  }
-                                }}
-                              />
-                            </label>
-                          </div>
-                        </div>
-
-                      </div>
-
-                      {/* Action row */}
-                      <div className="flex gap-2 pt-4 mt-4 border-t border-divider-color/50">
-                        <button
-                          onClick={() => handleRemoveItem(index)}
-                          className="p-2 text-error hover:bg-error/8 rounded-lg transition-colors"
-                          title="ลบรายการ"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                        <button
-                          onClick={toggleExpand}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-[13px] font-semibold text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors"
-                        >
-                          <span>{isExpanded ? 'ย่อรายละเอียดเพิ่มเติม' : 'กรอกรายละเอียดเพิ่มเติม (สาเหตุ, ผู้รับผิดชอบ)'}</span>
-                          <ChevronDown
-                            size={15}
-                            className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                          />
-                        </button>
-                      </div>
-
-                    </div>
-
-                    {/* Expandable Details (Reason, Responsible) */}
+                    {/* Collapsible Item Body (Default Folded) */}
                     <AnimatePresence initial={false}>
                       {isExpanded && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                          className="border-t border-divider-color bg-surface-secondary/30 overflow-hidden"
+                          transition={{ duration: 0.25, ease: 'easeInOut' }}
+                          className="border-t border-divider-color/60 overflow-hidden"
                         >
-                          <div className="p-5 flex flex-col gap-6">
-                            <div>
+                          <div className="p-4 sm:p-5 space-y-6">
+                            <div className="flex flex-col xl:flex-row gap-6">
+                              
+                              {/* Data Inputs / Read-Only View (Left Column) */}
+                              <div className="flex-1 space-y-4 min-w-0">
+                                {editingItemIds[itemIdStr] ? (
+                                  <div className="space-y-4">
+                                    {/* Row 1: Item Name & Item Code */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                      <div className="md:col-span-2">
+                                        <FieldLabel>ชื่อสินค้า / Item Name</FieldLabel>
+                                        <FieldInput
+                                          value={item.itemName || ''}
+                                          onChange={(e) => {
+                                            const n = [...editedItems];
+                                            n[index] = { ...n[index], itemName: e.target.value };
+                                            setEditedItems(n);
+                                          }}
+                                          placeholder="ระบุชื่อสินค้า..."
+                                        />
+                                      </div>
+                                      <div>
+                                        <FieldLabel>รหัสสินค้า / Item Code</FieldLabel>
+                                        <FieldInput
+                                          value={item.itemCode || ''}
+                                          onChange={(e) => handleItemCodeChange(index, e.target.value)}
+                                          placeholder="เช่น 40001355"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Row 2: Customer Name, Amount & Batch No */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                      <div className="relative z-[40]">
+                                        <FieldLabel>ลูกค้า / Customer</FieldLabel>
+                                        <Combobox
+                                          options={CUSTOMER_OPTIONS.map(c => ({ label: c, value: c }))}
+                                          value={item.customerName || ''}
+                                          onChange={(val) => {
+                                            const n = [...editedItems];
+                                            n[index] = { ...n[index], customerName: val };
+                                            setEditedItems(n);
+                                          }}
+                                          placeholder="เลือกลูกค้า..."
+                                        />
+                                      </div>
+                                      <div>
+                                        <FieldLabel>จำนวนทั้งหมด (ลัง/กล่อง)</FieldLabel>
+                                        <FieldInput
+                                          type="number"
+                                          value={item.amount || ''}
+                                          onChange={(e) => {
+                                            const n = [...editedItems];
+                                            n[index] = { ...n[index], amount: Number(e.target.value) };
+                                            setEditedItems(n);
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <FieldLabel>Batch No.</FieldLabel>
+                                        <FieldInput
+                                          value={item.batchNo || ''}
+                                          onChange={(e) => {
+                                            const n = [...editedItems];
+                                            n[index] = { ...n[index], batchNo: e.target.value };
+                                            setEditedItems(n);
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Row 3: Mold & Line */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <FieldLabel>Mold</FieldLabel>
+                                        <FieldInput
+                                          value={item.mold || ''}
+                                          onChange={(e) => {
+                                            const n = [...editedItems];
+                                            n[index] = { ...n[index], mold: e.target.value };
+                                            setEditedItems(n);
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <FieldLabel>Line</FieldLabel>
+                                        <FieldInput
+                                          value={item.line || ''}
+                                          onChange={(e) => {
+                                            const n = [...editedItems];
+                                            n[index] = { ...n[index], line: e.target.value };
+                                            setEditedItems(n);
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    <div>
+                                       <FieldLabel>อาการเสีย / รายละเอียดการวิเคราะห์</FieldLabel>
+                                       <FieldInput
+                                          value={item.details || ''}
+                                          onChange={(e) => {
+                                            const n = [...editedItems];
+                                            n[index] = { ...n[index], details: e.target.value };
+                                            setEditedItems(n);
+                                          }}
+                                          rows={2}
+                                       />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* Read-Only Summary Mode */
+                                  <div className="bg-surface/50 border border-divider-color/50 rounded-xl p-4 space-y-3.5 shadow-2xs">
+                                    <div>
+                                      <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">ชื่อสินค้า / Item Name</span>
+                                      <p className="text-sm sm:text-base font-bold text-on-surface bg-white px-3.5 py-2 rounded-lg border border-divider-color/40 shadow-3xs">
+                                        {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}
+                                      </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">รหัสสินค้า / Code</span>
+                                        <span className="text-xs font-bold text-primary mt-0.5 block">{item.itemCode || '-'}</span>
+                                      </div>
+                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">ลูกค้า / Customer</span>
+                                        <span className="text-xs font-bold text-on-surface mt-0.5 block">{item.customerName || '-'}</span>
+                                      </div>
+                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">จำนวนทั้งหมด</span>
+                                        <span className="text-xs font-bold text-on-surface mt-0.5 block">{item.amount || 0} ลัง/กล่อง</span>
+                                      </div>
+                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Batch No.</span>
+                                        <span className={`text-xs font-semibold mt-0.5 block ${item.batchNo ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.batchNo || 'ไม่ได้ระบุ'}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Mold</span>
+                                        <span className={`text-xs font-semibold mt-0.5 block ${item.mold ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.mold || 'ไม่ได้ระบุ'}</span>
+                                      </div>
+                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Line</span>
+                                        <span className={`text-xs font-semibold mt-0.5 block ${item.line ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.line || 'ไม่ได้ระบุ'}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="bg-white p-3 rounded-lg border border-divider-color/40 shadow-3xs">
+                                      <span className="text-[10px] font-bold text-on-surface-variant uppercase block mb-1">อาการเสีย / รายละเอียดการวิเคราะห์</span>
+                                      <p className={`text-xs font-medium leading-relaxed ${item.details ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>
+                                        {item.details || 'ยังไม่มีการระบุรายละเอียดอาการเสีย'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Photo Uploader Workspace (Right Column) */}
+                              <div className="xl:w-[320px] shrink-0 bg-surface-secondary/40 rounded-xl p-4 border border-divider-color/60">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                                    <Camera size={14} /> 
+                                    รูปภาพหลักฐานหลังวิเคราะห์
+                                  </p>
+                                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                    {activeImageCount} รูป
+                                  </span>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-2">
+                                  {/* Existing Images */}
+                                  {(item.imageUrls || []).map((url, i) => {
+                                    const isDeleted = deletedItemIds.includes(url);
+                                    return (
+                                      <div key={i} className="relative group aspect-square rounded-lg overflow-hidden bg-white shadow-sm border border-divider-color/50">
+                                        <img src={url} alt="item" className={`w-full h-full object-cover ${isDeleted ? 'opacity-30 grayscale' : ''}`} />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (isDeleted) setDeletedItemIds(prev => prev.filter(u => u !== url));
+                                            else setDeletedItemIds(prev => [...prev, url]);
+                                          }}
+                                          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                          {isDeleted ? <Plus size={20} className="text-white" /> : <Trash2 size={20} className="text-white" />}
+                                        </button>
+                                        {isDeleted && <div className="absolute inset-0 border-2 border-error rounded-lg" />}
+                                      </div>
+                                    );
+                                  })}
+
+                                  {/* New Images */}
+                                  {(newImages[itemIdStr] || []).map((file, i) => (
+                                    <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden bg-blue-50 border-2 border-primary/40">
+                                      <img src={URL.createObjectURL(file)} alt="new" className="w-full h-full object-cover" />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const imgs = { ...newImages };
+                                          imgs[itemIdStr] = imgs[itemIdStr].filter((_, idx) => idx !== i);
+                                          setNewImages(imgs);
+                                        }}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <X size={20} className="text-white" />
+                                      </button>
+                                      <div className="absolute top-1 right-1 bg-primary text-white text-[9px] px-1 rounded-sm font-bold">NEW</div>
+                                    </div>
+                                  ))}
+
+                                  {/* Upload Button */}
+                                  <label className="aspect-square rounded-lg border-2 border-dashed border-primary/50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 transition-colors text-primary bg-primary/5">
+                                    <Plus size={24} />
+                                    <span className="text-[10px] font-semibold">เพิ่มรูป</span>
+                                    <input
+                                      type="file"
+                                      multiple
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const files = Array.from(e.target.files || []);
+                                        if (files.length > 0) {
+                                          setNewImages(prev => ({
+                                            ...prev,
+                                            [itemIdStr]: [...(prev[itemIdStr] || []), ...files],
+                                          }));
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+
+                            </div>
+
+                            {/* Section: Reason & Responsible */}
+                            <div className="p-4 rounded-xl border border-divider-color bg-surface-secondary/20">
                               <SectionTitle color="bg-[#ff9500]">สาเหตุและผู้รับผิดชอบ</SectionTitle>
                               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                                 <div className="space-y-1.5 relative z-[60]">
@@ -1062,6 +1073,19 @@ export function CaseUpdateView({
                                   </div>
                                 </div>
                               )}
+                            </div>
+
+                            {/* Delete Item button */}
+                            <div className="flex justify-end pt-2 border-t border-divider-color/40">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(index)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
+                                title="ลบรายการนี้"
+                              >
+                                <Trash2 size={14} />
+                                <span>ลบรายการนี้</span>
+                              </button>
                             </div>
                           </div>
                         </motion.div>

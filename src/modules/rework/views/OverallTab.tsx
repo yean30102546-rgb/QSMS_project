@@ -144,18 +144,18 @@ export function OverallTab({
             exit={{ opacity: 0, x: -20 }}
             className="flex h-full flex-col overflow-hidden bg-transparent"
           >
-            <div className="flex-shrink-0 border-b border-white/20 bg-white/20 backdrop-blur-md px-0 py-6 md:py-8 lg:py-10 shadow-sm shadow-primary/5">
-              <div className="px-4 md:px-10 lg:px-12">
-                <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex-shrink-0 border-b border-white/20 bg-white/20 backdrop-blur-md px-0 py-3 sm:py-6 md:py-8 lg:py-10 shadow-sm shadow-primary/5">
+              <div className="px-3 sm:px-6 md:px-10 lg:px-12">
+                <header className="mb-3 sm:mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="mb-1 text-xs font-medium text-on-surface-variant/80 uppercase tracking-wider">
+                    <p className="mb-0.5 sm:mb-1 text-[11px] sm:text-xs font-medium text-on-surface-variant/80 uppercase tracking-wider">
                       {new Date().toLocaleDateString('th-TH', {
                         weekday: 'long',
                         month: 'short',
                         day: 'numeric',
                       })}
                     </p>
-                    <h1 className="text-2xl font-semibold tracking-tight text-primary md:text-3xl">
+                    <h1 className="text-xl font-semibold tracking-tight text-primary sm:text-2xl md:text-3xl">
                   สวัสดี {
                     userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
                     userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
@@ -169,15 +169,15 @@ export function OverallTab({
                   <button
                     onClick={loadCases}
                     disabled={isLoadingCases}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-white/40 text-primary transition-all hover:bg-white/80 disabled:opacity-50 active:scale-95 shadow-sm"
+                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/40 bg-white/40 text-primary transition-all hover:bg-white/80 disabled:opacity-50 active:scale-95 shadow-sm"
                   >
-                    <RefreshCw size={18} className={isLoadingCases ? 'animate-spin' : ''} />
+                    <RefreshCw size={16} className={isLoadingCases ? 'animate-spin' : ''} />
                   </button>
                 </Tooltip>
               </div>
             </header>
 
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4 lg:grid-cols-4">
               <StatCard label="จำนวนงานทั้งหมด" value={stats.total.toString()} />
               <StatCard
                 label="รอดำเนินการ"
@@ -190,11 +190,11 @@ export function OverallTab({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent">
-          <div className="px-4 py-6 md:px-10 md:py-8 lg:px-12">
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-1">
+        <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent pb-20 sm:pb-8">
+          <div className="px-3 py-3 sm:px-6 sm:py-6 md:px-10 lg:px-12">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col gap-3 sm:gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-1">
                   <h3 className="text-sm font-semibold tracking-tight text-primary md:text-base">
                     รายการงาน Rework ล่าสุด
                   </h3>
@@ -559,15 +559,15 @@ function StatCard({ label, value, trend }: StatCardProps) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="stat-card rounded-xl border border-white/45 bg-white/45 backdrop-blur-md p-4 md:p-6 shadow-sm shadow-primary/5 hover:bg-white/70 hover:shadow-md transition-all duration-300"
+      className="stat-card rounded-xl border border-white/45 bg-white/45 backdrop-blur-md p-2.5 sm:p-4 md:p-6 shadow-sm shadow-primary/5 hover:bg-white/70 hover:shadow-md transition-all duration-300"
     >
-      <p className="mb-2 text-[9px] font-semibold uppercase leading-none tracking-[0.12em] text-on-surface-variant/70 md:mb-3 md:text-[10px]">
+      <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs font-semibold uppercase leading-none tracking-wider text-on-surface-variant/70">
         {label}
       </p>
-      <div className="flex items-end justify-between gap-2">
-        <h3 className="text-2xl font-semibold leading-none tracking-tight text-primary md:text-3xl">{value}</h3>
+      <div className="flex items-end justify-between gap-1.5 sm:gap-2">
+        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-none tracking-tight text-primary">{value}</h3>
         {trend && (
-          <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase leading-none tracking-widest text-primary md:px-2 md:text-[9px]">
+          <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[8px] sm:text-[9px] font-semibold uppercase leading-none tracking-widest text-primary">
             {trend}
           </span>
         )}
