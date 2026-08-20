@@ -190,7 +190,7 @@ export function OverallTab({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent pb-20 sm:pb-8">
+        <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent pb-28 sm:pb-8">
           <div className="px-3 py-3 sm:px-6 sm:py-6 md:px-10 lg:px-12">
             <div className="space-y-4 sm:space-y-6">
               <div className="flex flex-col gap-3 sm:gap-4">

@@ -185,39 +185,46 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
   return (
     <div
       onClick={onClick}
-      className={`group flex cursor-pointer items-center rounded-lg px-4 py-4 transition-all duration-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.99] ${
+      className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 rounded-xl p-3 sm:px-4 sm:py-4 transition-all duration-200 hover:bg-slate-50/90 active:scale-[0.99] cursor-pointer border border-slate-100 sm:border-transparent ${
         deadlineStatus === 'warning'
-          ? 'bg-amber-50/50'
+          ? 'bg-amber-50/50 border-amber-200/60'
           : deadlineStatus === 'danger'
-            ? 'bg-red-50/50'
-            : ''
+            ? 'bg-red-50/50 border-red-200/60'
+            : 'bg-white sm:bg-transparent'
       }`}
     >
-      <div className="flex-1 min-w-0 pr-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="text-sm font-bold text-primary break-words whitespace-normal leading-snug">{caseItem.caseName || displayId}</div>
+      {/* Top & Info Section */}
+      <div className="flex-1 min-w-0">
+        {/* Header line: Case Name + Badges */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="text-sm font-bold text-primary break-words leading-tight">{caseItem.caseName || displayId}</div>
           {caseItem.caseName && (
-             <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200 font-mono">{displayId}</span>
+             <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600 border border-slate-200 font-mono">{displayId}</span>
           )}
           {deadlineStatus === 'warning' && (
-            <div className="flex items-center gap-1 text-xs font-semibold text-amber-600" title="งานค้างเกิน 7 วัน">
-              <Clock size={12} />
+            <div className="flex items-center gap-1 text-[10px] sm:text-xs font-semibold text-amber-600 bg-amber-100/70 px-1.5 py-0.5 rounded" title="งานค้างเกิน 7 วัน">
+              <Clock size={11} />
               <span>7 วัน</span>
             </div>
           )}
           {deadlineStatus === 'danger' && (
-            <div className="flex items-center gap-1 text-xs font-semibold text-red-600" title="งานค้างเกิน 30 วัน">
-              <AlertCircle size={12} />
+            <div className="flex items-center gap-1 text-[10px] sm:text-xs font-semibold text-red-600 bg-red-100/70 px-1.5 py-0.5 rounded" title="งานค้างเกิน 30 วัน">
+              <AlertCircle size={11} />
               <span>เกิน 30 วัน</span>
             </div>
           )}
         </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-slate-500">
-          <span className="font-semibold text-primary/80 break-words whitespace-normal">{itemNameDisplay}</span>
-          <span>&bull;</span>
+
+        {/* Item Name (Full width on mobile) */}
+        <p className="mt-1 text-xs font-bold text-primary/85 leading-snug line-clamp-2">
+          {itemNameDisplay}
+        </p>
+
+        {/* Metadata Details */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-slate-500">
           <div className="flex items-center gap-1 text-primary/80">
             <Calendar size={11} className="shrink-0" />
-            <span className="font-semibold">{formatThaiDateShort(caseItem.date)}</span>
+            <span>{formatThaiDateShort(caseItem.date)}</span>
           </div>
           <span>&bull;</span>
           <span>{formatTimestamp(caseItem.timestamp || caseItem.date)}</span>
@@ -234,38 +241,46 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
           )}
 
           {caseItem.items.every(i => i.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 border border-red-100">
-              <AlertCircle size={12} />
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600 border border-red-200">
+              <AlertCircle size={11} />
               ขาดไฟล์ OR
             </span>
           )}
           {(caseItem.missingBoxes! > 0 || caseItem.missingGallons! > 0 || caseItem.missingOil! > 0) && (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600 border border-amber-200" title={`ขาดกล่อง: ${caseItem.missingBoxes || 0}, ขาดแกลลอน: ${caseItem.missingGallons || 0}, ขาดน้ำมัน: ${caseItem.missingOil || 0} ลิตร`}>
-              <AlertCircle size={12} />
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200" title={`ขาดกล่อง: ${caseItem.missingBoxes || 0}, ขาดแกลลอน: ${caseItem.missingGallons || 0}, ขาดน้ำมัน: ${caseItem.missingOil || 0} ลิตร`}>
+              <AlertCircle size={11} />
               รอของ
             </span>
           )}
         </div>
       </div>
 
-      <div className="mr-2 sm:mr-6 text-right shrink-0 min-w-[100px] sm:min-w-[130px] flex flex-col items-end">
-        <p className="text-sm font-bold text-primary">{totalAmount} กล่อง</p>
-        <div className="w-full mt-1 mb-0.5">
-          <div className="flex justify-between items-center mb-0.5">
-            <span className="text-[10px] font-medium text-slate-500">{totalCompleted}/{totalAmount}</span>
-            <span className="text-[10px] font-bold text-primary">{progressPercent}%</span>
+      {/* Progress, Amount & Status */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 shrink-0 sm:min-w-[220px] pt-2 sm:pt-0 border-t border-slate-100 sm:border-0">
+        <div className="flex-1 sm:min-w-[120px] sm:text-right flex flex-col sm:items-end">
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
+            <p className="text-xs sm:text-sm font-bold text-primary">{totalAmount} กล่อง</p>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
-              style={{ width: `${progressPercent}%` }} 
-            />
+          <div className="w-full mt-1 mb-0.5">
+            <div className="flex justify-between items-center mb-0.5">
+              <span className="text-[10px] font-medium text-slate-500">{totalCompleted}/{totalAmount}</span>
+              <span className="text-[10px] font-bold text-primary">{progressPercent}%</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
+                style={{ width: `${progressPercent}%` }} 
+              />
+            </div>
           </div>
+          <p className="text-[10px] font-medium text-slate-400 mt-0.5 truncate max-w-full text-left sm:text-right w-full" title={reasonsDisplay}>{reasonsDisplay}</p>
         </div>
-        <p className="text-[10px] font-medium text-slate-400 mt-0.5 truncate max-w-full" title={reasonsDisplay}>{reasonsDisplay}</p>
-      </div>
 
-      <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
+        {/* Status Pill - single instance for both mobile & desktop */}
+        <div className="shrink-0 self-end sm:self-center">
+          <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
+        </div>
+      </div>
     </div>
   );
 }
