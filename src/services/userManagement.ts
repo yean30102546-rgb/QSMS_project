@@ -1,129 +1,83 @@
 /**
- * User Management Service
- * Handles user administration, roles, and permissions for small organizations
- * 
- * For organizations with up to 20 users:
- * - Stores user data (simulated/cached locally or fetched from auth server)
- * - Manages roles and permissions
- * - Provides user CRUD operations
+ * User Management & Admin Monitoring Service
+ * Handles user administration, roles, live SLA monitoring, and defect defend logs
  */
 
 import { UserRole, ROLE_PERMISSIONS } from '../config/auth.config';
 
 export interface UserAccount {
   id: string;
-  email: string;
+  username: string;
   name: string;
-  role: UserRole;
-  department?: string;
-  phone?: string;
-  enabled: boolean;
-  createdAt: string;
-  lastLogin?: string;
-  notes?: string;
+  role: UserRole | string;
+  employee_id?: string;
+  createdAt?: string;
+  created_at?: string;
 }
 
 export interface UserCreateRequest {
-  email: string;
+  username: string;
   name: string;
-  role: UserRole;
-  department?: string;
-  phone?: string;
+  password: string;
+  role: UserRole | string;
+  employee_id?: string;
 }
 
-export interface UserUpdateRequest extends Partial<UserCreateRequest> {
+export interface UserUpdateRequest {
   id: string;
-  enabled?: boolean;
+  name?: string;
+  role?: UserRole | string;
+  employee_id?: string;
+  password?: string;
 }
 
-/**
- * Create a new user account
- * In production: Call backend API with proper validation
- */
-export async function createUser(userData: UserCreateRequest): Promise<{ success: boolean; data?: UserAccount; error?: string }> {
+export interface AuditLogItem {
+  id: string;
+  case_id: string;
+  action: string;
+  performed_by: string;
+  timestamp: string;
+}
+
+export interface MonitorMetrics {
+  users: {
+    total: number;
+    roleCounts: Record<string, number>;
+  };
+  cases: {
+    pendingAnalysis: number;
+    awaitingMaterials: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    total: number;
+  };
+  blockedCases: Array<{
+    id: string;
+    caseName: string;
+    customerName: string;
+    reasonCategory?: string;
+    reasonDetail?: string;
+    blockedAt?: string;
+    reportedBy?: string;
+  }>;
+}
+
+async function adminApiFetch<T>(payload: Record<string, unknown>): Promise<{ success: boolean; data?: T; error?: string; message?: string }> {
   try {
-    if (!userData.email || !userData.name || !userData.role) {
-      return {
-        success: false,
-        error: 'Email, name, and role are required',
-      };
-    }
+    const response = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
 
-    // Validate email format
-    if (!isValidEmail(userData.email)) {
-      return {
-        success: false,
-        error: 'Invalid email format',
-      };
-    }
-
-    // TODO: Call backend API
-    // POST /api/users/create
-    // Returns: UserAccount
-
-    return {
-      success: false,
-      error: 'Backend integration required',
-    };
+    const data = await response.json();
+    return data;
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create user',
-    };
-  }
-}
-
-/**
- * Update user account
- */
-export async function updateUser(userData: UserUpdateRequest): Promise<{ success: boolean; data?: UserAccount; error?: string }> {
-  try {
-    if (!userData.id) {
-      return {
-        success: false,
-        error: 'User ID is required',
-      };
-    }
-
-    // TODO: Call backend API
-    // PUT /api/users/{id}
-    // Returns: UserAccount
-
-    return {
-      success: false,
-      error: 'Backend integration required',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update user',
-    };
-  }
-}
-
-/**
- * Delete user account
- */
-export async function deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    if (!userId) {
-      return {
-        success: false,
-        error: 'User ID is required',
-      };
-    }
-
-    // TODO: Call backend API
-    // DELETE /api/users/{id}
-
-    return {
-      success: false,
-      error: 'Backend integration required',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete user',
+      error: error instanceof Error ? error.message : 'Network error communicating with Admin API',
     };
   }
 }
@@ -132,81 +86,93 @@ export async function deleteUser(userId: string): Promise<{ success: boolean; er
  * Get all users
  */
 export async function getAllUsers(): Promise<{ success: boolean; data?: UserAccount[]; error?: string }> {
-  try {
-    // TODO: Call backend API
-    // GET /api/users
-
-    return {
-      success: false,
-      error: 'Backend integration required',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch users',
-    };
-  }
+  const res = await adminApiFetch<UserAccount[]>({ action: 'listUsers' });
+  return {
+    success: res.success,
+    data: res.data || [],
+    error: res.error,
+  };
 }
 
 /**
- * Get user by ID
+ * Create a new user account (Admin only)
  */
-export async function getUser(userId: string): Promise<{ success: boolean; data?: UserAccount; error?: string }> {
-  try {
-    if (!userId) {
-      return {
-        success: false,
-        error: 'User ID is required',
-      };
-    }
-
-    // TODO: Call backend API
-    // GET /api/users/{id}
-
+export async function createUser(userData: UserCreateRequest): Promise<{ success: boolean; data?: UserAccount; error?: string }> {
+  if (!userData.username || !userData.name || !userData.password || !userData.role) {
     return {
       success: false,
-      error: 'Backend integration required',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch user',
+      error: 'กรุณากรอก Username, รหัสผ่าน, ชื่อ-นามสกุล และบทบาท (Role) ให้ครบถ้วน',
     };
   }
+
+  const res = await adminApiFetch<UserAccount>({
+    action: 'createUser',
+    username: userData.username,
+    password: userData.password,
+    name: userData.name,
+    role: userData.role,
+    employee_id: userData.employee_id,
+  });
+
+  return res;
 }
 
 /**
- * Assign role to user
+ * Update user account
  */
-export async function assignRole(userId: string, role: UserRole): Promise<{ success: boolean; error?: string }> {
-  try {
-    if (!userId || !role) {
-      return {
-        success: false,
-        error: 'User ID and role are required',
-      };
-    }
-
-    if (!Object.values(UserRole).includes(role)) {
-      return {
-        success: false,
-        error: 'Invalid role',
-      };
-    }
-
-    // TODO: Call backend API
-    // PATCH /api/users/{id}/role
-
+export async function updateUser(userData: UserUpdateRequest): Promise<{ success: boolean; data?: UserAccount; error?: string }> {
+  if (!userData.id) {
     return {
       success: false,
-      error: 'Backend integration required',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to assign role',
+      error: 'User ID is required',
     };
   }
+
+  return await adminApiFetch<UserAccount>({
+    action: 'updateUser',
+    ...userData,
+  });
+}
+
+/**
+ * Delete user account
+ */
+export async function deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
+  if (!userId) {
+    return {
+      success: false,
+      error: 'User ID is required',
+    };
+  }
+
+  return await adminApiFetch({
+    action: 'deleteUser',
+    id: userId,
+  });
+}
+
+/**
+ * Fetch live Audit Trail
+ */
+export async function fetchAuditLogs(limit: number = 40): Promise<{ success: boolean; data?: AuditLogItem[]; error?: string }> {
+  const res = await adminApiFetch<AuditLogItem[]>({
+    action: 'fetchAuditLogs',
+    limit,
+  });
+  return {
+    success: res.success,
+    data: res.data || [],
+    error: res.error,
+  };
+}
+
+/**
+ * Fetch Admin Monitor Metrics
+ */
+export async function fetchMonitorMetrics(): Promise<{ success: boolean; data?: MonitorMetrics; error?: string }> {
+  return await adminApiFetch<MonitorMetrics>({
+    action: 'fetchMonitorMetrics',
+  });
 }
 
 /**
@@ -230,104 +196,36 @@ export function userHasPermission(userRole: UserRole, permission: string): boole
 export function getAvailableRoles(): Array<{ value: UserRole; label: string; description: string }> {
   return [
     {
-      value: UserRole.QSMS,
-      label: 'QSMS (Administrator)',
-      description: 'Full system access, delete, and advanced editing',
+      value: UserRole.ADMIN,
+      label: 'Admin (System Administrator)',
+      description: 'Full system control, user & master management, reports',
     },
     {
-      value: UserRole.OPERATOR,
-      label: 'Operator',
-      description: 'Production operator role, case recording, and updates',
+      value: UserRole.QSMS,
+      label: 'QSMS (Quality Control)',
+      description: 'Defect analysis, photo verification, container requisition spec',
+    },
+    {
+      value: UserRole.WPK,
+      label: 'WPK (Warehouse & Packaging)',
+      description: 'Case initiation (Step 1) and material issuing/fulfillment',
+    },
+    {
+      value: UserRole.PDF,
+      label: 'PDF (Production & Repair)',
+      description: 'Repair progress execution, defend blocked issue reporting',
     },
   ];
 }
 
-/**
- * Reset user password
- */
-export async function resetUserPassword(userId: string): Promise<{ success: boolean; temporaryPassword?: string; error?: string }> {
-  try {
-    if (!userId) {
-      return {
-        success: false,
-        error: 'User ID is required',
-      };
-    }
-
-    // TODO: Call backend API
-    // POST /api/users/{id}/reset-password
-    // Returns: { temporaryPassword: string }
-
-    return {
-      success: false,
-      error: 'Backend integration required',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to reset password',
-    };
-  }
-}
-
-/**
- * Enable/Disable user account
- */
-export async function toggleUserStatus(userId: string, enabled: boolean): Promise<{ success: boolean; error?: string }> {
-  try {
-    if (!userId) {
-      return {
-        success: false,
-        error: 'User ID is required',
-      };
-    }
-
-    // TODO: Call backend API
-    // PATCH /api/users/{id}/status
-
-    return {
-      success: false,
-      error: 'Backend integration required',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update user status',
-    };
-  }
-}
-
-/**
- * Utility: Validate email format
- */
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Utility: Generate temporary password
- */
-export function generateTemporaryPassword(length: number = 12): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-}
-
 export default {
+  getAllUsers,
   createUser,
   updateUser,
   deleteUser,
-  getAllUsers,
-  getUser,
-  assignRole,
+  fetchAuditLogs,
+  fetchMonitorMetrics,
   getRolePermissions,
   userHasPermission,
   getAvailableRoles,
-  resetUserPassword,
-  toggleUserStatus,
-  generateTemporaryPassword,
 };

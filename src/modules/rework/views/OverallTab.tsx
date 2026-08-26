@@ -15,10 +15,12 @@ import { CaseUpdateView } from '@/src/modules/rework/views/CaseUpdateView';
 interface OverallTabProps {
   userRole?: string;
   userName?: string;
+  onFocusModeChange?: (isFocus: boolean) => void;
 }
 
 export function OverallTab({
   userRole = 'Admin',
+  onFocusModeChange,
 }: OverallTabProps) {
   const { showToast, showAlert } = useNotification();
   const {
@@ -36,6 +38,12 @@ export function OverallTab({
   const [selectedCase, setSelectedCase] = useState<ReworkCase | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (onFocusModeChange) {
+      onFocusModeChange(activeView === 'update');
+    }
+  }, [activeView, onFocusModeChange]);
 
   const {
     activeFilterCount,
@@ -524,6 +532,9 @@ export function OverallTab({
             onSuccess={() => {
               setActiveView('list');
               setSelectedCase(null);
+              loadCases();
+            }}
+            onSaveSuccess={() => {
               loadCases();
             }}
             onDelete={handleDeleteCase}

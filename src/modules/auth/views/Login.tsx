@@ -224,21 +224,14 @@ export function Login({
               </motion.button>
             </form>
 
-            <div className="mt-7 border-t border-[#e8e8ed] pt-5 flex flex-col gap-3">
-              <p className="text-xs leading-5 text-[#6e6e73]">
-                ยังไม่มีบัญชีผู้ใช้งานใช่หรือไม่?
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (onNavigateToRegister) {
-                    onNavigateToRegister();
-                  }
-                }}
-                className="w-full rounded-2xl border border-[#d2d2d7] bg-white py-3 text-sm font-semibold text-[#1d1d1f] transition hover:bg-gray-50"
-              >
-                สร้างบัญชีใหม่
-              </button>
+            <div className="mt-7 border-t border-[#e8e8ed] pt-5">
+              <div className="flex items-start gap-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-[#6e6e73]">
+                <Lock size={15} className="text-slate-400 mt-0.5 shrink-0" />
+                <p className="leading-relaxed">
+                  <strong className="text-slate-800 font-semibold block mb-0.5">การจำกัดสิทธิ์การเข้าใช้งาน (Authorized Access Only)</strong>
+                  ระบบนี้ไม่อนุญาตให้ลงทะเบียนด้วยตนเอง หากต้องการขอรับสิทธิ์เข้าใช้งานหรือลืมรหัสผ่าน กรุณาติดต่อผู้ดูแลระบบ (System Administrator)
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -5,12 +5,14 @@ function getAuthSecret(): string {
 }
 
 const PROFILE_ALIASES: Record<string, string> = {
-  ADMIN: 'QSMS',
-  WFG: 'OPERATOR',
+  WFG: 'WPK',
+  OPERATOR: 'PDF',
 };
 
 const PROFILE_PERMISSIONS: Record<string, string[]> = {
   ADMIN: [
+    'manage_users',
+    'manage_masters',
     'view_dashboard',
     'view_overall',
     'create_case',
@@ -18,6 +20,12 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'delete_case',
     'update_status',
     'fill_resolution',
+    'fill_analysis',
+    'request_materials',
+    'issue_materials',
+    'repair_case',
+    'block_case',
+    'close_case',
     'export_data',
   ],
   QSMS: [
@@ -28,9 +36,34 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'delete_case',
     'update_status',
     'fill_resolution',
+    'fill_analysis',
+    'request_materials',
+    'close_case',
     'export_data',
   ],
-  OPERATOR: ['view_overall', 'create_case', 'update_status', 'fill_resolution'],
+  WPK: [
+    'view_overall',
+    'create_case',
+    'issue_materials',
+    'export_data',
+  ],
+  PDF: [
+    'view_overall',
+    'update_status',
+    'repair_case',
+    'block_case',
+    'close_case',
+    'export_data',
+  ],
+  OPERATOR: [
+    'view_overall',
+    'create_case',
+    'update_status',
+    'fill_resolution',
+    'repair_case',
+    'block_case',
+    'close_case',
+  ],
 };
 
 export class AuthError extends Error {

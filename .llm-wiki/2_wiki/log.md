@@ -365,5 +365,34 @@ Knowledge สำคัญที่ได้:
 - Synchronized all 5 root context files (`CONTEXT.md`, `GEMINI.md`, `README.md`, `USER_GUIDE.md`, `PRODUCT.md`) to 100% match active codebase implementation.
 - Updated `.llm-wiki/2_wiki/log.md`, `lessons-learned/bugs-and-fixes.md`, and `index.md`.
 
+---
+
+## 2026-08-26
+
+### [Feature & UX Overhaul] CaseUpdateView AddCaseTab 4-Block Parity, Focus Ring Uniformity & Floating Progress Island
+- **AddCaseTab 4-Block Form Parity**:
+  - Re-architected item editing cards in `CaseUpdateView.tsx` into 4 dedicated, balanced blocks:
+    - **Block 1 (Main Product Info)**: Customer Name, Item Number, and Item Code in balanced 3-column top row + full-width Item Name below.
+    - **Block 2 (Spec & Production Sub-Panel)**: Sub-panel with subtle background (`bg-slate-50/80 rounded-2xl`) housing 5 evenly proportioned fields (Batch No, Gallon Date, Mold, Line, Amount / Boxes in Indigo).
+    - **Block 3 (Defect Cause & Responsibility)**: 2-column paired selectors for Reason (Primary + Subtype) and Responsible (Unit + Department/Supplier) + full-width Defect Details/Notes below.
+    - **Block 4 (Photo Evidence & Save Action)**: Evidence thumbnail gallery with Lightbox + Add Photo button + `[💾 บันทึกรายการนี้ ➔ ย้ายลงล่าง]` action button.
+- **Input Focus Ring Uniformity & Spinner Cleanup**:
+  - Eliminated browser default heavy black focus outline on number inputs by adding `focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20` across all inputs.
+  - Stripped native browser number spinner arrows via `[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`.
+- **Per-Item Save & Focus Queue Engine (`handleSaveSingleItem`)**:
+  - Uploads staged evidence photos for the specific item to Cloudinary (unsigned target 300KB) and persists to Supabase.
+  - Automatically collapses the saved item, shifts it to the bottom of the list, and expands the next incomplete item in queue.
+  - Real-time status badges on card headers: `🟢 ✓ ข้อมูลสมบูรณ์`, `🟡 ⚠️ อัปเดตแล้ว`, `⚪ ⏳ รอตรวจสอบ`.
+- **Floating Save Progress Island & Top Glowing Stripe**:
+  - Removed disruptive inline progress bar that replaced Header action buttons.
+  - Introduced a 3px top-edge glowing gradient progress stripe (`h-1 bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-500`).
+  - Added bottom-center Floating Dynamic Island (`fixed bottom-6 left-1/2 -translate-x-1/2`) showing animated loader, real-time percentage, and status message.
+- **Database Schema Cache Resilience**:
+  - Added fallback retry mechanism in `src/app/api/rework/route.ts` when PostgREST schema cache encounters missing columns on update.
+- **Testing & Quality Assurance**:
+  - `npx tsc --noEmit`: 0 TypeScript errors.
+  - `npx vitest run`: 22/22 test suites passing (144/144 tests).
+
+
 
 

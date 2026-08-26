@@ -51,22 +51,46 @@ describe('Server Auth Library', () => {
   });
 
   describe('assertPermission', () => {
-    it('should allow valid permissions for QSMS profile', () => {
-      const auth = { email: 'admin@example.com', profile: 'QSMS' };
-      expect(() => assertPermission(auth, 'view_dashboard')).not.toThrow();
-      expect(() => assertPermission(auth, 'edit_case')).not.toThrow();
-      expect(() => assertPermission(auth, 'delete_case')).not.toThrow();
-      expect(() => assertPermission(auth, 'export_data')).not.toThrow();
+    it('should allow valid permissions for ADMIN and QSMS profile', () => {
+      const adminAuth = { email: 'admin@example.com', profile: 'ADMIN' };
+      expect(() => assertPermission(adminAuth, 'manage_users')).not.toThrow();
+      expect(() => assertPermission(adminAuth, 'delete_case')).not.toThrow();
+
+      const qsmsAuth = { email: 'qsms@example.com', profile: 'QSMS' };
+      expect(() => assertPermission(qsmsAuth, 'view_dashboard')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'edit_case')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'delete_case')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'export_data')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'fill_analysis')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'request_materials')).not.toThrow();
     });
 
-    it('should allow basic permissions for OPERATOR profile but block export_data and delete_case', () => {
+    it('should allow WPK to create case and issue materials, but block repair_case', () => {
+      const wpkAuth = { email: 'wpk@example.com', profile: 'WPK' };
+      expect(() => assertPermission(wpkAuth, 'view_overall')).not.toThrow();
+      expect(() => assertPermission(wpkAuth, 'create_case')).not.toThrow();
+      expect(() => assertPermission(wpkAuth, 'issue_materials')).not.toThrow();
+      expect(() => assertPermission(wpkAuth, 'repair_case')).toThrow(AuthError);
+      expect(() => assertPermission(wpkAuth, 'delete_case')).toThrow(AuthError);
+    });
+
+    it('should allow PDF to repair and block issues, but block manage_users and delete_case', () => {
+      const pdfAuth = { email: 'pdf@example.com', profile: 'PDF' };
+      expect(() => assertPermission(pdfAuth, 'view_overall')).not.toThrow();
+      expect(() => assertPermission(pdfAuth, 'repair_case')).not.toThrow();
+      expect(() => assertPermission(pdfAuth, 'block_case')).not.toThrow();
+      expect(() => assertPermission(pdfAuth, 'close_case')).not.toThrow();
+      expect(() => assertPermission(pdfAuth, 'delete_case')).toThrow(AuthError);
+      expect(() => assertPermission(pdfAuth, 'manage_users')).toThrow(AuthError);
+    });
+
+    it('should allow basic permissions for OPERATOR profile but block delete_case and export_data', () => {
       const auth = { email: 'op@example.com', profile: 'OPERATOR' };
       expect(() => assertPermission(auth, 'view_overall')).not.toThrow();
       expect(() => assertPermission(auth, 'create_case')).not.toThrow();
       expect(() => assertPermission(auth, 'update_status')).not.toThrow();
-
-      expect(() => assertPermission(auth, 'export_data')).toThrow(AuthError);
       expect(() => assertPermission(auth, 'delete_case')).toThrow(AuthError);
+      expect(() => assertPermission(auth, 'export_data')).toThrow(AuthError);
     });
   });
 });

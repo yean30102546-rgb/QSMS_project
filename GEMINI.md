@@ -99,6 +99,12 @@
 20. **Academic Thesis Word Document & Presentation Touch Navigation (เอกสารรายงานวิทยานิพนธ์ & การนำทางสไลด์สัมผัส):**
     - สร้างสคริปต์สังเคราะห์รายงานวิทยานิพนธ์ฉบับสมบูรณ์ `QSMS_Project_Thesis_Report.docx` (3.10 MB) ตามมาตรฐานรูปแบบเล่มของสถาบันการจัดการปัญญาภิวัฒน์ (PIM) 5 บท ฝัง 9 Figures ไดอะแกรมความละเอียด 300 DPI และ 7 UI Screenshots
     - เพิ่มระบบตรวจจับการปัดนิ้วสัมผัส Touch Gestures (`onTouchStart`, `onTouchEnd`), แถบควบคุมสไลด์ลอยด้านล่างบนมือถือ (`md:hidden`) และปุ่มลอยสำหรับออกจากโหมดพรีเซนต์ (`GuideApp.tsx`)
+21. **CaseUpdateView 4-Block Form Architecture, Per-Item Save Queue & Floating Progress Island (ผังแบบฟอร์ม 4 บล็อก, การบันทึกรายไอเทม และแผงโปรเกรสลอย):**
+    - **AddCaseTab 4-Block Parity:** ออกแบบเลย์เอาต์ฟอร์มไอเทมใน Step 1 ให้สอดคล้องกับ `AddCaseTab`: Block 1 (Customer Name + Item Number + Item Code 3 ช่องสมดุล + Part Name เต็มแถว), Block 2 (แผงไฮไลท์ข้อมูลผลิต 5 ช่อง: Batch No, Gallon Date, Mold, Line, Amount เน้นสี Indigo), Block 3 (สาเหตุที่พบ & ผู้รับผิดชอบ 2 ช่องคู่ + อาการเสียเต็มแถว), Block 4 (รูปภาพหลักฐานและปุ่มบันทึกรายไอเทม)
+    - **Focus Ring Uniformity:** ป้องกันกรอบดำเบราว์เซอร์ด้วย `focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20` และซ่อน spinner ลูกศรตัวเลข
+    - **Per-Item Save & Focus Queue (`handleSaveSingleItem`):** บันทึกไอเทมเดี่ยวพร้อมอัปโหลดรูปเฉพาะรายการนั้น ย้ายการ์ดที่เสร็จลงล่างสุด และเปิดการ์ดถัดไปที่ยังค้างอยู่ให้อัตโนมัติ
+    - **Floating Save Progress Island & Top Glowing Stripe:** แถบเส้นแสงนีออน 3px บนสุดของจอ และ Dynamic Island ลอยกลางจอด้านล่าง (`fixed bottom-6 left-1/2`) แสดงความคืบหน้าเรียลไทม์โดยไม่ทำให้ปุ่ม Action ด้านบนกระตุกหายไป
+
 
 ---
 

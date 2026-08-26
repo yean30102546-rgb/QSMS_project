@@ -3,14 +3,24 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, Save, FileText, ExternalLink, PenTool, Trash2, Plus, 
   ChevronDown, AlertCircle, Camera, CheckCircle2, Image as ImageIcon, X,
-  Package, Wrench, Edit3, Check, HelpCircle, Tag, FileSpreadsheet, Download, Loader2
+  Package, Wrench, Edit3, Check, HelpCircle, Tag, FileSpreadsheet, Download, 
+  Loader2, Shield, Eye, Clock, ChevronRight, Truck, CheckCheck, AlertTriangle,
+  Sparkles
 } from 'lucide-react';
-import { ReworkCase, ReworkItem, updateCase, CUSTOMER_OPTIONS } from '@/src/services/api';
+import { ReworkCase, ReworkItem, updateCase, CUSTOMER_OPTIONS, MaterialRequestItem } from '@/src/services/api';
+import { getCurrentUser } from '@/src/services/auth';
 import { useNotification } from '@/src/contexts/NotificationContext';
 import { convertDMYToYMD, convertYMDToDMY, enforceNumeric } from '@/src/utils/helpers';
 import { AppleProgressBar } from '@/src/components/shared/AppleProgressBar';
 import { CopyButton } from '@/src/components/ui/CopyButton';
 import { Combobox } from '@/src/components/ui/Combobox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
 import { useSaveProgress } from '@/src/hooks/useSaveProgress';
 import { useReworkData } from '@/src/contexts/ReworkDataContext';
 import { useExportReport } from '@/src/hooks/useExportReport';
@@ -49,87 +59,82 @@ const RESPONSIBLE_OPTIONS = [
 const getResponsibleSubdivisionOptions = (resp: string) =>
   (RESPONSIBLE_SUBDIVISIONS[resp] || []).map(s => ({ label: s.trim(), value: s.trim() }));
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <label className="block text-sm font-medium text-on-surface-variant mb-1.5">
-      {children}
-    </label>
-  );
-}
-
-function FieldInput({
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-  rows,
-  className,
-}: {
-  value: string | number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  type?: string;
-  placeholder?: string;
-  rows?: number;
-  className?: string;
-}) {
-  const base =
-    'w-full border border-divider-color bg-system-background px-3 py-2.5 text-sm font-medium text-on-surface rounded-lg focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]/30 transition-all';
-  if (rows) {
-    return (
-      <textarea
-        value={value}
-        onChange={onChange as (e: React.ChangeEvent<HTMLTextAreaElement>) => void}
-        rows={rows}
-        placeholder={placeholder}
-        className={`${base} resize-none ${className ?? ''}`}
-      />
-    );
-  }
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={onChange as (e: React.ChangeEvent<HTMLInputElement>) => void}
-      placeholder={placeholder}
-      className={`${base} ${className ?? ''}`}
-    />
-  );
-}
-
-function SectionTitle({ color, children }: { color: string; children: React.ReactNode }) {
-  return (
-    <h4 className="text-[13px] font-semibold text-on-surface mb-4 flex items-center gap-2">
-      <span className={`w-1.5 h-1.5 rounded-full ${color} shrink-0`} />
-      {children}
-    </h4>
-  );
-}
-
 function StatusBadge({ status }: { status: ReworkCase['status'] }) {
   const styles: Record<ReworkCase['status'], string> = {
+    'Pending Analysis': 'bg-amber-50 text-amber-800 border-amber-200/80',
+    'Awaiting Materials': 'bg-orange-50 text-orange-800 border-orange-200/80',
     Pending: 'bg-slate-100 text-slate-700 border-slate-200',
-    'In-Progress': 'bg-sky-100 text-sky-800 border-sky-200',
-    Completed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'In-Progress': 'bg-sky-50 text-sky-800 border-sky-200/80',
+    Blocked: 'bg-rose-50 text-rose-800 border-rose-200/80',
+    Completed: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
   };
 
   const thaiLabels: Record<ReworkCase['status'], string> = {
-    Pending: 'รอดำเนินการ (PENDING)',
-    'In-Progress': 'กำลังดำเนินการ (IN-PROGRESS)',
-    Completed: 'เสร็จสิ้น (COMPLETED)',
+    'Pending Analysis': 'รอวิเคราะห์',
+    'Awaiting Materials': 'รอเบิกภาชนะ',
+    Pending: 'รอดำเนินการ',
+    'In-Progress': 'กำลังซ่อม',
+    Blocked: 'ติดปัญหา (Defend)',
+    Completed: 'เสร็จสิ้น 100%',
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider whitespace-nowrap shrink-0 ${styles[status]}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 ${styles[status]}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse" />
-      {thaiLabels[status]}
+      {thaiLabels[status] || status}
     </span>
   );
 }
 
+export type ItemCompletionStatus = 'complete' | 'partial' | 'pending';
+
+export function calculateItemStatus(
+  item: ReworkItem, 
+  stagedFilesCount: number = 0, 
+  deletedUrls: string[] = []
+): { status: ItemCompletionStatus; label: string; missingFields: string[] } {
+  const missing: string[] = [];
+  const activePhotos = (item.imageUrls || []).filter(u => !deletedUrls.includes(u)).length + stagedFilesCount;
+  
+  if (!item.itemCode?.trim()) missing.push('รหัสสินค้า');
+  if (!item.itemNumber?.trim()) missing.push('รหัสสูตร');
+  if (!item.amount || Number(item.amount) <= 0) missing.push('จำนวนกล่อง');
+  if (!item.batchNo?.trim()) missing.push('หมายเลขล็อต');
+  if (!item.gallonDate?.trim() && !item.packagingDate?.trim()) missing.push('วันที่ผลิต');
+  if (!item.reason?.trim()) missing.push('สาเหตุหลัก');
+  if (!item.responsible?.trim()) missing.push('ผู้รับผิดชอบ');
+  if (activePhotos === 0) missing.push('รูปภาพหลักฐาน');
+  
+  if (missing.length === 0) {
+    return { status: 'complete', label: 'ข้อมูลสมบูรณ์', missingFields: [] };
+  }
+  
+  const hasSomeProgress = Boolean(
+    item.batchNo?.trim() || 
+    item.reason?.trim() || 
+    item.responsible?.trim() || 
+    activePhotos > 0 ||
+    item.details?.trim() ||
+    item.gallonDate?.trim() ||
+    item.packagingDate?.trim() ||
+    item.mold?.trim() ||
+    item.line?.trim()
+  );
+  
+  if (hasSomeProgress) {
+    return { status: 'partial', label: 'อัปเดตแล้ว', missingFields: missing };
+  }
+  
+  return { status: 'pending', label: 'รอตรวจสอบ', missingFields: missing };
+}
+
+type WorkflowStep = 'items' | 'analysis' | 'issuing' | 'repair';
+
 interface CaseUpdateViewProps {
   caseData: ReworkCase;
   onBack: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  onSaveSuccess?: () => void;
   onDelete?: (caseId: string) => Promise<void>;
   isAdmin: boolean;
   isOperator: boolean;
@@ -139,6 +144,7 @@ export function CaseUpdateView({
   caseData,
   onBack,
   onSuccess,
+  onSaveSuccess,
   onDelete,
   isAdmin,
   isOperator,
@@ -148,20 +154,62 @@ export function CaseUpdateView({
   const { itemMaster } = useReworkData();
   const { exportRef, isExporting, exportProgress, exportExcel } = useExportReport();
   
+  // Current User & Role-Based Permissions
+  const currentUser = getCurrentUser();
+  const userRole = (currentUser?.role || (isAdmin ? 'ADMIN' : (isOperator ? 'PDF' : 'QSMS'))).toUpperCase();
+  
+  const canEditItems = userRole === 'ADMIN' || userRole === 'QSMS';
+  const canEditAnalysis = userRole === 'ADMIN' || userRole === 'QSMS';
+  const canEditIssuing = userRole === 'ADMIN' || userRole === 'WPK';
+  const canEditRepair = userRole === 'ADMIN' || userRole === 'PDF';
+
+  // Active Workflow Step Tab
+  const [activeStep, setActiveStep] = useState<WorkflowStep>('items');
+
+  // Case Data State
   const [editedItems, setEditedItems] = useState<ReworkItem[]>([]);
   const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
   const [expandedItemIds, setExpandedItemIds] = useState<Record<string, boolean>>({});
-  const [editingItemIds, setEditingItemIds] = useState<Record<string, boolean>>({});
   const [newOrFiles, setNewOrFiles] = useState<File[]>([]);
   const [newImages, setNewImages] = useState<Record<string, File[]>>({});
   const [caseStatus, setCaseStatus] = useState<ReworkCase['status']>('Pending');
+  const [lightboxData, setLightboxData] = useState<{ url: string; title?: string } | null>(null);
+  const [savingItemIndex, setSavingItemIndex] = useState<number | null>(null);
 
-  // Progress & Material Blockers State
+  // Calculate unsaved/staged photos count
+  const totalNewPhotos = Object.values(newImages).reduce((acc, files) => acc + files.length, 0);
+  const hasUnsavedPhotos = totalNewPhotos > 0 || deletedItemIds.length > 0;
+
+  // Keyboard shortcut to close Lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && lightboxData) {
+        setLightboxData(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxData]);
+
+  // Step 2 & 3: Material Requests State
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequestItem[]>([]);
+  const [customMaterialName, setCustomMaterialName] = useState('');
+  const [customMaterialQty, setCustomMaterialQty] = useState(1);
+  const [customMaterialUnit, setCustomMaterialUnit] = useState('ชิ้น');
+  const [isAddingCustomMaterial, setIsAddingCustomMaterial] = useState(false);
+
+  // Step 2 Analysis
+  const [resolutionMethod, setResolutionMethod] = useState<string>('');
+
+  // Step 3 & 4 Progress & Material Blockers State
   const [missingBoxes, setMissingBoxes] = useState<number>(0);
   const [missingGallons, setMissingGallons] = useState<number>(0);
   const [missingOil, setMissingOil] = useState<number>(0);
-  const [resolutionMethod, setResolutionMethod] = useState<string>('');
-  const [isObstaclesOpen, setIsObstaclesOpen] = useState<boolean>(false);
+
+  // Step 4 PDF Defend Mode State
+  const [isDefendBlocked, setIsDefendBlocked] = useState<boolean>(false);
+  const [defendCategory, setDefendCategory] = useState<string>('waiting_oil');
+  const [defendNotes, setDefendNotes] = useState<string>('');
 
   const handleDeleteCaseClick = () => {
     const caseName = caseData.caseName || caseData.id;
@@ -175,6 +223,7 @@ export function CaseUpdateView({
     );
   };
 
+  // Smart Auto-Tab Selection based on Case Status & User Role
   useEffect(() => {
     if (caseData) {
       const itemsWithFallback = caseData.items.map(item => ({
@@ -185,35 +234,289 @@ export function CaseUpdateView({
       setDeletedItemIds([]);
       setNewOrFiles([]);
       setNewImages({});
-      setEditingItemIds({});
       setCaseStatus(caseData.status);
+      setMaterialRequests(caseData.materialRequests || []);
       setMissingBoxes(caseData.missingBoxes || 0);
       setMissingGallons(caseData.missingGallons || 0);
       setMissingOil(caseData.missingOil || 0);
       setResolutionMethod(caseData.resolutionMethod || '');
-      const hasBlockers = (caseData.missingBoxes || 0) > 0 || (caseData.missingGallons || 0) > 0 || (caseData.missingOil || 0) > 0;
-      setIsObstaclesOpen(hasBlockers);
-    }
-  }, [caseData]);
+      setIsDefendBlocked(caseData.status === 'Blocked');
+      // Initialize accordion: expand only the first incomplete item
+      const initialExpanded: Record<string, boolean> = {};
+      let foundFirstIncomplete = false;
+      itemsWithFallback.forEach((item, idx) => {
+        const itemKey = item.id || (item as any).uid || `idx-${idx}`;
+        const itemStat = calculateItemStatus(item, 0, []);
+        if (!foundFirstIncomplete && itemStat.status !== 'complete') {
+          initialExpanded[itemKey] = true;
+          foundFirstIncomplete = true;
+        } else {
+          initialExpanded[itemKey] = false;
+        }
+      });
+      setExpandedItemIds(initialExpanded);
 
-  // Derived completion stats
+      // Smart default tab
+      if (userRole === 'WPK' && (caseData.status === 'Awaiting Materials' || caseData.status === 'Pending Analysis')) {
+        setActiveStep('issuing');
+      } else if (userRole === 'PDF' && (caseData.status === 'In-Progress' || caseData.status === 'Blocked' || caseData.status === 'Completed')) {
+        setActiveStep('repair');
+      } else if (userRole === 'QSMS' && caseData.status === 'Pending Analysis') {
+        setActiveStep('analysis');
+      } else if (caseData.status === 'Awaiting Materials') {
+        setActiveStep('issuing');
+      } else if (caseData.status === 'In-Progress' || caseData.status === 'Blocked') {
+        setActiveStep('repair');
+      } else if (caseData.status === 'Pending Analysis') {
+        setActiveStep('analysis');
+      } else {
+        setActiveStep('items');
+      }
+    }
+  }, [caseData, userRole]);
+
+  // Completion metrics
   const totalBoxes = editedItems.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
   const globalCompleted = editedItems.reduce((acc, item) => acc + (Number(item.completedBoxes) || 0), 0);
   const completionPercentage = totalBoxes > 0 ? Math.round((globalCompleted / totalBoxes) * 100) : 0;
 
-  useEffect(() => {
-    let status: ReworkCase['status'] = 'Pending';
-    if (globalCompleted >= totalBoxes && totalBoxes > 0) {
-      status = 'Completed';
-    } else if (globalCompleted > 0) {
-      status = 'In-Progress';
-    } else if (caseData?.status === 'Completed' && totalBoxes === 0) {
-      status = 'Completed';
+  // Material helpers
+  const handleAddPresetMaterial = (name: string, unit: string) => {
+    if (!canEditAnalysis) return;
+    const existingIndex = materialRequests.findIndex(m => m.materialName === name);
+    if (existingIndex >= 0) {
+      const updated = [...materialRequests];
+      updated[existingIndex].requestedQty += 1;
+      setMaterialRequests(updated);
+      showToast(`+ เพิ่มจำนวน "${name}" เป็น ${updated[existingIndex].requestedQty} ${unit} แล้ว`, 'info');
+      return;
     }
-    setCaseStatus(status);
-  }, [globalCompleted, totalBoxes, caseData]);
+
+    const newItem: MaterialRequestItem = {
+      id: `mat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      materialName: name,
+      requestedQty: 1,
+      issuedQty: 0,
+      unit: unit,
+      status: 'pending'
+    };
+    setMaterialRequests(prev => [...prev, newItem]);
+    showToast(`+ เพิ่ม "${name}" ในรายการขอเบิกแล้ว`, 'info');
+  };
+
+  const handleCustomMaterialAdd = () => {
+    if (!canEditAnalysis) return;
+    if (!customMaterialName.trim()) {
+      showAlert('กรุณาระบุชื่อภาชนะหรือวัสดุที่ต้องการขอเบิก', 'warning');
+      return;
+    }
+    const newItem: MaterialRequestItem = {
+      id: `mat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      materialName: customMaterialName.trim(),
+      requestedQty: Math.max(1, customMaterialQty),
+      issuedQty: 0,
+      unit: customMaterialUnit.trim() || 'ชิ้น',
+      status: 'pending'
+    };
+    setMaterialRequests(prev => [...prev, newItem]);
+    setCustomMaterialName('');
+    setCustomMaterialQty(1);
+    setIsAddingCustomMaterial(false);
+    showToast(`+ เพิ่ม "${newItem.materialName}" ในรายการขอเบิกแล้ว`, 'info');
+  };
+
+  const handleMaterialQtyChange = (id: string, qty: number) => {
+    if (!canEditAnalysis) return;
+    setMaterialRequests(prev => prev.map(m => m.id === id ? { ...m, requestedQty: Math.max(0, qty) } : m));
+  };
+
+  const handleMaterialIssuedQtyChange = (id: string, issuedQty: number) => {
+    if (!canEditIssuing) return;
+    setMaterialRequests(prev => prev.map(m => {
+      if (m.id === id) {
+        const clampedIssued = Math.max(0, issuedQty);
+        let status: MaterialRequestItem['status'] = 'pending';
+        if (clampedIssued >= m.requestedQty && m.requestedQty > 0) {
+          status = 'fulfilled';
+        } else if (clampedIssued > 0) {
+          status = 'partial';
+        }
+        return { ...m, issuedQty: clampedIssued, status };
+      }
+      return m;
+    }));
+  };
+
+  const handleFulfillAllMaterials = () => {
+    if (!canEditIssuing) return;
+    setMaterialRequests(prev => prev.map(m => ({
+      ...m,
+      issuedQty: m.requestedQty,
+      status: 'fulfilled'
+    })));
+    showToast('✓ ปรับยอดเบิกจ่ายครบตามจำนวนที่ขอแล้วทุกรายการ', 'success');
+  };
+
+  const handleRemoveMaterial = (id: string) => {
+    if (!canEditAnalysis) return;
+    setMaterialRequests(prev => prev.filter(m => m.id !== id));
+  };
+
+  // Step 2 Handover: QSMS Completed Analysis ➔ Awaiting Materials
+  const handleQSMSHandover = async () => {
+    startSaving();
+    try {
+      const updates: any = {
+        status: 'Awaiting Materials',
+        resolutionMethod,
+        materialRequests,
+        items: editedItems,
+      };
+      if (Object.keys(newImages).length > 0) updates.newImages = newImages;
+      if (newOrFiles.length > 0) updates.newOrFiles = newOrFiles;
+      if (deletedItemIds.length > 0) updates.deleteItemIds = deletedItemIds;
+
+      const res = await updateCase(caseData.id, updates);
+      if (res.success) {
+        if (updates.items) setEditedItems(updates.items);
+        setNewImages({});
+        setDeletedItemIds([]);
+        setNewOrFiles([]);
+      }
+
+      setCaseStatus('Awaiting Materials');
+      finishSaving();
+      showToast('✓ บันทึกผลวิเคราะห์สำเร็จ: เปลี่ยนสถานะเป็น "รอเบิกภาชนะ" ส่งต่อให้ WPK แล้ว', 'success');
+      setActiveStep('issuing');
+      onSaveSuccess?.();
+    } catch (error) {
+      failSaving();
+      showAlert('บันทึกไม่สำเร็จ', 'error');
+    }
+  };
+
+  // Step 3 Handover: WPK Completed Issuing ➔ In-Progress
+  const handleWPKHandover = async () => {
+    startSaving();
+    try {
+      const updates: any = {
+        status: 'In-Progress',
+        materialRequests,
+        missingBoxes,
+        missingGallons,
+        missingOil,
+        items: editedItems,
+      };
+      const res = await updateCase(caseData.id, updates);
+      if (res.success) {
+        if (updates.items) setEditedItems(updates.items);
+        setNewImages({});
+        setDeletedItemIds([]);
+        setNewOrFiles([]);
+      }
+
+      setCaseStatus('In-Progress');
+      finishSaving();
+      showToast('✓ บันทึกการเบิกจ่ายสำเร็จ: เปลี่ยนสถานะเป็น "กำลังซ่อม" ส่งงานให้ PDF แล้ว', 'success');
+      setActiveStep('repair');
+      onSaveSuccess?.();
+    } catch (error) {
+      failSaving();
+      showAlert('บันทึกไม่สำเร็จ', 'error');
+    }
+  };
+
+  // Step 4 Completion / Defend Action
+  const handlePDFSave = async (isClosure: boolean = false, isBlocked: boolean = false) => {
+    startSaving();
+    try {
+      let targetStatus: ReworkCase['status'] = caseStatus;
+      if (isClosure || (globalCompleted >= totalBoxes && totalBoxes > 0)) {
+        targetStatus = 'Completed';
+      } else if (isBlocked) {
+        targetStatus = 'Blocked';
+      } else if (globalCompleted > 0) {
+        targetStatus = 'In-Progress';
+      }
+
+      const updates: any = {
+        status: targetStatus,
+        items: editedItems,
+        missingBoxes,
+        missingGallons,
+        missingOil,
+        resolutionMethod,
+        materialRequests,
+        blockedInfo: isBlocked ? {
+          category: defendCategory,
+          notes: defendNotes,
+          blockedAt: new Date().toISOString()
+        } : undefined
+      };
+
+      const res = await updateCase(caseData.id, updates);
+      if (res.success) {
+        if (updates.items) setEditedItems(updates.items);
+        setNewImages({});
+        setDeletedItemIds([]);
+        setNewOrFiles([]);
+      }
+
+      setCaseStatus(targetStatus);
+      finishSaving();
+      showToast(isClosure ? '🎉 ปิดเคส Rework เสร็จสมบูรณ์ 100% เรียบร้อยแล้ว' : isBlocked ? '⚠️ บันทึกสถานะติดปัญหา (Defend Mode) แล้ว' : 'บันทึกความคืบหน้าสำเร็จ', 'success');
+      
+      if (isClosure) {
+        onSuccess?.();
+      } else {
+        onSaveSuccess?.();
+      }
+    } catch (error) {
+      failSaving();
+      showAlert('บันทึกไม่สำเร็จ', 'error');
+    }
+  };
+
+  // General Save
+  const handleSave = async (forceDraft: boolean = false) => {
+    if (!caseData) return;
+    startSaving();
+    try {
+      const updates: any = {
+        status: forceDraft ? (globalCompleted > 0 ? 'In-Progress' : (caseData.status || 'Pending')) : caseStatus,
+        items: editedItems,
+        materialRequests,
+        missingBoxes,
+        missingGallons,
+        missingOil,
+        resolutionMethod,
+      };
+
+      if (Object.keys(newImages).length > 0) updates.newImages = newImages;
+      if (newOrFiles.length > 0) updates.newOrFiles = newOrFiles;
+      if (deletedItemIds.length > 0) updates.deleteItemIds = deletedItemIds;
+
+      const res = await updateCase(caseData.id, updates);
+      if (res.success) {
+        if (updates.items) {
+          setEditedItems(updates.items);
+        }
+        setNewImages({});
+        setDeletedItemIds([]);
+        setNewOrFiles([]);
+      }
+
+      finishSaving();
+      showToast(forceDraft ? '✓ บันทึกรูปภาพและข้อมูลสำเร็จ' : '✓ บันทึกสำเร็จ', 'success');
+      onSaveSuccess?.();
+    } catch (error) {
+      failSaving();
+      showAlert('บันทึกไม่สำเร็จ', 'error');
+    }
+  };
 
   const handleGlobalProgressChange = (val: number) => {
+    if (!canEditRepair) return;
     let remaining = Math.max(0, val);
     const newItems = editedItems.map((item) => {
       const amount = Number(item.amount) || 0;
@@ -225,6 +528,7 @@ export function CaseUpdateView({
   };
 
   const handleItemProgressChange = (index: number, completedBoxes: number) => {
+    if (!canEditRepair) return;
     const newItems = [...editedItems];
     const amount = Number(newItems[index].amount) || 0;
     const clamped = Math.min(Math.max(0, completedBoxes), amount);
@@ -233,6 +537,7 @@ export function CaseUpdateView({
   };
 
   const handleItemCodeChange = (index: number, val: string) => {
+    if (!canEditItems) return;
     const newItems = [...editedItems];
     const trimmed = val.trim().toLowerCase();
     let updatedName = newItems[index].itemName || '';
@@ -247,6 +552,7 @@ export function CaseUpdateView({
   };
 
   const handleRemoveItem = (index: number) => {
+    if (!canEditItems) return;
     if (editedItems.length <= 1) {
       showAlert('ต้องมีอย่างน้อย 1 รายการในงานนี้', 'warning');
       return;
@@ -259,76 +565,93 @@ export function CaseUpdateView({
     });
   };
 
-  const handleSave = async (forceDraft: boolean = false) => {
-    if (!caseData) return;
-    
-    // Check validation if not drafting
-    if (!forceDraft && (isOperator || isAdmin)) {
-      if (editedItems.some(item => (Number(item.amount) || 0) <= 0)) {
-        showAlert('จำนวนกล่องต้องมากกว่า 0 (หรือบันทึกเป็นแบบร่างหากข้อมูลยังไม่ครบ)', 'error');
-        return;
-      }
-    }
+  const handleSaveSingleItem = async (index: number) => {
+    if (!canEditItems || savingItemIndex !== null) return;
+    const targetItem = editedItems[index];
+    if (!targetItem) return;
 
-    startSaving();
+    const itemKey = targetItem.id || (targetItem as any).uid || `idx-${index}`;
+    const stagedFiles = newImages[itemKey] || 
+                        (targetItem.id ? newImages[targetItem.id] : undefined) || 
+                        newImages[`idx-${index}`] || 
+                        newImages[index.toString()] || [];
+
+    const itemDeletedUrls = deletedItemIds.filter(url => (targetItem.imageUrls || []).includes(url));
+
     try {
-      const updates: any = {};
-      
-      let targetStatus = caseStatus;
-      if (forceDraft) {
-        targetStatus = (globalCompleted > 0) ? 'In-Progress' : 'Pending';
+      setSavingItemIndex(index);
+      startSaving();
+
+      // 1. Move target item to bottom
+      const remainingItems = editedItems.filter((_, i) => i !== index);
+      const updatedTargetItem: ReworkItem = {
+        ...targetItem,
+        amount: Math.max(1, Number(targetItem.amount) || 1)
+      };
+      const reorderedItems = [...remainingItems, updatedTargetItem];
+
+      // 2. Prepare payload for updateCase
+      const updates: any = {
+        items: reorderedItems,
+        materialRequests,
+        missingBoxes,
+        missingGallons,
+        missingOil,
+        resolutionMethod,
+      };
+
+      if (stagedFiles.length > 0) {
+        updates.newImages = { [itemKey]: stagedFiles };
+      }
+      if (itemDeletedUrls.length > 0) {
+        updates.deleteItemIds = itemDeletedUrls;
       }
 
-      let finalItems = [...editedItems];
+      const res = await updateCase(caseData.id, updates);
+      const finalItems: ReworkItem[] = (res.success && (res.data as ReworkCase)?.items) ? (res.data as ReworkCase).items : reorderedItems;
+      setEditedItems(finalItems);
 
-      // Format items payload
-      const modifiedItems = finalItems.filter(item => {
-        const original = caseData.items.find(i => i.id === item.id);
-        if (!original) return true;
-        
-        return (
-          String(item.itemName || '') !== String(original.itemName || '') ||
-          String(item.amount || '') !== String(original.amount || '') ||
-          String(item.completedBoxes || '') !== String(original.completedBoxes || '') ||
-          String(item.reason || '') !== String(original.reason || '') ||
-          String(item.reasonSubtype || '') !== String(original.reasonSubtype || '') ||
-          String(item.responsible || '') !== String(original.responsible || '') ||
-          String(item.responsibleSubtype || '') !== String(original.responsibleSubtype || '') ||
-          String(item.details || '') !== String(original.details || '') ||
-          String(item.batchNo || '') !== String(original.batchNo || '') ||
-          String(item.packagingDate || '') !== String(original.packagingDate || '') ||
-          String(item.mold || '') !== String(original.mold || '') ||
-          String(item.line || '') !== String(original.line || '') ||
-          String(item.linkedSourceId || '') !== String(original.linkedSourceId || '') ||
-          String(item.itemCode || '') !== String(original.itemCode || '') ||
-          String(item.customerName || '') !== String(original.customerName || '') ||
-          (item.imageUrls && original.imageUrls && item.imageUrls.length !== original.imageUrls.length) ||
-          (newImages[item.id || ''] && newImages[item.id || ''].length > 0)
-        );
+      // Clean up staged files and deleted URLs for this saved item
+      setNewImages(prev => {
+        const next = { ...prev };
+        delete next[itemKey];
+        if (targetItem.id) delete next[targetItem.id];
+        delete next[`idx-${index}`];
+        delete next[index.toString()];
+        return next;
       });
 
-      updates.items = modifiedItems;
-      updates.status = targetStatus;
-      updates.missingBoxes = missingBoxes;
-      updates.missingGallons = missingGallons;
-      updates.missingOil = missingOil;
-      updates.resolutionMethod = resolutionMethod;
-
-      if (Object.keys(newImages).length > 0) {
-        updates.newImages = newImages;
+      if (itemDeletedUrls.length > 0) {
+        setDeletedItemIds(prev => prev.filter(url => !itemDeletedUrls.includes(url)));
       }
 
-      if (newOrFiles.length > 0) updates.newOrFiles = newOrFiles;
-      if (deletedItemIds.length > 0) updates.deleteItemIds = deletedItemIds;
+      // Auto-expand the next incomplete item in the new list
+      const nextIncompleteIdx = finalItems.findIndex((it: ReworkItem) => calculateItemStatus(it, 0, []).status !== 'complete');
+      const nextExpandedMap: Record<string, boolean> = {};
 
-      await updateCase(caseData.id, updates);
+      finalItems.forEach((it: ReworkItem, i: number) => {
+        const k = it.id || (it as any).uid || `idx-${i}`;
+        if (nextIncompleteIdx >= 0 && i === nextIncompleteIdx) {
+          nextExpandedMap[k] = true;
+        } else {
+          nextExpandedMap[k] = false;
+        }
+      });
+      setExpandedItemIds(nextExpandedMap);
+
+      const statusInfo = calculateItemStatus(updatedTargetItem, 0, []);
       finishSaving();
-      showToast(forceDraft ? 'บันทึกแบบร่างสำเร็จ' : 'บันทึกสำเร็จ', 'success');
-      onSuccess();
+      showToast(
+        `✓ บันทึก "${updatedTargetItem.itemName || 'รายการที่ ' + (index + 1)}" แล้ว [${statusInfo.label}]`,
+        statusInfo.status === 'complete' ? 'success' : 'info'
+      );
+      onSaveSuccess?.();
     } catch (error) {
-      console.error('Update failed:', error);
+      console.error('Failed to save single item:', error);
       failSaving();
-      showAlert('บันทึกไม่สำเร็จ', 'error');
+      showAlert('บันทึกรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+      setSavingItemIndex(null);
     }
   };
 
@@ -338,39 +661,50 @@ export function CaseUpdateView({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -15 }}
       transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute inset-0 z-30 flex flex-col w-full h-full bg-system-background overflow-hidden"
+      className="absolute inset-0 z-30 flex flex-col w-full h-full bg-slate-50/60 overflow-hidden font-sans"
     >
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-b border-divider-color bg-white/95 backdrop-blur-xl shrink-0 gap-2.5 sm:gap-4">
-        {/* Left Side: Back button + Title + Case ID + Status Badge */}
-        <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3.5 min-w-0">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <button
-              onClick={onBack}
-              className="p-1.5 sm:p-2 hover:bg-surface-secondary rounded-full transition-colors text-on-surface-variant shrink-0 cursor-pointer"
-              title="ย้อนกลับ"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm sm:text-base font-bold tracking-tight text-on-surface flex items-center gap-1.5 truncate">
-                  <PenTool size={15} className="text-primary shrink-0" />
-                  <span>จัดการงาน Rework</span>
-                </h1>
-                <StatusBadge status={caseStatus} />
-              </div>
-              <div className="text-[11px] sm:text-xs text-on-surface-variant mt-0.5 flex items-center gap-1.5 font-mono">
-                <span className="font-semibold text-slate-700">{caseData.caseName || caseData.id}</span>
-                <CopyButton text={caseData.caseName || caseData.id} size={11} />
-              </div>
+      {/* 0. TOP PROGRESS STRIPE (Subtle Glowing Line on Save) */}
+      {isSaving && (
+        <div className="absolute top-0 left-0 right-0 z-50 h-1 bg-slate-100/60 overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"
+            initial={{ width: '0%' }}
+            animate={{ width: `${progress}%` }}
+            transition={{ ease: "easeOut", duration: 0.3 }}
+          />
+        </div>
+      )}
+
+      {/* 1. TOP ZEN FOCUS HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl shrink-0 gap-3">
+        {/* Left Side: Back button + Breadcrumb + Case ID + Status Badge */}
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer"
+            title="ย้อนกลับ (ESC)"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-slate-400">Rework Management /</span>
+              <h1 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                {caseData.caseName || caseData.id}
+              </h1>
+              <StatusBadge status={caseStatus} />
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 font-mono">
+              <span className="font-semibold text-slate-700">{caseData.id}</span>
+              <CopyButton text={caseData.id} size={11} />
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500">{caseData.customerName || caseData.source}</span>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Action Buttons Toolbar (Horizontally scrollable on mobile if needed) */}
-        <div className="flex items-center justify-end gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-0.5">
-          {/* Export to Excel Button */}
+        {/* Right Side: Action Buttons Toolbar */}
+        <div className="flex items-center justify-end gap-2 overflow-x-auto scrollbar-hide">
           <button
             type="button"
             onClick={() => caseData && exportExcel({
@@ -383,12 +717,12 @@ export function CaseUpdateView({
               resolutionMethod
             })}
             disabled={isExporting || !caseData}
-            title="ส่งออกรายงาน Rework เป็นไฟล์ Excel พร้อมฝังรูปภาพ"
-            className="whitespace-nowrap shrink-0 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-full transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer shadow-2xs"
+            title="ส่งออกรายงาน Rework เป็นไฟล์ Excel พร้อมรูปภาพ"
+            className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-full transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
           >
             {isExporting ? (
               <>
-                <Loader2 size={12} className="animate-spin text-emerald-600" />
+                <Loader2 size={13} className="animate-spin text-emerald-600" />
                 <span>กำลังส่งออก...</span>
               </>
             ) : (
@@ -399,555 +733,786 @@ export function CaseUpdateView({
             )}
           </button>
 
-          {onDelete && (
+          {onDelete && isAdmin && (
             <button
               type="button"
               onClick={handleDeleteCaseClick}
               disabled={isSaving}
-              className="whitespace-nowrap shrink-0 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200/80 flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+              className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200/80 flex items-center gap-1 cursor-pointer"
             >
-              <Trash2 size={12} /> <span>ลบเคสนี้</span>
+              <Trash2 size={12} /> <span>ลบเคส</span>
             </button>
           )}
 
-          {isSaving ? (
-            <div className="w-36 sm:w-44 shrink-0">
-              <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
-            </div>
-          ) : (
-            <>
-              <button
-                onClick={() => handleSave(true)}
-                className="whitespace-nowrap shrink-0 px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer"
-              >
-                <span>บันทึกร่าง</span>
-              </button>
-              <button
-                onClick={() => handleSave(false)}
-                className="whitespace-nowrap shrink-0 px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold text-white bg-slate-900 hover:bg-black rounded-full shadow-xs transition-all flex items-center gap-1 cursor-pointer"
-              >
-                <Save size={12} /> <span>บันทึกเสร็จสิ้น</span>
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={() => handleSave(true)}
+            disabled={isSaving}
+            className="whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer disabled:opacity-50"
+          >
+            <span>บันทึกร่าง</span>
+          </button>
         </div>
       </div>
 
-      {/* Content Container */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-6 bg-surface-bright">
-        <div className="w-full space-y-6 pb-20">
-          
-          {/* SECTION 1: Overall Progress & Quick Completion Tracker */}
-          <div className="bg-white border border-[rgba(0,0,0,0.08)] rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
-                  <CheckCircle2 size={18} className="text-primary" />
-                  ความคืบหน้าการทำงานรวม (Overall Progress)
-                </h3>
-                <p className="text-xs text-on-surface-variant mt-0.5">
-                  ยอดเสร็จสิ้นปัจจุบัน: <span className="font-bold text-primary">{globalCompleted}</span> จากทั้งหมด <span className="font-bold">{totalBoxes}</span> กล่อง ({completionPercentage}%)
-                </p>
-              </div>
-
-              {/* Quick Global Progress Input */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <input
-                  type="number"
-                  min="0"
-                  max={totalBoxes}
-                  placeholder="ระบุยอดรวมที่เสร็จแล้ว..."
-                  className="flex-1 sm:w-48 border border-divider-color bg-system-background rounded-lg py-2 px-3 text-sm font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-                  value={globalCompleted || ''}
-                  onChange={(e) => handleGlobalProgressChange(Number(e.target.value) || 0)}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleGlobalProgressChange(totalBoxes)}
-                  className="bg-primary/10 text-primary hover:bg-primary/20 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
-                >
-                  <CheckCircle2 size={14} />
-                  เสร็จทั้งหมด
-                </button>
-              </div>
-            </div>
-
-            {/* Visual Progress Bar */}
-            <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300 rounded-full"
-                style={{ width: `${Math.min(100, completionPercentage)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* SECTION 2: Material Shortage Blockers Banner (Collapsible Accordion) */}
-          <div className="bg-[#fff9eb] border border-amber-200/80 rounded-2xl overflow-hidden shadow-sm transition-all">
-            {/* Accordion Toggle Header */}
-            <button
-              type="button"
-              onClick={() => setIsObstaclesOpen(!isObstaclesOpen)}
-              className="w-full px-5 py-3.5 flex items-center justify-between gap-3 text-left hover:bg-amber-100/50 transition-colors cursor-pointer select-none"
-            >
-              <div className="flex items-center flex-wrap gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-700">
-                  <AlertCircle size={17} />
+      {/* 2. INTERACTIVE 4-STAGE WORKFLOW STEPPER HEADER */}
+      <div className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-2.5 shrink-0 shadow-2xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            {
+              id: 'items' as const,
+              stepNum: '1',
+              icon: FileText,
+              title: '1. รายการสินค้า & รูปภาพ',
+              subtitle: 'Item Breakdown & Evidence',
+              roleLabel: 'QSMS / WPK',
+              isCompleted: editedItems.length > 0 && editedItems.every(i => i.itemName),
+              isActive: activeStep === 'items',
+              canEdit: canEditItems
+            },
+            {
+              id: 'analysis' as const,
+              stepNum: '2',
+              icon: Wrench,
+              title: '2. QSMS วิเคราะห์ & ภาชนะ',
+              subtitle: 'Analysis & Requisition',
+              roleLabel: 'QSMS Only',
+              isCompleted: caseStatus !== 'Pending Analysis' && caseStatus !== 'Pending',
+              isActive: activeStep === 'analysis',
+              canEdit: canEditAnalysis
+            },
+            {
+              id: 'issuing' as const,
+              stepNum: '3',
+              icon: Truck,
+              title: '3. WPK คลังเบิกจ่ายภาชนะ',
+              subtitle: 'Warehouse Issuing',
+              roleLabel: 'WPK Only',
+              isCompleted: caseStatus === 'In-Progress' || caseStatus === 'Blocked' || caseStatus === 'Completed',
+              isActive: activeStep === 'issuing',
+              canEdit: canEditIssuing
+            },
+            {
+              id: 'repair' as const,
+              stepNum: '4',
+              icon: CheckCheck,
+              title: '4. PDF ซ่อม & Defend',
+              subtitle: 'Repair & Closure',
+              roleLabel: 'PDF Only',
+              isCompleted: caseStatus === 'Completed',
+              isActive: activeStep === 'repair',
+              canEdit: canEditRepair
+            },
+          ].map((step) => {
+            const IconComponent = step.icon;
+            return (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => setActiveStep(step.id)}
+                className={`relative flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer select-none ${
+                  step.isActive 
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/10' 
+                    : step.isCompleted
+                    ? 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200/80'
+                    : 'bg-white hover:bg-slate-50 text-slate-500 border-slate-200/60'
+                }`}
+              >
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                  step.isActive 
+                    ? 'bg-white text-slate-900 shadow-xs' 
+                    : step.isCompleted 
+                    ? 'bg-emerald-100 text-emerald-800' 
+                    : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {step.isCompleted ? '✓' : step.stepNum}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-bold text-amber-900">
-                      รายงานอุปสรรค / วัสดุที่ขาดในกระบวนการ Rework
-                    </h4>
-                    <span className="text-[11px] text-amber-700/80 font-medium hidden sm:inline">
-                      (รายละเอียดเพิ่มเติม / ไม่บังคับ)
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className={`text-xs font-bold truncate leading-tight ${step.isActive ? 'text-white' : 'text-slate-900'}`}>
+                      {step.title}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`text-[10px] truncate ${step.isActive ? 'text-slate-300' : 'text-slate-400'}`}>
+                      {step.subtitle}
+                    </span>
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold shrink-0 ${
+                      step.isActive 
+                        ? 'bg-slate-800 text-slate-200' 
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {step.canEdit ? '✏️ Edit' : '👁️ View'}
                     </span>
                   </div>
-                  {/* Summary badge if has data */}
-                  {(missingBoxes > 0 || missingGallons > 0 || missingOil > 0) && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 bg-amber-200/70 px-2 py-0.5 rounded-md border border-amber-300">
-                        <span>มีบันทึกวัสดุที่ขาด:</span>
-                        {missingBoxes > 0 && <span>กล่อง {missingBoxes}</span>}
-                        {missingGallons > 0 && <span>แกลลอน {missingGallons}</span>}
-                        {missingOil > 0 && <span>น้ำมัน {missingOil} ลิตร</span>}
-                      </span>
-                    </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. STEP CONTENT WORKSPACE PANELS */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-slate-50/50">
+        <div className="max-w-6xl mx-auto space-y-6 pb-24">
+
+          {/* ========================================================================= */}
+          {/* STEP 1 PANEL: รายการสินค้า & รูปภาพหลักฐาน (ITEMS & EVIDENCE) */}
+          {/* ========================================================================= */}
+          {activeStep === 'items' && (
+            <div className="space-y-6">
+              {/* Step Header Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900">Step 1: ข้อมูลสินค้าและรูปภาพหลักฐาน</h2>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      canEditItems ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                      {canEditItems ? '✏️ โหมดแก้ไขข้อมูล (QSMS / Admin)' : '👁️ โหมดดูข้อมูล (Preview Only)'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {canEditItems 
+                      ? 'ตรวจสอบและแก้ไขข้อมูลล็อต รหัสสินค้า จำนวนกล่อง และแนบรูปหลักฐานความเสียหาย' 
+                      : 'ข้อมูลสินค้าที่ระบุไว้ในระบบ (เฉพาะแผนก QSMS/Admin จึงจะสามารถแก้ไขรายการนี้ได้)'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {canEditItems && (
+                    <button
+                      type="button"
+                      onClick={() => handleSave(true)}
+                      disabled={isSaving}
+                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                        hasUnsavedPhotos 
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-amber-400/40 animate-pulse' 
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      }`}
+                    >
+                      <Save size={13} />
+                      <span>{hasUnsavedPhotos ? 'บันทึกรูปภาพและข้อมูล' : 'บันทึกข้อมูลสินค้า'}</span>
+                    </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (hasUnsavedPhotos) {
+                        showToast('กำลังบันทึกรูปภาพและข้อมูลเข้าระบบ...', 'info');
+                        await handleSave(true);
+                      }
+                      setActiveStep('analysis');
+                    }}
+                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>ถัดไป: QSMS วิเคราะห์ ➔</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-amber-800">
-                <span className="text-xs font-semibold hidden md:inline">
-                  {isObstaclesOpen ? 'ย่อซ่อน' : 'คลิกเพื่อระบุ'}
-                </span>
-                <motion.div
-                  animate={{ rotate: isObstaclesOpen ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown size={18} className="text-amber-700" />
-                </motion.div>
-              </div>
-            </button>
-
-            {/* Collapsible Content */}
-            <AnimatePresence initial={false}>
-              {isObstaclesOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-5 pb-5 pt-2 border-t border-amber-200/60 space-y-3">
-                    <div className="flex items-center justify-between text-[11px] text-amber-700 font-medium">
-                      <span>กรอกจำนวนวัสดุที่ขาดเพื่อให้ทีมที่เกี่ยวข้องเตรียมความพร้อม</span>
-                      <span>(ระบบจะล้างข้อมูลอัตโนมัติเมื่อเคสเสร็จสิ้น 100%)</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-                      <div>
-                        <label className="block text-xs font-bold text-amber-800 mb-1">ขาดกล่อง (ใบ)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={missingBoxes || ''}
-                          onChange={(e) => setMissingBoxes(Number(e.target.value) || 0)}
-                          className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500 shadow-2xs"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-amber-800 mb-1">ขาดแกลลอน (ใบ)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={missingGallons || ''}
-                          onChange={(e) => setMissingGallons(Number(e.target.value) || 0)}
-                          className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500 shadow-2xs"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-amber-800 mb-1">ขาดน้ำมัน (ลิตร/ถัง)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={missingOil || ''}
-                          onChange={(e) => setMissingOil(Number(e.target.value) || 0)}
-                          className="w-full border border-amber-200 bg-white rounded-lg py-2 px-3 text-sm font-semibold text-amber-900 focus:outline-none focus:border-amber-500 shadow-2xs"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
+              {/* Items List */}
+              <div className="space-y-3">
+                {/* Header Toolbar: Count + Status + Accordion Toggle + Add Item */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      รายการสินค้าในเคส ({editedItems.length} รายการ)
+                    </h3>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 size={11} />
+                      <span>{editedItems.filter(it => calculateItemStatus(it).status === 'complete').length}/{editedItems.length} ข้อมูลสมบูรณ์</span>
+                    </span>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
 
-          {/* SECTION 3: Item Workspace & Photo Attachment */}
-          <div className="flex flex-wrap items-center justify-between pb-2 border-b border-divider-color text-on-surface gap-2">
-            <div className="flex items-center gap-2">
-              <Package size={20} className="text-primary" />
-              <span className="text-base sm:text-lg font-semibold">รายการสินค้า ({editedItems.length})</span>
-            </div>
-            {editedItems.length > 1 && (
-              <button
-                type="button"
-                onClick={() => {
-                  const allOpen = editedItems.every((item, idx) => expandedItemIds[item.id || idx.toString()]);
-                  const nextState: Record<string, boolean> = {};
-                  editedItems.forEach((item, idx) => {
-                    nextState[item.id || idx.toString()] = !allOpen;
-                  });
-                  setExpandedItemIds(nextState);
-                }}
-                className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
-              >
-                {editedItems.every((item, idx) => expandedItemIds[item.id || idx.toString()]) ? 'พับข้อมูลทั้งหมด' : 'ขยายข้อมูลทั้งหมด'}
-              </button>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <AnimatePresence initial={false}>
-              {editedItems.map((item, index) => {
-                const itemIdStr = item.id || index.toString();
-                const isExpanded = !!expandedItemIds[itemIdStr];
-                const toggleExpand = () => setExpandedItemIds(prev => ({ ...prev, [itemIdStr]: !prev[itemIdStr] }));
-                const amount = Number(item.amount) || 0;
-                const completed = Number(item.completedBoxes) || 0;
-                const isItemComplete = amount > 0 && completed >= amount;
-                const activeImageCount = (item.imageUrls || []).length - deletedItemIds.filter(u => (item.imageUrls || []).includes(u)).length + (newImages[itemIdStr] || []).length;
-
-                return (
-                  <motion.div
-                    key={itemIdStr}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white border border-[rgba(0,0,0,0.08)] rounded-2xl overflow-hidden shadow-xs hover:border-divider-color transition-all"
-                  >
-                    {/* Item Card Header (Always visible & actionable) */}
-                    <div className="bg-surface-secondary/40 px-3.5 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 select-none">
-                      {/* Clickable Title & Badges */}
-                      <div 
-                        onClick={toggleExpand}
-                        className="flex items-center flex-wrap gap-2 cursor-pointer flex-1 min-w-0 hover:opacity-85 transition-opacity"
-                        title={isExpanded ? "คลิกเพื่อย่อซ่อน" : "คลิกเพื่อดูรายละเอียด"}
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allOpen: Record<string, boolean> = {};
+                        editedItems.forEach((it, idx) => {
+                          const k = it.id || (it as any).uid || `idx-${idx}`;
+                          allOpen[k] = true;
+                        });
+                        setExpandedItemIds(allOpen);
+                      }}
+                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      ขยายทั้งหมด
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allClosed: Record<string, boolean> = {};
+                        editedItems.forEach((it, idx) => {
+                          const k = it.id || (it as any).uid || `idx-${idx}`;
+                          allClosed[k] = false;
+                        });
+                        setExpandedItemIds(allClosed);
+                      }}
+                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      พับทั้งหมด
+                    </button>
+                    {canEditItems && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newItem: ReworkItem = {
+                            id: `item-${Date.now()}`,
+                            itemNumber: '',
+                            itemCode: '',
+                            itemName: '',
+                            amount: 1,
+                            completedBoxes: 0,
+                            reason: '',
+                            reasonSubtype: '',
+                            responsible: '',
+                            responsibleSubtype: '',
+                            details: '',
+                            imageUrls: []
+                          };
+                          setEditedItems(prev => [newItem, ...prev]);
+                          const newKey = newItem.id;
+                          setExpandedItemIds(prev => ({ ...prev, [newKey]: true }));
+                          showToast('+ เพิ่มแถวสินค้าใหม่เรียบร้อย', 'info');
+                        }}
+                        className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-1 cursor-pointer ml-1 shadow-2xs"
                       >
-                        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                          <ChevronDown size={18} className="text-on-surface-variant shrink-0" />
-                        </motion.div>
-                        <span className={`w-2.5 h-2.5 rounded-full ${isItemComplete ? 'bg-emerald-500' : completed > 0 ? 'bg-sky-500' : 'bg-slate-300'} shrink-0`} />
-                        <span className="font-bold text-xs sm:text-sm text-on-surface flex items-center gap-1.5 truncate">
-                          <span>รายการที่ {index + 1}: {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}</span>
-                          {item.itemCode && <span className="text-on-surface-variant font-medium text-xs">({item.itemCode})</span>}
-                        </span>
-                        <span className="text-xs text-on-surface-variant font-medium shrink-0">({completed} / {amount} กล่อง)</span>
-                        {activeImageCount === 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-xs shrink-0">
-                            <AlertCircle size={12} className="text-amber-600 shrink-0" />
-                            <span>ยังไม่แนบรูป</span>
+                        <Plus size={13} /> <span>เพิ่มรายการสินค้า</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items Accordion Cards */}
+                {editedItems.map((item, index) => {
+                  const itemIdStr = item.id || (item as any).uid || `idx-${index}`;
+                  const isExpanded = expandedItemIds[itemIdStr] ?? false;
+
+                  const stagedFiles = newImages[itemIdStr] || 
+                                      (item.id ? newImages[item.id] : undefined) || 
+                                      newImages[`idx-${index}`] || 
+                                      newImages[index.toString()] || [];
+
+                  const itemStat = calculateItemStatus(item, stagedFiles.length, deletedItemIds);
+
+                  const reasonBadgeColor = item.reason === 'รั่ว' 
+                    ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                    : item.reason === 'เปื้อน' 
+                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                    : 'bg-slate-100 text-slate-700 border-slate-200';
+
+                  const responsibleBadgeColor = item.responsible === 'SFC'
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : item.responsible === 'Supplier'
+                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : 'bg-sky-50 text-sky-700 border-sky-200';
+
+                  const reasonSubtypes = getReasonSubtypeOptions(item.reason || '');
+                  const responsibleSubtypes = getResponsibleSubdivisionOptions(item.responsible || '');
+
+                  return (
+                    <div key={itemIdStr} className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden transition-all">
+                      {/* ── Item Summary Bar (Clickable Accordion Header) ── */}
+                      <div 
+                        onClick={() => {
+                          setExpandedItemIds(prev => ({
+                            ...prev,
+                            [itemIdStr]: !isExpanded
+                          }));
+                        }}
+                        className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 bg-white hover:bg-slate-50/70 cursor-pointer transition-colors select-none"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="w-6 h-6 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                            {index + 1}
                           </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
-                            <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
-                            <span>แนบรูปแล้ว ({activeImageCount})</span>
-                          </span>
-                        )}
-                        {(() => {
-                          const qirMatch = (item.details || '').match(/\[QIR:\s*([^\]]+)\]/);
-                          const qirVal = qirMatch ? qirMatch[1] : null;
-                          if (!qirVal) return null;
-                          return (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
-                              <Tag size={12} className="text-purple-600 shrink-0" />
-                              <span>QIR: {qirVal}</span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-slate-900 truncate">
+                                {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}
+                              </h4>
+                              {/* Status Badge */}
+                              {itemStat.status === 'complete' ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shrink-0">
+                                <CheckCircle2 size={11} /> ข้อมูลสมบูรณ์
+                              </span>
+                              ) : itemStat.status === 'partial' ? (
+                                <span 
+                                  className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1 shrink-0" 
+                                  title={`ยังขาด: ${itemStat.missingFields.join(', ')}`}
+                                >
+                                  <AlertCircle size={11} /> อัปเดตแล้ว
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1 shrink-0">
+                                  <Clock size={11} /> รอตรวจสอบ
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-mono mt-0.5">
+                              {item.itemCode && <span>รหัส: <strong>{item.itemCode}</strong></span>}
+                              {item.itemNumber && <span>| สูตร: <strong>{item.itemNumber}</strong></span>}
+                              {item.batchNo && <span>| ล็อต: <strong>{item.batchNo}</strong></span>}
+                              {item.customerName && <span>| ลูกค้า: <strong>{item.customerName}</strong></span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0" onClick={e => e.stopPropagation()}>
+                          <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                            <span className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold font-mono">
+                              {item.amount || 0} กล่อง
                             </span>
-                          );
-                        })()}
-                      </div>
+                            {item.reason && (
+                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${reasonBadgeColor}`}>
+                                {item.reason}{item.reasonSubtype ? ` • ${item.reasonSubtype}` : ''}
+                              </span>
+                            )}
+                            {item.responsible && (
+                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${responsibleBadgeColor}`}>
+                                {item.responsible}{item.responsibleSubtype ? ` • ${item.responsibleSubtype}` : ''}
+                              </span>
+                            )}
+                          </div>
 
-                      {/* Quick Item Completion Button & Edit Toggle */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextEditing = !editingItemIds[itemIdStr];
-                            setEditingItemIds(prev => ({ ...prev, [itemIdStr]: nextEditing }));
-                            if (nextEditing) {
-                              setExpandedItemIds(prev => ({ ...prev, [itemIdStr]: true }));
-                            }
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 border shadow-2xs ${
-                            editingItemIds[itemIdStr] 
-                              ? 'bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100' 
-                              : 'bg-white text-on-surface-variant border-divider-color hover:bg-surface-secondary'
-                          }`}
-                        >
-                          {editingItemIds[itemIdStr] ? (
-                            <>
-                              <Check size={13} className="text-sky-600" />
-                              <span>เสร็จสิ้น</span>
-                            </>
-                          ) : (
-                            <>
-                              <Edit3 size={13} className="text-on-surface-variant/80" />
-                              <span>แก้ไข</span>
-                            </>
+                          {canEditItems && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(index)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer ml-1"
+                              title="ลบรายการนี้"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           )}
-                        </button>
 
-                        <div className="h-4 w-[1px] bg-divider-color/60 mx-0.5 hidden sm:block" />
-
-                        <label className="text-xs font-semibold text-on-surface-variant">ยอดเสร็จ:</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max={amount}
-                          value={completed || ''}
-                          onChange={(e) => handleItemProgressChange(index, Number(e.target.value) || 0)}
-                          className="w-16 sm:w-20 border border-divider-color bg-white rounded-lg py-1 px-1.5 text-xs font-bold focus:outline-none focus:border-primary text-center"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleItemProgressChange(index, amount)}
-                          className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
-                        >
-                          <CheckCircle2 size={12} />
-                          เสร็จแล้ว
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpandedItemIds(prev => ({
+                                ...prev,
+                                [itemIdStr]: !isExpanded
+                              }));
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-transform duration-200 cursor-pointer"
+                            title={isExpanded ? "พับการ์ด" : "ขยายการ์ด"}
+                          >
+                            <ChevronDown size={16} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Collapsible Item Body (Default Folded) */}
-                    <AnimatePresence initial={false}>
+                      {/* ── Item Details Form: AddCaseTab Styled Clean Block Structure ── */}
                       {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25, ease: 'easeInOut' }}
-                          className="border-t border-divider-color/60 overflow-hidden"
-                        >
-                          <div className="p-4 sm:p-5 space-y-6">
-                            <div className="flex flex-col xl:flex-row gap-6">
-                              
-                              {/* Data Inputs / Read-Only View (Left Column) */}
-                              <div className="flex-1 space-y-4 min-w-0">
-                                {editingItemIds[itemIdStr] ? (
-                                  <div className="space-y-4">
-                                    {/* Row 1: Item Name & Item Code */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      <div className="md:col-span-2">
-                                        <FieldLabel>ชื่อสินค้า / Item Name</FieldLabel>
-                                        <FieldInput
-                                          value={item.itemName || ''}
-                                          onChange={(e) => {
-                                            const n = [...editedItems];
-                                            n[index] = { ...n[index], itemName: e.target.value };
-                                            setEditedItems(n);
-                                          }}
-                                          placeholder="ระบุชื่อสินค้า..."
-                                        />
-                                      </div>
-                                      <div>
-                                        <FieldLabel>รหัสสินค้า / Item Code</FieldLabel>
-                                        <FieldInput
-                                          value={item.itemCode || ''}
-                                          onChange={(e) => handleItemCodeChange(index, e.target.value)}
-                                          placeholder="เช่น 40001355"
-                                        />
-                                      </div>
-                                    </div>
+                        <div className="p-5 sm:p-6 space-y-6 bg-slate-50/30 border-t border-slate-100">
 
-                                    {/* Row 2: Customer Name, Amount & Batch No */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      <div className="relative z-[40]">
-                                        <FieldLabel>ลูกค้า / Customer</FieldLabel>
-                                        <Combobox
-                                          options={CUSTOMER_OPTIONS.map(c => ({ label: c, value: c }))}
-                                          value={item.customerName || ''}
-                                          onChange={(val) => {
-                                            const n = [...editedItems];
-                                            n[index] = { ...n[index], customerName: val };
-                                            setEditedItems(n);
-                                          }}
-                                          placeholder="เลือกลูกค้า..."
-                                        />
-                                      </div>
-                                      <div>
-                                        <FieldLabel>จำนวนทั้งหมด (ลัง/กล่อง)</FieldLabel>
-                                        <FieldInput
-                                          type="number"
-                                          value={item.amount || ''}
-                                          onChange={(e) => {
-                                            const n = [...editedItems];
-                                            n[index] = { ...n[index], amount: Number(e.target.value) };
-                                            setEditedItems(n);
-                                          }}
-                                        />
-                                      </div>
-                                      <div>
-                                        <FieldLabel>Batch No.</FieldLabel>
-                                        <FieldInput
-                                          value={item.batchNo || ''}
-                                          onChange={(e) => {
-                                            const n = [...editedItems];
-                                            n[index] = { ...n[index], batchNo: e.target.value };
-                                            setEditedItems(n);
-                                          }}
-                                        />
-                                      </div>
-                                    </div>
+                          {/* BLOCK 1: ข้อมูลสินค้าหลัก (Product Identification) */}
+                          <div className="space-y-4">
+                            {/* 3 Columns: Customer, Item Number, Item Code */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              {/* ชื่อลูกค้า */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
+                                <Select
+                                  value={item.customerName || ''}
+                                  disabled={!canEditItems}
+                                  onValueChange={(val) => {
+                                    const n = [...editedItems];
+                                    n[index] = { ...n[index], customerName: val };
+                                    setEditedItems(n);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                    <SelectValue placeholder="กรุณาเลือก" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                    {CUSTOMER_OPTIONS.map((opt) => (
+                                      <SelectItem key={opt} value={opt}>
+                                        {opt}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                                    {/* Row 3: Mold & Line */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div>
-                                        <FieldLabel>Mold</FieldLabel>
-                                        <FieldInput
-                                          value={item.mold || ''}
-                                          onChange={(e) => {
-                                            const n = [...editedItems];
-                                            n[index] = { ...n[index], mold: e.target.value };
-                                            setEditedItems(n);
-                                          }}
-                                        />
-                                      </div>
-                                      <div>
-                                        <FieldLabel>Line</FieldLabel>
-                                        <FieldInput
-                                          value={item.line || ''}
-                                          onChange={(e) => {
-                                            const n = [...editedItems];
-                                            n[index] = { ...n[index], line: e.target.value };
-                                            setEditedItems(n);
-                                          }}
-                                        />
-                                      </div>
-                                    </div>
-                                    
-                                    <div>
-                                       <FieldLabel>อาการเสีย / รายละเอียดการวิเคราะห์</FieldLabel>
-                                       <FieldInput
-                                          value={item.details || ''}
-                                          onChange={(e) => {
-                                            const n = [...editedItems];
-                                            n[index] = { ...n[index], details: e.target.value };
-                                            setEditedItems(n);
-                                          }}
-                                          rows={2}
-                                       />
-                                    </div>
-                                  </div>
-                                ) : (
-                                  /* Read-Only Summary Mode */
-                                  <div className="bg-surface/50 border border-divider-color/50 rounded-xl p-4 space-y-3.5 shadow-2xs">
-                                    <div>
-                                      <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">ชื่อสินค้า / Item Name</span>
-                                      <p className="text-sm sm:text-base font-bold text-on-surface bg-white px-3.5 py-2 rounded-lg border border-divider-color/40 shadow-3xs">
-                                        {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}
-                                      </p>
-                                    </div>
+                              {/* หมายเลขบาร์โค้ด / สูตร */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
+                                <input
+                                  type="text"
+                                  value={item.itemNumber || ''}
+                                  disabled={!canEditItems}
+                                  onChange={(e) => {
+                                    const n = [...editedItems];
+                                    n[index] = { ...n[index], itemNumber: e.target.value };
+                                    setEditedItems(n);
+                                  }}
+                                  placeholder="เช่น 6165xxxx"
+                                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                />
+                              </div>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">รหัสสินค้า / Code</span>
-                                        <span className="text-xs font-bold text-primary mt-0.5 block">{item.itemCode || '-'}</span>
-                                      </div>
-                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">ลูกค้า / Customer</span>
-                                        <span className="text-xs font-bold text-on-surface mt-0.5 block">{item.customerName || '-'}</span>
-                                      </div>
-                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">จำนวนทั้งหมด</span>
-                                        <span className="text-xs font-bold text-on-surface mt-0.5 block">{item.amount || 0} ลัง/กล่อง</span>
-                                      </div>
-                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Batch No.</span>
-                                        <span className={`text-xs font-semibold mt-0.5 block ${item.batchNo ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.batchNo || 'ไม่ได้ระบุ'}</span>
-                                      </div>
-                                    </div>
+                              {/* รหัสสินค้า */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
+                                <input
+                                  type="text"
+                                  value={item.itemCode || ''}
+                                  disabled={!canEditItems}
+                                  onChange={(e) => handleItemCodeChange(index, e.target.value)}
+                                  placeholder="เช่น 4000xxxx"
+                                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                />
+                              </div>
+                            </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Mold</span>
-                                        <span className={`text-xs font-semibold mt-0.5 block ${item.mold ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.mold || 'ไม่ได้ระบุ'}</span>
-                                      </div>
-                                      <div className="bg-white p-2.5 rounded-lg border border-divider-color/40 shadow-3xs">
-                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase block">Line</span>
-                                        <span className={`text-xs font-semibold mt-0.5 block ${item.line ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>{item.line || 'ไม่ได้ระบุ'}</span>
-                                      </div>
-                                    </div>
+                            {/* Full Width: ชื่อรายการ */}
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-semibold text-slate-500">ชื่อรายการ (Item Name) *</label>
+                              <input
+                                type="text"
+                                value={item.itemName || ''}
+                                disabled={!canEditItems}
+                                onChange={(e) => {
+                                  const n = [...editedItems];
+                                  n[index] = { ...n[index], itemName: e.target.value };
+                                  setEditedItems(n);
+                                }}
+                                placeholder="ระบุชื่อสินค้า / น้ำมัน"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                              />
+                            </div>
+                          </div>
 
-                                    <div className="bg-white p-3 rounded-lg border border-divider-color/40 shadow-3xs">
-                                      <span className="text-[10px] font-bold text-on-surface-variant uppercase block mb-1">อาการเสีย / รายละเอียดการวิเคราะห์</span>
-                                      <p className={`text-xs font-medium leading-relaxed ${item.details ? 'text-on-surface' : 'text-on-surface-variant italic'}`}>
-                                        {item.details || 'ยังไม่มีการระบุรายละเอียดอาการเสีย'}
-                                      </p>
-                                    </div>
-                                  </div>
+                          {/* BLOCK 2: แผงไฮไลท์ข้อมูลการผลิต (Production Batch & Spec Highlight Card) */}
+                          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+                            <div className="col-span-2 sm:col-span-1 space-y-1">
+                              <label className="text-xs font-semibold text-slate-600">หมายเลขล็อต (Batch no.)</label>
+                              <input
+                                type="text"
+                                value={item.batchNo || ''}
+                                disabled={!canEditItems}
+                                onChange={(e) => {
+                                  const n = [...editedItems];
+                                  n[index] = { ...n[index], batchNo: e.target.value };
+                                  setEditedItems(n);
+                                }}
+                                placeholder="เช่น 16/05/2026"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                              />
+                            </div>
+
+                            <div className="col-span-2 sm:col-span-1 space-y-1">
+                              <label className="text-xs font-semibold text-slate-600">วันที่ผลิตแกลลอน</label>
+                              <input
+                                type="date"
+                                value={item.gallonDate ? convertDMYToYMD(item.gallonDate) : (item.packagingDate ? convertDMYToYMD(item.packagingDate) : '')}
+                                disabled={!canEditItems}
+                                onChange={(e) => {
+                                  const n = [...editedItems];
+                                  const dmy = convertYMDToDMY(e.target.value);
+                                  n[index] = { ...n[index], gallonDate: dmy, packagingDate: dmy };
+                                  setEditedItems(n);
+                                }}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                              />
+                            </div>
+
+                            <div className="col-span-1 space-y-1">
+                              <label className="text-xs font-semibold text-slate-600 text-center block">Mold</label>
+                              <input
+                                type="text"
+                                value={item.mold || ''}
+                                disabled={!canEditItems}
+                                onChange={(e) => {
+                                  const n = [...editedItems];
+                                  n[index] = { ...n[index], mold: e.target.value };
+                                  setEditedItems(n);
+                                }}
+                                placeholder="Mold"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 text-center focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                              />
+                            </div>
+
+                            <div className="col-span-1 space-y-1">
+                              <label className="text-xs font-semibold text-slate-600 text-center block">Line</label>
+                              <input
+                                type="text"
+                                value={item.line || ''}
+                                disabled={!canEditItems}
+                                onChange={(e) => {
+                                  const n = [...editedItems];
+                                  n[index] = { ...n[index], line: e.target.value };
+                                  setEditedItems(n);
+                                }}
+                                placeholder="Line"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 text-center focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                              />
+                            </div>
+
+                            <div className="col-span-2 sm:col-span-1 space-y-1">
+                              <label className="text-xs font-bold text-indigo-900 text-center block">จำนวนกล่อง (ลัง) *</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.amount || ''}
+                                disabled={!canEditItems}
+                                onChange={(e) => {
+                                  const n = [...editedItems];
+                                  n[index] = { ...n[index], amount: Math.max(1, Number(e.target.value) || 1) };
+                                  setEditedItems(n);
+                                }}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-indigo-900 text-center focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-slate-100"
+                              />
+                            </div>
+                          </div>
+
+                          {/* BLOCK 3: สาเหตุที่พบ & ผู้รับผิดชอบ (Defect Cause & Responsibility) */}
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* สาเหตุที่พบ */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">สาเหตุที่พบ (Optional)</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Select
+                                    value={item.reason || ''}
+                                    disabled={!canEditItems}
+                                    onValueChange={(val) => {
+                                      const n = [...editedItems];
+                                      n[index] = { ...n[index], reason: val, reasonSubtype: '' };
+                                      setEditedItems(n);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                      <SelectValue placeholder="เลือกสาเหตุหลัก" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                      {REASON_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+
+                                  <Select
+                                    value={item.reasonSubtype || ''}
+                                    disabled={!canEditItems || !item.reason || reasonSubtypes.length === 0}
+                                    onValueChange={(val) => {
+                                      const n = [...editedItems];
+                                      n[index] = { ...n[index], reasonSubtype: val };
+                                      setEditedItems(n);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                      <SelectValue placeholder={item.reason ? "เลือกประเภทย่อย" : "ระบุสาเหตุหลักก่อน"} />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                      {reasonSubtypes.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* ผู้รับผิดชอบ */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">ผู้รับผิดชอบ (Optional)</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Select
+                                    value={item.responsible || ''}
+                                    disabled={!canEditItems}
+                                    onValueChange={(val) => {
+                                      const n = [...editedItems];
+                                      n[index] = { ...n[index], responsible: val, responsibleSubtype: '' };
+                                      setEditedItems(n);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                      <SelectValue placeholder="เลือกผู้รับผิดชอบ" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                      {RESPONSIBLE_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+
+                                  {responsibleSubtypes.length > 0 ? (
+                                    <Select
+                                      value={item.responsibleSubtype || ''}
+                                      disabled={!canEditItems || !item.responsible}
+                                      onValueChange={(val) => {
+                                        const n = [...editedItems];
+                                        n[index] = { ...n[index], responsibleSubtype: val };
+                                        setEditedItems(n);
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                        <SelectValue placeholder="เลือกแผนก/ผู้ผลิต" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                        {responsibleSubtypes.map((opt) => (
+                                          <SelectItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={item.responsibleSubtype || ''}
+                                      disabled={!canEditItems}
+                                      onChange={(e) => {
+                                        const n = [...editedItems];
+                                        n[index] = { ...n[index], responsibleSubtype: e.target.value };
+                                        setEditedItems(n);
+                                      }}
+                                      className="w-full h-10 text-xs font-medium bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-500 focus:bg-white focus:outline-none focus:border-indigo-500"
+                                      placeholder="ระบุชื่อแผนก/ผู้ผลิต"
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* อาการเสีย / รายละเอียดเพิ่มเติม */}
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-semibold text-slate-500">อาการเสีย / รายละเอียดเพิ่มเติม (Defect Notes & Details)</label>
+                              <input
+                                type="text"
+                                value={item.details || ''}
+                                disabled={!canEditItems}
+                                onChange={(e) => {
+                                  const n = [...editedItems];
+                                  n[index] = { ...n[index], details: e.target.value };
+                                  setEditedItems(n);
+                                }}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                placeholder="ระบุอาการ เช่น รอยพับซีลฟอยล์ไม่สนิท น้ำมันซึมออกมาเล็กน้อยที่ขอบฝา..."
+                              />
+                            </div>
+                          </div>
+
+                          {/* BLOCK 4: รูปภาพหลักฐาน + ปุ่มบันทึกรายไอเทม */}
+                          <div className="pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                            {/* Images List */}
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                  <Camera size={14} className="text-slate-500" />
+                                  <span>รูปภาพหลักฐานความเสียหาย ({(item.imageUrls || []).filter(u => !deletedItemIds.includes(u)).length + stagedFiles.length} ภาพ)</span>
+                                </span>
+
+                                {stagedFiles.length > 0 && (
+                                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                    <span>{stagedFiles.length} รูปใหม่รอการบันทึก</span>
+                                  </span>
                                 )}
                               </div>
 
-                              {/* Photo Uploader Workspace (Right Column) */}
-                              <div className="xl:w-[320px] shrink-0 bg-surface-secondary/40 rounded-xl p-4 border border-divider-color/60">
-                                <div className="flex items-center justify-between mb-3">
-                                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
-                                    <Camera size={14} /> 
-                                    รูปภาพหลักฐานหลังวิเคราะห์
-                                  </p>
-                                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                    {activeImageCount} รูป
-                                  </span>
-                                </div>
-                                
-                                <div className="grid grid-cols-3 gap-2">
-                                  {/* Existing Images */}
-                                  {(item.imageUrls || []).map((url, i) => {
-                                    const isDeleted = deletedItemIds.includes(url);
-                                    return (
-                                      <div key={i} className="relative group aspect-square rounded-lg overflow-hidden bg-white shadow-sm border border-divider-color/50">
-                                        <img src={url} alt="item" className={`w-full h-full object-cover ${isDeleted ? 'opacity-30 grayscale' : ''}`} />
+                              <div className="flex flex-wrap gap-2.5 items-center">
+                                {/* 1. Existing Uploaded Images */}
+                                {(item.imageUrls || []).map((url, imgIdx) => {
+                                  const isDeleted = deletedItemIds.includes(url);
+                                  return (
+                                    <div 
+                                      key={`existing-${imgIdx}`} 
+                                      className={`relative group w-16 h-16 rounded-xl overflow-hidden border shadow-2xs cursor-pointer transition-all ${
+                                        isDeleted ? 'border-red-300 opacity-40 grayscale' : 'border-slate-200 hover:scale-105 hover:shadow-md'
+                                      }`}
+                                      onClick={() => {
+                                        if (!isDeleted) {
+                                          setLightboxData({ url, title: `${item.itemName || 'รายการที่ ' + (index + 1)} (ภาพที่ ${imgIdx + 1})` });
+                                        }
+                                      }}
+                                    >
+                                      <img src={url} alt="Evidence" className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white">
+                                        <Eye size={15} />
+                                      </div>
+                                      {canEditItems && (
                                         <button
                                           type="button"
-                                          onClick={() => {
-                                            if (isDeleted) setDeletedItemIds(prev => prev.filter(u => u !== url));
-                                            else setDeletedItemIds(prev => [...prev, url]);
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isDeleted) {
+                                              setDeletedItemIds(prev => prev.filter(u => u !== url));
+                                            } else {
+                                              setDeletedItemIds(prev => [...prev, url]);
+                                            }
                                           }}
-                                          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          className="absolute top-1 right-1 w-5 h-5 rounded-md bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                          title={isDeleted ? "ยกเลิกการลบ" : "ลบรูปภาพนี้"}
                                         >
-                                          {isDeleted ? <Plus size={20} className="text-white" /> : <Trash2 size={20} className="text-white" />}
+                                          {isDeleted ? <Plus size={11} /> : <Trash2 size={11} />}
                                         </button>
-                                        {isDeleted && <div className="absolute inset-0 border-2 border-error rounded-lg" />}
-                                      </div>
-                                    );
-                                  })}
-
-                                  {/* New Images */}
-                                  {(newImages[itemIdStr] || []).map((file, i) => (
-                                    <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden bg-blue-50 border-2 border-primary/40">
-                                      <img src={URL.createObjectURL(file)} alt="new" className="w-full h-full object-cover" />
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const imgs = { ...newImages };
-                                          imgs[itemIdStr] = imgs[itemIdStr].filter((_, idx) => idx !== i);
-                                          setNewImages(imgs);
-                                        }}
-                                        className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      >
-                                        <X size={20} className="text-white" />
-                                      </button>
-                                      <div className="absolute top-1 right-1 bg-primary text-white text-[9px] px-1 rounded-sm font-bold">NEW</div>
+                                      )}
+                                      {isDeleted && (
+                                        <div className="absolute bottom-0 inset-x-0 bg-red-600 text-white text-[8px] font-bold text-center py-0.5">
+                                          รอการลบ
+                                        </div>
+                                      )}
                                     </div>
-                                  ))}
+                                  );
+                                })}
 
-                                  {/* Upload Button */}
-                                  <label className="aspect-square rounded-lg border-2 border-dashed border-primary/50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 transition-colors text-primary bg-primary/5">
-                                    <Plus size={24} />
-                                    <span className="text-[10px] font-semibold">เพิ่มรูป</span>
+                                {/* 2. Newly Staged Local Files */}
+                                {stagedFiles.map((file, fileIdx) => {
+                                  const previewUrl = URL.createObjectURL(file);
+                                  return (
+                                    <div 
+                                      key={`staged-${fileIdx}`} 
+                                      className="relative group w-16 h-16 rounded-xl overflow-hidden border-2 border-dashed border-amber-400 bg-amber-50/50 shadow-2xs cursor-pointer transition-all hover:scale-105"
+                                      onClick={() => setLightboxData({ url: previewUrl, title: `รูปใหม่ ${file.name} (Draft)` })}
+                                    >
+                                      <img src={previewUrl} alt="Staged" className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white">
+                                        <Eye size={15} />
+                                      </div>
+                                      {canEditItems && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNewImages(prev => {
+                                              const cur = prev[itemIdStr] || (item.id ? prev[item.id] : undefined) || prev[`idx-${index}`] || [];
+                                              const nextFiles = cur.filter((_, idx) => idx !== fileIdx);
+                                              return {
+                                                ...prev,
+                                                [itemIdStr]: nextFiles
+                                              };
+                                            });
+                                          }}
+                                          className="absolute top-1 right-1 w-5 h-5 rounded-md bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                          title="ยกเลิกรูปนี้"
+                                        >
+                                          <X size={11} />
+                                        </button>
+                                      )}
+                                      <div className="absolute bottom-0 inset-x-0 bg-amber-500 text-white text-[8px] font-bold text-center py-0.5">
+                                        ใหม่
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+
+                                {/* 3. Add Photo Button */}
+                                {canEditItems && (
+                                  <label className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50/50 flex flex-col items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shrink-0">
+                                    <Camera size={18} />
+                                    <span className="text-[9px] font-bold mt-0.5">+ เพิ่มรูป</span>
                                     <input
                                       type="file"
                                       multiple
@@ -956,148 +1521,595 @@ export function CaseUpdateView({
                                       onChange={(e) => {
                                         const files = Array.from(e.target.files || []);
                                         if (files.length > 0) {
-                                          setNewImages(prev => ({
-                                            ...prev,
-                                            [itemIdStr]: [...(prev[itemIdStr] || []), ...files],
-                                          }));
+                                          setNewImages(prev => {
+                                            const updated = { ...prev };
+                                            const existing = updated[itemIdStr] || (item.id ? updated[item.id] : undefined) || updated[`idx-${index}`] || [];
+                                            const combined = [...existing, ...files];
+                                            updated[itemIdStr] = combined;
+                                            if (item.id) updated[item.id] = combined;
+                                            updated[`idx-${index}`] = combined;
+                                            return updated;
+                                          });
+                                          showToast(`+ เพิ่ม ${files.length} รูปใหม่แล้ว`, 'info');
                                         }
+                                        e.target.value = '';
                                       }}
                                     />
                                   </label>
-                                </div>
+                                )}
                               </div>
-
                             </div>
 
-                            {/* Section: Reason & Responsible */}
-                            <div className="p-4 rounded-xl border border-divider-color bg-surface-secondary/20">
-                              <SectionTitle color="bg-[#ff9500]">สาเหตุและผู้รับผิดชอบ</SectionTitle>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                                <div className="space-y-1.5 relative z-[60]">
-                                  <FieldLabel>สาเหตุหลัก</FieldLabel>
-                                  <Combobox
-                                    options={REASON_OPTIONS}
-                                    value={item.reason || ''}
-                                    onChange={(val) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], reason: val, reasonSubtype: '' };
-                                      setEditedItems(n);
-                                    }}
-                                    placeholder="เลือกสาเหตุ..."
-                                  />
-                                </div>
-                                <div className="space-y-1.5 relative z-[55]">
-                                  <FieldLabel>ประเภทย่อย</FieldLabel>
-                                  <Combobox
-                                    options={getReasonSubtypeOptions(item.reason || '')}
-                                    value={item.reasonSubtype || ''}
-                                    onChange={(val) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], reasonSubtype: val };
-                                      setEditedItems(n);
-                                    }}
-                                    placeholder="เลือกประเภทย่อย..."
-                                    disabled={!item.reason || item.reason === 'อื่นๆ'}
-                                  />
-                                </div>
-                                <div className="space-y-1.5 relative z-[50]">
-                                  <FieldLabel>ผู้รับผิดชอบ</FieldLabel>
-                                  <Combobox
-                                    options={RESPONSIBLE_OPTIONS}
-                                    value={item.responsible || ''}
-                                    onChange={(val) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], responsible: val, responsibleSubtype: '' };
-                                      setEditedItems(n);
-                                    }}
-                                    placeholder="เลือกผู้รับผิดชอบ..."
-                                  />
-                                </div>
-                                <div className="space-y-1.5 relative z-[45]">
-                                  <FieldLabel>แผนก</FieldLabel>
-                                  <Combobox
-                                    options={getResponsibleSubdivisionOptions(item.responsible || '')}
-                                    value={item.responsibleSubtype || ''}
-                                    onChange={(val) => {
-                                      const n = [...editedItems];
-                                      n[index] = { ...n[index], responsibleSubtype: val };
-                                      setEditedItems(n);
-                                    }}
-                                    placeholder="เลือกแผนก..."
-                                    disabled={!item.responsible || item.responsible === 'Customer' || item.responsible === 'อื่นๆ'}
-                                  />
-                                </div>
+                            {/* Per-Item Save Action Button */}
+                            {canEditItems && (
+                              <div className="shrink-0 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={savingItemIndex !== null}
+                                  onClick={() => handleSaveSingleItem(index)}
+                                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                                >
+                                  {savingItemIndex === index ? (
+                                    <>
+                                      <Loader2 size={14} className="animate-spin" />
+                                      <span>กำลังบันทึก...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Save size={14} />
+                                      <span>บันทึกรายการนี้ ➔ ย้ายลงล่าง</span>
+                                    </>
+                                  )}
+                                </button>
                               </div>
-
-                              {(item.reason || '').includes('เปื้อน') && editedItems.some((i, iidx) => iidx !== index && (i.reason || '').includes('รั่ว')) && (
-                                <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/80 space-y-3">
-                                  <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
-                                    <HelpCircle size={16} className="text-amber-600" />
-                                    <span>ระบุความเชื่อมโยง (Cross-Item Link)</span>
-                                  </div>
-                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                    <label className="flex items-center gap-2 text-xs text-amber-800 font-medium cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={!!item.linkedSourceId}
-                                        onChange={(e) => {
-                                          const n = [...editedItems];
-                                          if (!e.target.checked) {
-                                            n[index] = { ...n[index], linkedSourceId: '' };
-                                          } else {
-                                            const leaks = editedItems.filter((i, iidx) => iidx !== index && (i.reason || '').includes('รั่ว'));
-                                            n[index] = { ...n[index], linkedSourceId: leaks.length === 1 ? (leaks[0].id || '') : '' };
-                                          }
-                                          setEditedItems(n);
-                                        }}
-                                        className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                                      />
-                                      <span>สาเหตุมาจากไอเทมที่รั่วในเคสนี้</span>
-                                    </label>
-                                    {item.linkedSourceId !== undefined && item.linkedSourceId !== null && item.linkedSourceId !== '' && (
-                                      <select
-                                        value={item.linkedSourceId || ''}
-                                        onChange={(e) => {
-                                          const n = [...editedItems];
-                                          n[index] = { ...n[index], linkedSourceId: e.target.value };
-                                          setEditedItems(n);
-                                        }}
-                                        className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-sm focus:border-amber-500 focus:outline-none"
-                                      >
-                                        <option value="">-- เลือกรายการไอเทมต้นเหตุ --</option>
-                                        {editedItems.filter((i, iidx) => iidx !== index && (i.reason || '').includes('รั่ว')).map(leak => (
-                                          <option key={leak.id} value={leak.id}>
-                                            {leak.itemNumber || leak.itemCode || 'ไม่ระบุรหัส'} - {leak.itemName || 'ไม่ระบุชื่อ'}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Delete Item button */}
-                            <div className="flex justify-end pt-2 border-t border-divider-color/40">
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveItem(index)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
-                                title="ลบรายการนี้"
-                              >
-                                <Trash2 size={14} />
-                                <span>ลบรายการนี้</span>
-                              </button>
-                            </div>
+                            )}
                           </div>
-                        </motion.div>
+                        </div>
                       )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* STEP 2 PANEL: QSMS วิเคราะห์ & ระบุภาชนะ (ANALYSIS & REQUISITION) */}
+          {/* ========================================================================= */}
+          {activeStep === 'analysis' && (
+            <div className="space-y-6">
+              {/* Step Header Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900">Step 2: ผลการวิเคราะห์และระบุภาชนะที่ต้องใช้</h2>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      canEditAnalysis ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                      {canEditAnalysis ? '✏️ โหมดวิเคราะห์ & ขอเบิก (QSMS / Admin)' : '👁️ โหมดดูผลวิเคราะห์ (Preview Only)'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {canEditAnalysis
+                      ? 'ระบุสาเหตุข้อบกพร่อง แนวทางแก้ไข และกำหนดรายการภาชนะที่ต้องใช้ส่งต่อให้คลัง (WPK)'
+                      : 'ผลการวิเคราะห์จากแผนก QSMS (เฉพาะ QSMS/Admin จึงจะสามารถแก้ไขส่วนนี้ได้)'}
+                  </p>
+                </div>
+
+                {canEditAnalysis && (
+                  <button
+                    type="button"
+                    onClick={handleQSMSHandover}
+                    disabled={isSaving}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>บันทึกผล & ส่งขอเบิกภาชนะ ➔</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Analysis Textarea */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Wrench size={14} className="text-indigo-600" />
+                    <span>ผลการวิเคราะห์สาเหตุและแนวทางแก้ไข (Analysis & Resolution Notes)</span>
+                  </h3>
+                </div>
+                <textarea
+                  rows={3}
+                  value={resolutionMethod}
+                  disabled={!canEditAnalysis}
+                  onChange={(e) => setResolutionMethod(e.target.value)}
+                  placeholder="ระบุผลการวิเคราะห์สาเหตุ เช่น ซีลฟอยล์ไม่สนิทจากความร้อนตก และแนวทางการแก้ไข เช่น ให้เปลี่ยนแกลลอนใหม่และรันซีลซ้ำ..."
+                  className="w-full text-xs font-medium rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                />
+              </div>
+
+              {/* Container & Material Requisition Table */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                      <Package size={16} className="text-orange-600 shrink-0" />
+                      <span>รายการภาชนะและวัสดุที่ต้องใช้ (Container & Material Requisition)</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-800 border border-orange-200 shrink-0">
+                        {materialRequests.length} รายการ
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">ระบุรายการและจำนวนภาชนะเพื่อให้แผนกคลัง (WPK) ดำเนินการเบิกจ่าย</p>
+                  </div>
+                </div>
+
+                {canEditAnalysis && (
+                  <div className="rounded-xl bg-slate-50/80 border border-slate-200/70 p-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 shrink-0">
+                      <Sparkles size={13} className="text-orange-500" />
+                      <span>เพิ่มด่วน:</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5 w-full flex-wrap sm:flex-nowrap">
+                      {[
+                        { name: 'กล่องใหม่', unit: 'กล่อง' },
+                        { name: 'แกลลอน 1L', unit: 'ใบ' },
+                        { name: 'แกลลอน 4L', unit: 'ใบ' },
+                        { name: 'แกลลอน 5L', unit: 'ใบ' },
+                        { name: 'ฝาแกลลอน', unit: 'ชิ้น' },
+                        { name: 'สติกเกอร์/ฉลาก', unit: 'แผ่น' },
+                        { name: 'ถัง 200L', unit: 'ถัง' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => handleAddPresetMaterial(preset.name, preset.unit)}
+                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer shrink-0 whitespace-nowrap"
+                        >
+                          + {preset.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {materialRequests.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                    <Package size={28} className="mx-auto text-slate-300 mb-2" />
+                    <p className="text-xs font-semibold text-slate-600">ยังไม่มีการระบุภาชนะหรือวัสดุที่ต้องใช้</p>
+                    {canEditAnalysis && (
+                      <div className="mt-3 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingCustomMaterial(true)}
+                          className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Plus size={13} /> เพิ่มรายการวัสดุแบบกำหนดเอง
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold">
+                        <tr>
+                          <th className="py-2.5 px-3">#</th>
+                          <th className="py-2.5 px-3">รายการภาชนะ / วัสดุ</th>
+                          <th className="py-2.5 px-3 text-center">จำนวนที่ขอ (QSMS)</th>
+                          <th className="py-2.5 px-3 text-center">หน่วยนับ</th>
+                          <th className="py-2.5 px-3 text-center">สถานะ</th>
+                          {canEditAnalysis && <th className="py-2.5 px-3 text-right">จัดการ</th>}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {materialRequests.map((mat, idx) => (
+                          <tr key={mat.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-2 px-3 font-mono text-slate-400">{idx + 1}</td>
+                            <td className="py-2 px-3 font-semibold text-slate-800">{mat.materialName}</td>
+                            <td className="py-2 px-3 text-center">
+                              {canEditAnalysis ? (
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={mat.requestedQty}
+                                  onChange={(e) => handleMaterialQtyChange(mat.id, Number(e.target.value) || 0)}
+                                  className="w-16 text-center border border-slate-200 bg-slate-50 rounded-lg py-1 px-2 font-bold text-slate-900 focus:bg-white focus:border-orange-500"
+                                />
+                              ) : (
+                                <span className="font-bold text-slate-900">{mat.requestedQty}</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-center text-slate-500">{mat.unit}</td>
+                            <td className="py-2 px-3 text-center">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                mat.status === 'fulfilled' ? 'bg-emerald-100 text-emerald-800' :
+                                mat.status === 'partial' ? 'bg-amber-100 text-amber-800' :
+                                mat.status === 'unavailable' ? 'bg-red-100 text-red-800' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {mat.status === 'fulfilled' ? '✓ เบิกจ่ายครบแล้ว' :
+                                 mat.status === 'partial' ? '⚡ เบิกจ่ายบางส่วน' :
+                                 mat.status === 'unavailable' ? '✗ ของขาด' :
+                                 '⏳ รอคลังเบิกจ่าย'}
+                              </span>
+                            </td>
+                            {canEditAnalysis && (
+                              <td className="py-2 px-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMaterial(mat.id)}
+                                  className="p-1 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
+                                  title="ลบรายการ"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {canEditAnalysis && (
+                      <div className="p-3 bg-slate-50/70 border-t border-slate-200/80 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingCustomMaterial(!isAddingCustomMaterial)}
+                          className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus size={13} /> {isAddingCustomMaterial ? 'ยกเลิก' : '+ เพิ่มรายการวัสดุอื่นๆ แบบกำหนดเอง'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Custom Material Input Form */}
+                {isAddingCustomMaterial && canEditAnalysis && (
+                  <div className="p-3.5 rounded-xl border border-orange-200 bg-orange-50/40 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">ชื่อภาชนะ / วัสดุ *</label>
+                      <input
+                        type="text"
+                        value={customMaterialName}
+                        onChange={(e) => setCustomMaterialName(e.target.value)}
+                        placeholder="เช่น ฝาซีลกันปลอม, ฟิล์มหด ฯลฯ"
+                        className="w-full text-xs border border-slate-200 rounded-lg py-1.5 px-3 bg-white focus:outline-none focus:border-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">จำนวนที่ขอ *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={customMaterialQty}
+                        onChange={(e) => setCustomMaterialQty(Number(e.target.value) || 1)}
+                        className="w-full text-xs border border-slate-200 rounded-lg py-1.5 px-3 bg-white focus:outline-none focus:border-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleCustomMaterialAdd}
+                        className="w-full py-1.5 px-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                      >
+                        บันทึกเข้าตาราง
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* STEP 3 PANEL: WPK คลังเบิกจ่ายภาชนะ (WAREHOUSE ISSUING) */}
+          {/* ========================================================================= */}
+          {activeStep === 'issuing' && (
+            <div className="space-y-6">
+              {/* Step Header Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900">Step 3: คลังบันทึกการเบิกจ่ายภาชนะ (WPK Fulfillment)</h2>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      canEditIssuing ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                      {canEditIssuing ? '✏️ โหมดเบิกจ่ายของ (WPK / Admin)' : '👁️ โหมดดูการเบิกจ่าย (Preview Only)'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {canEditIssuing
+                      ? 'ตรวจสอบรายการที่ QSMS ขอ และบันทึกยอดเบิกได้จริงเพื่อส่งมอบงานให้ PDF ซ่อม'
+                      : 'รายการเบิกจ่ายของแผนกคลัง (เฉพาะแผนก WPK/Admin จึงจะสามารถบันทึกยอดเบิกได้)'}
+                  </p>
+                </div>
+
+                {canEditIssuing && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleFulfillAllMaterials}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                    >
+                      ✓ เบิกครบตามยอดทั้งหมด
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleWPKHandover}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Truck size={14} />
+                      <span>จ่ายของครบ & ส่งให้ PDF ซ่อม ➔</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Warehouse Issuing Table */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Package size={16} className="text-orange-600" />
+                  <span>ตารางเบิกจ่ายภาชนะและวัสดุ</span>
+                </h3>
+
+                {materialRequests.length === 0 ? (
+                  <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl">
+                    <p className="text-xs font-semibold text-slate-500">QSMS ยังไม่ได้ระบุรายการขอเบิกภาชนะใน Step 2</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold">
+                        <tr>
+                          <th className="py-2.5 px-3">#</th>
+                          <th className="py-2.5 px-3">รายการภาชนะ / วัสดุ</th>
+                          <th className="py-2.5 px-3 text-center">ยอดที่ QSMS ขอ</th>
+                          <th className="py-2.5 px-3 text-center">ยอดเบิกได้จริง (WPK)</th>
+                          <th className="py-2.5 px-3 text-center">หน่วยนับ</th>
+                          <th className="py-2.5 px-3 text-center">สถานะ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {materialRequests.map((mat, idx) => (
+                          <tr key={mat.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-2.5 px-3 font-mono text-slate-400">{idx + 1}</td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-800">{mat.materialName}</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-slate-600">{mat.requestedQty}</td>
+                            <td className="py-2.5 px-3 text-center">
+                              {canEditIssuing ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={mat.issuedQty ?? 0}
+                                  onChange={(e) => handleMaterialIssuedQtyChange(mat.id, Number(e.target.value) || 0)}
+                                  className="w-20 text-center border border-slate-200 bg-slate-50 rounded-lg py-1 px-2 font-bold text-orange-900 focus:bg-white focus:border-orange-500"
+                                />
+                              ) : (
+                                <span className="font-bold text-orange-950">{mat.issuedQty ?? '-'}</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-center text-slate-500">{mat.unit}</td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                mat.status === 'fulfilled' ? 'bg-emerald-100 text-emerald-800' :
+                                mat.status === 'partial' ? 'bg-amber-100 text-amber-800' :
+                                mat.status === 'unavailable' ? 'bg-red-100 text-red-800' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {mat.status === 'fulfilled' ? '✓ เบิกจ่ายครบแล้ว' :
+                                 mat.status === 'partial' ? '⚡ เบิกจ่ายบางส่วน' :
+                                 mat.status === 'unavailable' ? '✗ ของขาด' :
+                                 '⏳ รอคลังเบิกจ่าย'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Material Shortage Card */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+                <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                  <AlertCircle size={14} className="text-amber-600" />
+                  <span>บันทึกวัสดุที่ขาด (Material Shortage Record)</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ขาดกล่อง (ใบ)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={missingBoxes || ''}
+                      disabled={!canEditIssuing}
+                      onChange={(e) => setMissingBoxes(Number(e.target.value) || 0)}
+                      className="w-full text-xs font-semibold bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ขาดแกลลอน (ใบ)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={missingGallons || ''}
+                      disabled={!canEditIssuing}
+                      onChange={(e) => setMissingGallons(Number(e.target.value) || 0)}
+                      className="w-full text-xs font-semibold bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ขาดน้ำมัน (ลิตร)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={missingOil || ''}
+                      disabled={!canEditIssuing}
+                      onChange={(e) => setMissingOil(Number(e.target.value) || 0)}
+                      className="w-full text-xs font-semibold bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* STEP 4 PANEL: PDF ซ่อมงาน & DEFEND MODE (REPAIR & DEFEND) */}
+          {/* ========================================================================= */}
+          {activeStep === 'repair' && (
+            <div className="space-y-6">
+              {/* Step Header Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900">Step 4: ช่างซ่อมบันทึกความคืบหน้า & Defend</h2>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      canEditRepair ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                      {canEditRepair ? '✏️ โหมดซ่อม & Defend (PDF / Admin)' : '👁️ โหมดดูความคืบหน้า (Preview Only)'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {canEditRepair
+                      ? 'บันทึกยอดกล่องที่ซ่อมเสร็จจริง หรือบันทึกปัญหา Defend กรณีติดอุปสรรคหน้างาน'
+                      : 'ความคืบหน้างานซ่อมของแผนก PDF (เฉพาะแผนก PDF/Admin จึงจะสามารถบันทึกยอดซ่อมได้)'}
+                  </p>
+                </div>
+
+                {canEditRepair && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handlePDFSave(false, false)}
+                      disabled={isSaving}
+                      className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                    >
+                      💾 บันทึกความคืบหน้า
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePDFSave(true, false)}
+                      disabled={isSaving || globalCompleted < totalBoxes}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCheck size={14} />
+                      <span>🏁 ปิดเคส 100% (Completed)</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress Gauge Card */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <CheckCircle2 size={16} className="text-emerald-600" />
+                      <span>ความคืบหน้าการซ่อมรวม (Overall Progress)</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      ยอดเสร็จ: <strong className="text-emerald-700">{globalCompleted}</strong> จากทั้งหมด <strong>{totalBoxes}</strong> กล่อง ({completionPercentage}%)
+                    </p>
+                  </div>
+
+                  {canEditRepair && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max={totalBoxes}
+                        value={globalCompleted || ''}
+                        onChange={(e) => handleGlobalProgressChange(Number(e.target.value) || 0)}
+                        placeholder="ระบุยอดรวมที่เสร็จ..."
+                        className="w-36 text-xs font-bold text-center border border-slate-200 rounded-xl py-2 px-3 bg-slate-50 focus:bg-white focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleGlobalProgressChange(totalBoxes)}
+                        className="px-3 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors cursor-pointer"
+                      >
+                        เสร็จทั้งหมด
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(100, completionPercentage)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* PDF Defend Mode Card */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Shield size={16} className="text-rose-600" />
+                      <span>PDF Defend Mode (รายงานอุปสรรค & ข้อแก้ต่างหน้างาน)</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      ระบุเหตุผลที่งานยังไม่เสร็จสิ้น เพื่อชี้แจงความรับผิดชอบอย่างโปร่งใส
+                    </p>
+                  </div>
+
+                  {canEditRepair && (
+                    <button
+                      type="button"
+                      onClick={() => handlePDFSave(false, true)}
+                      disabled={isSaving}
+                      className="px-3.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                    >
+                      <AlertTriangle size={13} />
+                      <span>⚠️ บันทึกสถานะติดปัญหา (Defend Case)</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5">หมวดหมู่ปัญหา (Defend Category)</label>
+                    <Select
+                      value={defendCategory}
+                      disabled={!canEditRepair}
+                      onValueChange={setDefendCategory}
+                    >
+                      <SelectTrigger className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 disabled:bg-slate-100 disabled:text-slate-400 transition-colors">
+                        <SelectValue placeholder="เลือกหมวดหมู่ปัญหา" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                        <SelectItem value="waiting_oil">รอน้ำมัน (Waiting for Oil)</SelectItem>
+                        <SelectItem value="waiting_container">รอภาชนะจาก WPK (Waiting for Containers)</SelectItem>
+                        <SelectItem value="waiting_label">รอฉลากจาก Supplier (Waiting for Labels)</SelectItem>
+                        <SelectItem value="waiting_lab">รอผลตรวจแล็บ QSMS (Waiting for Lab)</SelectItem>
+                        <SelectItem value="waiting_machine">เครื่องจักรขัดข้อง (Machine Breakdown)</SelectItem>
+                        <SelectItem value="other">อื่นๆ (Other)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5">บันทึกข้อแก้ต่าง / อุปสรรค (Defend Notes)</label>
+                    <textarea
+                      rows={2}
+                      value={defendNotes}
+                      disabled={!canEditRepair}
+                      onChange={(e) => setDefendNotes(e.target.value)}
+                      placeholder="ระบุรายละเอียด เช่น รอน้ำมันล็อตพิเศษจากคลัง แจ้งเรื่องไปเมื่อ 10:00 น. กำลังรอการจัดส่ง..."
+                      className="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl p-2.5 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
@@ -1127,6 +2139,133 @@ export function CaseUpdateView({
               </div>
             </div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Unsaved Changes Alert Bar */}
+      <AnimatePresence>
+        {hasUnsavedPhotos && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 text-white backdrop-blur-md px-4 sm:px-6 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center gap-4 max-w-xl w-[92vw] sm:w-auto justify-between"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 animate-pulse">
+                <AlertCircle size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">
+                  มี {totalNewPhotos > 0 ? `${totalNewPhotos} รูปใหม่` : ''}{totalNewPhotos > 0 && deletedItemIds.length > 0 ? ' และ' : ''}{deletedItemIds.length > 0 ? `ลบ ${deletedItemIds.length} รูป` : ''} ที่ยังไม่ได้บันทึก
+                </p>
+                <p className="text-[11px] text-slate-400 truncate">
+                  กดบันทึกเพื่ออัปโหลดเข้าระบบถาวร
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleSave(true)}
+              disabled={isSaving}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ring-2 ring-indigo-400/30"
+            >
+              <Save size={14} />
+              <span>{isSaving ? 'กำลังบันทึก...' : 'บันทึกรูปภาพทันที'}</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox Image Preview Modal */}
+      <AnimatePresence>
+        {lightboxData && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-10">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLightboxData(null)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm cursor-zoom-out"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              className="relative z-10 max-w-4xl max-h-[90vh] flex flex-col items-center select-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-slate-950 flex items-center justify-center max-h-[80vh]">
+                <img
+                  src={lightboxData.url}
+                  alt="Fullscreen Preview"
+                  className="max-h-[80vh] max-w-full object-contain rounded-2xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLightboxData(null)}
+                  className="absolute top-3 right-3 w-9 h-9 bg-black/60 hover:bg-black/90 text-white rounded-full flex items-center justify-center transition-colors border border-white/20 cursor-pointer"
+                  title="ปิด (Esc)"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {lightboxData.title && (
+                <div className="mt-3 px-4 py-1.5 rounded-full bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/10 flex items-center gap-2">
+                  <Camera size={13} className="text-indigo-400" />
+                  <span>{lightboxData.title}</span>
+                  <a
+                    href={lightboxData.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-2 text-indigo-300 hover:text-white underline text-[11px]"
+                  >
+                    เปิดขนาดเต็ม ↗
+                  </a>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* FLOATING SAVE PROGRESS ISLAND (Bottom Center Floating Feedback) */}
+      <AnimatePresence>
+        {isSaving && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          >
+            <div className="flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/15 text-white shadow-2xl shadow-black/40 min-w-[280px] sm:min-w-[340px]">
+              {isComplete ? (
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={18} className="animate-bounce" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                  <Loader2 size={18} className="animate-spin" />
+                </div>
+              )}
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between text-xs font-bold mb-1">
+                  <span className="truncate">{statusText || (isComplete ? 'บันทึกเรียบร้อย' : 'กำลังบันทึกข้อมูล...')}</span>
+                  <span className="font-mono text-indigo-300 shrink-0 ml-2">{Math.round(progress)}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-indigo-400 to-emerald-400 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

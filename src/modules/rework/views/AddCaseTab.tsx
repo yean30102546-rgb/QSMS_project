@@ -111,7 +111,9 @@ const reworkItemSchema = z.object({
 
 const formSchema = z.object({
   caseSource: z.string(),
-  caseNumber: z.string(),
+  caseName: z.string().optional(),
+  caseNumber: z.string().optional(),
+  customerName: z.string().optional(),
   items: z.array(reworkItemSchema)
 });
 
@@ -122,6 +124,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   const { showToast, showAlert, showConfirm } = useNotification();
 
   const [isFastTrackMode, setIsFastTrackMode] = useState(false);
+  const [entryMode, setEntryMode] = useState<'wpk_fast' | 'full_items'>('wpk_fast');
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
@@ -148,7 +151,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       caseSource: 'SFC',
+      caseName: '',
       caseNumber: '',
+      customerName: 'SFC',
       items: [{ ...initialFormItem, id: `form-${Date.now()}` }]
     }
   });
@@ -161,7 +166,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   });
 
   const caseSource = watch('caseSource');
+  const caseName = watch('caseName');
   const caseNumber = watch('caseNumber');
+  const customerName = watch('customerName');
   const formItems = watch('items');
 
   const { triggerDebouncedVerification } = useItemVerification({
@@ -296,53 +303,58 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   };
 
   const onSubmit = async (data: FormValues) => {
-    if (isSaveDisabled(data.items)) {
+    // If in full items mode, check validity
+    if (entryMode === 'full_items' && data.items.length > 0 && isSaveDisabled(data.items)) {
       showAlert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วน (ต้องระบุชื่อลูกค้า, รหัสสินค้า, ชื่อสินค้า และจำนวนกล่องห้ามเป็น 0)', 'error');
       return;
     }
 
-    const trimmedNumber = data.caseNumber.trim();
-    if (!trimmedNumber) {
-      showAlert('กรุณากรอกหมายเลขเคส (Running Number)', 'error');
-      return;
-    }
-
-    const prefix = String(data.caseSource).toLowerCase() === 'customer' ? 'RT' : 'RW';
+    const isCustomerCase = data.caseSource === 'Customer' || (data.customerName && data.customerName !== 'SFC');
+    const prefix = isCustomerCase ? 'RT' : 'RW';
     const currentYear = new Date().getFullYear();
-    const composedCaseId = `${prefix}${trimmedNumber}-${currentYear}`;
-
-    if (existingCaseIds.includes(composedCaseId)) {
-      showAlert(`หมายเลขเคส "${composedCaseId}" มีอยู่ในระบบแล้ว กรุณาใช้หมายเลขอื่น`, 'error');
-      return;
-    }
 
     try {
       setIsSaving(true);
-      setProgress(10);
-      setStatusText('กำลังเตรียมข้อมูล...');
+      setProgress(15);
+      setStatusText('กำลังเตรียมข้อมูลเคส...');
 
       // Transform items for API
-      const apiItems = data.items.map(item => ({
-        ...item,
-        amount: Number(item.boxNumber) || Number(item.amount) || 1
-      })) as ReworkItem[];
+      const apiItems = (entryMode === 'full_items' && data.items.length > 0 && data.items[0].itemName)
+        ? data.items.map(item => ({
+            ...item,
+            amount: Number(item.boxNumber) || Number(item.amount) || 1
+          })) as ReworkItem[]
+        : [];
 
-      setProgress(40);
-      setStatusText('กำลังบันทึกข้อมูลเข้าสู่ฐานข้อมูล...');
+      setProgress(45);
+      setStatusText('กำลังสร้าง Case ID และบันทึกข้อมูล...');
 
-      const result = await insertCase(data.caseSource, apiItems, uploadedImages, orFiles, composedCaseId);
+      const customName = data.caseName?.trim() || `${data.customerName || data.caseSource} Rework Ticket`;
+
+      const result = await insertCase(
+        data.caseSource,
+        apiItems,
+        uploadedImages,
+        orFiles,
+        undefined, // Let server assign atomic Case ID
+        false,
+        customName
+      );
 
       if (result.success) {
         setProgress(100);
-        setStatusText('บันทึกสำเร็จ!');
+        setStatusText('เปิดเคสสำเร็จ!');
         setIsComplete(true);
-        setSaveMessage({ type: 'success', text: 'บันทึกสำเร็จ' });
+        setSaveMessage({ type: 'success', text: 'เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์สำเร็จ!' });
+        showToast('✓ เปิดเคสสำเร็จ: สถานะงานเป็น "รอวิเคราะห์" ส่งต่อให้ QSMS เรียบร้อยแล้ว', 'success');
 
         // Reset form
         setTimeout(() => {
           reset({
             caseSource: 'SFC',
+            caseName: '',
             caseNumber: '',
+            customerName: 'SFC',
             items: [{ ...initialFormItem, id: `form-${Date.now()}` }]
           });
           setUploadedImages({});
@@ -366,60 +378,12 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   };
 
   const handleFastTrackComplete = (source: string, caseId: string, fastTrackItems: FastTrackItem[]) => {
-    // Switch back to normal mode
     setIsFastTrackMode(false);
-
-    // Set Case Source and optional Case ID
-    setValue('caseSource', source);
-    if (caseId && !caseId.startsWith('temp-')) {
-      setValue('caseNumber', caseId);
-    }
-
-    // Map Fast Track items to Main Form items
-    const newFormItems = fastTrackItems.map((ftItem, index) => {
-      // Find matching standard subtype if applicable
-      let reasonSubtype = ftItem.reasonSubtype || '';
-
-      // Auto-fill responsible as 'รอระบุ' to force review
-      return {
-        ...initialFormItem,
-        id: `ft-${Date.now()}-${index}`,
-        customerName: source === 'Customer' ? 'Customer' : '', // Fallback
-        itemNumber: ftItem.itemNumber || '',
-        itemCode: ftItem.itemCode || '',
-        itemName: ftItem.itemName || '',
-        amount: ftItem.amount || 0,
-        reason: ftItem.reason || '',
-        reasonSubtype: reasonSubtype,
-        responsible: '', // Force user to fill this in the main form
-        responsibleSubtype: '',
-        batchNo: ftItem.batchNo || '',
-        verificationStatus: 'verified' as const, // Assume verified if they got this far
-        lastActiveField: 'itemNumber' as const,
-        imageUrls: ftItem.imageUrls || []
-      };
-    });
-
-    if (newFormItems.length > 0) {
-      // Get current items and filter out the initial empty template if it's completely blank
-      const currentItems = getValues('items') || [];
-      const validCurrentItems = currentItems.filter(item =>
-        item.itemNumber || item.itemName || item.customerName || (item.imageUrls && item.imageUrls.length > 0) || item.amount > 0
-      );
-
-      // Append the new fast track items to the existing ones
-      setValue('items', [...validCurrentItems, ...newFormItems]);
-
-      // Show success message
-      setSaveMessage({ type: 'success', text: `เพิ่ม ${fastTrackItems.length} รายการจาก Fast-Track เรียบร้อยแล้ว กรุณาระบุรายละเอียดเพิ่มเติม` });
-      setTimeout(() => setSaveMessage(null), 5000);
-    }
   };
 
   if (isFastTrackMode) {
-    if (typeof document === 'undefined') return null;
     return createPortal(
-      <div className="fixed inset-0 z-[60] bg-white">
+      <div className="fixed inset-0 z-50 bg-background">
         <MobileFastTrackApp
           initialSource={getValues('caseSource') as "SFC" | "Customer"}
           initialCaseId={getValues('caseNumber')}
@@ -431,89 +395,179 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     );
   }
 
+  const isCustomerCase = caseSource === 'Customer' || (customerName && customerName !== 'SFC');
+
   return (
     <FormProvider {...methods}>
-      <div
-        className="mx-auto max-w-5xl space-y-6 md:space-y-10 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between px-2 sm:px-0">
-          <div>
-            <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">บันทึกงาน Rework ใหม่</h2>
-            <p className="mt-1 text-xs md:text-sm text-muted">เพิ่มข้อมูลล็อตสินค้าที่พบคราบหรือความเสียหายเพื่อบันทึกเข้าสู่ระบบ</p>
+      <div className="mx-auto max-w-5xl space-y-6 md:space-y-8 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]">
+        
+        {/* Step Indicator Banner */}
+        <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-xs shadow-xs">
+                1
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 leading-tight">Step 1: WPK เปิดเคสแจ้งเรื่อง (Case Initiation)</h2>
+                <p className="text-xs text-slate-500">กรอกข้อมูลเบื้องต้นเพื่อสร้าง Case ID อัตโนมัติและส่งเคสเข้าสู่สถานะ <strong className="text-amber-700">"รอวิเคราะห์"</strong></p>
+              </div>
+            </div>
+
+            {/* Mode Switcher */}
+            <div className="flex items-center gap-1 rounded-2xl bg-slate-100 p-1 border border-slate-200/60 self-start md:self-auto">
+              <button
+                type="button"
+                onClick={() => setEntryMode('wpk_fast')}
+                className={`rounded-xl px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                  entryMode === 'wpk_fast' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                ⚡ WPK Fast Ticket
+              </button>
+              <button
+                type="button"
+                onClick={() => setEntryMode('full_items')}
+                className={`rounded-xl px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                  entryMode === 'full_items' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                📋 Advanced Item Entry
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsFastTrackMode(true)}
-              className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-600 shadow-sm transition-all hover:bg-blue-100 active:scale-95"
-            >
-              <Plus size={12} /> เข้าสู่ Fast-Track (มือถือ)
-            </button>
-            <button
-              type="button"
-              onClick={clearAllForm}
-              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-red-600 hover:border-red-200"
-            >
-              <Trash2 size={12} /> ล้างฟอร์มทั้งหมด
-            </button>
-            <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-semibold text-slate-500">
-              <Clock size={12} /> บันทึกข้อมูลสด
+
+          {/* Workflow Steps Preview */}
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-semibold text-slate-500 pt-1">
+            <div className="flex items-center gap-1.5 text-amber-700 font-bold">
+              <span className="h-2 w-2 rounded-full bg-amber-500 ring-4 ring-amber-100" />
+              1. WPK เปิดเคส
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-slate-300" />
+              2. QSMS วิเคราะห์ & ขอภาชนะ
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-slate-300" />
+              3. WPK เบิกจ่ายของ
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-slate-300" />
+              4. PDF ซ่อม & Defend
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-slate-300" />
+              5. ปิดงานสมบูรณ์
             </div>
           </div>
         </div>
 
-        <div className="space-y-8">
-          <div className="glass-card bg-white p-6">
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="ml-1 text-xs font-semibold text-slate-500">แหล่งที่มาของงาน (Source) *</label>
+        <div className="space-y-6">
+          {/* Main Case Info Card */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              
+              {/* Case Name / Subject */}
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">ชื่อเรื่อง / หัวข้อเคส (Case Title) *</label>
+                <input
+                  type="text"
+                  {...register('caseName')}
+                  placeholder="เช่น พบน้ำมันรั่วซึมจากกล่องล็อต 26/08, งานรับคืน Eneos ฯลฯ"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              {/* Customer Selection */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">ลูกค้า / แหล่งที่มา (Customer) *</label>
                 <Controller
                   control={control}
-                  name="caseSource"
+                  name="customerName"
                   render={({ field }) => (
                     <Combobox
-                      options={['SFC', 'Customer']}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="เลือกแหล่งที่มา"
+                      options={['SFC', ...CUSTOMER_OPTIONS]}
+                      value={field.value || 'SFC'}
+                      onChange={(val) => {
+                        field.onChange(val);
+                        setValue('caseSource', val === 'SFC' ? 'SFC' : 'Customer');
+                      }}
+                      placeholder="เลือกลูกค้า หรือ SFC"
                       className="bg-slate-50/50 font-normal"
                     />
                   )}
                 />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label className="ml-1 text-xs font-semibold text-slate-500">หมายเลขเคส (Case ID) *</label>
-                <div className={`flex items-center w-fit overflow-hidden rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_0_0_3px_rgba(59,130,246,0.15)] group ${!caseNumber.trim() ? 'border-red-400/60 focus-within:border-red-400/80' : 'border-slate-200/60 focus-within:border-blue-400/30'}`}>
-                  <span className={`inline-flex items-center pl-4 pr-1 py-2.5 text-[15px] font-medium select-none transition-colors duration-200 ${!caseNumber.trim() ? 'text-red-400' : 'text-slate-400'}`}>
-                    {String(caseSource).toLowerCase() === 'customer' ? 'RT' : 'RW'}
-                  </span>
-                  <input
-                    type="text"
-                    {...register('caseNumber', {
-                      onChange: (e) => {
-                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                      }
-                    })}
-                    placeholder="012"
-                    className="w-14 bg-transparent px-0 py-2.5 text-[15px] font-semibold text-center text-slate-800 outline-none border-none placeholder:text-slate-300 placeholder:font-normal"
-                    maxLength={4}
-                  />
-                  <span className={`inline-flex items-center pr-4 pl-1 py-2.5 text-[15px] font-medium select-none ${!caseNumber.trim() ? 'text-red-400' : 'text-slate-400'}`}>
-                    - {new Date().getFullYear()}
-                  </span>
+            {/* Auto Case ID Preview & Auto State Badge */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl bg-indigo-50/60 p-4 border border-indigo-100">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-mono font-bold text-xs shadow-xs">
+                  {isCustomerCase ? 'RT' : 'RW'}
                 </div>
-                {!caseNumber.trim() ? (
-                  <p className="ml-1 text-xs font-semibold text-red-600">⚠️ จำเป็นต้องกรอกหมายเลขเคส</p>
-                ) : (() => {
-                  const composedId = `${String(caseSource).toLowerCase() === 'customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`;
-                  const isDuplicate = existingCaseIds.includes(composedId);
-                  return isDuplicate ? (
-                    <p className="ml-1 text-xs font-semibold text-red-600">⚠️ Case ID "{composedId}" มีอยู่ในระบบแล้ว</p>
-                  ) : (
-                    <p className="ml-1 text-xs font-semibold text-emerald-600">✓ Case ID: {composedId}</p>
-                  );
-                })()}
+                <div>
+                  <div className="text-xs font-bold text-indigo-950 flex items-center gap-2">
+                    <span>รหัสเคสอัตโนมัติ:</span>
+                    <span className="font-mono bg-white px-2 py-0.5 rounded-md border border-indigo-200 text-indigo-700">
+                      {isCustomerCase ? `RT-${new Date().getFullYear()}-XXX` : `RW-${new Date().getFullYear()}-XXX`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-indigo-600">ระบบจะกำหนดหมายเลขลำดับ 001, 002... ให้อัตโนมัติเมื่อกดบันทึก</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <span className="text-[11px] font-semibold text-slate-500">สถานะเริ่มต้น:</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />
+                  รอวิเคราะห์ (Pending Analysis)
+                </span>
+              </div>
+            </div>
+
+            {/* Reference Files Section (OR, Excel, PDF, Initial Photos) */}
+            <div className="border-t border-slate-100 pt-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800">เอกสารหรือรูปถ่ายอ้างอิงเบื้องต้น (Reference Attachments)</h4>
+                  <p className="text-[11px] text-slate-400">แนบไฟล์ Excel, PDF ใบส่งของ หรือรูปถ่ายหน้างานเบื้องต้น (ถ้ามี)</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex-1 min-w-[240px]">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".xlsx,.xls,.pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      handleOrFileUpload(files.slice(0, 4));
+                    }}
+                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  />
+                </div>
+                {orFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {orFiles.map((file, i) => (
+                      <div key={i} className="px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 flex items-center gap-2">
+                        <span>{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const remaining = orFiles.filter((_, idx) => idx !== i);
+                            handleOrFileUpload(remaining);
+                          }}
+                          className="text-slate-400 hover:text-red-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -599,11 +653,20 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             )}
           </div>
 
-          <div className="flex flex-col">
-            <AnimatePresence initial={false}>
-              {fields.map((field, idx) => {
-                const item = formItems[idx];
-                if (!item) return null;
+          {/* Detailed Item List (Only shown in full items mode) */}
+          {entryMode === 'full_items' && (
+            <div className="flex flex-col">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">รายการสินค้าและสาเหตุความเสียหาย (Item Breakdown)</h3>
+                  <p className="text-xs text-slate-400">กรอกรหัสสินค้า, วันที่ล็อต, จำนวนกล่อง และสาเหตุที่พบ</p>
+                </div>
+              </div>
+
+              <AnimatePresence initial={false}>
+                {fields.map((field, idx) => {
+                  const item = formItems[idx];
+                  if (!item) return null;
 
                 return (
                   <motion.div
@@ -966,22 +1029,25 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 );
               })}
             </AnimatePresence>
+          </div>
+          )}
 
-            <AnimatePresence mode="wait">
-              {isSaving ? (
-                <motion.div
-                  key="saving-card"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  className="w-full rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
-                >
-                  <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
-                </motion.div>
-              ) : (
-                <div className="flex flex-col w-full gap-4">
-                  <div className="flex flex-col gap-4 sm:flex-row w-full">
+          <AnimatePresence mode="wait">
+            {isSaving ? (
+              <motion.div
+                key="saving-card"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+              >
+                <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
+              </motion.div>
+            ) : (
+              <div className="flex flex-col w-full gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row w-full">
+                  {entryMode === 'full_items' && (
                     <motion.button
                       type="button"
                       whileHover={{ scale: 1.01, backgroundColor: 'rgba(241,245,249,1)' }}
@@ -989,20 +1055,29 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                       transition={{ duration: 0.12 }}
                       onClick={() => append({ ...initialFormItem, id: `form-${Date.now()}` })}
                       disabled={isSaving}
-                      className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-semibold text-slate-500 disabled:opacity-50 sm:h-auto"
+                      className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-semibold text-slate-500 disabled:opacity-50 sm:h-auto cursor-pointer"
                     >
                       <Plus size={16} /> [ + ] เพิ่มรายการ
                     </motion.button>
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ duration: 0.12 }}
-                      onClick={handleSubmit(onSubmit)}
-                      disabled={isSaveDisabled(formItems) || isSaving || !caseNumber.trim()}
-                      className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-sm font-bold text-white shadow-xl shadow-accent/10 hover:bg-black active:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto transition-colors"
-                    >
-                      บันทึกข้อมูลเข้าสู่ระบบ <ChevronRight size={16} />
+                  )}
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.12 }}
+                    onClick={handleSubmit(onSubmit)}
+                    disabled={isSaving || (entryMode === 'full_items' && isSaveDisabled(formItems))}
+                    className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto transition-colors cursor-pointer"
+                  >
+                      {entryMode === 'wpk_fast' ? (
+                        <>
+                          🚀 เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์ <ChevronRight size={16} />
+                        </>
+                      ) : (
+                        <>
+                          บันทึกข้อมูลแบบละเอียดเข้าสู่ระบบ <ChevronRight size={16} />
+                        </>
+                      )}
                     </motion.button>
                   </div>
                 </div>
@@ -1024,7 +1099,6 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             </AnimatePresence>
           </div>
         </div>
-      </div>
       <ConflictModal isOpen={isConflictModalOpen} onClose={() => setIsConflictModalOpen(false)} />
     </FormProvider>
   );

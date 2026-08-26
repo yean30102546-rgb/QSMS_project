@@ -27,23 +27,23 @@ export function groupItemsById<T extends { itemId: string; url: string }>(rows: 
 
 /**
  * Generate a unique ID for a rework case
- * Format: RWYYMMDDHHmmMsRRR (e.g., RW2604251707123456)
- * Includes milliseconds and random suffix for uniqueness
- * ✅ ใช้ timezone Asia/Bangkok เสมอ
+ * Format: RW-YYYY-001 (Internal SFC) or RT-YYYY-001 (Customer Return)
+ * If sequenceNumber is provided, formats with 3-digit zero padding (e.g. 001, 002)
+ * ✅ ใช้ timezone Asia/Bangkok สำหรับคำนวณปี
  */
-export function generateCaseId(prefix: 'RW' | 'RT' = 'RW'): string {
+export function generateCaseId(prefix: 'RW' | 'RT' = 'RW', sequenceNumber?: number, yearOverride?: number | string): string {
   const now = new Date();
-  // แปลงเป็น Bangkok timezone
   const bkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-  const yy = bkk.getFullYear().toString().slice(2);
-  const mm = (bkk.getMonth() + 1).toString().padStart(2, '0');
-  const dd = bkk.getDate().toString().padStart(2, '0');
-  const hh = bkk.getHours().toString().padStart(2, '0');
-  const min = bkk.getMinutes().toString().padStart(2, '0');
-  const ms = now.getMilliseconds().toString().padStart(3, '0'); // ms ไม่ต้องแปลง timezone
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const year = yearOverride ? String(yearOverride) : bkk.getFullYear().toString();
+  
+  if (typeof sequenceNumber === 'number' && sequenceNumber > 0) {
+    const seqStr = sequenceNumber.toString().padStart(3, '0');
+    return `${prefix}-${year}-${seqStr}`;
+  }
 
-  return `${prefix}${yy}${mm}${dd}${hh}${min}${ms}${random}`;
+  // Fallback default sequence
+  const random = Math.floor(1 + Math.random() * 999).toString().padStart(3, '0');
+  return `${prefix}-${year}-${random}`;
 }
 
 /**
@@ -126,9 +126,12 @@ export function sortCasesByStatus(
   cases: ReworkCase[]
 ): ReworkCase[] {
   const statusOrder: Record<ReworkCase['status'], number> = { 
-    Pending: 0, 
-    'In-Progress': 1, 
-    Completed: 2 
+    'Pending Analysis': 0,
+    'Awaiting Materials': 1,
+    'Pending': 2, 
+    'In-Progress': 3, 
+    'Blocked': 4,
+    'Completed': 5 
   };
 
   return [...cases].sort((a, b) => {

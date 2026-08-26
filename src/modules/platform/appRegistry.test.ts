@@ -3,9 +3,9 @@ import { portalAppRegistry, modularizationBoundaries, getPortalAppById, getActiv
 
 describe('Platform App Registry & Helpers', () => {
   it('contains expected registered portal apps', () => {
-    expect(portalAppRegistry).toHaveLength(4);
+    expect(portalAppRegistry).toHaveLength(5);
     const appIds = portalAppRegistry.map(app => app.id);
-    expect(appIds).toEqual(['rework', 'storage', 'rag', 'guide']);
+    expect(appIds).toEqual(['rework', 'storage', 'rag', 'guide', 'admin']);
   });
 
   it('retrieves portal app by ID via getPortalAppById', () => {

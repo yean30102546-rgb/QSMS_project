@@ -82,8 +82,11 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
     .filter((filter) => filter.length > 0).length + (dateFromFilter || dateToFilter ? 1 : 0);
 
   const statusCounts = useMemo<Record<CaseStatus, number>>(() => ({
+    'Pending Analysis': cases.filter((caseItem) => caseItem.status === 'Pending Analysis').length,
+    'Awaiting Materials': cases.filter((caseItem) => caseItem.status === 'Awaiting Materials').length,
     Pending: cases.filter((caseItem) => caseItem.status === 'Pending').length,
     'In-Progress': cases.filter((caseItem) => caseItem.status === 'In-Progress').length,
+    Blocked: cases.filter((caseItem) => caseItem.status === 'Blocked').length,
     Completed: cases.filter((caseItem) => caseItem.status === 'Completed').length,
   }), [cases]);
 

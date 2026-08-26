@@ -24,10 +24,22 @@ ReworkApp.tsx
   - `OverallTab.tsx` กำหนด Padding ด้านล่าง `pb-28 sm:pb-8` เพื่อให้เลื่อนดูรายการเคสล่างสุดและแถบ Pagination ได้สะดวก
   - ปุ่ม **DocAI Assistant** ถูกปรับเป็น Floating Action Button (FAB Icon) กะทัดรัดที่มุมขวาล่าง (`bottom-20 right-4 sm:bottom-6 sm:right-6`) ไม่บดบัง Pagination
 
-### Case Update View & Accordion Architecture (`CaseUpdateView.tsx`)
-- **Responsive 2-Tier Header**: แยกแถบย้อนกลับและชื่อเคส (แถวบน) กับแถบปุ่มส่งออก Excel, ลบเคส, บันทึกร่าง และบันทึกเสร็จสิ้น (แถวล่าง) ป้องกันปุ่มซ้อนทับกันบนมือถือ
-- **Item Accordion Folding**: รายการสินค้าทั้งหมดจะพับเก็บเป็นค่าเริ่มต้น (Default Folded) เพื่อลดความยาวของหน้าจอเมื่อมีสินค้าหลายรายการ พร้อมปุ่มสลับ "ขยายข้อมูลทั้งหมด / พับข้อมูลทั้งหมด"
-- **Item Header Badges & Quick Inputs**: หัวการ์ดไอเทมระบุยอดผลิต (`ยอดเสร็จ: X / Y กล่อง`) พร้อมปุ่มลัด `[เสร็จแล้ว]` และป้ายเตือนรูปภาพ
+### Case Update View, 4-Block Architecture & Accordion Queue Flow (`CaseUpdateView.tsx`)
+- **Responsive 2-Tier Header**: แยกแถบย้อนกลับและชื่อเคส (แถวบน) กับแถบปุ่มส่งออก Excel, ลบเคส และบันทึกร่าง (แถวล่าง) ป้องกันปุ่มซ้อนทับกันบนมือถือ
+- **AddCaseTab 4-Block Layout Parity**: แบบฟอร์มไอเทมใน Step 1 จัดระเบียบเป็น 4 บล็อกชัดเจน:
+  - **Block 1 (ข้อมูลสินค้าหลัก)**: 3 คอลัมน์สมดุล (ลูกค้า, รหัสสูตร, รหัสสินค้า) + ชื่อรายการเต็มความกว้าง
+  - **Block 2 (แผงไฮไลท์ข้อมูลการผลิต)**: Sub-panel ไฮไลท์โทนเทาอ่อน 5 คอลัมน์ (หมายเลขล็อต, วันที่ผลิตแกลลอน, Mold, Line, จำนวนกล่อง * เน้นสี Indigo)
+  - **Block 3 (สาเหตุที่พบ & ผู้รับผิดชอบ)**: 2 ช่องคู่ (สาเหตุหลัก+ย่อย และ ผู้รับผิดชอบ+แผนกย่อย) + ช่องอาการเสียเต็มความกว้าง
+  - **Block 4 (รูปภาพหลักฐาน & ปุ่มบันทึกรายไอเทม)**: รูปภาพพรีวิวพร้อมปุ่ม Lightbox + ปุ่ม `[💾 บันทึกรายการนี้ ➔ ย้ายลงล่าง]`
+- **Focus Ring Uniformity**: ช่องตัวเลขและอินพุตทุกช่องมีสไตล์โฟกัสขอบเรืองแสงสีม่วงคราม Indigo ละมุนตาเป็นมาตรฐานเดียวกัน (`focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20`) และซ่อน spinner ลูกศรตัวเลข
+- **Accordion Lifecycle & Auto-Expand Queue**:
+  - เมื่อเปิดเข้ามา ระบบจะเปิดเฉพาะการ์ดแรกที่ยังทำไม่เสร็จ (First Incomplete Item) ส่วนรายการที่เสร็จแล้วจะพับเก็บเป็นค่าเริ่มต้น
+  - **Per-Item Save Flow (`handleSaveSingleItem`)**: เมื่อกดบันทึกรายการ ระบบจะอัปโหลดรูปของไอเทมนั้น บันทึกลง Supabase พับการ์ด ย้ายรายการลงไปล่างสุด และเปิดการ์ดถัดไปที่ยังค้างอยู่ให้อัตโนมัติ
+- **Item Header Badges**: หัวการ์ดไอเทมแสดงสถานะความสมบูรณ์ (`🟢 ✓ ข้อมูลสมบูรณ์`, `🟡 ⚠️ อัปเดตแล้ว`, `⚪ ⏳ รอตรวจสอบ`) พร้อมระบุจำนวนกล่อง สาเหตุ และผู้รับผิดชอบ
+- **Floating Save Progress Island & Top Stripe**:
+  - แถบเส้นแสงเรืองแสง 3px บนสุดของจอ (Top Edge Glowing Stripe)
+  - กล่อง Dynamic Island ลอยกลางจอด้านล่าง (`fixed bottom-6 left-1/2`) แสดงสถานะการบันทึกแบบ Real-time พร้อม % และไอคอนเคลื่อนไหว ไม่ทำให้ปุ่ม Header กระตุกหายไป
+
 
 ## 3. Data Schema & Dynamic Auto-Status Lifecycle
 - `customerName` (ลูกค้า): เช่น Eneos, BCP, OR (รองรับการตั้งค่ายืดหยุ่นราย item)

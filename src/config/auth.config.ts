@@ -35,11 +35,32 @@ export const AUTH_CONFIG = {
 
 // ===== USER ROLES & PERMISSIONS =====
 export enum UserRole {
-  QSMS = 'QSMS',             // Full access, Delete, Edit
-  OPERATOR = 'OPERATOR',     // Operator Role / Production Rework
+  ADMIN = 'ADMIN',           // Full access, User/Master Management, Delete, Edit
+  QSMS = 'QSMS',             // Quality Control / Inspection, Item Master & Requisition
+  WPK = 'WPK',               // Warehouse & Packaging / Case Initiation & Material Issuing
+  PDF = 'PDF',               // Production / Defect Fix & Repair, Defend Flagging
+  OPERATOR = 'OPERATOR',     // Backward compatibility alias for PDF / Operator
 }
 
-export const ROLE_PERMISSIONS = {
+export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  [UserRole.ADMIN]: [
+    'manage_users',
+    'manage_masters',
+    'view_dashboard',
+    'view_overall',
+    'create_case',
+    'edit_case',
+    'delete_case',
+    'update_status',
+    'fill_resolution',
+    'fill_analysis',
+    'request_materials',
+    'issue_materials',
+    'repair_case',
+    'block_case',
+    'close_case',
+    'export_data',
+  ],
   [UserRole.QSMS]: [
     'view_dashboard',
     'view_overall',
@@ -48,6 +69,23 @@ export const ROLE_PERMISSIONS = {
     'delete_case',
     'update_status',
     'fill_resolution',
+    'fill_analysis',
+    'request_materials',
+    'close_case',
+    'export_data',
+  ],
+  [UserRole.WPK]: [
+    'view_overall',
+    'create_case',
+    'issue_materials',
+    'export_data',
+  ],
+  [UserRole.PDF]: [
+    'view_overall',
+    'update_status',
+    'repair_case',
+    'block_case',
+    'close_case',
     'export_data',
   ],
   [UserRole.OPERATOR]: [
@@ -55,6 +93,9 @@ export const ROLE_PERMISSIONS = {
     'create_case',
     'update_status',
     'fill_resolution',
+    'repair_case',
+    'block_case',
+    'close_case',
   ],
 };
 

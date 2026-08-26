@@ -34,14 +34,25 @@ describe('Helper Functions', () => {
   })
 
   describe('generateCaseId', () => {
-    it('should generate a valid case ID starting with RW by default', () => {
+    it('should generate a valid case ID starting with RW and current year by default', () => {
       const id = generateCaseId()
-      expect(id).toMatch(/^RW\d{16}$/)
+      expect(id).toMatch(/^RW-\d{4}-\d{3}$/)
     })
 
     it('should generate a valid case ID starting with RT when prefix is RT', () => {
       const id = generateCaseId('RT')
-      expect(id).toMatch(/^RT\d{16}$/)
+      expect(id).toMatch(/^RT-\d{4}-\d{3}$/)
+    })
+
+    it('should generate exact 3-digit padded sequence ID when sequence number is provided', () => {
+      const id1 = generateCaseId('RW', 1, '2026')
+      expect(id1).toBe('RW-2026-001')
+
+      const id2 = generateCaseId('RT', 42, '2026')
+      expect(id2).toBe('RT-2026-042')
+
+      const id3 = generateCaseId('RW', 999, '2026')
+      expect(id3).toBe('RW-2026-999')
     })
   })
 

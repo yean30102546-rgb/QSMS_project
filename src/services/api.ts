@@ -19,6 +19,14 @@ export interface ApiResponse<T = unknown> {
   details?: Array<{ itemIndex: number; errors: string[] }>;
 }
 
+export type CaseStatus = 
+  | 'Pending Analysis'
+  | 'Awaiting Materials'
+  | 'In-Progress'
+  | 'Blocked'
+  | 'Completed'
+  | 'Pending'; // Legacy fallback
+
 export interface ReworkItem {
   id: string;
   itemNumber: string;
@@ -32,7 +40,7 @@ export interface ReworkItem {
   details?: string;
   imageUrls?: string[];
   imageFolderUrl?: string; // URL ของ folder ที่เก็บรูปทั้งหมดของ case นี้ (Legacy)
-  status?: 'Pending' | 'In-Progress' | 'Completed';
+  status?: CaseStatus;
   batchNo?: string;
   gallonDate?: string;
   boxNumber?: string;
@@ -57,14 +65,42 @@ export const CUSTOMER_OPTIONS = [
   'Others',
 ];
 
+export interface MaterialRequestItem {
+  id: string;
+  materialName: string;
+  requestedQty: number;
+  unit: string;
+  issuedQty?: number;
+  notes?: string;
+  status?: 'pending' | 'fulfilled' | 'partial' | 'unavailable';
+}
+
+export interface BlockedDefendInfo {
+  isBlocked: boolean;
+  reasonCategory?: 'waiting_oil' | 'waiting_container' | 'waiting_label' | 'waiting_cap' | 'waiting_machine' | 'waiting_lab' | 'other' | string;
+  reasonDetail?: string;
+  blockedAt?: string;
+  reportedBy?: string;
+  reportedByRole?: string;
+  history?: Array<{
+    action: 'blocked' | 'unblocked';
+    reasonCategory?: string;
+    reasonDetail?: string;
+    timestamp: string;
+    user: string;
+    role: string;
+  }>;
+}
+
 export interface ReworkCase {
   id: string;
   caseName?: string;
+  caseSequence?: number;
   date: string;
   timestamp?: string;
   source: string;
   customerName?: string;
-  status: 'Pending' | 'In-Progress' | 'Completed';
+  status: CaseStatus;
   items: ReworkItem[];
   resolutionMethod?: string;
   orFilesUrls?: string[];
@@ -72,6 +108,10 @@ export interface ReworkCase {
   missingBoxes?: number;
   missingGallons?: number;
   missingOil?: number;
+  materialRequests?: MaterialRequestItem[];
+  blockedInfo?: BlockedDefendInfo;
+  createdByRole?: string;
+  createdByName?: string;
 }
 
 export interface DashboardStats {
@@ -89,6 +129,11 @@ type ReworkCaseResponse = ReworkCase & {
   missingBoxes?: number;
   missingGallons?: number;
   missingOil?: number;
+  material_requests?: MaterialRequestItem[];
+  blocked_info?: BlockedDefendInfo;
+  created_by_role?: string;
+  created_by_name?: string;
+  case_sequence?: number;
 };
 
 /**
@@ -143,21 +188,28 @@ async function apiFetch<T>(payload: Record<string, unknown>): Promise<ApiRespons
       }),
     });
 
+    const contentType = response.headers.get('content-type') || '';
+
     if (!response.ok) {
       // Handle 401 Unauthorized
       if (response.status === 401) {
         throw new Error('Session expired. Please login again.');
       }
 
-      try {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Network response was not ok (${response.status})`);
-      } catch (e) {
-        if (e instanceof Error && e.message !== `Network response was not ok (${response.status})`) {
-          throw e;
-        }
-        throw new Error(`Network response was not ok (${response.status})`);
+      if (contentType.includes('application/json')) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error (${response.status})`);
+      } else {
+        const errorText = await response.text().catch(() => '');
+        console.error(`HTTP ${response.status} Non-JSON Response:`, errorText.substring(0, 200));
+        throw new Error(`Server returned error status ${response.status}`);
       }
+    }
+
+    if (!contentType.includes('application/json')) {
+      const nonJsonText = await response.text().catch(() => '');
+      console.error('Expected JSON but received non-JSON response:', nonJsonText.substring(0, 200));
+      throw new Error('Server returned non-JSON response. Please check server logs.');
     }
 
     const result = (await response.json()) as ApiResponse<T>;
@@ -182,7 +234,9 @@ export async function insertCase(
   imageData?: Record<string, File[]>,
   orFiles?: File[],
   customCaseId?: string,
-  isFastTrack?: boolean
+  isFastTrack?: boolean,
+  caseName?: string,
+  customerName?: string
 ): Promise<ApiResponse<{ caseId: string; itemIds: string[] }>> {
   const allUploadedUrls: string[] = [];
   try {
@@ -203,41 +257,29 @@ export async function insertCase(
         }
       }
 
-      console.log(`📸 Processing images for ${item.itemNumber}:`, {
-        itemId: item.id,
-        fileCount: files.length,
-        uploadedCount: newUrls.length,
-        hasExistingUrls: !!item.imageUrls?.length
-      });
-
       return {
-        id: item.id,
-        itemNumber: item.itemNumber,
-        itemName: item.itemName,
-        itemCode: item.itemCode,
-        amount: item.amount,
-        reason: item.reason,
-        reasonSubtype: item.reasonSubtype || '',
-        responsible: item.responsible,
-        responsibleSubtype: item.responsibleSubtype || '',
-        details: item.details || '',
+        ...item,
+        amount: item.amount || 0,
         batchNo: item.batchNo || '',
+        boxNumber: item.boxNumber || '',
         packagingDate: item.packagingDate || '',
         mold: item.mold || '',
         line: item.line || '',
         linkedSourceId: item.linkedSourceId || '',
-        customerName: item.customerName || '',
+        customerName: item.customerName || customerName || '',
         imageUrls: [...(item.imageUrls || []), ...newUrls],
         images: [] as string[] // ไม่ต้องส่ง base64 แล้ว
       };
     }));
 
     // Use custom Case ID if provided, otherwise fallback to auto-generated timestamp ID
-    const caseId = customCaseId || `RW${new Date().toISOString().replace(/[-:T.Z]/g, '').substring(2, 14)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+    const caseId = customCaseId || undefined;
 
     console.log('📦 Sending case to API:', {
       source,
       caseId,
+      caseName,
+      customerName,
       itemCount: processedItems.length,
       isFastTrack,
       totalImages: processedItems.reduce((sum, item) => sum + (item.images?.length || 0), 0),
@@ -262,6 +304,8 @@ export async function insertCase(
       action: 'insertCase',
       caseData: {
         id: caseId,
+        caseName: caseName || undefined,
+        customerName: customerName || undefined,
         date: new Date().toISOString().split('T')[0],
         source,
         profileId: getCurrentUser()?.name || 'User',
@@ -387,11 +431,12 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
   return cases.map((caseItem) => ({
     id: normalizeString(caseItem.id),
     caseName: caseItem.caseName ? normalizeString(caseItem.caseName) : undefined,
+    caseSequence: caseItem.caseSequence || caseItem.case_sequence,
     date: normalizeString(caseItem.date),
     timestamp: caseItem.timestamp ? normalizeString(caseItem.timestamp) : undefined,
     source: normalizeString(caseItem.source),
     customerName: normalizeString(caseItem.customerName),
-    status: caseItem.status || 'Pending',
+    status: (caseItem.status as CaseStatus) || 'Pending',
     items: normalizeCaseItems(caseItem),
     resolutionMethod: normalizeString(caseItem.resolutionMethod),
     orFilesUrls: Array.isArray(caseItem.orFilesUrls) ? caseItem.orFilesUrls : [],
@@ -399,6 +444,12 @@ function normalizeCases(cases: ReworkCaseResponse[]): ReworkCase[] {
     missingBoxes: caseItem.missingBoxes !== undefined ? normalizeAmount(caseItem.missingBoxes) : undefined,
     missingGallons: caseItem.missingGallons !== undefined ? normalizeAmount(caseItem.missingGallons) : undefined,
     missingOil: caseItem.missingOil !== undefined ? normalizeAmount(caseItem.missingOil) : undefined,
+    materialRequests: Array.isArray(caseItem.materialRequests) 
+      ? caseItem.materialRequests 
+      : (Array.isArray(caseItem.material_requests) ? caseItem.material_requests : []),
+    blockedInfo: caseItem.blockedInfo || caseItem.blocked_info || undefined,
+    createdByRole: normalizeString(caseItem.createdByRole || caseItem.created_by_role),
+    createdByName: normalizeString(caseItem.createdByName || caseItem.created_by_name),
   }));
 }
 
@@ -451,24 +502,42 @@ export async function updateCase(
       }
     }
 
-    // Process new item images
+    // Process new item images and removals
     const items = updates.items ? [...updates.items] : undefined;
-    if (items && updates.newImages) {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const files = updates.newImages[item.id || ''];
-        if (files && files.length > 0) {
-          const newUrls: string[] = [];
-          for (const file of files) {
-            const compression = await compressImage(file, { maxSizeMB: 0.3 });
-            const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
-            const uploadResult = await uploadImageToCloudinary(fileToUpload);
-            if (uploadResult.success && uploadResult.url) {
-              newUrls.push(uploadResult.url);
-              allUploadedUrls.push(uploadResult.url);
-            }
+    if (items) {
+      // 1. Remove deleted images if deleteItemIds provided
+      if (updates.deleteItemIds && updates.deleteItemIds.length > 0) {
+        const deletedSet = new Set(updates.deleteItemIds);
+        for (const item of items) {
+          if (item.imageUrls && item.imageUrls.length > 0) {
+            item.imageUrls = item.imageUrls.filter(url => !deletedSet.has(url));
           }
-          item.imageUrls = [...(item.imageUrls || []), ...newUrls];
+        }
+      }
+
+      // 2. Upload new staged images
+      if (updates.newImages) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const itemKey = item.id || (item as any).uid || `idx-${i}`;
+          const files = updates.newImages[itemKey] || 
+                        (item.id ? updates.newImages[item.id] : undefined) || 
+                        updates.newImages[`idx-${i}`] || 
+                        updates.newImages[i.toString()];
+
+          if (files && files.length > 0) {
+            const newUrls: string[] = [];
+            for (const file of files) {
+              const compression = await compressImage(file, { maxSizeMB: 0.3 });
+              const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
+              const uploadResult = await uploadImageToCloudinary(fileToUpload);
+              if (uploadResult.success && uploadResult.url) {
+                newUrls.push(uploadResult.url);
+                allUploadedUrls.push(uploadResult.url);
+              }
+            }
+            item.imageUrls = [...(item.imageUrls || []), ...newUrls];
+          }
         }
       }
     }

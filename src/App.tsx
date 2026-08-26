@@ -20,12 +20,12 @@ import { Bot, Sparkles } from 'lucide-react';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
 const Login = dynamic(() => import('@/src/modules/auth/views/Login').then(mod => mod.Login), { ssr: false });
-const Register = dynamic(() => import('@/src/modules/auth/views/Register').then(mod => mod.Register), { ssr: false });
 const ForgotPassword = dynamic(() => import('@/src/modules/auth/views/ForgotPassword').then(mod => mod.ForgotPassword), { ssr: false });
 const StorageApp = dynamic(() => import('./modules/storage/StorageApp').then(mod => mod.StorageApp), { ssr: false });
 const ReworkApp = dynamic(() => import('./modules/rework/ReworkApp').then(mod => mod.ReworkApp), { ssr: false });
 const GuideApp = dynamic(() => import('./modules/guide/GuideApp').then(mod => mod.GuideApp), { ssr: false });
 const RagApp = dynamic(() => import('./modules/rag/RagApp').then(mod => mod.RagApp), { ssr: false });
+const AdminMonitorApp = dynamic(() => import('./modules/admin/AdminMonitorApp').then(mod => mod.AdminMonitorApp), { ssr: false });
 
 function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -171,7 +171,6 @@ function AuthWrapper() {
           setRedirectAfterLogin(null);
           setCurrentView('portal');
         }}
-        onNavigateToRegister={() => setCurrentView('register')}
         onNavigateToForgotPassword={() => setCurrentView('forgot-password')}
       />
     );
@@ -182,13 +181,6 @@ function AuthWrapper() {
           setCurrentView('login');
         }}
         onBackToLogin={() => setCurrentView('login')}
-      />
-    );
-  } else if (currentView === 'register') {
-    content = (
-      <Register
-        onSuccess={refreshAuth}
-        onBack={() => setCurrentView('login')}
       />
     );
   } else if (currentView === 'portal') {
@@ -204,7 +196,11 @@ function AuthWrapper() {
               const upperRole = appUser?.role?.toUpperCase();
               const isRestrictedRole = upperRole === 'OPERATOR';
               if (isRestrictedRole) {
-                // Ignore storage navigation for restricted roles
+                return;
+              }
+            } else if (route === 'admin') {
+              const upperRole = appUser?.role?.toUpperCase();
+              if (upperRole !== 'ADMIN' && upperRole !== 'QSMS') {
                 return;
               }
             }
@@ -227,6 +223,8 @@ function AuthWrapper() {
     content = <StorageApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else if (currentView === 'guide') {
     content = <GuideApp onBackToPortal={() => setCurrentView('portal')} />;
+  } else if (currentView === 'admin') {
+    content = <AdminMonitorApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else {
     content = <ReworkApp user={appUser} onLogout={handleLogout} onBackToPortal={() => setCurrentView('portal')} />;
   }
@@ -284,7 +282,7 @@ function AuthWrapper() {
       />
 
       {/* Global Floating Glassmorphic AI Pill Button (Draggable) */}
-      {currentView !== 'login' && currentView !== 'register' && currentView !== 'forgot-password' && (
+      {currentView !== 'login' && currentView !== 'forgot-password' && (
         <motion.div
           drag
           dragMomentum={false}

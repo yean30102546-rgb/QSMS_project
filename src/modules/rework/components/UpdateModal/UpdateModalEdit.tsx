@@ -7,6 +7,13 @@ import { convertDMYToYMD, convertYMDToDMY, enforceNumeric } from '@/src/utils/he
 import { AppleProgressBar } from '@/src/components/shared/AppleProgressBar';
 import { CopyButton } from '@/src/components/ui/CopyButton';
 import { Combobox } from '@/src/components/ui/Combobox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
 
 /* ── Static option data ──────────────────────────────── */
 

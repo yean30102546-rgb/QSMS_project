@@ -37,6 +37,16 @@ export const portalAppRegistry: PortalAppDefinition[] = [
     status: 'active',
     accent: 'blue',
   },
+  {
+    id: 'admin',
+    title: 'Admin Console & Monitor',
+    subtitle: 'User management & workflow audit',
+    description: 'Central administrative dashboard for managing team accounts, roles, live SLA monitoring, and defect defend logs.',
+    route: 'admin',
+    status: 'active',
+    accent: 'indigo',
+    requiredRole: ['ADMIN', 'QSMS'],
+  },
 ];
 
 export const modularizationBoundaries: ModularizationBoundary[] = [

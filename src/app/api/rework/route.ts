@@ -63,12 +63,15 @@ interface MasterItem {
 interface DBCase {
   id: string;
   case_name?: string;
+  case_sequence?: number;
   submission_date: string;
   created_at: string;
   source: string;
   customer_name?: string;
   status: string;
   profile_id: string;
+  created_by_role?: string;
+  created_by_name?: string;
   image_folder_url?: string;
   or_folder_url?: string;
   or_files_urls?: string[];
@@ -76,6 +79,11 @@ interface DBCase {
   packaging_date?: string;
   mold?: string;
   resolution_method?: string;
+  material_requests?: unknown[];
+  blocked_info?: Record<string, unknown>;
+  missing_boxes?: number;
+  missing_gallons?: number;
+  missing_oil?: number;
   items?: DBItem[];
 }
 
@@ -246,12 +254,15 @@ export async function POST(request: Request) {
         const cases = data.map((c: DBCase) => ({
           id: c.id,
           caseName: c.case_name || c.id,
+          caseSequence: c.case_sequence,
           date: c.submission_date,
           timestamp: c.created_at,
           source: c.source,
           customerName: c.customer_name,
           status: c.status,
           profileId: c.profile_id,
+          createdByRole: c.created_by_role,
+          createdByName: c.created_by_name,
           imageFolderUrl: c.image_folder_url,
           orFolderUrl: c.or_folder_url,
           orFilesUrls: c.or_files_urls || [],
@@ -259,6 +270,11 @@ export async function POST(request: Request) {
           packagingDate: c.packaging_date,
           mold: c.mold,
           resolutionMethod: c.resolution_method,
+          materialRequests: c.material_requests || [],
+          blockedInfo: c.blocked_info || {},
+          missingBoxes: c.missing_boxes,
+          missingGallons: c.missing_gallons,
+          missingOil: c.missing_oil,
           items: (c.items || []).map((i: DBItem) => ({
             id: i.id,
             itemNumber: i.item_number,
@@ -311,11 +327,32 @@ export async function POST(request: Request) {
 
         // Generate Case ID if missing or temporary
         let finalCaseId = caseData?.id;
+        let caseSequence = caseData?.caseSequence || caseData?.case_sequence;
         const isTemporaryId = !finalCaseId || String(finalCaseId).startsWith('temp-') || String(finalCaseId).length < 5;
         
         if (isTemporaryId) {
-          const prefix = caseData?.source === 'Customer' ? 'RT' : 'RW';
-          finalCaseId = generateCaseId(prefix);
+          const prefix = (caseData?.source === 'Customer' || (caseData?.customerName && caseData.customerName !== 'SFC')) ? 'RT' : 'RW';
+          const bkkParts = getBangkokParts();
+          const currentYear = bkkParts.year;
+
+          try {
+            const { data: seqData, error: seqErr } = await supabaseServer
+              .rpc('get_next_case_sequence', { p_prefix: prefix, p_year: currentYear });
+            
+            if (!seqErr && typeof seqData === 'number' && seqData > 0) {
+              caseSequence = seqData;
+            } else {
+              const { count } = await supabaseServer
+                .from('rework_cases')
+                .select('id', { count: 'exact', head: true })
+                .ilike('id', `${prefix}-${currentYear}-%`);
+              caseSequence = (count || 0) + 1;
+            }
+          } catch {
+            caseSequence = 1;
+          }
+
+          finalCaseId = generateCaseId(prefix, caseSequence, currentYear);
         }
 
         // 1. Upload OR Files
@@ -329,27 +366,46 @@ export async function POST(request: Request) {
 
         const primaryCustomer = caseData.customerName || (caseData.items && caseData.items[0]?.customerName) || '';
 
-        // 2. Insert Case
-        const { error: caseError } = await supabaseServer
+        // 2. Insert Case with Graceful Schema Fallback
+        const initialCasePayload: Record<string, unknown> = {
+          id: finalCaseId,
+          case_name: caseData.caseName || finalCaseId,
+          case_sequence: caseSequence || 0,
+          submission_date: caseData.date || getBangkokDateString(),
+          source: caseData.source || ((primaryCustomer && primaryCustomer !== 'SFC') ? 'Customer' : 'SFC'),
+          customer_name: primaryCustomer,
+          status: caseData.status || 'Pending Analysis',
+          profile_id: auth.profile,
+          created_by_role: auth.profile,
+          created_by_name: (body.performedBy || auth.email || '').trim(),
+          image_folder_url: '',
+          or_folder_url: '',
+          or_files_urls: caseData.orFilesUrls || orFilesUrls,
+          batch_no: caseData.batchNo,
+          packaging_date: caseData.packagingDate,
+          mold: caseData.mold,
+          resolution_method: caseData.resolutionMethod,
+          material_requests: caseData.materialRequests || caseData.material_requests || [],
+          blocked_info: caseData.blockedInfo || caseData.blocked_info || {},
+          created_at: getBangkokISOString(),
+          updated_at: getBangkokISOString()
+        };
+
+        let { error: caseError } = await supabaseServer
           .from('rework_cases')
-          .insert([{
-            id: finalCaseId,
-            case_name: caseData.caseName || finalCaseId,
-            submission_date: caseData.date || getBangkokDateString(),
-            source: caseData.source,
-            customer_name: primaryCustomer,
-            status: caseData.status || 'Pending',
-            profile_id: auth.profile,
-            image_folder_url: '',
-            or_folder_url: '',
-            or_files_urls: caseData.orFilesUrls || orFilesUrls,
-            batch_no: caseData.batchNo,
-            packaging_date: caseData.packagingDate,
-            mold: caseData.mold,
-            resolution_method: caseData.resolutionMethod,
-            created_at: getBangkokISOString(),
-            updated_at: getBangkokISOString()
-          }]);
+          .insert([initialCasePayload]);
+
+        if (caseError && typeof caseError.message === 'string' && caseError.message.includes('schema cache')) {
+          console.warn('⚠️ Schema cache missing column on insert, retrying without optional workflow columns:', caseError.message);
+          const fallbackPayload = { ...initialCasePayload };
+          delete fallbackPayload.case_sequence;
+          delete fallbackPayload.material_requests;
+          delete fallbackPayload.blocked_info;
+          delete fallbackPayload.created_by_role;
+          delete fallbackPayload.created_by_name;
+          const retryRes = await supabaseServer.from('rework_cases').insert([fallbackPayload]);
+          caseError = retryRes.error;
+        }
 
         if (caseError) {
           console.error('❌ Supabase case insert error:', caseError);
@@ -520,19 +576,48 @@ export async function POST(request: Request) {
         }
 
         // 3. Update the case record
-        const { error: caseUpdateError } = await supabaseServer
+        const updatePayload: Record<string, unknown> = {
+          status: status ?? updates.status ?? existingCase.status,
+          resolution_method: resolutionMethod ?? updates.resolutionMethod ?? existingCase.resolution_method,
+          customer_name: updates.customerName ?? existingCase.customer_name,
+          source: updates.source ?? existingCase.source,
+          case_name: updates.caseName ?? existingCase.case_name,
+          or_files_urls: updates.orFilesUrls ? [...updates.orFilesUrls, ...newOrFilesUrls] : [...(existingCase.or_files_urls || []), ...newOrFilesUrls],
+          or_folder_url: '',
+          updated_at: getBangkokISOString()
+        };
+
+        if (updates.materialRequests !== undefined || updates.material_requests !== undefined) {
+          updatePayload.material_requests = updates.materialRequests ?? updates.material_requests;
+        }
+        if (updates.blockedInfo !== undefined || updates.blocked_info !== undefined) {
+          updatePayload.blocked_info = updates.blockedInfo ?? updates.blocked_info;
+        }
+        if (updates.missingBoxes !== undefined) updatePayload.missing_boxes = updates.missingBoxes;
+        if (updates.missingGallons !== undefined) updatePayload.missing_gallons = updates.missingGallons;
+        if (updates.missingOil !== undefined) updatePayload.missing_oil = updates.missingOil;
+
+        let { error: caseUpdateError } = await supabaseServer
           .from('rework_cases')
-          .update({
-            status: status ?? updates.status ?? existingCase.status,
-            resolution_method: resolutionMethod ?? updates.resolutionMethod ?? existingCase.resolution_method,
-            customer_name: updates.customerName ?? existingCase.customer_name,
-            source: updates.source ?? existingCase.source,
-            case_name: updates.caseName ?? existingCase.case_name,
-            or_files_urls: updates.orFilesUrls ? [...updates.orFilesUrls, ...newOrFilesUrls] : [...(existingCase.or_files_urls || []), ...newOrFilesUrls],
-            or_folder_url: '',
-            updated_at: getBangkokISOString()
-          })
+          .update(updatePayload)
           .eq('id', caseId);
+
+        // Graceful schema fallback if columns like material_requests or blocked_info are not yet present in Supabase table
+        if (caseUpdateError && typeof caseUpdateError.message === 'string' && caseUpdateError.message.includes('schema cache')) {
+          console.warn('⚠️ Supabase schema cache missing column on update, retrying with core columns only:', caseUpdateError.message);
+          const fallbackPayload = { ...updatePayload };
+          delete fallbackPayload.material_requests;
+          delete fallbackPayload.blocked_info;
+          delete fallbackPayload.missing_boxes;
+          delete fallbackPayload.missing_gallons;
+          delete fallbackPayload.missing_oil;
+
+          const retryRes = await supabaseServer
+            .from('rework_cases')
+            .update(fallbackPayload)
+            .eq('id', caseId);
+          caseUpdateError = retryRes.error;
+        }
 
         if (caseUpdateError) throw caseUpdateError;
 

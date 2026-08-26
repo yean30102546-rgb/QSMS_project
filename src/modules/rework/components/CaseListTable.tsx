@@ -302,14 +302,20 @@ function StatusPill({ status, deadlineStatus }: StatusPillProps) {
   }
 
   const styles: Record<ReworkCase['status'], string> = {
+    'Pending Analysis': 'bg-amber-100/90 text-amber-950 border-amber-300/70 shadow-sm shadow-amber-500/5',
+    'Awaiting Materials': 'bg-orange-100/90 text-orange-950 border-orange-300/70 shadow-sm shadow-orange-500/5',
     Pending: pendingStyle,
     'In-Progress': 'bg-sky-100/90 text-sky-950 border-sky-300/70 shadow-sm shadow-sky-500/5',
+    Blocked: 'bg-rose-100/90 text-rose-950 border-rose-300/70 shadow-sm shadow-rose-500/5',
     Completed: 'bg-emerald-100/90 text-emerald-950 border-emerald-300/70 shadow-sm shadow-emerald-500/5',
   };
 
   const thaiLabels: Record<ReworkCase['status'], string> = {
+    'Pending Analysis': 'รอวิเคราะห์',
+    'Awaiting Materials': 'รอเบิกภาชนะ',
     Pending: 'รอดำเนินการ',
-    'In-Progress': 'กำลังดำเนินการ',
+    'In-Progress': 'กำลังซ่อม',
+    Blocked: 'ติดปัญหา',
     Completed: 'เสร็จสิ้น',
   };
 

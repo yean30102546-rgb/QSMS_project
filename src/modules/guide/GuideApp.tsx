@@ -877,12 +877,47 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         position: "bottom-12 right-12"
       }
     },
-    // 21. Business Impact (Overview / All)
+    // 21. Infrastructure & Storage Capacity (Overview / All)
     {
       id: 21,
       category: "all",
       type: "split",
-      chapter: "21 / BUSINESS ROI",
+      chapter: "21 / STORAGE & CAPACITY",
+      title: "Zero-Cost Infrastructure Capacity",
+      description: "การวิเคราะห์ขีดจำกัดพื้นที่จัดเก็บ (Storage Quota) และประมาณการอายุการใช้งานจริงของระบบบน Free Tier โดยไม่มีค่าใช้จ่าย (1 เคส = 10 ไอเทม + 10 รูปภาพ)",
+      bullets: [
+        {
+          title: "Cloudinary Free Tier: 25 GB (จุดคอขวดระบบ)",
+          desc: "บีบอัดรูปภาพฝั่ง Client เหลือ ~250 KB/รูป (10 รูป/เคส = 2.5 MB) รองรับการสร้างเคสได้สูงสุด 10,000 เคส (100,000 รูปภาพ)",
+          badge: "25 GB FREE / 10,000 CASES",
+          icon: <Layers className="w-6 h-6 text-orange-600" />
+        },
+        {
+          title: "Supabase Database: 500 MB (PostgreSQL Storage)",
+          desc: "จัดเก็บ Case Header, รายการสินค้า 10 ไอเทม, JSONB Requisition และ Indexes (~30 KB/เคส) รองรับได้ถึง 16,600 เคส (166,000 ไอเทม)",
+          badge: "500 MB DB / 16,600 CASES",
+          icon: <Database className="w-6 h-6 text-blue-600" />
+        },
+        {
+          title: "ขีดจำกัดสูงสุดรวม: 10,000 เคส (100,000 ไอเทม)",
+          desc: "ระบบประหยัดพื้นที่จัดเก็บสูงสุดด้วยการเก็บเฉพาะ Text URL ใน Postgres และบีบอัดภาพก่อนส่งขึ้นคลาวด์ ไม่ต้องจ่ายค่า Server รายเดือน",
+          badge: "100% ZERO-COST",
+          icon: <ShieldCheck className="w-6 h-6 text-emerald-600" />
+        },
+        {
+          title: "ประมาณการอายุการใช้งาน: 5.4 ปี (ที่ 5 เคส/วัน)",
+          desc: "หากมีงาน Rework เฉลี่ย 2 เคส/วัน ใช้งานได้ 13.6 ปี | ที่ 5 เคส/วัน ใช้งานได้ 5.4 ปี | ที่ 10 เคส/วัน ใช้งานได้ 2.7 ปี โดยไม่มีค่าใช้จ่าย",
+          badge: "~5.4 YEARS LIFESPAN",
+          icon: <Clock className="w-6 h-6 text-purple-600" />
+        }
+      ]
+    },
+    // 22. Business Impact (Overview / All)
+    {
+      id: 22,
+      category: "all",
+      type: "split",
+      chapter: "22 / BUSINESS ROI",
       title: "Operational Impact & Value",
       description: "ผลลัพธ์ที่เป็นรูปธรรมและผลตอบแทนจากการลงทุน (ROI) ด้วย QSMS Platform",
       bullets: [
@@ -912,12 +947,12 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         }
       ]
     },
-    // 22. Conclusion & Rollout Roadmap + Future Scope (Overview / All)
+    // 23. Conclusion & Rollout Roadmap + Future Scope (Overview / All)
     {
-      id: 22,
+      id: 23,
       category: "all",
       type: "conclusion",
-      chapter: "22 / CONCLUSION & ROADMAP",
+      chapter: "23 / CONCLUSION & ROADMAP",
       title: "Ready for Operations & Future Scope",
       subtitle: "QSMS Unified Platform • Enterprise Rollout & Long-term Roadmap",
       description: "พร้อมยกระดับกระบวนการ Rework และการจัดการเอกสารวิศวกรรมสู่อนาคต",

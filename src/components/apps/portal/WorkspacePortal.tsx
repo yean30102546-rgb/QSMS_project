@@ -74,25 +74,28 @@ export function WorkspacePortal({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'fetchPublicOverview' })
         });
-        const resJson = await response.json();
-        if (resJson.success && resJson.data) {
-          const { rework, roster } = resJson.data;
-          setReworkStats({
-            total: rework.total,
-            pending: rework.pending,
-            inProgress: rework.inProgress,
-            completed: rework.completed,
-            completionRate: rework.completionRate,
-            hasData: true
-          });
-          setRosterStats({
-            totalEmployees: roster.totalEmployees,
-            staffPresentCount: roster.staffPresentCount,
-            onLeaveCount: roster.onLeaveCount,
-            leaveSummary: roster.leaveSummary,
-            retentionRate: roster.retentionRate,
-            hasData: true
-          });
+        const contentType = response.headers.get('content-type') || '';
+        if (response.ok && contentType.includes('application/json')) {
+          const resJson = await response.json();
+          if (resJson.success && resJson.data) {
+            const { rework, roster } = resJson.data;
+            setReworkStats({
+              total: rework.total,
+              pending: rework.pending,
+              inProgress: rework.inProgress,
+              completed: rework.completed,
+              completionRate: rework.completionRate,
+              hasData: true
+            });
+            setRosterStats({
+              totalEmployees: roster.totalEmployees,
+              staffPresentCount: roster.staffPresentCount,
+              onLeaveCount: roster.onLeaveCount,
+              leaveSummary: roster.leaveSummary,
+              retentionRate: roster.retentionRate,
+              hasData: true
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to fetch public stats overview:', err);
@@ -107,15 +110,18 @@ export function WorkspacePortal({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'get_overview_stats' }),
         });
-        const resJson = await res.json();
-        if (resJson.success && resJson.data) {
-          setStorageStats({
-            totalDrawings: resJson.data.totalDrawings,
-            completedMasters: resJson.data.completedMasters,
-            missingMasters: resJson.data.missingMasters,
-            coverageRate: resJson.data.coverageRate,
-            hasData: true
-          });
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const resJson = await res.json();
+          if (resJson.success && resJson.data) {
+            setStorageStats({
+              totalDrawings: resJson.data.totalDrawings,
+              completedMasters: resJson.data.completedMasters,
+              missingMasters: resJson.data.missingMasters,
+              coverageRate: resJson.data.coverageRate,
+              hasData: true
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to fetch storage stats overview:', err);
@@ -224,8 +230,24 @@ export function WorkspacePortal({
                 </>
               ) : (
                 <>
-                  <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">{user?.role?.toUpperCase() || 'USER'}</p>
-                  <p className="mt-1 text-sm leading-6 text-[#515154]">{user?.email || 'เข้าสู่ระบบด้วยสิทธิ์ Platform'}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <div>
+                      <p className="text-xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">{user?.role?.toUpperCase() || 'USER'}</p>
+                      <p className="mt-0.5 text-xs leading-5 text-[#515154]">{user?.email || 'เข้าสู่ระบบด้วยสิทธิ์ Platform'}</p>
+                    </div>
+                    {(user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'QSMS') && (
+                      <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        type="button"
+                        onClick={() => onOpenApp('admin')}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition-all cursor-pointer"
+                      >
+                        <ShieldCheck size={14} />
+                        <span>Admin Console</span>
+                      </motion.button>
+                    )}
+                  </div>
                 </>
               )}
             </div>

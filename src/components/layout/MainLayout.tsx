@@ -41,6 +41,9 @@ interface MainLayoutProps {
   onOpenTutorial: () => void;
   onBackToPortal: () => void;
   onOpenRag?: () => void;
+  isFocusMode?: boolean;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebarCollapse?: () => void;
   children: React.ReactNode;
 }
 
@@ -53,10 +56,33 @@ export function MainLayout({
   onOpenTutorial,
   onBackToPortal,
   onOpenRag,
+  isFocusMode = false,
+  isSidebarCollapsed: externalSidebarCollapsed,
+  onToggleSidebarCollapse,
   children,
 }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [internalCollapsed, setInternalCollapsed] = React.useState(false);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = React.useState(false);
+
+  // Sync internal collapsed state with focus mode
+  React.useEffect(() => {
+    if (isFocusMode) {
+      setInternalCollapsed(true);
+    } else {
+      setInternalCollapsed(false);
+    }
+  }, [isFocusMode]);
+
+  const isCollapsed = externalSidebarCollapsed !== undefined ? externalSidebarCollapsed : internalCollapsed;
+
+  const toggleCollapse = () => {
+    if (onToggleSidebarCollapse) {
+      onToggleSidebarCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
@@ -67,7 +93,7 @@ export function MainLayout({
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans">
+    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] text-on-surface font-sans relative">
       {/* Mobile Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -81,21 +107,56 @@ export function MainLayout({
         )}
       </AnimatePresence>
 
+      {/* Floating Re-Open Sidebar Button when Collapsed */}
+      <AnimatePresence>
+        {isCollapsed && (
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            type="button"
+            onClick={toggleCollapse}
+            className="fixed top-3 left-3 z-40 hidden md:flex h-9 w-9 items-center justify-center rounded-xl bg-white/90 border border-slate-200 shadow-md text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all cursor-pointer backdrop-blur-xs"
+            title="เปิดเมนูด้านข้าง (Expand Sidebar)"
+          >
+            <Menu size={18} />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-slate-200 bg-white px-5 py-8 shadow-sm transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white shadow-sm transition-all duration-300 ease-in-out md:static ${
+          isCollapsed
+            ? 'w-0 overflow-hidden opacity-0 border-r-0 p-0 pointer-events-none'
+            : 'w-[260px] px-5 py-8 opacity-100'
+        } ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         <motion.div
-          className="mb-14 flex cursor-pointer items-center gap-3 px-2"
+          className="mb-14 flex cursor-pointer items-center justify-between gap-3 px-2"
           onClick={() => handleTabChange('overall')}
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.01 }}
         >
-          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-200 p-1">
-            <img src="/img/logo.png" alt="Excellence Logo" className="w-full h-full object-contain" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-200 p-1">
+              <img src="/img/logo.png" alt="Excellence Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-[16px] font-bold tracking-wider text-primary uppercase leading-tight">QSMS REWORK</h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-[16px] font-bold tracking-wider text-primary uppercase leading-tight">QSMS REWORK</h1>
-          </div>
+          {isFocusMode && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCollapse();
+              }}
+              className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              title="ย่อเมนู (Zen Mode)"
+            >
+              <X size={16} />
+            </button>
+          )}
         </motion.div>
 
         <nav className="flex-1 space-y-1">

@@ -37,8 +37,7 @@ function TabFallback() {
 function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overall');
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-
-
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   return (
     <>
@@ -50,6 +49,7 @@ function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
         userName={user?.name || ''}
         userRole={user?.role || ''}
         onOpenTutorial={() => setIsTutorialOpen(true)}
+        isFocusMode={isFocusMode}
       >
         <AnimatePresence mode="wait" initial={false}>
           {activeTab === 'overall' && (
@@ -62,7 +62,11 @@ function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
               style={{ willChange: 'opacity, transform' }}
               className="flex flex-1 flex-col overflow-hidden"
             >
-              <OverallTab userRole={user?.role || ''} userName={user?.name || ''} />
+              <OverallTab
+                userRole={user?.role || ''}
+                userName={user?.name || ''}
+                onFocusModeChange={setIsFocusMode}
+              />
             </motion.div>
           )}
 

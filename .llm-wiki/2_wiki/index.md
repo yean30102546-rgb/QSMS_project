@@ -72,6 +72,7 @@
 - [[lessons-learned/text-clipping-ui.md]] - การแก้ปัญหาเลย์เอาต์ตัวอักษรล้นจอหรือแหว่งหน้าต่างของเบราว์เซอร์
 - [[lessons-learned/ui-libraries-resource.md]] - ข้อมูลระบบ Mantine UI Components, Hooks, Dates และ Combobox
 - [[lessons-learned/update-modal-layout-rework.md]] - การแก้ปัญหาเลื่อนจอพัง, ล็อกแถบเลื่อนฝั่งขวา และการถอนคลาส uppercase บน Tailwind
+- [[lessons-learned/case-update-view-ux-evolution.md]] - วิวัฒนาการแบบฟอร์ม 4 บล็อก, Focus Line และแผงโปรเกรสลอย (Floating Save Island)
 - [[lessons-learned/js-projects-resource.md]] - แคตตาล็อกไลบรารีและคู่มือพัฒนาของโปรเจกต์ JavaScript/TypeScript
 
 ## 📂 5. Backend Services (บริการหลังบ้าน)
