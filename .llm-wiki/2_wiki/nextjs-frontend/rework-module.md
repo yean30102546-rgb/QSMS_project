@@ -1,68 +1,56 @@
 # Rework Module — QSMS
-[วันที่อัปเดต: 2026-05-26]
+[วันที่อัปเดต: 2026-08-20]
 
 ## 1. Summary & Current Implementation
 Module หลักของระบบ อยู่ที่ `src/modules/rework/ReworkApp.tsx`
-มี 3 Tab หลัก: **Overall** (ดูเคส) | **Add Case** (เพิ่มเคส) | **Dashboard** (Analytics)
-ระบบดึง/บันทึกข้อมูลผ่าน `/api/rework` (Next.js server-side API) ซึ่งทำหน้าที่เป็น Hybrid storage ประสานงานระหว่าง Supabase (เพื่อสืบค้นข้อมูลรวดเร็ว) และ GAS/Google Sheets (เพื่อทำ LINE notifications/จัดเก็บข้อมูลหลัก)
+มี 3 Tab หลัก: **Overall** (ดูเคสและรายการ) | **Add Case** (เพิ่มเคสใหม่) | **Dashboard** (Analytics)
+ระบบดึงและบันทึกข้อมูลผ่าน `/api/rework` (Next.js server-side API) ซึ่งเชื่อมต่อโดยตรงกับ **Supabase Database (PostgreSQL)** และจัดการรูปภาพหลักฐานผ่าน **Cloudinary** (Unsigned Upload ฝั่ง Client บีบอัดเป้าหมาย 300KB)
 
-## 2. Tab Structure & Workspace Portal Integration
+## 2. Tab Structure & Mobile-First Responsive Layout
 ```
 ReworkApp.tsx
-├── Tab: ภาพรวม (Overall)     → แสดงรายการเคสทั้งหมด, ค้นหา, คลิกเปิด Modal (ปรับปรุงการจัดลำดับ Typography UX)
-├── Tab: เพิ่มงานใหม่ (Add Case) → ฟอร์มเพิ่มเคส, หลาย items ต่อ 1 เคส, อัปโหลดรูป
-└── Tab: Dashboard              → Analytics: Total, Pending, Completion Rate, Defect Chart
+├── Tab: ภาพรวม (Overall)     → แสดงรายการเคสทั้งหมด, ค้นหา, กรองขั้นสูง, Pagination, Mobile-First Card Layout
+├── Tab: เพิ่มงานใหม่ (Add Case) → ฟอร์มเพิ่มเคส, Multi-item ต่อ 1 เคส, บีบอัดรูปภาพ, OR Attachments
+└── Tab: Dashboard              → Analytics: Total, Pending, Completion Rate, Defect Chart, Workload by Source
 ```
 
-### Workspace Portal Live Preview Card
-การรวมข้อมูลเข้ากับศูนย์ควบคุมกลาง (**ศูนย์ควบคุมกลาง - Workspace Portal**):
-- **Dynamic Stats Retrieval**: ดึงข้อมูลและคำนวณสถิติจริงจาก Supabase Database แบบ Real-time
-- **Segmented Progress Bar**: แสดงแถบสัดส่วนสีกำหนดตามสถานะงาน:
-  - `bg-slate-400`: รอดำเนินการ (Pending)
-  - `bg-sky-400`: กำลังดำเนินการ (In-Progress)
-  - `bg-emerald-500`: เสร็จสิ้น (Completed)
-- **Status Legend Grid**: แผงแสดงจำนวนแยกตามสถานะ และเปอร์เซ็นต์ความเสร็จสิ้นจริง (Real Completion Rate)
+### Mobile-First Card Layout (`CaseListTable.tsx`)
+- **การจัดสัดส่วนบนหน้าจอมือถือ (iPhone / iOS Safari)**:
+  - ยกเลิก 3 คอลัมน์แนวนอนแบบเดิมเพื่อป้องกันข้อความตัดบรรทัดหลายชั้น
+  - ส่วนหัวการ์ด: รหัสเคส (`RW012-2026` / `RT012-2026`) พร้อมป้ายเตือนงานค้าง 7 วัน / เกิน 30 วัน / ขาดไฟล์ OR / รอของ
+  - ส่วนเนื้อหา: ชื่อสินค้าแสดงผลเต็มความกว้าง (Full-width)
+  - ส่วนล่าง: แสดงวันที่, แหล่งที่มา (SFC/Customer), ลูกค้า, ยอดผลิตรวม, หลอด Progress Bar, สาเหตุ และป้ายสถานะ (Status Pill) จัดเข้ามุมอย่างสวยงาม
+- **Bottom Clearance & Floating FAB**:
+  - `OverallTab.tsx` กำหนด Padding ด้านล่าง `pb-28 sm:pb-8` เพื่อให้เลื่อนดูรายการเคสล่างสุดและแถบ Pagination ได้สะดวก
+  - ปุ่ม **DocAI Assistant** ถูกปรับเป็น Floating Action Button (FAB Icon) กะทัดรัดที่มุมขวาล่าง (`bottom-20 right-4 sm:bottom-6 sm:right-6`) ไม่บดบัง Pagination
 
-## 3. Data Schema & Syncing (Updated 2026-08-14)
-ข้อมูลเคสและรายการ (items) รองรับฟิลด์ระดับ item ดังนี้:
+### Case Update View & Accordion Architecture (`CaseUpdateView.tsx`)
+- **Responsive 2-Tier Header**: แยกแถบย้อนกลับและชื่อเคส (แถวบน) กับแถบปุ่มส่งออก Excel, ลบเคส, บันทึกร่าง และบันทึกเสร็จสิ้น (แถวล่าง) ป้องกันปุ่มซ้อนทับกันบนมือถือ
+- **Item Accordion Folding**: รายการสินค้าทั้งหมดจะพับเก็บเป็นค่าเริ่มต้น (Default Folded) เพื่อลดความยาวของหน้าจอเมื่อมีสินค้าหลายรายการ พร้อมปุ่มสลับ "ขยายข้อมูลทั้งหมด / พับข้อมูลทั้งหมด"
+- **Item Header Badges & Quick Inputs**: หัวการ์ดไอเทมระบุยอดผลิต (`ยอดเสร็จ: X / Y กล่อง`) พร้อมปุ่มลัด `[เสร็จแล้ว]` และป้ายเตือนรูปภาพ
+
+## 3. Data Schema & Dynamic Auto-Status Lifecycle
 - `customerName` (ลูกค้า): เช่น Eneos, BCP, OR (รองรับการตั้งค่ายืดหยุ่นราย item)
-- `batchNo` (Batch number): เลขการผลิตราย item (ปรับปรุงให้ใช้ช่อง input ประเภท Date เลือกวันผลิต และจัดเก็บในฟอร์แมตสากล `DD/MM/YYYY`)
+- `batchNo` (Batch number): เลขการผลิตราย item (จัดเก็บในฟอร์แมต `DD/MM/YYYY`)
 - `packagingDate` / `gallonDate` (วันผลิตแกลลอน): วันที่ผลิตบรรจุ
 - `mold` (แม่พิมพ์): หมายเลขหรือชื่อโมลด์
 - `line` (สายการผลิต): สายการผลิต
 - `missingBoxes`, `missingGallons`, `missingOil`: ฟิลด์บันทึกอุปสรรค/วัสดุที่ขาด (ล้างค่าอัตโนมัติเมื่อ Completed)
-- `uid` (Unique ID): รหัสเฉพาะของ item เพื่อการทำ syncing อย่างถูกต้องระหว่าง Supabase และ Sheets
+- `completedBoxes`: จำนวนกล่องที่ผลิตเสร็จแล้วรายไอเทม
+- `Dynamic Auto-Status`: สถานะของเคสจะถูกคำนวณแบบ Real-time จากยอดกล่องที่ผลิตเสร็จจริง (`completedBoxes`) เทียบกับยอดรวมทั้งหมด (`amount`):
+  - `Pending` (รอดำเนินการ): ยอดเสร็จสิ้น = 0%
+  - `In-Progress` (กำลังดำเนินการ): ยอดเสร็จสิ้น > 0% และ < 100%
+  - `Completed` (เสร็จสิ้น): ยอดเสร็จสิ้น = 100%
 
-**Sync Behavior:**
-- เมื่อเพิ่มเคสใหม่ หรืออัปเดตสถานะ/บันทึกข้อมูลแก้ไข ข้อมูลจะถูก proxy ไปยัง GAS เพื่อบันทึกลง Google Sheets และส่งรูปภาพ/เอกสารขึ้น Google Drive ก่อน
-- ข้อมูลที่อัปเดตจาก GAS (เช่น URL โฟลเดอร์/ลิงก์รูปภาพ/ลิงก์เอกสาร OR) จะถูกบันทึกคู่กับฟิลด์ทั้งหมดลงใน Supabase ตาราง `rework_cases` และ `rework_items`
-- บันทึกการแก้ไข (Audit log) จะถูกเก็บใน `rework_logs`
+## 4. Smart Item Verification & Two-Way Autofill
+- **Priority Rules**: ตรวจจับ `lastActiveField` เพื่อค้นหาข้อมูลสินค้าจาก `Item Number` หรือ `Item Code` อัตโนมัติ (Debounce 600ms)
+- **Zero-Value Restriction**: ไม่อนุญาตให้ระบุยอดสินค้า (`amount`) หรือจำนวนกล่องเป็น 0 เพื่อป้องกันข้อมูลขยะ
+- **Cross-Item Link**: เปิดตัวเลือกเชื่อมโยงสินค้าเปื้อนไปยังสินค้าที่รั่วในเคสเดียวกันผ่านฟิลด์ `linkedSourceId`
 
-## 4. Smart Item Verification (V2)
-ระบบตรวจสอบข้อมูลสินค้าอัตโนมัติได้รับการปรับปรุงให้ฉลาดและยืดหยุ่นขึ้น (Smart Verification):
-- **Last-Edited Priority**: ระบบจะติดตามการแก้ไขฟิลด์รหัสสินค้าผ่าน `lastActiveField` state ('itemNumber' หรือ 'itemCode')
-- **Priority Rules**: เมื่อคลิกปุ่ม "ตรวจสอบข้อมูลสินค้า" (Check Data) หรือเมื่อ Blur ฟิลด์ ระบบจะใช้ค่าจากฟิลด์ล่าสุดที่ถูกแก้ไขเป็นหลักในการค้นหา หากฟิลด์นั้นว่างจะสลับไปใช้ค่าจากอีกฟิลด์หนึ่งเป็น Fallback
-- **Unified Query**: API handler (`verifyItem` ใน `/api/rework`) จะสืบค้นตาราง `rework_master_items` บน Supabase โดยใช้เงื่อนไข OR (`item_number` หรือ `item_code` ตรงกับค่าที่สืบค้น)
-- **Auto-Fill Sync**: เมื่อพบข้อมูลสินค้า ระบบจะทำการอัปเดตและเขียนทับฟิลด์ข้อมูลสินค้าทั้งหมดในแถวนั้นโดยอัตโนมัติ ได้แก่:
-  - `itemNumber`
-  - `itemCode`
-  - `itemName`
-- **UI/UX (Search Cluster)**: รวมฟิลด์ `Item Number` (Barcode) และ `Item Code` เข้าด้วยกันเพื่อความสะดวก พร้อมแสดงสถานะ border เน้นตามลำดับฟิลด์ล่าสุดที่มี Priority
-
-## 5. Retroactive OR Files Upload
-- หากทุกรายการในเคสมีลูกค้าระบุเป็น `"OR"` (เช่น `editedItems.every(i => i.customerName === 'OR')`) ระบบจะแสดงอินพุตอัปโหลดเอกสาร OR ทันทีใน `UpdateModal` แม้ไม่ได้อยู่ในโหมด Edit ก็ตาม
-- ผู้ใช้ (ระดับ Operator, QSMS Admin) สามารถเลือกไฟล์และกดบันทึกเพื่อแนบไฟล์ตามหลังได้ทันที โดยจะ sync ขึ้น Google Drive และบันทึก URL ลงฐานข้อมูล
-
-## 6. Timezone Management (+07:00)
-- เวลาและ Timestamp ทั้งหมดในระบบอ้างอิงเขตเวลา `Asia/Bangkok` (+07:00)
-- การสร้างและอัปเดตข้อมูลบน API Server จะคำนวณและจัดรูปแบบเป็น ISO string พร้อม timezone offset `+07:00` (ผ่าน `getBangkokISOString`) เพื่อให้ตรงกันทั้งฝั่ง Supabase และ Google Sheets
-- ฟังก์ชัน `formatThaiDateShort` ใน `helpers.ts` ป้องกันปัญหาวันเลื่อน (Day shifting) สำหรับผู้ใช้นอกเขตเวลา Bangkok โดยแยกแยะและประมวลผลวันในรูปแบบ YYYY-MM-DD ตรงๆ โดยไม่แปลง offset ย้อนหลัง
-
-## 7. Knowledge Relationships
-- **Depends On**: [[gas-backend/gas-api.md]] — การทำ Sync / Google Drive uploads
-- **Depends On**: [[google-sheets/schema.md]] — โครงสร้างชีตที่อัปเดต
-- **Depends On**: [[nextjs-frontend/auth-flow.md]] — สิทธิ์และการยืนยันตัวตน
+## 5. Knowledge Relationships
+- **Depends On**: [[nextjs-frontend/auth-flow.md]] — สิทธิ์และการยืนยันตัวตน (QSMS Admin / Operator)
 - **Depends On**: [[nextjs-frontend/roles.md]] — การคุมสิทธิ์การแก้ไขและระดับ Role
-- **Affects**: [[architecture/supabase-hybrid-migration.md]] — Migration V3 ที่เพิ่มฟิลด์ระดับ item
+- **Depends On**: [[architecture/system-architecture.md]] — การทำงานร่วมกับ Supabase Database
+- **Affects**: [[lessons-learned/bugs-and-fixes.md]] — บันทึกประวัติการแก้บั๊ก UI/UX บนมือถือ (BUG-028, BUG-029)
 
 

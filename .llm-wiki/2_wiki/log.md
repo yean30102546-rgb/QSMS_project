@@ -1,6 +1,39 @@
 # 📋 Work Log — QSMS Rework Management
 > บันทึกประวัติการทำงานเรียงตามเวลา (Chronological Log)
 
+## 2026-08-20
+
+### [Mobile UI/UX Overhaul & Thesis Report] ปรับปรุง Responsive มือถือ (iPhone 13), เอกสารวิทยานิพนธ์ PIM และ Touch Navigation
+- **Mobile-First Rework Card Layout (`CaseListTable.tsx`)**:
+  * ยกเลิก 3 คอลัมน์แนวนอนแบบเดิมที่ทำให้ชื่อสินค้าและรายละเอียดถูกบีบตัดบรรทัด 7-8 บรรทัดบนหน้าจอ 390px (iPhone 13)
+  * ปรับเปลี่ยนเป็น **Mobile-First Card Layout** โดยแบ่งสัดส่วนข้อมูล:
+    - ส่วนบน: รหัสเคส + ป้ายสถานะ/เตือนระยะเวลา (7 วัน, เกิน 30 วัน, ขาดไฟล์ OR, รอของ)
+    - ส่วนกลาง: ชื่อสินค้าแสดงผลเต็มความกว้างอย่างชัดเจน
+    - ส่วนล่าง: วันที่, แหล่งที่มา, ยอดกล่อง, แถบ Progress Bar ความคืบหน้า และป้ายสถานะ (Status Pill) จัดวางเข้ามุมอย่างเป็นระเบียบ
+  * กำหนดโครงสร้าง JSX ให้เรนเดอร์ `StatusPill` และ `reasonsDisplay` เพียงตำแหน่งเดียวใน DOM เพื่อความถูกต้องในการทดสอบ Unit Test (131/131 Passed)
+- **DocAI Assistant Floating Action Button (FAB) Positioning (`App.tsx`)**:
+  * ปรับเปลี่ยนตำแหน่งปุ่ม DocAI จากเดิมที่อยู่ตรงกลางล่าง (`bottom-6 right-44`) มาอยู่ที่ **`bottom-20 right-4 sm:bottom-6 sm:right-6` (มุมขวาล่าง)**
+  * บนหน้าจอมือถือ แปลงเป็นปุ่มวงกลม FAB Icon กะทัดรัด ไม่บดบังแถบตัวเลขเปลี่ยนหน้า (Pagination `< 1 >`) หรือการ์ดเคสด้านล่าง
+  * เพิ่มระยะเลื่อนล่างสุดใน `OverallTab.tsx` เป็น `pb-28 sm:pb-8`
+- **CaseUpdateView Responsive 2-Tier Header & Full-Width Inputs (`CaseUpdateView.tsx`)**:
+  * แก้ไขปัญหาปุ่ม Action Bar ([ส่งออก Excel], [ลบเคสนี้], [บันทึกร่าง], [บันทึกเสร็จสิ้น]) ซ้อนทับและเบียดตัวหนังสือชื่อหน้า "จัดการงาน Rework" และรหัสเคสบนมือถือ
+  * ปรับโครงสร้างแถบ Header ให้เป็น 2 ชั้นแบบ Responsive บนมือถือ (`flex-col sm:flex-row`) พร้อมคุณสมบัติ `overflow-x-auto scrollbar-hide` ให้ปุ่มเลื่อนได้อิสระหากหน้าจอแคบมาก
+  * ปรับแต่งกล่องกรอกยอดความคืบหน้ารวมให้เป็น Full-Width บนมือถือ (`flex-1 sm:w-48`) และปรับ Padding คอนเทนเนอร์เป็น `p-3.5 sm:p-6`
+- **Case Update Item Folding / Accordion (`CaseUpdateView.tsx`)**:
+  * ปรับเปลี่ยนรายการสินค้าทั้งหมดให้เป็นแบบ **Accordion (พับเก็บได้เป็นค่าเริ่มต้น)** เพื่อลดความยาวของหน้าจอในการอัปเดตเคสที่มีสินค้าหลายรายการ
+  * แสดงข้อมูลสรุปบนหัวการ์ด: ชื่อสินค้า, รหัสบาร์โค้ด, สถานะแนบรูปภาพ, ยอดผลิตเสร็จสิ้น, และปุ่มลัด [เสร็จแล้ว]
+  * เพิ่มปุ่มควบคุมส่วนกลาง "ขยายข้อมูลทั้งหมด / พับข้อมูลทั้งหมด" 1-Click Toggle
+- **Academic Thesis Word Document Generation (`scripts/build_academic_thesis_template.py`)**:
+  * สร้างและพัฒนาสคริปต์ Python อัตโนมัติด้วย `python-docx` ในการสังเคราะห์รายงานวิทยานิพนธ์ฉบับสมบูรณ์ `QSMS_Project_Thesis_Report.docx` (3.10 MB) ตามมาตรฐานรูปแบบเล่มของสถาบันการจัดการปัญญาภิวัฒน์ (PIM) 5 บท
+  * ปรับฟอนต์ TH Sarabun PSK / Cordia New ขนาดมาตรฐาน, ตกแต่ง Header/Footer, หมายเลขหน้า ก-ง และ 1-N
+  * บูรณาการตราสัญลักษณ์ PIM University Logo, แผนภาพไดอะแกรมความละเอียดสูง 300 DPI ทั้ง 5 ภาพ และภาพถ่ายหน้าจอซอฟต์แวร์จริงของระบบทั้ง 7 โมดูล
+- **Presentation Deck Touch Gestures & Mobile Navigation (`GuideApp.tsx`)**:
+  * เพิ่มระบบตรวจจับการปัดนิ้วสัมผัส Touch Gestures (`onTouchStart`, `onTouchEnd`) สำหรับการเปลี่ยนสไลด์บนหน้าจอสัมผัส
+  * เพิ่มปุ่มลอยสำหรับออกจากโหมดพรีเซนต์ (`top-3 left-3 sm:top-4 sm:left-4 z-[99999]`) ไม่ให้ผู้ใช้ติดอยู่ในโหมดสไลด์บนมือถือ
+  * เพิ่มแถบควบคุมสไลด์ลอยด้านล่างบนมือถือ (`md:hidden`) พร้อมปุ่มก่อนหน้า/ถัดไปและตัวเลขสไลด์ปัจจุบัน
+
+---
+
 ## 2026-08-19
 
 ### [Presentation Deck & Engine Optimization] อัปเกรดเนื้อหา PPTX, ไทม์ไลน์ 4 เดือน, การจำลอง Excel และ Direct-Manipulation Zoom/Pan

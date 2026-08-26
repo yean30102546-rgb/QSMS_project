@@ -15,6 +15,7 @@ import { getCurrentUser, isAuthenticated as authIsAuthenticated, logout as authL
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ToastContainer } from '@/src/components/shared/Toast';
 import { AlertModal } from '@/src/components/shared/AlertModal';
+import { FeedbackModal } from '@/src/components/shared/FeedbackModal';
 import { Bot, Sparkles } from 'lucide-react';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
@@ -35,6 +36,7 @@ function AuthWrapper() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isRagOpen, setIsRagOpen] = useState(false);
   const [isRagPillDragging, setIsRagPillDragging] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const setCurrentView = (view: AppView) => {
     _setCurrentView(view);
@@ -91,8 +93,16 @@ function AuthWrapper() {
         setIsRagOpen(prev => !prev);
       }
     };
+    const handleOpenFeedback = () => {
+      setIsFeedbackOpen(true);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-feedback-modal', handleOpenFeedback);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-feedback-modal', handleOpenFeedback);
+    };
   }, []);
 
   const refreshAuth = (authenticated = false) => {
@@ -210,6 +220,7 @@ function AuthWrapper() {
           setCurrentView('login');
         }}
         onOpenRag={() => setIsRagOpen(true)}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
       />
     );
   } else if (currentView === 'storage') {
@@ -264,6 +275,13 @@ function AuthWrapper() {
 
       {/* Global RAG Chat Modal */}
       <RagApp user={appUser} open={isRagOpen} onOpenChange={setIsRagOpen} />
+
+      {/* Global Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        activeView={currentView}
+      />
 
       {/* Global Floating Glassmorphic AI Pill Button (Draggable) */}
       {currentView !== 'login' && currentView !== 'register' && currentView !== 'forgot-password' && (

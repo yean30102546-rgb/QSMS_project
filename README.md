@@ -1,6 +1,6 @@
-# QSMS Rework & Roster Management System
+# ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารข้อกำหนดมาตรฐานการผลิตอัจฉริยะ (QSMS: Quality & Rework Management System)
 
-ระบบจัดการงาน Rework และตารางเวรพนักงาน (Roster) ระดับองค์กร ออกแบบตามแนวคิด **Minimal Monochrome (Apple Pro Style)** ที่มีความเรียบหรู ปราณีต พร้อมการเชื่อมต่อข้อมูลแบบเรียลไทม์กับ Supabase Database
+ระบบจัดการงานแก้ไขผลิตภัณฑ์ (Rework) และคลังเอกสารข้อกำหนดมาตรฐานการผลิตอัจฉริยะระดับองค์กร ออกแบบตามแนวคิด **Minimal Monochrome (Apple Pro Style)** ที่มีความเรียบหรู ประณีต พร้อมการเชื่อมต่อข้อมูลแบบเรียลไทม์กับ Supabase Database
 
 ---
 
@@ -9,7 +9,7 @@
 ### 🏢 Workspace Portal (Landing Page & Guest Mode)
 - **Live Preview Analytics** - ผู้ใช้ทั่วไปที่ยังไม่ได้เข้าสู่ระบบสามารถมองเห็นข้อมูลสรุปเคส (Active Cases, Completion Rate, Defect Reasons) และตัวอย่างเคสล่าสุดแบบจำกัดได้ทันทีโดยไม่ต้องล็อกอิน
 - **Auto-Redirect** - ตรวจเช็คสถานะเซสชันอัตโนมัติเพื่อนำทางผู้ใช้ที่เข้าสู่ระบบแล้วไปยังโมดูลหลักโดยตรง
-- **Centralized App Registry** - เมนูคลังแอปพลิเคชันสำหรับเปิดโมดูลต่างๆ (Rework, Roster, และอื่นๆ ในอนาคต)
+- **Centralized App Registry** - เมนูคลังแอปพลิเคชันสำหรับเปิดโมดูลต่างๆ (Rework, Drawing & Master Storage, DocAI RAG, Presentation & Guide)
 
 ### ⚙️ Rework Module (ระบบจัดการเคสแก้ตัวสินค้า)
 - **Multi-Item Support** - บันทึกได้หลายรายการสินค้า (Rework Items) ภายใต้ใบงาน (Case) เดียวกัน
@@ -21,11 +21,6 @@
 - **Apple Shimmer Progress Cards** - กล่องแสดงสถานะการบันทึกข้อมูลสตรีมมิ่งที่ใช้กลาสมอร์ฟิสซึ่มและแสงวิ่งวิ่งวิบวับแบบแคปซูลสไตล์ Apple Pro
 - **PDF Template Export** - ส่งออกรายงานเคส rework ออกเป็นไฟล์ PDF ที่จัดหน้าตาจัดพิมพ์ไว้อย่างเรียบร้อยสวยงาม
 - **Styled Excel Export with Images** - ส่งออกตารางรายการสินค้า rework ออกเป็นไฟล์ Excel (.xlsx) ที่มีรูปภาพหลักฐานฝังอยู่ด้านในโดยตรง (ผ่าน `exceljs`) พร้อมสไตล์สีสันตารางเป็นสากลและจัดความสูงแถว 120px เมื่อมีรูปภาพ
-
-### 📅 Roster Module (ระบบจัดตารางเวรกะพนักงาน)
-- **Interactive Calendar Grid** - ตารางปฏิทินแสดงตารางเวรรายเดือนที่เข้าใจง่ายและปรับขนาดได้ตามสัดส่วนจอ
-- **Drag-and-Drop Schedule Shifts** - สลับกะการทำงานหรือกำหนดวันลาประเภทต่างๆ (Sick Leave, Business Leave, Holiday, OT) ได้สะดวกผ่านการลากวาง
-- **Shift Stats Summary** - แสดงสรุปผลรวมจำนวนวันทำงาน วันหยุด และชั่วโมงลารวมของพนักงานแต่ละคนโดยอัตโนมัติ
 
 ### 🤖 DocAI RAG Module (ระบบถามตอบปัญญาประดิษฐ์จากคลังเอกสาร)
 - **Nong Beepa Persona** - แชทถามตอบข้อสงสัยภาษาไทยกับ "น้องผึ้งพา" ด้วยน้ำเสียงที่เป็นกันเอง สุภาพ และมีภาพลักษณ์แบรนด์ที่น่ารักเพื่อช่วยลดความตึงเครียดในโรงงาน
@@ -42,6 +37,11 @@
 - **PDF Auto-Orientation & Rotation Persistence Engine** - เครื่องมือหมุน PDF 0°, 90°, 180°, 270° พร้อมปุ่ม **Landscape View** 1-click และบันทึกองศาการหมุนลงใน `localStorage` (`qsms_pdf_rot_<id>`) เพื่อคงทิศทางเดิมเมื่อเปิดดูครั้งถัดไป
 
 ### 🎨 Apple Premium UI/UX, Liquid Glass & Interactive Deck
+- **Mobile-First Rework Card Layout** - ปรับปรุงแถวเคส Rework ให้เป็น Mobile-First Card Layout บนหน้าจอ 390px (iPhone 13) แยกบรรทัดชื่อสินค้าเต็มความกว้าง จัดกลุ่มความคืบหน้าและป้ายสถานะเข้ามุมอย่างเป็นระเบียบ ไม่เบียดตัวหนังสือ
+- **Case Update 2-Tier Responsive Header & Accordion** - จัดโครงสร้าง Header 2 ชั้นบนมือถือ ป้องกันปุ่ม Action Bar ซ้อนทับชื่อเคส พร้อมระบบพับเก็บรายการสินค้าเป็นค่าเริ่มต้น (Default Folded Accordion) เพื่อประหยัดพื้นที่แนวตั้ง
+- **DocAI Floating Action Button (FAB)** - ปุ่มผู้ช่วยอัจฉริยะแบบ FAB Icon ทรงกลมที่มุมขวาล่าง (`bottom-20 right-4 sm:bottom-6 sm:right-6`) ไม่ทับปุ่มเปลี่ยนหน้า Pagination
+- **Academic Thesis Report Generator** - สคริปต์ Python อัตโนมัติสำหรับสังเคราะห์เล่มรายงานวิทยานิพนธ์ `QSMS_Project_Thesis_Report.docx` (3.10 MB) ตามมาตรฐาน PIM 5 บท ฝัง 9 Figures ไดอะแกรมความละเอียด 300 DPI และ 7 UI Screenshots จริง
+- **Presentation Deck Touch Navigation** - ระบบควบคุมสไลด์บนหน้าจอสัมผัส รองรับ Swipe Gestures (`onTouchStart`/`onTouchEnd`), แถบควบคุมลอยด้านล่าง (`md:hidden`) และปุ่มลอยสำหรับออกจากโหมดพรีเซนต์
 - **Apple Liquid Glass Material** - นำเสนอดีไซน์สไตล์ Liquid Glass ยุคใหม่ (`.liquid-glass-card`, `.liquid-glass-pill`) ด้วย Multi-layer Refraction Gradient, 1.5px Specular Rim, Inset Depth Reflections, Backdrop Blur 40px + Saturate 200% และ Ambient Glowing Orbs
 - **Interactive Presentation Deck (30/70 Side-by-Side)** - โมดูลสไลด์คู่มือระบบ 20 สไลด์ พร้อมไทม์ไลน์ 4 เดือน (Nov 2025 - Feb 2026) เชื่อมโยงกับ Live Interactive Sandbox บน Mac OS Window Header พร้อมระบบเลื่อน Scroll ภายในอย่างลื่นไหล
 - **Direct-Manipulation Zoom & Pan Engine** - เครื่องมือซูม 75%–200% และระบบคลิกลาก Pan แบบ Screen-Space 1:1 ปลดล็อก Transition หน่วงเวลาขณะลาก พร้อม Window Event Listeners ลากได้ทั่วจอไม่หลุดขอบ
@@ -53,7 +53,7 @@
 - **Reduced Motion Support** - รองรับการปิดหรือจำกัดแอนิเมชันสำหรับผู้ที่เปิดใช้คุณสมบัติจำกัดแอนิเมชันบน OS (ตรวจจับผ่าน `@media (prefers-reduced-motion: reduce)` ใน `index.css`)
 - **Prevent Layout Shift** - ใช้ `scrollbar-gutter: stable` ใน CSS เพื่อป้องกันไม่ให้โครงสร้างหน้าจอเลื่อนตัวสั่นไหวเมื่อเปิดโมดอลหรือเมื่อมีสกรอลบาร์แสดงผล
 - **Premium Logout Transition** - อนิเมชั่นหน้าจอออกจากระบบหน่วงเวลา 1.5 วินาที พร้อม Overlay ใสเบลอฉากหลังสูง (`backdrop-blur-[16px]`) และ **iOS Spoke Activity Indicator** หมุนวนนุ่มนวล
-- **Fully Responsive** - รองรับการแสดงผลทั้งบน Desktop เควสใหญ่ และ Mobile ขนาดพกพา
+- **Fully Responsive** - รองรับการแสดงผลทั้งบน Desktop เควสใหญ่ และ Mobile ขนาดพกพา (รองรับการใช้งานบน iOS Safari และ Android Chrome สมบูรณ์แบบ)
 
 ---
 
@@ -68,7 +68,7 @@
 
 ### Backend Stack (Hybrid Database Model)
 - **Supabase & Cloudinary** - ใช้จัดเก็บข้อมูลหลักและโฟลเดอร์รูปภาพของเคสต่างๆ
-- **Supabase Database** - ใช้บันทึกข้อมูลแบบ relational เพื่อการ Query ค้นหาที่รวดเร็วและการจัดสกีมาตารางที่สัมพันธ์กัน (Roster, Rework, Items, RAG Documents, RAG Chunks, RAG Feedback)
+- **Supabase Database** - ใช้บันทึกข้อมูลแบบ relational เพื่อการ Query ค้นหาที่รวดเร็วและการจัดสกีมาตารางที่สัมพันธ์กัน (Rework Cases, Items, Drawings, RAG Documents, RAG Chunks, RAG Feedback)
 
 
 ### Data Flow
@@ -88,19 +88,20 @@
 src/
 ├── app/                       # Next.js App Router (Layouts & Page entry)
 ├── components/
-│   ├── apps/                  # Application Modules (portal)
+│   ├── apps/                  # Application Modules (portal, drawings, etc.)
 │   ├── layout/                # Main layout shell and sidebar navigation
 │   ├── modals/                # UpdateModal, ConflictModal, etc.
 │   ├── tabs/                  # AddCaseTab, OverallTab, DashboardTab
 │   └── ui/                    # AppleProgressBar, CaseListTable, ExportTemplate, etc.
 ├── config/                    # Authentication configs and role definitions
-├── contexts/                  # ReworkDataContext, RosterContext, etc.
+├── contexts/                  # ReworkDataContext, NotificationContext, etc.
 ├── hooks/                     # Custom React hooks (useExportReport, useSaveProgress, etc.)
 ├── lib/                       # Supabase server client library
 ├── modules/
 │   ├── rework/                # Rework app entry (ReworkApp.tsx)
-│   ├── roster/                # Roster calendar and shift management
+│   ├── drawings/              # Drawing & Master Storage module
 │   ├── rag/                   # DocAI RAG (Nong Beepa Chatbot & File Ingestion UI)
+│   ├── guide/                 # Presentation & Guide deck module
 │   └── platform/              # Workspace registries & types
 ├── services/
 │   ├── api.ts                 # API functions and Rework interfaces
@@ -165,10 +166,10 @@ src/
 
 ### Access Control & Roles
 ระบบใช้การคัดแยกสิทธิ์ตามบทบาทผู้ใช้งาน (RBAC) ทั้งในส่วนของ UI (Frontend) และ API Endpoints (Backend):
-- **ADMIN / QSMS** - สิทธิ์สูงสุด สามารถจัดการได้ทุกส่วน รวมถึงการลบเคส การจัดการแดชบอร์ด และสิทธิ์ในการใช้ Roster Module และระบบแก้ไขข้อมูล Edit Mode
-- **OPERATOR / WFG (Consolidated Roles)** - กลุ่มงานการผลิตและคลังสินค้า มีสิทธิ์การใช้งานจำกัดเฉพาะโมดูล **Rework** (ซ่อนโมดูล Roster ทั้งหมด)
+- **ADMIN / QSMS** - สิทธิ์สูงสุด สามารถจัดการได้ทุกโมดูล รวมถึงการลบเคส การจัดการแดชบอร์ด คลังเอกสาร Drawing & Master Storage, DocAI RAG และระบบแก้ไขข้อมูล Edit Mode
+- **OPERATOR / WFG (Consolidated Roles)** - กลุ่มงานการผลิตและคลังสินค้า มีสิทธิ์การใช้งานจำกัดเฉพาะโมดูล **Rework**
   - สิทธิ์ทำงาน: สามารถเพิ่มงาน Rework ได้, อัปเดตสถานะงานเป็น "In-Progress" หรือส่งต่อไปสถานะ "Completed" (เสร็จสิ้น) ได้
-  - ข้อจำกัด: **ไม่สามารถมองเห็นหรือแก้ไขฟิลด์ค่าใช้จ่ายใดๆ ได้ (No Pricing/Cost access)** และไม่มีสิทธิ์ในฟังก์ชันการ Export ข้อมูลหรือเรียกดูหน้า Dashboard
+  - ข้อจำกัด: **ไม่สามารถมองเห็นหรือแก้ไขฟิลด์ค่าใช้จ่ายใดๆ ได้ (No Pricing/Cost access)** และไม่มีสิทธิ์ในฟังก์ชันการ Export ข้อมูลหรือเรียกดูหน้า Dashboard สถิติของโมดูลอื่น
 
 ### 🧪 Local Test Accounts (บัญชีทดสอบระบบภายใน)
 สำหรับการทดสอบระบบบนเครื่อง Local หรือสภาพแวดล้อมจำลอง สามารถเข้าสู่ระบบด้วยบัญชีจำลองด้านล่างนี้ได้โดยตรง:

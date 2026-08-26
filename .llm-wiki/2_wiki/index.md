@@ -1,5 +1,5 @@
 # Project Knowledge Index
-ดัชนีคลังความรู้ถาวร (Second Brain) ประจำโปรเจกต์ QSMS Rework & ShiftHub Roster
+ดัชนีคลังความรู้ถาวร (Second Brain) ประจำโปรเจกต์ QSMS (Quality & Rework Management System)
 
 ---
 
@@ -17,7 +17,7 @@
 - [[nextjs-frontend/roles.md]] - สกีมาจำแนกสิทธิ์ผู้ใช้งาน (RBAC) 6 บทบาท และการตรวจสอบสิทธิ์ความปลอดภัย
 - [[nextjs-frontend/portal-shell.md]] - หน้าจอศูนย์กลาง Workspace Portal, Guest Mode และระบบ Auto-redirect
 - [[nextjs-frontend/rework-module.md]] - โครงสร้างหน้าต่างและตารางจัดการใบงานแก้ไขสินค้า (Rework) แบบ Multi-item
-- [[nextjs-frontend/roster-module.md]] - หน้าจอจัดการเวรพนักงานและการสลับวันเสาร์ทำงาน (ShiftHub Roster)
+- [[nextjs-frontend/roster-module.md]] - `[Deprecated / Out of Active Scope]` โมดูลจัดการตารางเวรพนักงาน (ไม่มีในสโคปหลักของระบบปัจจุบัน)
 - [[nextjs-frontend/image-upload-system.md]] - ระบบอัปโหลดและพรีวิวภาพหลักฐานผ่าน Supabase Storage
 - [[nextjs-frontend/nextjs.md]] - พื้นฐานการทำ routing และคอมโพเนนต์ React ในสภาพแวดล้อม Next.js
 - [[nextjs-frontend/shadcn-ui.md]] - คู่มือการใช้งานคอมโพเนนต์ตามมาตรฐานของไลบรารี shadcn/ui
@@ -48,7 +48,7 @@
 
 ## 📂 4. Lessons Learned & Bug Fixes (บทเรียนแก้บั๊กและการพัฒนา)
 - [[lessons-learned/development-learnings.md]] - สรุปบทเรียนพัฒนาการ 36 รายการในอดีต (React, Next.js, Google Apps Script)
-- [[lessons-learned/bugs-and-fixes.md]] - ประวัติบั๊กสำคัญ BUG-001 ถึง BUG-027 และตัวอย่างโค้ดก่อน/หลังปรับปรุง
+- [[lessons-learned/bugs-and-fixes.md]] - ประวัติบั๊กสำคัญ BUG-001 ถึง BUG-029 และตัวอย่างโค้ดก่อน/หลังปรับปรุง
 - [[lessons-learned/bug-review-2026-05-28.md]] - รีวิวข้อบกพร่องและปัญหารายสัปดาห์ ณ สิ้นเดือนพฤษภาคม 2026
 - [[lessons-learned/debugging-practices.md]] - กฎและแนวปฏิบัติการสืบสวนหาสาเหตุบั๊กอย่างปลอดภัย (Systematic Debugging)
 - [[lessons-learned/mobile-fast-track-ui.md]] - การสร้างหน้าจอ Fast-Track มือถือ การทำ Watermark และ react-hook-form Bridge

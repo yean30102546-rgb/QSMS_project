@@ -1,7 +1,9 @@
-# QSMS Roster Module
-[วันที่อัปเดต: 2026-05-21]
+# QSMS Roster Module [Deprecated / Out of Active Scope]
+[วันที่ระบุสถานะ Deprecated: 2026-08-21]
 
-## 1. Summary & Current Implementation
+> ⚠️ **หมายเหตุสถานะโมดูล (Scope Status):** โมดูล Roster / จัดตารางเวร ได้ถูกตัดออกจากสโคปของระบบหลัก QSMS เวอร์ชันปัจจุบันอย่างเป็นทางการ ระบบโฟกัสที่ 4 โมดูลหลัก ได้แก่ Rework, Drawing & Master Storage, DocAI RAG และ Presentation & Guide Module
+
+## 1. Summary & Archive Reference
 Module ระบบจัดการตารางเวร อยู่ที่ `src/modules/roster/` ภายใต้ชื่อ **QSMS Roster** (เปลี่ยนจากเดิม ShiftHub Roster)
 - **Backend**: ได้รับการย้าย (Migrate) จาก GAS Calendar มาใช้ **Supabase Database** 100% แล้ว เพื่อประสิทธิภาพการสืบค้นและเสถียรภาพในการแก้ไขข้อมูล
 - **Proxy**: มีการเชื่อมต่อผ่าน API route ของ Next.js `/api/roster` ซึ่งจะดึง/บันทึกข้อมูลกับ Supabase โดยตรง และมีตัวแปร `GAS_CALENDAR_WEB_APP_URL` ใน env เป็นเพียง Compatibility fallback สำหรับฟังก์ชันดั้งเดิมที่จำเป็น

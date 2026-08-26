@@ -20,7 +20,6 @@ def generate_pim_thesis_document():
     ui_drawings_path = os.path.join(assets_dir, "ui_drawings.png")
     ui_rag_path = os.path.join(assets_dir, "ui_rag.png")
     ui_excel_path = os.path.join(assets_dir, "ui_excel.png")
-    ui_roster_path = os.path.join(assets_dir, "ui_roster.png")
     ui_guide_path = os.path.join(assets_dir, "ui_guide.png")
     
     # -------------------------------------------------------------
@@ -314,13 +313,13 @@ def generate_pim_thesis_document():
     p_cov_th.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_cov_th.paragraph_format.space_before = Pt(16)
     p_cov_th.paragraph_format.space_after = Pt(12)
-    add_run(p_cov_th, "ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์\nและคลังเอกสารวิศวกรรมอัจฉริยะ\n(QSMS: Quality & Rework Management System)", size=22, bold=True)
+    add_run(p_cov_th, "ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์\nและคลังเอกสารข้อกำหนดมาตรฐานการผลิตอัจฉริยะ\n(QSMS: Quality & Rework Management System)", size=22, bold=True)
 
     p_cov_en = doc.add_paragraph()
     p_cov_en.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_cov_en.paragraph_format.space_before = Pt(10)
     p_cov_en.paragraph_format.space_after = Pt(48)
-    add_run(p_cov_en, "QSMS: QUALITY AND REWORK MANAGEMENT SYSTEM WITH\nINTELLIGENT ENGINEERING DOCUMENT ANALYSIS AND\nRETRIEVAL-AUGMENTED GENERATION", size=17, bold=True)
+    add_run(p_cov_en, "QSMS: QUALITY AND REWORK MANAGEMENT SYSTEM WITH\nINTELLIGENT MANUFACTURING SPECIFICATIONS AND\nRETRIEVAL-AUGMENTED GENERATION", size=17, bold=True)
 
     p_cov_author = doc.add_paragraph()
     p_cov_author.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -353,7 +352,7 @@ def generate_pim_thesis_document():
     p_app_body = doc.add_paragraph()
     p_app_body.paragraph_format.space_before = Pt(0)
     p_app_body.paragraph_format.space_after = Pt(12)
-    add_run(p_app_body, "หัวข้อปริญญานิพนธ์:  ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารวิศวกรรมอัจฉริยะ (QSMS)\nผู้จัดทำ:  นายสพลฎณัย ชัยพงษ์ (รหัสนักศึกษา 6752500398)\nหลักสูตร:  วิศวกรรมศาสตรบัณฑิต สาขาวิชาวิศวกรรมหุ่นยนต์อัตโนมัติ\nคณะ:  วิศวกรรมศาสตร์และเทคโนโลยี สถาบันการจัดการปัญญาภิวัฒน์\nปีการศึกษา:  2567", size=16, bold=False)
+    add_run(p_app_body, "หัวข้อปริญญานิพนธ์:  ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารข้อกำหนดมาตรฐานการผลิตอัจฉริยะ (QSMS)\nผู้จัดทำ:  นายสพลฎณัย ชัยพงษ์ (รหัสนักศึกษา 6752500398)\nหลักสูตร:  วิศวกรรมศาสตรบัณฑิต สาขาวิชาวิศวกรรมหุ่นยนต์อัตโนมัติ\nคณะ:  วิศวกรรมศาสตร์และเทคโนโลยี สถาบันการจัดการปัญญาภิวัฒน์\nปีการศึกษา:  2567", size=16, bold=False)
 
     p_app_sign = doc.add_paragraph()
     p_app_sign.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -370,11 +369,11 @@ def generate_pim_thesis_document():
     p.paragraph_format.space_after = Pt(16)
     add_run(p, "บทคัดย่อ", size=20, bold=True)
 
-    add_body_p(doc, "ปริญญานิพนธ์ฉบับนี้นำเสนอการวิจัยและการพัฒนาระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารวิศวกรรมอัจฉริยะ (QSMS: Quality & Rework Management System) เพื่อแก้ปัญหาในสายการผลิตอุตสาหกรรมบรรจุภัณฑ์ที่พบความล่าช้า ข้อมูลรหัสสินค้าและล็อตการผลิตคลาดเคลื่อน ขาดภาพถ่ายหลักฐานเชิงประจักษ์ และใช้เวลานานในการสืบค้นคู่มือเทคนิคและแบบแปลนวิศวกรรม")
+    add_body_p(doc, "ปริญญานิพนธ์ฉบับนี้นำเสนอการวิจัยและการพัฒนาระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารข้อกำหนดมาตรฐานการผลิตอัจฉริยะ (QSMS: Quality & Rework Management System) เพื่อแก้ปัญหาในสายการผลิตอุตสาหกรรมบรรจุภัณฑ์ที่พบความล่าช้า ข้อมูลรหัสสินค้าและล็อตการผลิตคลาดเคลื่อน ขาดภาพถ่ายหลักฐานเชิงประจักษ์ และใช้เวลานานในการสืบค้นคู่มือเทคนิคและแบบร่างสูตรการผลิต")
 
-    add_body_p(doc, "ระบบ QSMS ถูกออกแบบด้วยสถาปัตยกรรม Hybrid Next.js 16 App Router ร่วมกับ React 19 Client Shell ภายใต้โครงสร้าง Feature-Sliced Design (FSD) โดยใช้ Supabase PostgreSQL และ pgvector เป็นฐานข้อมูลหลัก และเชื่อมต่อ Cloudinary CDN สำหรับจัดเก็บภาพถ่ายหลักฐานที่บีบอัดฝั่งไคลเอนต์ ระบบประกอบด้วย 6 โมดูลหลัก ได้แก่ (1) ระบบจัดการเคส Rework พร้อมการตรวจสอบรหัสสินค้าอัตโนมัติ (Two-Way Autofill) และการรักษาความสมบูรณ์ของหลักฐาน (Evidence Integrity) (2) ระบบคลังแบบแปลนและใบมาสเตอร์วิศวกรรมที่ใช้ Gemini Multimodal OCR สกัดข้อมูลแบบแยกสกีมา (Decoupled Schemas) ร่วมกับแผงตรวจทาน Split View 55/45 (3) ระบบถามตอบคู่มืออัจฉริยะ DocAI RAG แชทบอท 'น้องผึ้งพา' ที่ใช้ Jina Embeddings 768 มิติ ร่วมกับ Hybrid Search และ Function Calling สถิติสด (4) ระบบจัดตารางเวรพนักงาน ShiftHub Roster (5) ระบบส่งออกรายงานสเปรดชีต Excel (.xlsx) ที่ฝังรูปภาพหลักฐานความสูง 120px ในเซลล์ และ (6) ระบบคู่มือนำเสนอเชิงโต้ตอบ (Presentation Deck) 20 สไลด์ พร้อมระบบควบคุมมุมมอง Direct-Manipulation 1:1 Zoom/Pan Engine")
+    add_body_p(doc, "ระบบ QSMS ถูกออกแบบด้วยสถาปัตยกรรม Hybrid Next.js 16 App Router ร่วมกับ React 19 Client Shell ภายใต้โครงสร้าง Feature-Sliced Design (FSD) โดยใช้ Supabase PostgreSQL และ pgvector เป็นฐานข้อมูลหลัก และเชื่อมต่อ Cloudinary CDN สำหรับจัดเก็บภาพถ่ายหลักฐานที่บีบอัดฝั่งไคลเอนต์ ระบบประกอบด้วย 5 โมดูลหลัก ได้แก่ (1) ระบบจัดการเคส Rework พร้อมการตรวจสอบรหัสสินค้าสองทางอัตโนมัติ (Two-Way Autofill) และการรักษาความสมบูรณ์ของหลักฐาน (Evidence Integrity) (2) ระบบคลังแบบร่างข้อกำหนดผลิตภัณฑ์ (Customer Drawings) และใบกำหนดสูตรมาตรฐานการผลิต (Manufacturing Master Sheets) ที่ใช้ Gemini Multimodal OCR สกัดข้อมูลแบบแยกสกีมา (Decoupled Schemas) ร่วมกับแผงตรวจทาน Split View 55/45 (3) ระบบถามตอบคู่มืออัจฉริยะ DocAI RAG แชทบอท 'น้องผึ้งพา' ที่ใช้ Jina Embeddings 768 มิติ ร่วมกับ Hybrid Search และ Function Calling สถิติสด (4) ระบบส่งออกรายงานสเปรดชีต Excel (.xlsx) ที่ฝังรูปภาพหลักฐานความสูง 120px ในเซลล์ และ (5) ระบบคู่มือนำเสนอเชิงโต้ตอบ (Presentation Deck) 20 สไลด์ พร้อมระบบควบคุมมุมมอง Direct-Manipulation 1:1 Zoom/Pan Engine")
 
-    add_body_p(doc, "ผลการทดสอบเชิงฟังก์ชันและการตรวจสอบความถูกต้องอัตโนมัติผ่าน Vitest พบว่าผ่านการทดสอบ 131 เคสการทดสอบ (100% Pass Rate) และผ่านการตรวจสอบ Type Safety (TypeScript) โดยปราศจากข้อผิดพลาด ระบบสามารถลดเวลาในการบันทึกและตรวจสอบข้อมูลเคส Rework ลงได้ 66.4% ลดข้อผิดพลาดของรหัสสินค้าเหลือ 0% และลดเวลาสืบค้นคู่มือเทคนิคจาก 18 นาทีเหลือเพียง 45 วินาที แสดงให้เห็นว่าระบบสามารถนำไปประยุกต์ใช้งานจริงในโรงงานอุตสาหกรรมได้อย่างมีประสิทธิภาพ ปลอดภัย และเสถียรภาพสูง")
+    add_body_p(doc, "ผลการทดสอบเชิงฟังก์ชันและการตรวจสอบความถูกต้องอัตโนมัติผ่าน Vitest พบว่าผ่านการทดสอบ 131 เคสการทดสอบ (100% Pass Rate) และผ่านการตรวจสอบ Type Safety (TypeScript) โดยปราศจากข้อผิดพลาด ระบบสามารถลดเวลาในการบันทึกและตรวจสอบข้อมูลเคส Rework ลงได้ 66.4% ลดข้อผิดพลาดของรหัสสินค้าเหลือ 0% และลดเวลาสืบค้นเอกสารข้อกำหนดและคู่มือเทคนิคจาก 18 นาทีเหลือเพียง 45 วินาที แสดงให้เห็นว่าระบบสามารถนำไปประยุกต์ใช้งานจริงในโรงงานอุตสาหกรรมได้อย่างมีประสิทธิภาพ ปลอดภัย และเสถียรภาพสูง")
 
     p_kw = doc.add_paragraph()
     p_kw.paragraph_format.space_before = Pt(12)
@@ -391,9 +390,9 @@ def generate_pim_thesis_document():
     p.paragraph_format.space_after = Pt(16)
     add_run(p, "ABSTRACT", size=20, bold=True)
 
-    add_body_p(doc, "This thesis presents the design and implementation of the QSMS: Quality and Rework Management System with Intelligent Engineering Document Analysis and Retrieval-Augmented Generation by Mr. Saphondanai Chaiyaphong (Student ID: 6752500398), Bachelor of Engineering in Automated Robotics Engineering, Faculty of Engineering and Technology, Panyapiwat Institute of Management. The project addresses core manufacturing bottlenecks including manual paperwork latency, product item code discrepancies, lack of verifiable evidence images, and time-consuming technical drawing retrievals in industrial packaging operations.")
+    add_body_p(doc, "This thesis presents the design and implementation of the QSMS: Quality and Rework Management System with Intelligent Manufacturing Specifications and Retrieval-Augmented Generation by Mr. Saphondanai Chaiyaphong (Student ID: 6752500398), Bachelor of Engineering in Automated Robotics Engineering, Faculty of Engineering and Technology, Panyapiwat Institute of Management. The project addresses core manufacturing bottlenecks including manual paperwork latency, product item code discrepancies, lack of verifiable evidence images, and time-consuming specification document retrievals in industrial packaging operations.")
 
-    add_body_p(doc, "QSMS is engineered with a Hybrid Next.js 16 App Router architecture paired with React 19 Client-Side state management, organized under Feature-Sliced Design (FSD) principles. Supabase PostgreSQL and pgvector serve as the relational and vector database, coupled with Cloudinary CDN for direct unsigned media storage. The platform comprises six modules: (1) Rework Management with two-way item autofill and atomic evidence integrity gating, (2) Engineering Drawings & Master Repository powered by Gemini Multimodal OCR with decoupled schema extraction and a 55/45 split-view inspection workspace, (3) DocAI RAG engine utilizing Jina Embeddings (768 dimensions), PostgreSQL hybrid search, and live statistics function calling, (4) ShiftHub Roster workforce scheduling, (5) Styled Excel (.xlsx) report generation with native 120px embedded evidence photos, and (6) an Interactive Presentation Deck featuring Apple Liquid Glass styling and a direct-manipulation 1:1 hardware-accelerated zoom/pan engine.")
+    add_body_p(doc, "QSMS is engineered with a Hybrid Next.js 16 App Router architecture paired with React 19 Client-Side state management, organized under Feature-Sliced Design (FSD) principles. Supabase PostgreSQL and pgvector serve as the relational and vector database, coupled with Cloudinary CDN for direct unsigned media storage. The platform comprises five integrated modules: (1) Rework Management with two-way item autofill and atomic evidence integrity gating, (2) Product Specifications & Manufacturing Masters Repository powered by Gemini Multimodal OCR with decoupled schema extraction and a 55/45 split-view inspection workspace, (3) DocAI RAG engine utilizing Jina Embeddings (768 dimensions), PostgreSQL hybrid search, and live statistics function calling, (4) Styled Excel (.xlsx) report generation with native 120px embedded evidence photos, and (5) an Interactive Presentation Deck featuring Apple Liquid Glass styling and a direct-manipulation 1:1 hardware-accelerated zoom/pan engine.")
 
     add_body_p(doc, "Automated unit and integration testing via Vitest confirmed a 100% pass rate across 131 test cases and zero TypeScript compilation errors under strict non-any type enforcement. Empirical operational evaluation demonstrated a 66.4% reduction in rework logging duration, total elimination of product code mismatch errors, and a reduction in technical manual search time from 18 minutes to 45 seconds, validating the system's high reliability and operational efficiency.")
 
@@ -538,12 +537,11 @@ def generate_pim_thesis_document():
         ("ภาพที่ 3.1 แผนผังสถาปัตยกรรมระบบโดยรวมและการไหลของข้อมูล (System Architecture & Data Flow)", "12"),
         ("ภาพที่ 3.2 แผนภาพความสัมพันธ์ของข้อมูล (Entity-Relationship Diagram: ERD)", "14"),
         ("ภาพที่ 4.1 หน้าจอศูนย์รวมแอปพลิเคชันหลัก (Workspace Portal Shell)", "18"),
-        ("ภาพที่ 4.2 หน้าต่างฟอร์มบันทึกเคส Rework พร้อม Two-Way Autofill", "19"),
-        ("ภาพที่ 4.3 แผงตรวจทานแบบแปลนวิศวกรรม Split View 55/45 พร้อมเครื่องมือหมุน PDF", "20"),
-        ("ภาพที่ 4.4 หน้าต่างสนทนากับระบบปัญญาประดิษฐ์ DocAI RAG ('น้องผึ้งพา')", "21"),
-        ("ภาพที่ 4.5 หน้าต่างจำลองไฟล์ส่งออก Excel Spreadsheet (.xlsx) พร้อมฝังรูปภาพในเซลล์", "22"),
-        ("ภาพที่ 4.6 ปฏิทินและระบบจัดตารางเวรพนักงาน ShiftHub Roster", "23"),
-        ("ภาพที่ 4.7 สไลด์คู่มือนำเสนอระบบ (Presentation Deck) และระบบ Direct-Manipulation Zoom/Pan", "23")
+        ("ภาพที่ 4.2 หน้าต่างฟอร์มบันทึกเคส Rework พร้อม Two-Way Autofill และการตรวจสอบความถูกต้อง", "19"),
+        ("ภาพที่ 4.3 แผงตรวจทานเอกสารข้อกำหนดผลิตภัณฑ์และสูตรมาตรฐานการผลิต Split View 55/45 พร้อมเครื่องมือหมุน PDF", "21"),
+        ("ภาพที่ 4.4 หน้าต่างสนทนากับระบบปัญญาประดิษฐ์ DocAI RAG ('น้องผึ้งพา')", "22"),
+        ("ภาพที่ 4.5 หน้าต่างจำลองไฟล์ส่งออก Excel Spreadsheet (.xlsx) พร้อมฝังรูปภาพในเซลล์", "23"),
+        ("ภาพที่ 4.6 สไลด์คู่มือนำเสนอระบบ (Presentation Deck) และระบบ Direct-Manipulation Zoom/Pan", "23")
     ]
     table_lof = doc.add_table(rows=len(lof_items), cols=2)
     for idx, (title, pg) in enumerate(lof_items):
@@ -574,29 +572,27 @@ def generate_pim_thesis_document():
     add_heading_1(doc, "1.1 ความเป็นมาและความสำคัญของปัญหา")
     add_body_p(doc, "ในอุตสาหกรรมการผลิตและการบรรจุภัณฑ์ การรักษามาตรฐานคุณภาพผลิตภัณฑ์ (Quality Assurance) และการบริหารจัดการสินค้าที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Products) ถือเป็นหัวใจสำคัญในการลดความสูญเปล่า (Waste Reduction) และควบคุมต้นทุนการดำเนินงานขององค์กร เมื่อตรวจพบความผิดปกติในกระบวนการบรรจุ เช่น ผลิตภัณฑ์รั่วซึม (Leakage), ฝาบรรจุภัณฑ์ปิดไม่สนิท, ฉลากชำรุด หรือพบการปนเปื้อน สินค้าดังกล่าวจะถูกคัดแยกเข้าสู่กระบวนการทำใหม่ (Rework Workflow) เพื่อแก้ไขให้อยู่ในเกณฑ์มาตรฐาน")
 
-    add_body_p(doc, "จากการศึกษาสภาพการปฏิบัติงานจริงในสายการผลิต พบว่ากระบวนการจัดการงาน Rework แบบดั้งเดิมที่ใช้เอกสารกระดาษและสเปรดชีตแบบกระจายตัว ประสบปัญหาสำคัญ 4 ประการ:")
+    add_body_p(doc, "จากการศึกษาสภาพการปฏิบัติงานจริงในสายการผลิต พบว่ากระบวนการจัดการงาน Rework แบบดั้งเดิมที่ใช้เอกสารกระดาษและสเปรดชีตแบบกระจายตัว ประสบปัญหาสำคัญ 3 ประการ:")
     add_bullet_p(doc, "1. ความล่าช้าและข้อผิดพลาดในการบันทึกข้อมูล:", "การจดบันทึกด้วยมือทำให้รหัสสินค้า (Item Code / Item Number) และข้อมูลล็อตสินค้าคลาดเคลื่อน ส่งผลให้การสืบค้นประวัติย้อนกลับ (Traceability) ไม่สามารถทำได้แบบเรียลไทม์", level=1)
     add_bullet_p(doc, "2. การขาดหลักฐานเชิงประจักษ์ (Lack of Evidence Integrity):", "สินค้าที่เสียหายมักไม่มีการบันทึกภาพถ่ายหลักฐานอย่างเป็นระบบ หรือภาพถ่ายกระจัดกระจายอยู่ในแอปพลิเคชันส่งข้อความส่วนตัว ทำให้ไม่สามารถตรวจสอบยืนยันสภาพความเสียหายจริงในขั้นตอนการอนุมัติได้", level=1)
-    add_bullet_p(doc, "3. ความยากลำบากในการเข้าถึงแบบแปลนและคู่มือเทคนิค:", "เอกสารแบบแปลนวิศวกรรม (Engineering Drawings) และใบมาสเตอร์การผลิต (Internal Master Sheets) มีปริมาณมากและจัดเก็บในรูปแบบเอกสารสแกน ทำให้พนักงานต้องใช้เวลาเฉลี่ยถึง 18 นาทีต่อครั้งในการค้นหาข้อกำหนดและสูตรการผลิตที่ถูกต้อง", level=1)
-    add_bullet_p(doc, "4. การขาดการเชื่อมโยงระบบบริหารกำลังพล:", "การจัดตารางเวรและกะการทำงาน (Roster Management) แยกขาดจากสถานะงาน Rework ทำให้ไม่สามารถบริหารจัดการภาระงานได้อย่างสอดคล้องกับกำลังพลจริง", level=1)
+    add_bullet_p(doc, "3. ความยากลำบากในการเข้าถึงเอกสารข้อกำหนดผลิตภัณฑ์และสูตรมาตรฐานการผลิต:", "เอกสารแบบร่างข้อกำหนดผลิตภัณฑ์ของลูกค้า (Customer Product Drawings) และใบกำหนดสูตรและมาตรฐานการผลิตภายใน (Internal Manufacturing Master Sheets) มีปริมาณมากและจัดเก็บในรูปแบบเอกสารสแกน ส่งผลให้พนักงานต้องใช้เวลาเฉลี่ยถึง 18 นาทีต่อครั้งในการค้นหาข้อกำหนดทางเทคนิคและสูตรการผลิตที่ถูกต้อง", level=1)
 
-    add_body_p(doc, "เพื่อแก้ไขปัญหาดังกล่าว ผู้จัดทำจึงได้พัฒนา 'ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารวิศวกรรมอัจฉริยะ (QSMS: Quality & Rework Management System)' โดยผสานสถาปัตยกรรม Next.js App Router, ฐานข้อมูลเวกเตอร์ Supabase pgvector, เทคโนโลยีปัญญาประดิษฐ์ Multimodal OCR และระบบค้นหาความรู้ RAG เข้าด้วยกันอย่างสมบูรณ์")
+    add_body_p(doc, "เพื่อแก้ไขปัญหาดังกล่าว ผู้จัดทำจึงได้พัฒนา 'ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารข้อกำหนดมาตรฐานการผลิตอัจฉริยะ (QSMS: Quality & Rework Management System)' โดยผสานสถาปัตยกรรม Next.js App Router, ฐานข้อมูลเวกเตอร์ Supabase pgvector, เทคโนโลยีปัญญาประดิษฐ์ Multimodal OCR สำหรับวิเคราะห์เอกสารแบบร่างและสูตรการผลิต ตลอดจนระบบสืบค้นความรู้อัจฉริยะ (DocAI RAG) เข้าด้วยกันอย่างสมบูรณ์")
 
     add_heading_1(doc, "1.2 วัตถุประสงค์ของโครงงาน")
-    add_bullet_p(doc, "1.", "เพื่อออกแบบและพัฒนาระบบเว็บแอปพลิเคชันบริหารจัดการกระบวนการ Rework แบบเรียลไทม์ พร้อมระบบตรวจสอบรหัสสินค้าสองทางอัตโนมัติ (Two-Way Autofill & Verification)")
-    add_bullet_p(doc, "2.", "เพื่อพัฒนาระบบวิเคราะห์และสกัดข้อมูลจากแบบแปลนวิศวกรรมและใบมาสเตอร์ PDF ด้วย Gemini Multimodal OCR แบบแยกสกีมา (Decoupled Document Schemas)")
-    add_bullet_p(doc, "3.", "เพื่อพัฒนาระบบถามตอบคู่มือเทคนิคและแนวทางการแก้ไขงานอัจฉริยะ (DocAI RAG) ด้วย Supabase pgvector และ Jina AI Embeddings")
-    add_bullet_p(doc, "4.", "เพื่อพัฒนาระบบบริหารจัดการตารางเวรพนักงาน (ShiftHub Roster) และระบบส่งออกรายงาน Excel (.xlsx) ที่ฝังรูปภาพหลักฐานความละเอียดสูงลงในเซลล์โดยตรง")
-    add_bullet_p(doc, "5.", "เพื่อพัฒนาระบบคู่มือนำเสนอเชิงโต้ตอบ (Interactive Presentation Deck) 20 สไลด์ พร้อมระบบควบคุมมุมมองแบบ Direct-Manipulation 1:1 Zoom/Pan")
+    add_bullet_p(doc, "1.", "เพื่อออกแบบและพัฒนาระบบเว็บแอปพลิเคชันบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์ (Rework Management System) แบบเรียลไทม์ พร้อมระบบตรวจสอบรหัสสินค้าสองทางอัตโนมัติ (Two-Way Autofill & Verification) และการรักษาความสมบูรณ์ของภาพถ่ายหลักฐาน (Evidence Integrity)")
+    add_bullet_p(doc, "2.", "เพื่อพัฒนาระบบวิเคราะห์และสกัดข้อมูลจากเอกสารแบบร่างข้อกำหนดผลิตภัณฑ์ (Customer Drawings) และใบกำหนดสูตรมาตรฐานการผลิต (Manufacturing Master Sheets) ในรูปแบบ PDF ด้วยเทคโนโลยี Gemini Multimodal OCR แบบแยกสกีมาโครงสร้างข้อมูล (Decoupled Document Schemas)")
+    add_bullet_p(doc, "3.", "เพื่อพัฒนาระบบถามตอบคู่มือเทคนิคและแนวทางการแก้ไขงานอัจฉริยะ (DocAI RAG) ด้วยการผสานฐานข้อมูลเวกเตอร์ Supabase pgvector ร่วมกับโมเดลการแปลงเวกเตอร์ความหมาย Jina AI Embeddings และระบบค้นหาแบบผสมผสาน (Hybrid Search)")
+    add_bullet_p(doc, "4.", "เพื่อพัฒนาระบบส่งออกรายงานสเปรดชีต Excel (.xlsx) ที่ฝังรูปภาพหลักฐานความละเอียดสูงลงในเซลล์ตารางโดยตรง พร้อมระบบสรุปสถิติแดชบอร์ดเพื่อการตัดสินใจเชิงคุณภาพ")
+    add_bullet_p(doc, "5.", "เพื่อพัฒนาระบบคู่มือนำเสนอและสภาพแวดล้อมจำลองเชิงโต้ตอบ (Interactive Presentation Deck & Sandbox) 20 สไลด์ พร้อมกลไกควบคุมมุมมองการนำเสนอแบบ Direct-Manipulation 1:1 Zoom and Pan Engine")
 
     add_heading_1(doc, "1.3 ขอบเขตของโครงงาน (Scope)")
-    add_heading_2(doc, "1.3.1 ขอบเขตด้านการทำงาน (6 โมดูลหลัก)")
-    add_bullet_p(doc, "Auth Module:", "ระบบยืนยันตัวตนระดับเซิร์ฟเวอร์ (HTTP-Only Cookie Session) และการแบ่งสิทธิ์ RBAC (Admin/QSMS และ Operator/WFG)", level=1)
-    add_bullet_p(doc, "Rework Module:", "การสร้างเคส Multi-Item, การเชื่อมโยงสินค้าเปื้อน-รั่ว (Cross-Item Link), กล่องแนบไฟล์ OR, การอัปเดตยอดกล่อง, และการเปลี่ยนสถานะอัตโนมัติ (Auto-Status)", level=1)
-    add_bullet_p(doc, "Drawing & Master Module:", "คลังแบบแปลนวิศวกรรม, ระบบ AI OCR สกัด 7-8 ฟิลด์, แผงตรวจทาน Split View 55/45, และระบบหมุน PDF 360 องศา", level=1)
+    add_heading_2(doc, "1.3.1 ขอบเขตด้านการทำงาน (5 โมดูลหลัก)")
+    add_bullet_p(doc, "Workspace Portal & Auth Shell:", "ระบบยืนยันตัวตนระดับเซิร์ฟเวอร์ (HTTP-Only Cookie Session), หน้าจอศูนย์รวมแอปพลิเคชัน (Portal Shell) และการแบ่งสิทธิ์ RBAC (Admin/QSMS และ Operator/WFG)", level=1)
+    add_bullet_p(doc, "Rework Module:", "ระบบบริหารจัดการงานแก้ไขสินค้าแบบครบวงจร ประกอบด้วยฟอร์มสร้างเคส Multi-Item, Two-Way Autofill, การเชื่อมโยงสินค้าเปื้อน-รั่ว (Cross-Item Link), กล่องแนบไฟล์ OR, ตารางภาพรวมพร้อมการจัดลำดับคิวงาน, แผงจัดการเคสพร้อม Item Accordion และ Dynamic Auto-Status, แดชบอร์ดสรุปสถิติและวิเคราะห์ Defect Pareto, และระบบบันทึกด่วนหน้าไลน์บนมือถือ (Mobile Fast-Track)", level=1)
+    add_bullet_p(doc, "Drawing & Master Storage Module:", "คลังเอกสารข้อกำหนดผลิตภัณฑ์ของลูกค้าและสูตรมาตรฐานการผลิต, ระบบ AI OCR สกัด 7-8 ฟิลด์, แผงตรวจทาน Split View 55/45, และระบบหมุน PDF 360 องศา", level=1)
     add_bullet_p(doc, "DocAI RAG Module:", "แชทบอท 'น้องผึ้งพา' สืบค้นคู่มือเทคนิคด้วย Hybrid Search, Markdown Streaming, และ Function Calling สถิติสด", level=1)
-    add_bullet_p(doc, "Roster Module:", "ระบบจัดตารางเวรกะพนักงานรายเดือน การสลับวันเสาร์ทำงาน และการสรุปสถิติวันลา", level=1)
-    add_bullet_p(doc, "Guide Module:", "คู่มือนำเสนอ 20 สไลด์ สไตล์ Apple Liquid Glass พร้อม Live Sandboxes และระบบควบคุม Zoom/Pan 1:1", level=1)
+    add_bullet_p(doc, "Guide & Presentation Module:", "คู่มือนำเสนอ 20 สไลด์ สไตล์ Apple Liquid Glass พร้อม Live Sandboxes และระบบควบคุม Zoom/Pan 1:1", level=1)
 
     add_heading_2(doc, "1.3.2 ขอบเขตด้านเทคโนโลยี")
     add_bullet_p(doc, "เทคโนโลยีฝั่งหน้าบ้าน (Frontend):", "Next.js 16.2 App Router, React 19, Tailwind CSS v4, Motion (Framer Motion), Radix UI", level=1)
@@ -615,7 +611,7 @@ def generate_pim_thesis_document():
     add_heading_1(doc, "1.5 ประโยชน์ที่คาดว่าจะได้รับ")
     add_bullet_p(doc, "1.", "ลดระยะเวลาในการกรอกและตรวจสอบข้อมูลเคส Rework ลงได้มากกว่า 60%")
     add_bullet_p(doc, "2.", "ขจัดข้อผิดพลาดของรหัสสินค้าและล็อตสินค้าในระบบให้เหลือ 0%")
-    add_bullet_p(doc, "3.", "ลดเวลาในการสืบค้นแบบแปลนและคู่มือเทคนิคโรงงานลงได้มากกว่า 90%")
+    add_bullet_p(doc, "3.", "ลดเวลาในการสืบค้นเอกสารข้อกำหนดและคู่มือเทคนิคโรงงานลงได้มากกว่า 90%")
     add_bullet_p(doc, "4.", "ยกระดับความโปร่งใสและตรวจสอบย้อนกลับได้ของกระบวนการควบคุมคุณภาพในองค์กร")
 
     # =============================================================
@@ -631,15 +627,15 @@ def generate_pim_thesis_document():
     add_heading_1(doc, "2.1 สถาปัตยกรรมเว็บแอปพลิเคชันยุคใหม่ (Modern Web Architecture)")
     add_body_p(doc, "ในการพัฒนาระบบสารสนเทศระดับองค์กรยุคปัจจุบัน สถาปัตยกรรม Next.js App Router (เวอร์ชัน 16) ได้รับการยอมรับอย่างกว้างขวางเนื่องจากสามารถรวมขีดความสามารถของ Server-Side Rendering (SSR), Server Components และ Client Components เข้าด้วยกันได้อย่างมีประสิทธิภาพ")
 
-    add_body_p(doc, "ระบบ QSMS ประยุกต์ใช้สถาปัตยกรรม Hybrid Next.js + React 19 ควบคู่กับระเบียบวิธี Feature-Sliced Design (FSD) ซึ่งเป็นการแบ่งสัดส่วนโค้ดออกเป็นโมดูลอิสระ (Module Slices) ได้แก่ auth, rework, drawings, rag, roster, guide และ platform ข้อดีของสถาปัตยกรรมนี้คือการลดความผูกมัดของโค้ด (Loose Coupling) ป้องกันปัญหาการพึ่งพากันแบบวงกลม (Circular Dependencies) และเอื้อต่อการเขียนชุดทดสอบอัตโนมัติ")
+    add_body_p(doc, "ระบบ QSMS ประยุกต์ใช้สถาปัตยกรรม Hybrid Next.js + React 19 ควบคู่กับระเบียบวิธี Feature-Sliced Design (FSD) ซึ่งเป็นการแบ่งสัดส่วนโค้ดออกเป็นโมดูลอิสระ (Module Slices) ได้แก่ auth, rework, drawings, rag, guide และ platform ข้อดีของสถาปัตยกรรมนี้คือการลดความผูกมัดของโค้ด (Loose Coupling) ป้องกันปัญหาการพึ่งพากันแบบวงกลม (Circular Dependencies) และเอื้อต่อการเขียนชุดทดสอบอัตโนมัติ")
 
     add_heading_1(doc, "2.2 ระบบความปลอดภัยและการจัดการสิทธิ์การใช้งาน (Security & RBAC)")
     add_body_p(doc, "ระบบรักษาความปลอดภัยของ QSMS ยึดหลัก Defense-in-Depth และมาตรฐาน OWASP โดยมีองค์ประกอบสำคัญ 2 ส่วน:")
     add_bullet_p(doc, "Server-State Authentication via HTTP-Only Cookies:", "ระบบยกเลิกการเก็บ JWT Token ใน localStorage บนเบราว์เซอร์ เพื่อป้องกันการถูกโจมตีด้วยช่องโหว่ Cross-Site Scripting (XSS) โดยเปลี่ยนมาใช้คุกกี้ที่ปลอดภัย (HTTP-Only, Secure, SameSite=Lax) จัดการผ่าน Next.js Server Boundary (`src/lib/serverAuth.ts`)", level=1)
-    add_bullet_p(doc, "Role-Based Access Control (RBAC):", "ระบบแบ่งสิทธิ์ผู้ใช้งานออกเป็น 2 ระดับหลัก ได้แก่ (1) Admin/QSMS ซึ่งมีสิทธิ์เต็มในการเข้าถึงแดชบอร์ด แก้ไขข้อมูลเคส และจัดตารางเวร และ (2) Operator/WFG ซึ่งจำกัดสิทธิ์เฉพาะการบันทึกเคสใหม่และการอัปเดตยอดกล่องที่ทำเสร็จ โดยซ่อนฟังก์ชันด้านต้นทุนและแดชบอร์ด", level=1)
+    add_bullet_p(doc, "Role-Based Access Control (RBAC):", "ระบบแบ่งสิทธิ์ผู้ใช้งานออกเป็น 2 ระดับหลัก ได้แก่ (1) Admin/QSMS ซึ่งมีสิทธิ์เต็มในการเข้าถึงแดชบอร์ดและโหมดแก้ไขข้อมูลเคส และ (2) Operator/WFG ซึ่งจำกัดสิทธิ์เฉพาะการบันทึกเคสใหม่และการอัปเดตยอดกล่องที่ทำเสร็จ โดยซ่อนฟังก์ชันด้านต้นทุนและแดชบอร์ด", level=1)
 
     add_heading_1(doc, "2.3 เทคโนโลยีปัญญาประดิษฐ์ประมวลผลเอกสารหลายรูปแบบ (Multimodal AI & OCR)")
-    add_body_p(doc, "การสกัดข้อมูลจากแบบแปลนวิศวกรรม (Engineering Drawings) และใบมาสเตอร์ ซึ่งมักเป็นไฟล์ PDF ที่ผ่านการสแกน มีความท้าทายเนื่องจากโครงสร้างตารางและตัวอักษรมีความซับซ้อน ระบบ QSMS เลือกใช้โมเดล Google Gemini Multimodal Vision API (`gemini-3.1-flash`) ร่วมกับเทคนิค Structured Outputs (JSON Schema Enforcement) ซึ่งบังคับให้โมเดลส่งผลลัพธ์กลับมาเป็นโครงสร้างข้อมูล JSON ตามสเปกที่กำหนดโดยตรง")
+    add_body_p(doc, "การสกัดข้อมูลจากแบบร่างข้อกำหนดผลิตภัณฑ์ของลูกค้า (Customer Drawings) และใบกำหนดสูตรมาตรฐานการผลิต (Master Sheets) ซึ่งเป็นไฟล์ PDF สแกน มีความท้าทายเนื่องจากโครงสร้างตารางและตัวอักษรมีความซับซ้อน ระบบ QSMS เลือกใช้โมเดล Google Gemini Multimodal Vision API (`gemini-3.1-flash`) ร่วมกับเทคนิค Structured Outputs (JSON Schema Enforcement) ซึ่งบังคับให้โมเดลส่งผลลัพธ์กลับมาเป็นโครงสร้างข้อมูล JSON ตามสเปกที่กำหนดโดยตรง")
 
     add_body_p(doc, "นอกจากนี้ เพื่อป้องกันปัญหาความไม่เสถียรในช่วงเวลาที่มีผู้ใช้งานหนาแน่น (503 Service Unavailable Spikes) ระบบได้พัฒนาสถาปัตยกรรม Fallback Pipeline อัตโนมัติ โดยหากโมเดลหลัก `gemini-3.1-flash` ไม่สามารถตอบสนองได้ ระบบจะสลับไปยัง `gemini-3.1-flash-lite` และ `gemini-2.0-flash` ตามลำดับ")
 
@@ -681,26 +677,25 @@ def generate_pim_thesis_document():
 
     add_table_caption(doc, "ตารางที่ 3.1 ตารางแผนการดำเนินงานและไทม์ไลน์การพัฒนา 4 เดือน (Gantt Chart)")
 
-    table_gantt = doc.add_table(rows=10, cols=6)
+    table_gantt = doc.add_table(rows=9, cols=6)
     table_gantt_widths = [Inches(0.6), Inches(2.6), Inches(0.9), Inches(0.9), Inches(0.9), Inches(0.9)]
     table_gantt_headers = ["ลำดับ", "กิจกรรมการดำเนินงาน (Activities)", "พ.ย. 67", "ธ.ค. 67", "ม.ค. 68", "ก.พ. 68"]
     table_gantt_data = [
         ["1", "ศึกษาปัญหา วิเคราะห์ Workflow Rework และรวบรวม Requirement", "■■■■", "", "", ""],
         ["2", "ออกแบบสถาปัตยกรรม Next.js 16 App Router และ Database Schemas", "■■", "■■", "", ""],
         ["3", "พัฒนา Core Rework Module, Two-Way Autofill & Cloudinary Upload", "■■", "■■■■", "", ""],
-        ["4", "พัฒนาระบบ AI Multimodal OCR วิเคราะห์แบบแปลนและใบมาสเตอร์", "", "■■■■", "■■", ""],
+        ["4", "พัฒนาระบบ AI Multimodal OCR วิเคราะห์แบบร่างและใบกำหนดสูตรผลิต", "", "■■■■", "■■", ""],
         ["5", "พัฒนาระบบ DocAI RAG (pgvector + Jina Embeddings) & Function Calling", "", "", "■■■■", ""],
-        ["6", "พัฒนาระบบจัดตารางเวรพนักงาน ShiftHub Roster & Calendar", "", "", "■■■■", ""],
-        ["7", "พัฒนาระบบรายงาน Excel ฝังรูปภาพในเซลล์ & Presentation Deck", "", "", "", "■■■■"],
-        ["8", "ทดสอบระบบอัตโนมัติ (Vitest 131 Tests) และประเมินผลระบบหน้างาน", "", "", "■■", "■■■■"],
-        ["9", "จัดทำเอกสารคู่มือการใช้งานและจัดพิมพ์เล่มปริญญานิพนธ์ฉบับสมบูรณ์", "", "", "", "■■■■"]
+        ["6", "พัฒนาระบบส่งออกรายงาน Excel ฝังรูปภาพในเซลล์ & Presentation Deck", "", "", "", "■■■■"],
+        ["7", "ทดสอบระบบอัตโนมัติ (Vitest 131 Tests) และประเมินผลระบบหน้างาน", "", "", "■■", "■■■■"],
+        ["8", "จัดทำเอกสารคู่มือการใช้งานและจัดพิมพ์เล่มปริญญานิพนธ์ฉบับสมบูรณ์", "", "", "", "■■■■"]
     ]
     aligns_gantt = [WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGRAPH.CENTER]
     style_academic_table(table_gantt, table_gantt_widths, table_gantt_headers, table_gantt_data, align_cols=aligns_gantt)
 
     add_heading_1(doc, "3.2 สถาปัตยกรรมระบบโดยรวม (System Architecture & Data Flow)")
     add_body_p(doc, "สถาปัตยกรรมของ QSMS ถูกออกแบบตามหลักการแยกหน้าที่ (Separation of Concerns) แบ่งออกเป็น 3 เลเยอร์หลักตามมาตรฐานระบบสารสนเทศระดับองค์กร ดังแสดงในภาพที่ 3.1:")
-    add_bullet_p(doc, "1. Client Presentation Layer (React 19 SPA):", "โครงสร้างโฟลเดอร์แบบ Feature-Sliced Design (FSD) ประกอบด้วย 6 โมดูลอิสระ (rework, drawings, rag, roster, guide, platform) ทำหน้าที่บริหารจัดการ State ภายในหน้าจอและบีบอัดภาพก่อนส่งขึ้น CDN", level=1)
+    add_bullet_p(doc, "1. Client Presentation Layer (React 19 SPA):", "โครงสร้างโฟลเดอร์แบบ Feature-Sliced Design (FSD) ประกอบด้วย 5 โมดูลอิสระ (rework, drawings, rag, guide, platform) ทำหน้าที่บริหารจัดการ State ภายในหน้าจอและบีบอัดภาพก่อนส่งขึ้น CDN", level=1)
     add_bullet_p(doc, "2. Next.js 16 App Router Boundary & Server Services:", "ทำหน้าที่เป็นตัวกลางในการตรวจสอบสิทธิ์ (JWT Verification via HTTP-Only Secure Cookies), ซ่อน API Keys ความลับ, จัดการ Atomic Transactions, และทำหน้าที่เป็น Proxy ไปยัง Supabase, Cloudinary และ Google Gemini API", level=1)
     add_bullet_p(doc, "3. Persistence, Vector Store & Multimodal Intelligence Layer:", "ประกอบด้วย Supabase PostgreSQL สำหรับเก็บข้อมูลตารางความสัมพันธ์, Supabase pgvector สำหรับเก็บเวกเตอร์คู่มือ 768 มิติ, Cloudinary สำหรับเก็บไฟล์รูปภาพหลักฐาน และ Gemini LLM สำหรับการประมวลผล OCR และการตอบคำถาม", level=1)
 
@@ -724,7 +719,7 @@ def generate_pim_thesis_document():
         ["rework_cases", "id (UUID)", "created_by -> users.id", "จัดเก็บข้อมูลหัวใบงาน Rework (Case ID, แหล่งที่มา SFC/Customer, สถานะ, กำหนดเสร็จ)"],
         ["rework_items", "id (UUID)", "case_id -> rework_cases.id", "จัดเก็บรายการสินค้าชำรุด (Item Code, Item Number, จำนวน, ล็อต, เลขกล่อง, รูปภาพ, Defect Type)"],
         ["rework_master_items", "id (UUID)", "-", "จัดเก็บฐานข้อมูลมาสเตอร์สินค้าส่วนกลาง (Part Name, Oil Group, Pallet Type, Boxes/Pallet)"],
-        ["drawings", "id (UUID)", "-", "จัดเก็บเอกสารแบบแปลนและใบมาสเตอร์ พร้อม Metadata ที่สกัดได้จาก Gemini Vision OCR"],
+        ["drawings", "id (UUID)", "-", "จัดเก็บเอกสารแบบร่างข้อกำหนดและใบมาสเตอร์สูตรผลิต พร้อม Metadata ที่สกัดได้จาก Gemini Vision OCR"],
         ["rag_documents", "id (UUID)", "-", "จัดเก็บหัวข้อเอกสารคู่มือโรงงาน ประเภทเอกสาร และสถานะการประมวลผลเวกเตอร์"],
         ["rag_document_chunks", "id (UUID)", "document_id -> rag_documents.id", "จัดเก็บท่อนเนื้อหาคู่มือ Markdown พร้อมเวกเตอร์ Embeddings 768 มิติ (vector(768))"]
     ]
@@ -755,7 +750,7 @@ def generate_pim_thesis_document():
     add_heading_chapter(doc, "บทที่ 4", "ผลการดำเนินงานและการทดสอบระบบ (Results & Testing)")
 
     add_heading_1(doc, "4.1 ผลการพัฒนาระบบส่วนติดต่อผู้ใช้งาน (UI Implementation)")
-    add_body_p(doc, "ระบบ QSMS ได้รับการพัฒนาจนเสร็จสมบูรณ์และสามารถทำงานได้ครบทั้ง 6 โมดูลหลัก โดยมีผลการทำงานและภาพหน้าจอจริงของระบบดังนี้:")
+    add_body_p(doc, "ระบบ QSMS ได้รับการพัฒนาจนเสร็จสมบูรณ์และสามารถทำงานได้ครบทั้ง 5 โมดูลหลัก โดยมีผลการทำงานและภาพหน้าจอจริงของระบบดังนี้:")
     
     # 4.1 Workspace Portal Shell
     add_bullet_p(doc, "1. Workspace Portal Shell:", "หน้าจอหลักรวมศูนย์แอปพลิเคชันที่มาพร้อม Live Preview Analytics สำหรับผู้ใช้ทั่วไป และระบบสลับโมดูลได้อย่างราบรื่น ดังแสดงในภาพที่ 4.1", level=1)
@@ -763,14 +758,26 @@ def generate_pim_thesis_document():
     add_figure_caption(doc, "ภาพที่ 4.1 หน้าจอศูนย์รวมแอปพลิเคชันหลัก (Workspace Portal Shell)", "ผู้จัดทำ, 2568")
 
     # 4.2 Rework Module
-    add_bullet_p(doc, "2. Rework Module:", "ฟอร์มสร้างเคสรองรับการสืบค้นรหัสสินค้าสองทาง (Two-Way Autofill), การเชื่อมโยงสินค้าเปื้อน-รั่ว (Cross-Item Link), กล่องแนบไฟล์ OR, และหน้าต่างอัปเดตยอดกล่อง ดังแสดงในภาพที่ 4.2", level=1)
+    add_bullet_p(doc, "2. Rework Module (ระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์):", "โมดูลหลักสำหรับควบคุมและติดตามวงจรชีวิตของงาน Rework ทั้งหมดในสายการผลิตและงานส่งคืนจากลูกค้า ประกอบด้วย 5 ฟังก์ชันย่อยสำคัญ ดังแสดงในภาพที่ 4.2:", level=1)
     add_embedded_image(doc, ui_rework_path, width_in=5.8)
-    add_figure_caption(doc, "ภาพที่ 4.2 หน้าต่างฟอร์มบันทึกเคส Rework พร้อม Two-Way Autofill", "ผู้จัดทำ, 2568")
+    add_figure_caption(doc, "ภาพที่ 4.2 หน้าต่างฟอร์มบันทึกเคส Rework พร้อม Two-Way Autofill และการตรวจสอบความถูกต้อง", "ผู้จัดทำ, 2568")
+
+    add_body_p(doc, "จากภาพที่ 4.2 โมดูล Rework ได้รับการออกแบบให้รองรับกระบวนการแก้ไขผลิตภัณฑ์อย่างครบวงจร โดยครอบคลุม 5 ฟังก์ชันย่อยเชิงปฏิบัติการ ได้แก่:")
+    
+    add_bullet_p(doc, "ก. ฟอร์มบันทึกเคสใหม่และการตรวจสอบสินค้าสองทาง (Add Case & Two-Way Autofill):", "ระบบรองรับการออกรหัสเคสอัตโนมัติแบบไฮบริด (เช่น RW012-2026 สำหรับ SFC และ RT012-2026 สำหรับ Customer) ซึ่งมีคุณสมบัติไม่สามารถซ้ำซ้อนหรือแก้ไขได้ (Immutable) เมื่อผู้ใช้กรอกรหัส Item Number (สูตรการผลิต) หรือ Item Code (บาร์โค้ด) ระบบจะค้นหาและดึงข้อมูลจากฐานข้อมูล Item Master มาเติมให้อัตโนมัติ (Debounce 600ms) พร้อมแสดงสถานะการตรวจสอบผ่าน Verification Lifecycle (Idle ➔ Checking ➔ Verified / New / Conflict) นอกจากนี้ยังมีระบบเชื่อมโยงสินค้าเปื้อนกับสินค้าที่รั่วในเคสเดียวกัน (Cross-Item Link บันทึกลง linkedSourceId), ช่องแนบเอกสารอ้างอิงของลูกค้า OR สูงสุด 2 ไฟล์ (.xlsx, .pdf, .png) และการรักษาความสมบูรณ์ของหลักฐาน (Evidence Integrity) บังคับแนบภาพถ่ายชำรุดอย่างน้อย 1 ภาพ บีบอัดภาพฝั่งไคลเอนต์ (300KB) และบันทึกแบบธุรกรรมสมบูรณ์ (Atomic Transaction)", level=2)
+
+    add_bullet_p(doc, "ข. หน้าจอภาพรวมและการจัดลำดับคิวงาน (Overall View & Priority Queue):", "ตารางแสดงรายการเคสทั้งหมดแบบเรียลไทม์ พร้อมระบบจัดเรียงลำดับความสำคัญ โดยดันเคสสถานะ Pending (รอดำเนินการ) ขึ้นบนสุดเสมอ เพื่อป้องกันไม่ให้งานตกค้างถูกละเลย จากนั้นจึงตามด้วย In-Progress และ Completed พร้อมระบบตัวกรองขั้นสูง (Advanced Filters) ตามแหล่งที่มา สาเหตุ ผู้รับผิดชอบ และป้ายเตือน Badge สีแดง 'ขาดไฟล์ OR' ในกรณีที่เคสของลูกค้า OR ยังไม่ได้แนบไฟล์เอกสาร", level=2)
+
+    add_bullet_p(doc, "ค. แผงจัดการและอัปเดตงาน Rework (Case Update View & Item Accordion):", "หน้าต่างจัดการเคสรองรับการคำนวณสถานะอัตโนมัติ (Dynamic Auto-Status Lifecycle) จากจำนวนกล่องที่ผลิตเสร็จจริงเทียบกับยอดรวมทั้งหมด (Pending ➔ In-Progress ➔ Completed) โดยไม่ต้องเลือกสถานะเอง มีช่องบันทึกอุปสรรคหน้างาน (ขาดกล่อง, ขาดแกลลอน, ขาดน้ำมัน) เพื่อรายงานหัวหน้างานทันที พร้อมระบบพับเก็บรายการสินค้าเป็นค่าเริ่มต้น (Default Folded Item Accordion) และปุ่มลัดสลับ 'ขยาย/พับทั้งหมด' ร่วมกับแถบ Header 2 ชั้นแบบ Responsive ป้องกันปุ่มคำสั่งซ้อนทับกันบนอุปกรณ์พกพา รวมถึงโหมดแก้ไขข้อมูลระดับผู้ดูแล (Admin Edit Mode) พร้อมระบบแจ้งเตือนยืนยันป้องกันข้อมูลสูญหาย (Unsaved Changes Warning Guard)", level=2)
+
+    add_bullet_p(doc, "ง. แดชบอร์ดสรุปสถิติเชิงปฏิบัติการ (Rework Operations & Defect Dashboard):", "ระบบประมวลผลและแสดงผลตัวชี้วัดประสิทธิภาพหลัก (KPI Summary Cards) ได้แก่ ยอดเคสรวม, จำนวนกล่องทั้งหมด, อัตราความสำเร็จ (Completion Rate %), และระยะเวลาเฉลี่ยในการปิดเคส (Lead Time) ควบคู่กับแผนภูมิวิเคราะห์สาเหตุชำรุดยอดนิยม (Defect Pareto Analysis) จำแนกตามไลน์การผลิตและกลุ่มผลิตภัณฑ์ ช่วยให้วิศวกรควบคุมคุณภาพสามารถระบุปัญหาคอขวดในกระบวนการผลิตได้อย่างแม่นยำ", level=2)
+
+    add_bullet_p(doc, "จ. ระบบบันทึกด่วนหน้าไลน์ผลิตบนอุปกรณ์พกพา (Mobile Fast-Track UI & Local Draft Queue):", "ส่วนต่อประสานแบบ Mobile-First Card Layout ที่ได้รับการปรับแต่งให้เหมาะกับหน้าจอสมาร์ตโฟน (เช่น iPhone 13 ความกว้าง 390px) ขยายชื่อสินค้าเต็มความกว้าง จัดกลุ่มยอดผลิตและหลอดความคืบหน้าเข้ามุมล่างอย่างเป็นระเบียบ พร้อมระบบคิวข้อมูลสำรองในเครื่อง (Local Storage Draft Queue) สำหรับบันทึกข้อมูลร่างเคสต่อเนื่องแม้ในจุดที่สัญญาณอินเทอร์เน็ตหน้าไลน์ผลิตไม่เสถียร และปุ่มผู้ช่วยอัจฉริยะลอยตัว DocAI FAB Icon ที่มุมขวาล่างที่ไม่บดบังปุ่มเปลี่ยนหน้า", level=2)
 
     # 4.3 Drawing & Master Storage
-    add_bullet_p(doc, "3. Drawing & Master Storage:", "คลังจัดเก็บแบบแปลนวิศวกรรมพร้อม AI OCR อัตโนมัติ, การจัดแสดงแบบฟอร์มแยกประเภท Decoupled Forms, และแผงตรวจทานเอกสารแบบ Split View 55/45 พร้อมเครื่องมือหมุน PDF ดังแสดงในภาพที่ 4.3", level=1)
+    add_bullet_p(doc, "3. Drawing & Master Storage (คลังข้อกำหนดผลิตภัณฑ์และสูตรมาตรฐานการผลิต):", "คลังจัดเก็บเอกสารแบบร่างผลิตภัณฑ์ของลูกค้าและใบกำหนดสูตรมาตรฐานการผลิตพร้อม AI OCR อัตโนมัติ, การจัดแสดงแบบฟอร์มแยกประเภท Decoupled Forms, และแผงตรวจทานเอกสารแบบ Split View 55/45 พร้อมเครื่องมือหมุน PDF ดังแสดงในภาพที่ 4.3", level=1)
     add_embedded_image(doc, ui_drawings_path, width_in=5.8)
-    add_figure_caption(doc, "ภาพที่ 4.3 แผงตรวจทานแบบแปลนวิศวกรรม Split View 55/45 พร้อมเครื่องมือหมุน PDF", "ผู้จัดทำ, 2568")
+    add_figure_caption(doc, "ภาพที่ 4.3 แผงตรวจทานเอกสารข้อกำหนดผลิตภัณฑ์และสูตรมาตรฐานการผลิต Split View 55/45 พร้อมเครื่องมือหมุน PDF", "ผู้จัดทำ, 2568")
 
     # 4.4 DocAI RAG Chatbot
     add_bullet_p(doc, "4. DocAI RAG Chatbot ('น้องผึ้งพา'):", "แผงแชทถามตอบข้อสงสัยคู่มือเทคนิคภาษาไทย รองรับการแสดงผล Markdown, รูปภาพประกอบคู่มือ, Suggestion Chips, และการเรียกดูสถิติสดย้อนหลัง ดังแสดงในภาพที่ 4.4", level=1)
@@ -782,15 +789,10 @@ def generate_pim_thesis_document():
     add_embedded_image(doc, ui_excel_path, width_in=5.8)
     add_figure_caption(doc, "ภาพที่ 4.5 หน้าต่างจำลองไฟล์ส่งออก Excel Spreadsheet (.xlsx) พร้อมฝังรูปภาพในเซลล์", "ผู้จัดทำ, 2568")
 
-    # 4.6 ShiftHub Roster
-    add_bullet_p(doc, "6. ShiftHub Roster Module:", "ปฏิทินจัดตารางเวรและกะการทำงานพนักงานรายเดือน พร้อมสรุปสถิติจำนวนวันทำงานและวันลารายบุคคล ดังแสดงในภาพที่ 4.6", level=1)
-    add_embedded_image(doc, ui_roster_path, width_in=5.8)
-    add_figure_caption(doc, "ภาพที่ 4.6 ปฏิทินและระบบจัดตารางเวรพนักงาน ShiftHub Roster", "ผู้จัดทำ, 2568")
-
-    # 4.7 Presentation Deck
-    add_bullet_p(doc, "7. Interactive Presentation Deck:", "สไลด์นำเสนอ 20 สไลด์ สไตล์ Apple Liquid Glass พร้อม Live Interactive Sandbox สำหรับการทดลองใช้งานเสมือนจริง และระบบควบคุมมุมมอง Direct-Manipulation Zoom/Pan 1:1 ดังแสดงในภาพที่ 4.7", level=1)
+    # 4.6 Presentation Deck
+    add_bullet_p(doc, "6. Interactive Presentation Deck:", "สไลด์นำเสนอ 20 สไลด์ สไตล์ Apple Liquid Glass พร้อม Live Interactive Sandbox สำหรับการทดลองใช้งานเสมือนจริง และระบบควบคุมมุมมอง Direct-Manipulation Zoom/Pan 1:1 ดังแสดงในภาพที่ 4.6", level=1)
     add_embedded_image(doc, ui_guide_path, width_in=5.8)
-    add_figure_caption(doc, "ภาพที่ 4.7 สไลด์คู่มือนำเสนอระบบ (Presentation Deck) และระบบ Direct-Manipulation Zoom/Pan", "ผู้จัดทำ, 2568")
+    add_figure_caption(doc, "ภาพที่ 4.6 สไลด์คู่มือนำเสนอระบบ (Presentation Deck) และระบบ Direct-Manipulation Zoom/Pan", "ผู้จัดทำ, 2568")
 
     add_heading_1(doc, "4.2 ผลการทดสอบเชิงฟังก์ชันและการตรวจสอบอัตโนมัติ (Automated Testing)")
     add_body_p(doc, "เพื่อรับประกันความเสถียรและความถูกต้องตามหลักวิศวกรรมซอฟต์แวร์ ระบบได้ผ่านการทดสอบอัตโนมัติอย่างเข้มงวดผ่านชุดทดสอบ Vitest และ TypeScript Compiler ดังแสดงในตารางที่ 4.1:")
@@ -822,7 +824,7 @@ def generate_pim_thesis_document():
     table_comp_data = [
         ["เวลาเฉลี่ยในการสร้างและบันทึกเคส", "12.5 นาที/เคส", "4.2 นาที/เคส", "ลดลง 66.4%"],
         ["อัตราความผิดพลาดของรหัสสินค้า", "8.3% ของเคสทั้งหมด", "0.0%", "ขจัดข้อผิดพลาดได้ 100%"],
-        ["เวลาเฉลี่ยในการสืบค้นแบบแปลน/คู่มือ", "18.0 นาที/ครั้ง", "0.75 นาที (45 วินาที)", "ลดลง 95.8%"],
+        ["เวลาเฉลี่ยในการสืบค้นเอกสารข้อกำหนด/คู่มือ", "18.0 นาที/ครั้ง", "0.75 นาที (45 วินาที)", "ลดลง 95.8%"],
         ["ความครบถ้วนของภาพถ่ายหลักฐาน", "35.0%", "100.0%", "สมบูรณ์ครบ 100% (Atomic)"]
     ]
     style_academic_table(table_comp, table_comp_widths, table_comp_headers, table_comp_data)
@@ -838,7 +840,7 @@ def generate_pim_thesis_document():
     add_heading_chapter(doc, "บทที่ 5", "สรุปผล อภิปรายผล และข้อเสนอแนะ (Conclusion)")
 
     add_heading_1(doc, "5.1 สรุปผลการดำเนินงาน")
-    add_body_p(doc, "โครงงานการพัฒนาระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารวิศวกรรมอัจฉริยะ (QSMS) บรรลุวัตถุประสงค์ที่ตั้งไว้ครบถ้วนทุกประการ ระบบสามารถผสานการทำงานระหว่างการจัดการงาน Rework, การจัดเก็บและสกัดข้อมูลแบบแปลนวิศวกรรม, การสืบค้นคู่มือเทคนิคด้วยปัญญาประดิษฐ์ RAG, และการบริหารจัดการตารางเวรพนักงานเข้าสู่ศูนย์กลางเดียวกันได้อย่างไร้รอยต่อ")
+    add_body_p(doc, "โครงงานการพัฒนาระบบบริหารจัดการกระบวนการแก้ไขผลิตภัณฑ์และคลังเอกสารข้อกำหนดมาตรฐานการผลิตอัจฉริยะ (QSMS) บรรลุวัตถุประสงค์ที่ตั้งไว้ครบถ้วนทุกประการ ระบบสามารถผสานการทำงานระหว่างการจัดการงาน Rework, การจัดเก็บและสกัดข้อมูลเอกสารข้อกำหนดผลิตภัณฑ์และสูตรการผลิต, และการสืบค้นคู่มือเทคนิคด้วยปัญญาประดิษฐ์ RAG เข้าสู่ศูนย์กลางเดียวกันได้อย่างไร้รอยต่อ")
 
     add_heading_1(doc, "5.2 การอภิปรายผลเชิงวิศวกรรม (Engineering Discussion)")
     add_bullet_p(doc, "ด้านสถาปัตยกรรมซอฟต์แวร์:", "การประยุกต์ใช้ Feature-Sliced Design (FSD) ร่วมกับ Next.js App Router และ Supabase ทำให้ระบบมีโครงสร้างที่ชัดเจน ปลอดภัยสูงด้วย Server-State Auth Cookie และรองรับการขยายตัวของระบบในอนาคตได้อย่างมีประสิทธิภาพ", level=1)
@@ -848,6 +850,7 @@ def generate_pim_thesis_document():
     add_heading_1(doc, "5.3 บทเรียนการพัฒนาและการแก้ปัญหาเชิงเทคนิค (Lessons Learned)")
     add_bullet_p(doc, "การควบคุมวงจรชีวิตการจำลองสไลด์ (BUG-026):", "การแก้ไขปัญหา Simulation รันข้ามสไลด์โดยไม่ตั้งใจ ด้วยการรีเซ็ตค่าทริกเกอร์และเพิ่ม prevSimTriggerRef mounting guard ช่วยให้การนำเสนอมีความราบรื่นและควบคุมได้อย่างสมบูรณ์", level=1)
     add_bullet_p(doc, "การประสานพิกัดระบบ Zoom & Pan (BUG-027):", "การเปลี่ยนมาใช้ Screen-Space Direct Translation และปลดล็อก CSS Transitions ระหว่างการลากเมาส์ ช่วยแก้ปัญหาอาการหน่วงและหลุดขอบหน้าจอได้อย่างถาวร", level=1)
+    add_bullet_p(doc, "การจัดเลย์เอาต์การ์ดและปุ่มลอยบนอุปกรณ์พกพา (BUG-028 & BUG-029):", "การปรับเปลี่ยนตาราง 3 คอลัมน์เป็น Mobile-First Card Layout บนหน้าจอ 390px (iPhone 13) ร่วมกับแถบ Header แบบ 2 ชั้น (Responsive 2-Tier Header) และการย้ายปุ่ม DocAI เป็น Floating Action Button (FAB) ช่วยขจัดปัญหาตัวหนังสือถูกบีบตัดคำและปุ่มคำสั่งซ้อนทับกันได้อย่างสมบูรณ์", level=1)
     add_bullet_p(doc, "การแยกสกีมาเอกสาร (Decoupled Schemas):", "การแยกแบบฟอร์ม Drawing และ Master ออกจากกันอย่างเด็ดขาด ช่วยขจัดปัญหาฟิลด์ N/A ที่สร้างความสับสนให้แก่ผู้ใช้งาน", level=1)
 
     add_heading_1(doc, "5.4 ข้อเสนอแนะสำหรับการพัฒนาต่อยอด (Future Recommendations)")
@@ -920,13 +923,21 @@ def generate_pim_thesis_document():
     add_run(p_vita_body, "ชื่อ-นามสกุล (ภาษาไทย):  นายสพลฎณัย ชัยพงษ์\nชื่อ-นามสกุล (ภาษาอังกฤษ):  Mr. Saphondanai Chaiyaphong\nรหัสนักศึกษา:  6752500398\nระดับการศึกษา:  ปริญญาตรี หลักสูตรวิศวกรรมศาสตรบัณฑิต\nสาขาวิชา:  วิศวกรรมหุ่นยนต์อัตโนมัติ (Automated Robotics Engineering)\nคณะ:  วิศวกรรมศาสตร์และเทคโนโลยี\nสถาบัน:  สถาบันการจัดการปัญญาภิวัฒน์ (Panyapiwat Institute of Management - PIM)\nปีการศึกษา:  2567 (2024)", size=16, bold=False)
 
     output_path = r"c:\Workplace\Mytask\Projects\QSMS_project\QSMS_Project_Thesis_Report.docx"
+    updated_path = r"c:\Workplace\Mytask\Projects\QSMS_project\QSMS_Project_Thesis_Report_Updated.docx"
+    
+    # Save to primary
     try:
         doc.save(output_path)
         print(f"PIM Thesis docx successfully created at: {output_path}")
     except PermissionError:
-        fallback_path = r"c:\Workplace\Mytask\Projects\QSMS_project\QSMS_Project_Thesis_Report_Updated.docx"
-        doc.save(fallback_path)
-        print(f"File was locked by Word. Successfully saved updated version to: {fallback_path}")
+        print(f"Primary file was locked by Word. Skipped: {output_path}")
+
+    # Save to updated
+    try:
+        doc.save(updated_path)
+        print(f"PIM Thesis docx successfully saved to: {updated_path}")
+    except PermissionError:
+        print(f"Updated file was locked by Word. Skipped: {updated_path}")
 
 if __name__ == "__main__":
     generate_pim_thesis_document()

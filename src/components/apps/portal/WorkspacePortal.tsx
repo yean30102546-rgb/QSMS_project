@@ -11,7 +11,8 @@ import {
   CalendarDays,
   Activity,
   FileText,
-  CheckCircle2
+  CheckCircle2,
+  MessageSquarePlus
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -25,6 +26,7 @@ interface WorkspacePortalProps {
   onLogout: () => void;
   onLogin?: () => void;
   onOpenRag?: () => void;
+  onOpenFeedback?: () => void;
 }
 
 export function WorkspacePortal({
@@ -34,6 +36,7 @@ export function WorkspacePortal({
   onLogout,
   onLogin,
   onOpenRag,
+  onOpenFeedback,
 }: WorkspacePortalProps) {
   const isGuest = !user;
   const greetingName = user?.name || 'ผู้เยี่ยมชม';
@@ -142,27 +145,48 @@ export function WorkspacePortal({
             </div>
           </div>
 
-          {isGuest ? (
+          <div className="flex items-center gap-2.5">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="button"
-              onClick={onLogin}
-              className="rounded-xl bg-[#1d1d1f] px-5 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-black"
+              onClick={() => {
+                if (onOpenFeedback) {
+                  onOpenFeedback();
+                } else if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('open-feedback-modal'));
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50 transition-colors"
+              title="ส่งความคิดเห็นหรือรายงานปัญหาการใช้งานระบบ"
             >
-              เข้าสู่ระบบ
+              <MessageSquarePlus size={16} className="text-blue-600" />
+              <span className="hidden sm:inline">แบบสอบถาม & ข้อเสนอแนะ</span>
+              <span className="sm:hidden">ฟีดแบ็ค</span>
             </motion.button>
-          ) : (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={onLogout}
-              className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-sm font-semibold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
-            >
-              ออกจากระบบ
-            </motion.button>
-          )}
+
+            {isGuest ? (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={onLogin}
+                className="rounded-xl bg-[#1d1d1f] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-md transition-colors hover:bg-black"
+              >
+                เข้าสู่ระบบ
+              </motion.button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={onLogout}
+                className="rounded-xl border border-black/5 bg-white/60 px-4 py-2 text-xs sm:text-sm font-semibold text-[#1d1d1f] shadow-sm backdrop-blur-md transition-colors hover:bg-white"
+              >
+                ออกจากระบบ
+              </motion.button>
+            )}
+          </div>
         </header>
 
         <section className="mb-12 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">

@@ -104,7 +104,7 @@ export function Login({
               <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#1d1d1f]/70">Central Workspace</div>
             </div>
             <h1 className="max-w-lg text-4xl font-semibold leading-[1.04] tracking-[-0.03em] md:text-5xl text-[#1d1d1f]">
-              One login for Rework and upcoming Roster operations.
+              One login for all QSMS enterprise operations.
             </h1>
             <p className="mt-5 max-w-md text-[16px] leading-7 text-[#515154]">
               เข้าสู่ระบบครั้งเดียว แล้วเลือกใช้งานแต่ละ webapp ผ่าน Central Control ได้ทันที

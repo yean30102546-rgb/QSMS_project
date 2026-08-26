@@ -195,3 +195,21 @@ The official structured timeline for the QSMS platform across 4 phases:
 
 ### Simulation Lifecycle Scoping & Mounting Guard
 A state isolation pattern implemented in the Guide presentation system ensuring that simulations only run when explicitly triggered by the user. State transitions reset `simTrigger` to `0` upon slide or category navigation, and mock components employ `prevSimTriggerRef` mounting guards to ignore stale trigger props on initial mount.
+
+### Mobile-First Rework Card Layout (`CaseListTable.tsx`)
+A responsive card layout design replacing horizontal 3-column table rows on mobile viewports (< 640px / 390px). It displays item names at full width and groups case identification, timestamps, piece counts, progress bars, and status pills at the bottom edge, preventing awkward text wrapping and line clipping on handheld devices.
+
+### Case Update Item Accordion (`CaseUpdateView.tsx`)
+A collapsible item state model (`expandedItemIds`) in the case management interface where items are folded by default on initial render. Item headers provide live summaries (item name, barcode, evidence status, progress count, and quick completion button) with a master toggle ("ขยายข้อมูลทั้งหมด / พับข้อมูลทั้งหมด") to minimize vertical scrolling overhead.
+
+### Responsive 2-Tier Header (`CaseUpdateView.tsx`)
+A two-tier header layout separating the navigation back button, title, and case identifier (Top row) from the action toolbar buttons ([Export Excel], [Delete Case], [Draft Save], [Complete Save]) (Bottom row with `overflow-x-auto`) on mobile devices, eliminating visual collisions and overlap.
+
+### DocAI Floating Action Button (FAB)
+A responsive assistant launcher positioned at `bottom-20 right-4 sm:bottom-6 sm:right-6`. On mobile viewports, it condenses from an expanded pill into a sleek circular FAB icon, completely clearing the bottom pagination controls and card boundaries.
+
+### Academic Thesis Generator (`build_academic_thesis_template.py`)
+An automated Python pipeline leveraging `python-docx` to generate the formal 5-chapter academic report (`QSMS_Project_Thesis_Report.docx`, 3.10 MB) complying with PIM university thesis formatting standards, embedding 9 figures, 300 DPI high-resolution system diagrams, and 7 production UI screenshots.
+
+### Touch Gesture Deck Navigation (`GuideApp.tsx`)
+A touch-first navigation layer for the presentation deck on mobile devices, providing horizontal swipe gesture detection (`onTouchStart`/`onTouchEnd`), a floating bottom mobile control bar (`md:hidden`), and an emergency floating exit button (`top-3 left-3 z-[99999]`).

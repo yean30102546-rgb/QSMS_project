@@ -90,6 +90,15 @@
     - ปรับปรุงการคำนวณ Screen-Space 1:1 Translation (`translate3d(panOffset.x, panOffset.y, 0) scale(...)`)
     - ยกเลิก CSS Transition ขณะกำลังลาก (`transition-none pointer-events-none select-none`) ทำให้เมาส์ลากติดมือทันทีไม่มีอาการดีเลย์
     - ผูก Window Global Event Listeners (`window.addEventListener('mousemove'/'mouseup')`) ทำให้ลากต่อเนื่องได้ทั่วหน้าจอโดยไม่หลุดขอบ พร้อมระบบ Dynamic Boundary Clamping
+18. **Mobile-First Rework Card Layout & DocAI FAB Positioning (ระบบแสดงผลบนมือถือและการ์ดสินค้า):**
+    - แปลงแถวตารางใน `CaseListTable.tsx` เป็น Mobile-First Card Layout ขยายชื่อสินค้าเต็มความกว้าง (Full-width) และจัดกลุ่มยอดกล่อง/หลอดความคืบหน้า/ป้ายสถานะเข้ามุมด้านล่าง ไม่บีบตัดคำ 7-8 บรรทัดบนจอ 390px (iPhone 13)
+    - ย้ายตำแหน่งปุ่มลอย DocAI Assistant เป็น Floating Action Button (FAB Icon) กะทัดรัดที่มุมขวาล่าง (`bottom-20 right-4 sm:bottom-6 sm:right-6`) พร้อมเพิ่ม Padding เลื่อนด้านล่าง `pb-28 sm:pb-8` ใน `OverallTab.tsx` ไม่ทับปุ่มเปลี่ยนหน้า
+19. **CaseUpdateView 2-Tier Header & Item Accordion Folding (แผงควบคุม 2 ชั้นและการพับเก็บรายการสินค้า):**
+    - จัดโครงสร้างแถบ Header เป็น 2 ชั้นแบบ Responsive บนมือถือ (`flex-col sm:flex-row`) แยกส่วนหัว/รหัสเคสไว้แถวบน และแถบปุ่ม Action ([ส่งออก Excel], [ลบเคส], [บันทึกร่าง], [บันทึกเสร็จสิ้น]) ไว้แถวล่าง ป้องกันการทับซ้อนกัน
+    - ปรับรายการสินค้าทั้งหมดให้เป็นแบบ **Accordion (พับเก็บได้เป็นค่าเริ่มต้น)** พร้อมปุ่มลัดสลับ "ขยายข้อมูลทั้งหมด / พับข้อมูลทั้งหมด" เพื่อประหยัดพื้นที่หน้าจอบนอุปกรณ์พกพา
+20. **Academic Thesis Word Document & Presentation Touch Navigation (เอกสารรายงานวิทยานิพนธ์ & การนำทางสไลด์สัมผัส):**
+    - สร้างสคริปต์สังเคราะห์รายงานวิทยานิพนธ์ฉบับสมบูรณ์ `QSMS_Project_Thesis_Report.docx` (3.10 MB) ตามมาตรฐานรูปแบบเล่มของสถาบันการจัดการปัญญาภิวัฒน์ (PIM) 5 บท ฝัง 9 Figures ไดอะแกรมความละเอียด 300 DPI และ 7 UI Screenshots
+    - เพิ่มระบบตรวจจับการปัดนิ้วสัมผัส Touch Gestures (`onTouchStart`, `onTouchEnd`), แถบควบคุมสไลด์ลอยด้านล่างบนมือถือ (`md:hidden`) และปุ่มลอยสำหรับออกจากโหมดพรีเซนต์ (`GuideApp.tsx`)
 
 ---
 

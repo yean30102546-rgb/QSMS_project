@@ -77,7 +77,7 @@ export function MockLogin({ onNavigate }: { onNavigate?: () => void }) {
                 <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#1d1d1f]/70 font-sans">Central Workspace</div>
               </div>
               <h1 className="max-w-lg text-3xl md:text-4xl font-bold leading-[1.1] tracking-tight text-[#1d1d1f]">
-                One login for Rework and upcoming Roster operations.
+                One login for all QSMS enterprise operations.
               </h1>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[#515154] font-thai">
                 เข้าสู่ระบบครั้งเดียว แล้วเลือกใช้งานแต่ละ webapp ผ่าน Central Control ได้ทันที
@@ -254,8 +254,7 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
               สวัสดีคุณ{greetingName}, ยินดีต้อนรับสู่ระบบงานกลาง
             </h2>
             <p className="mt-5 max-w-2xl text-[17px] leading-7 text-[#515154]">
-              เลือกใช้งานโมดูลที่ต้องการผ่านศูนย์กลางควบคุมนี้ ระบบ Rework พร้อมใช้งานเต็มรูปแบบ
-              และ Roster กำลังถูกพัฒนาเป็นลำดับถัดไป เพื่อการบริหารจัดการที่ครบวงจร
+              เลือกใช้งานโมดูลที่ต้องการผ่านศูนย์กลางควบคุมนี้ เพื่อการบริหารจัดการคุณภาพและคลังเอกสารมาตรฐานอย่างครบวงจร
             </p>
           </motion.div>
 

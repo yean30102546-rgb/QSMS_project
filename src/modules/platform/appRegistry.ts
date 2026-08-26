@@ -32,7 +32,7 @@ export const portalAppRegistry: PortalAppDefinition[] = [
     id: 'guide',
     title: 'Presentation & Guide',
     subtitle: 'Interactive User Guide',
-    description: 'Explore high-fidelity interactive tutorials and documentation for the QSMS Rework and Roster systems.',
+    description: 'Explore high-fidelity interactive tutorials and documentation for the QSMS platform.',
     route: 'guide',
     status: 'active',
     accent: 'blue',
@@ -56,7 +56,7 @@ export const modularizationBoundaries: ModularizationBoundary[] = [
     area: 'shared-ui',
     source: 'src/index.css + selected shared UI primitives',
     target: 'shared Apple-inspired design system',
-    notes: 'Theme tokens, buttons, shells, and typography rules should be reusable across Rework and Roster.',
+    notes: 'Theme tokens, buttons, shells, and typography rules should be reusable across all QSMS platform modules.',
   },
   {
     area: 'rework-module',

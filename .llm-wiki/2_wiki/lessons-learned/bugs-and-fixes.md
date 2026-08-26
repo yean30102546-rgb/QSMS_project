@@ -421,7 +421,33 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-08-19*: บันทึก BUG-026 (Simulation Auto-Execution & Stutter) และ BUG-027 (Zoom & Pan Desynchronization)
+## BUG-028: Mobile Layout Squashing & DocAI Floating Button Overlap on OverallTab
+**Status**: ✅ FIXED (2026-08-20)
+- *Problem*:
+  1. บนหน้าจอสมาร์ตโฟน (ความกว้าง 390px เช่น iPhone 13) ปุ่มลอย DocAI Assistant อยู่ที่ตำแหน่ง `bottom-6 right-44` ซึ่งวางทับตัวเลขเปลี่ยนหน้า (Pagination `< 1 >`) และการ์ดเคสด้านล่างโดยตรง
+  2. แถวเคสใน `CaseListTable` ใช้โครงสร้าง 3 คอลัมน์แนวนอน ทำให้ชื่อสินค้าและสาเหตุถูกบีบพื้นที่เหลือไม่กี่พิกเซล ข้อความถูกตัดคำขึ้นบรรทัดใหม่ 7-8 บรรทัดติดกัน
+  3. พื้นที่เลื่อนด้านล่างของ `OverallTab` ชิดขอบล่างของ Safari/Chrome มากเกินไป ทำให้เลื่อนดูเคสล่างสุดลำบาก
+- *Solution*:
+  1. ย้ายตำแหน่ง DocAI Assistant บนมือถือไปอยู่ที่มุมขวาล่าง `bottom-20 right-4 sm:bottom-6 sm:right-6` และแปลงเป็นปุ่มวงกลม FAB Icon กะทัดรัด
+  2. ปรับปรุง `CaseRow` ใน `CaseListTable.tsx` ให้เป็น **Mobile-First Card Layout** โดยให้ชื่อสินค้าแสดงเต็มความกว้าง และจัดกลุ่มยอดกล่อง, หลอด Progress, และป้ายสถานะไว้ที่ขอบล่างของการ์ด
+  3. จัดโครงสร้าง DOM ให้เรนเดอร์ `<StatusPill>` และ `reasonsDisplay` เพียงตำแหน่งเดียว เพื่อให้การทดสอบ Vitest / Testing Library ตรวจพบ Element เดียวอย่างแม่นยำ
+  4. เพิ่ม Bottom Clearance Padding เป็น `pb-28 sm:pb-8`
+
+---
+
+## BUG-029: CaseUpdateView Header Toolbar Button Collision & Overlapping on Mobile
+**Status**: ✅ FIXED (2026-08-20)
+- *Problem*:
+  1. ส่วนหัวของหน้าจอ `CaseUpdateView.tsx` บังคับจัดเรียงแบบแถวเดียว (`flex items-center justify-between`) บนหน้าจอโทรศัพท์ ทำให้ปุ่ม [ส่งออก Excel], [ลบเคสนี้], [บันทึกร่าง], และ [บันทึกเสร็จสิ้น] (ความกว้างรวม >450px) เกิดการเบียดและทับซ้อนกับตัวหนังสือชื่อหน้า "จัดการงาน Rework" และรหัสเคสจนอ่านไม่ได้
+  2. ช่องกรอกความคืบหน้ารวมมีขนาดคงที่ `w-48` ทำให้ดันองค์ประกอบอื่นหลุดขอบหน้าจอบนมือถือขนาดเล็ก
+- *Solution*:
+  1. ปรับโครงสร้างแถบ Header ให้เป็น 2 ชั้นแบบ Responsive บนมือถือ (`flex-col sm:flex-row`) แยกส่วนหัว/รหัสเคสไว้แถวบน และแถบปุ่ม Action ไว้แถวล่าง
+  2. เพิ่มคุณสมบัติ `overflow-x-auto scrollbar-hide` ให้แถบปุ่ม Action เลื่อนได้อิสระหากหน้าจอแคบมาก
+  3. ปรับขนาด Padding คอนเทนเนอร์จาก `p-6` เป็น `p-3.5 sm:p-6` และปรับช่องกรอกความคืบหน้ารวมให้เป็น Full-width บนมือถือ (`flex-1 sm:w-48`)
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-08-20*: บันทึก BUG-028 (Mobile Layout Squashing & DocAI FAB Overlap) และ BUG-029 (CaseUpdateView Header Overlapping)
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]
