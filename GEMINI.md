@@ -39,7 +39,8 @@
 
 1. **Case Initiation (เริ่มสร้างงาน):**
    - นำเข้าข้อมูลอ้างอิงจากเอกสาร RT/RW
-   - ระบบจะจ่าย **Case ID** (Hybrid Assignment) ซึ่งไม่สามารถซ้ำหรือแก้ไขได้ (Immutable) เช่น `RW012-2026` (สำหรับ SFC) หรือ `RT012-2026` (สำหรับ Customer)
+   - **RT vs RW Document Gate**: เคส **RT (ลูกค้า)** บังคับต้องมีเอกสารแนบ (เช่น ใบส่งของ, ใบแจ้งเคลม, ไฟล์ Excel/PDF อ้างอิง) อย่างน้อย 1 ไฟล์ก่อนเปิดเคส ส่วนเคส **RW (SFC ภายใน)** สามารถเปิดเคสได้ทันทีโดยไม่ต้องแนบเอกสาร (เอกสารแนบเป็น Optional)
+   - ระบบจะจ่าย **Case ID** (Hybrid Assignment) ซึ่งไม่สามารถซ้ำหรือแก้ไขได้ (Immutable) เช่น `RW-2026-001` (สำหรับ SFC) หรือ `RT-2026-001` (สำหรับ Customer)
 2. **Two-Way Autofill & Verification (ตรวจสอบสินค้า):**
    - เมื่อกรอกรหัส Item Number หรือ Item Code ระบบจะสืบค้นข้อมูลจาก Item Master ทันที
    - **Verification Lifecycle:** สถานะจะเปลี่ยนจาก `Idle` -> `Checking` -> `Verified` (พบข้อมูล) / `New` (สินค้าใหม่) / `Conflict` (ข้อมูลขัดแย้ง)
@@ -47,7 +48,7 @@
    - **Zero-Value Restriction:** ระบบตรวจเช็คและล็อกไม่ให้ผู้ใช้งานระบุจำนวนสินค้า (`amount`) หรือจำนวนกล่อง (`boxNumber`) เป็น 0 เพื่อป้องกันข้อมูลผิดพลาดในระบบ
 3. **Cross-Item Linking & Document Validation (เงื่อนไขและประเภทงานเฉพาะ):**
    - **Cross-Item Link:** หากตรวจพบสินค้าเปื้อน ('เปื้อน') และในเคสเดียวกันมีสินค้าที่รั่ว ('รั่ว') ระบบจะเปิดตัวเลือกให้เชื่อมโยงสาเหตุสินค้าเปื้อนไปยังไอเทมที่รั่วได้ (บันทึกลงฟิลด์ `linkedSourceId`)
-   - **PTT OR Documents:** เคสที่ลูกค้าระบุเป็น "OR" จะเปิดช่องพิเศษให้แนบไฟล์เอกสารอ้างอิงสำหรับ OR ได้สูงสุด 2 ไฟล์ (.xlsx, .xls, .pdf, .png) หากไม่มีการอัปโหลด หน้าเว็บจะแสดง Badge เตือน "ขาดไฟล์ OR" สีแดงบนตารางภาพรวม
+   - **PTT OR Documents & QIR Extraction:** เคสที่ลูกค้าระบุเป็น "OR" จะเปิดช่องให้แนบไฟล์เอกสารอ้างอิงสำหรับ OR (.xlsx, .xls, .pdf, .png) พร้อมระบบ Auto-parsing สกัดข้อมูล QIR จาก Sheet 2 นำเข้าฟอร์มอัตโนมัติ
 4. **Smart Master Upsert (บันทึกฐานข้อมูลกลาง):**
    - หากเป็นสินค้าใหม่ หรือ Incomplete Item (ข้อมูลไม่ครบ) ระบบจะทำการอัปเดตหรือเพิ่มข้อมูลเข้า Item Master ทันทีในพื้นหลัง
 5. **Transaction & Evidence Integrity (ยืนยันรูปภาพ):**
@@ -99,11 +100,21 @@
 20. **Academic Thesis Word Document & Presentation Touch Navigation (เอกสารรายงานวิทยานิพนธ์ & การนำทางสไลด์สัมผัส):**
     - สร้างสคริปต์สังเคราะห์รายงานวิทยานิพนธ์ฉบับสมบูรณ์ `QSMS_Project_Thesis_Report.docx` (3.10 MB) ตามมาตรฐานรูปแบบเล่มของสถาบันการจัดการปัญญาภิวัฒน์ (PIM) 5 บท ฝัง 9 Figures ไดอะแกรมความละเอียด 300 DPI และ 7 UI Screenshots
     - เพิ่มระบบตรวจจับการปัดนิ้วสัมผัส Touch Gestures (`onTouchStart`, `onTouchEnd`), แถบควบคุมสไลด์ลอยด้านล่างบนมือถือ (`md:hidden`) และปุ่มลอยสำหรับออกจากโหมดพรีเซนต์ (`GuideApp.tsx`)
-21. **CaseUpdateView 4-Block Form Architecture, Per-Item Save Queue & Floating Progress Island (ผังแบบฟอร์ม 4 บล็อก, การบันทึกรายไอเทม และแผงโปรเกรสลอย):**
-    - **AddCaseTab 4-Block Parity:** ออกแบบเลย์เอาต์ฟอร์มไอเทมใน Step 1 ให้สอดคล้องกับ `AddCaseTab`: Block 1 (Customer Name + Item Number + Item Code 3 ช่องสมดุล + Part Name เต็มแถว), Block 2 (แผงไฮไลท์ข้อมูลผลิต 5 ช่อง: Batch No, Gallon Date, Mold, Line, Amount เน้นสี Indigo), Block 3 (สาเหตุที่พบ & ผู้รับผิดชอบ 2 ช่องคู่ + อาการเสียเต็มแถว), Block 4 (รูปภาพหลักฐานและปุ่มบันทึกรายไอเทม)
+21. **CaseUpdateView 4-Block Form Architecture & Per-Item Save Queue (ผังแบบฟอร์ม 4 บล็อกและการบันทึกรายไอเทม):**
+    - **AddCaseTab 4-Block Parity:** ออกแบบเลย์เอาต์ฟอร์มไอเทมใน Step 1 ให้สอดคล้องกับ `AddCaseTab`: Block 1 (Customer Name + Item Number + Item Code 3 ช่องสมดุล + Part Name เต็มแถว), Block 2 (แผงไฮไลท์ข้อมูลผลิต 5 ช่อง: Batch No, Gallon Date, Mold, Line, Amount เน้นสี Indigo), Block 3 (สาเหตุที่พบ & ผู้รับผิดชอบ 2 ช่องคู่ + อาการเสียเต็มแถว), Block 4 (รูปภาพหลักฐานและปุ่มบันทึกรายไอเทมเดี่ยว `[บันทึกรายการนี้]`)
     - **Focus Ring Uniformity:** ป้องกันกรอบดำเบราว์เซอร์ด้วย `focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20` และซ่อน spinner ลูกศรตัวเลข
-    - **Per-Item Save & Focus Queue (`handleSaveSingleItem`):** บันทึกไอเทมเดี่ยวพร้อมอัปโหลดรูปเฉพาะรายการนั้น ย้ายการ์ดที่เสร็จลงล่างสุด และเปิดการ์ดถัดไปที่ยังค้างอยู่ให้อัตโนมัติ
-    - **Floating Save Progress Island & Top Glowing Stripe:** แถบเส้นแสงนีออน 3px บนสุดของจอ และ Dynamic Island ลอยกลางจอด้านล่าง (`fixed bottom-6 left-1/2`) แสดงความคืบหน้าเรียลไทม์โดยไม่ทำให้ปุ่ม Action ด้านบนกระตุกหายไป
+    - **Staged Photo Stability & Concurrent Uploads:** แสดงผลรูปถ่ายร่างด้วย `FileReader.readAsDataURL` ป้องกันปัญหา URL หลุดระหว่างแก้ไข และอัปโหลดขึ้น Cloudinary แบบขนาน (`Promise.all`) เร็วขึ้น 2–3 เท่า
+22. **Operations Flow & Department Bottleneck Monitor (ระบบแดชบอร์ดชี้เป้าคอขวด 5 ขั้นตอน):**
+    - ครอบคลุม 5-Stage Lifecycle Status: `Pending Analysis` (QSMS), `Awaiting Materials` (WPK), `In-Progress` (PDF), `Blocked` (Defend/ขาดวัสดุ), `Completed` (100%)
+    - **Operations Bottleneck Radar:** ชี้เป้าแผนกที่มีงานคั่งค้างสูงสุด (**🔥 จุดคอขวดสูงสุด**) แบบ Real-time
+    - **Department Queue Breakdown & 1-Click Filter:** แสดงยอดเคสและยอดกล่องค้างแยกรายแผนก (QSMS, WPK, PDF, Blocked) พร้อมกดกรองดูเฉพาะงานของแผนกนั้นได้ทันที
+23. **Universal Prompt Font Standardization & Dotted Zero Elimination (ฟอนต์ Prompt 100% ไร้จุดไข่ปลา):**
+    - บังคับใช้ Google Font `Prompt` (300, 400, 500, 600, 700) ทั่วทั้งระบบผ่าน `--font-sans`, `--font-thai`, และ `--font-mono`
+    - กำจัดจุดไข่ปลาตรงกลางเลขศูนย์ (`0`) ในรหัสสินค้า (Item Code, Item Number) และ Case ID จากฟอนต์เดิม
+    - ปรับลด Excessive Boldness ใน Portal/Navigation และถอดไอคอนที่ไม่เป็นทางการออก เพื่อภาพลักษณ์ Enterprise ที่เป็นมืออาชีพ
+24. **MES JIT Kitting & Closed-Loop Two-Way Handshake Architecture (สถาปัตยกรรมจัดชุดภาชนะรอบเดียว):**
+    - วางแนวทางแก้ปัญหาการเบิกของ RT/RW ด้วย **Single-Batch JIT Kitting**: ห้ามเบิกของก่อนวิเคราะห์, QSMS ระบุ BOM สุทธิ, WPK จัดของครบชุดรอบเดียว, และ PDF ต้องกดยืนยันรับจริงในระบบ (Sign-off) เพื่อตัดปัญหาการโยนความรับผิดชอบ
+    - รองรับสถาปัตยกรรมแจ้งเตือน 3 ระดับ: **LINE Push Notification**, **In-App Notification Bell & Sound**, และ **Role-Based Task Queues**
 
 
 ---

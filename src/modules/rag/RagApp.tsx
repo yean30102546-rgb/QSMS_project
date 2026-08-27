@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, Sparkles, Bot, X, RotateCw, Eye } from 'lucide-react';
+import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, BarChart3, Bot, X, RotateCw, Eye } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { User } from '../../services/auth';
 import { useNotification } from '@/src/contexts/NotificationContext';
@@ -457,7 +457,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
             <div key={idx} className="my-2.5 rounded-xl border border-blue-100 bg-white/80 dark:bg-slate-800/80 p-3 shadow-sm space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-200">
                 <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                  <Sparkles size={14} />
+                  <BarChart3 size={14} />
                   สัดส่วนข้อผิดพลาด (Defect Analytics)
                 </span>
                 <span className="text-[11px] text-slate-500">รวม {total} รายการ</span>
@@ -781,7 +781,7 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                         </motion.button>
                       </form>
                       <p className="text-center mt-2 text-xs text-slate-400 font-medium flex items-center justify-center gap-1">
-                        <Sparkles className="h-3 w-3 text-blue-500" /> Powered by QSMS DocAI
+                        <Bot className="h-3.5 w-3.5 text-amber-600" /> Powered by QSMS DocAI
                       </p>
                     </div>
                   </div>

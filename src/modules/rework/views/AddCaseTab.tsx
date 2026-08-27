@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet } from 'lucide-react';
 import { parseOrExcelFile, findOrMatch, type OrItemInfo } from '@/src/utils/orExcelParser';
 import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,6 @@ import { ImageUpload } from '@/src/modules/storage/components/ImageUpload_ui';
 import { AppleProgressBar } from '@/src/components/shared/AppleProgressBar';
 import { convertDMYToYMD, convertYMDToDMY, findDuplicateItemNumbers } from '@/src/utils/helpers';
 import { ConflictModal } from '@/src/components/modals/ConflictModal';
-import { MobileFastTrackApp, FastTrackItem } from '@/src/modules/rework/views/MobileFastTrackApp';
 import { Combobox } from '@/src/components/ui/Combobox';
 import { RecentDatePicker } from '@/src/components/shared/RecentDatePicker';
 
@@ -65,7 +64,7 @@ const COMBINED_RESPONSIBLE_OPTIONS = [
 ];
 
 const initialFormItem = {
-  customerName: '',
+  customerName: 'SFC',
   itemNumber: '',
   itemCode: '',
   itemName: '',
@@ -111,8 +110,6 @@ const reworkItemSchema = z.object({
 
 const formSchema = z.object({
   caseSource: z.string(),
-  caseName: z.string().optional(),
-  caseNumber: z.string().optional(),
   customerName: z.string().optional(),
   items: z.array(reworkItemSchema)
 });
@@ -123,8 +120,6 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   const { cases, loadCases } = useReworkData();
   const { showToast, showAlert, showConfirm } = useNotification();
 
-  const [isFastTrackMode, setIsFastTrackMode] = useState(false);
-  const [entryMode, setEntryMode] = useState<'wpk_fast' | 'full_items'>('wpk_fast');
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
@@ -151,10 +146,8 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       caseSource: 'SFC',
-      caseName: '',
-      caseNumber: '',
       customerName: 'SFC',
-      items: [{ ...initialFormItem, id: `form-${Date.now()}` }]
+      items: [{ ...initialFormItem, customerName: 'SFC', id: `form-${Date.now()}` }]
     }
   });
 
@@ -166,8 +159,6 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   });
 
   const caseSource = watch('caseSource');
-  const caseName = watch('caseName');
-  const caseNumber = watch('caseNumber');
   const customerName = watch('customerName');
   const formItems = watch('items');
 
@@ -294,24 +285,63 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     showConfirm('คุณต้องการล้างข้อมูลที่กรอกค้างไว้ทั้งหมดใช่หรือไม่? ข้อมูลและไฟล์ที่แนบไว้จะหายไปทั้งหมด', () => {
       reset({
         caseSource: 'SFC',
-        caseNumber: '',
-        items: [{ ...initialFormItem, id: `form-${Date.now()}` }]
+        customerName: 'SFC',
+        items: [{ ...initialFormItem, customerName: 'SFC', id: `form-${Date.now()}` }]
       });
       setUploadedImages({});
       setOrFiles([]);
     });
   };
 
+  const handleAddItem = () => {
+    const curCustomer = getValues('customerName') || 'SFC';
+    append({
+      ...initialFormItem,
+      customerName: curCustomer,
+      id: `form-${Date.now()}-${fields.length}`
+    });
+  };
+
+  const handleDuplicateItem = (index: number) => {
+    const source = formItems[index];
+    if (!source) return;
+    const newId = `form-${Date.now()}-${fields.length}`;
+    const dup = {
+      ...source,
+      id: newId,
+      imageUrls: [...(source.imageUrls || [])]
+    };
+    if (uploadedImages[source.id]) {
+      setUploadedImages(prev => ({
+        ...prev,
+        [newId]: [...prev[source.id]]
+      }));
+    }
+    insert(index + 1, dup);
+    showToast(`✓ คัดลอกข้อมูลจากรายการที่ ${index + 1} เรียบร้อยแล้ว`, 'success');
+  };
+
   const onSubmit = async (data: FormValues) => {
-    // If in full items mode, check validity
-    if (entryMode === 'full_items' && data.items.length > 0 && isSaveDisabled(data.items)) {
+    if (!data.items || data.items.length === 0) {
+      showAlert('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error');
+      return;
+    }
+
+    if (isSaveDisabled(data.items)) {
       showAlert('กรุณากรอกข้อมูลสินค้าให้ครบถ้วน (ต้องระบุชื่อลูกค้า, รหัสสินค้า, ชื่อสินค้า และจำนวนกล่องห้ามเป็น 0)', 'error');
       return;
     }
 
     const isCustomerCase = data.caseSource === 'Customer' || (data.customerName && data.customerName !== 'SFC');
-    const prefix = isCustomerCase ? 'RT' : 'RW';
-    const currentYear = new Date().getFullYear();
+
+    // Validate mandatory attachments for Customer / RT cases
+    if (isCustomerCase && orFiles.length === 0) {
+      showAlert('งาน RT (เคสลูกค้า) จำเป็นต้องมีเอกสารหรือไฟล์อ้างอิงแนบอย่างน้อย 1 ไฟล์ก่อนเปิดเคส', 'error');
+      if (fileInputRef.current) {
+        fileInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -319,17 +349,13 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       setStatusText('กำลังเตรียมข้อมูลเคส...');
 
       // Transform items for API
-      const apiItems = (entryMode === 'full_items' && data.items.length > 0 && data.items[0].itemName)
-        ? data.items.map(item => ({
-            ...item,
-            amount: Number(item.boxNumber) || Number(item.amount) || 1
-          })) as ReworkItem[]
-        : [];
+      const apiItems = data.items.map(item => ({
+        ...item,
+        amount: Number(item.boxNumber) || Number(item.amount) || 1
+      })) as ReworkItem[];
 
       setProgress(45);
       setStatusText('กำลังสร้าง Case ID และบันทึกข้อมูล...');
-
-      const customName = data.caseName?.trim() || `${data.customerName || data.caseSource} Rework Ticket`;
 
       const result = await insertCase(
         data.caseSource,
@@ -338,24 +364,24 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
         orFiles,
         undefined, // Let server assign atomic Case ID
         false,
-        customName
+        undefined, // Case Name will automatically be Case ID
+        data.customerName
       );
 
       if (result.success) {
         setProgress(100);
         setStatusText('เปิดเคสสำเร็จ!');
         setIsComplete(true);
-        setSaveMessage({ type: 'success', text: 'เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์สำเร็จ!' });
-        showToast('✓ เปิดเคสสำเร็จ: สถานะงานเป็น "รอวิเคราะห์" ส่งต่อให้ QSMS เรียบร้อยแล้ว', 'success');
+        const assignedId = result.data?.caseId || '';
+        setSaveMessage({ type: 'success', text: `เปิดเคสใหม่ (${assignedId}) และส่งต่อให้ QSMS วิเคราะห์สำเร็จ!` });
+        showToast(`✓ เปิดเคสสำเร็จ: ${assignedId} สถานะงานเป็น "รอวิเคราะห์" ส่งต่อให้ QSMS เรียบร้อยแล้ว`, 'success');
 
         // Reset form
         setTimeout(() => {
           reset({
             caseSource: 'SFC',
-            caseName: '',
-            caseNumber: '',
             customerName: 'SFC',
-            items: [{ ...initialFormItem, id: `form-${Date.now()}` }]
+            items: [{ ...initialFormItem, customerName: 'SFC', id: `form-${Date.now()}` }]
           });
           setUploadedImages({});
           setOrFiles([]);
@@ -377,165 +403,165 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     }
   };
 
-  const handleFastTrackComplete = (source: string, caseId: string, fastTrackItems: FastTrackItem[]) => {
-    setIsFastTrackMode(false);
-  };
-
-  if (isFastTrackMode) {
-    return createPortal(
-      <div className="fixed inset-0 z-50 bg-background">
-        <MobileFastTrackApp
-          initialSource={getValues('caseSource') as "SFC" | "Customer"}
-          initialCaseId={getValues('caseNumber')}
-          onComplete={handleFastTrackComplete}
-          onCancel={() => setIsFastTrackMode(false)}
-        />
-      </div>,
-      document.body
-    );
-  }
-
   const isCustomerCase = caseSource === 'Customer' || (customerName && customerName !== 'SFC');
 
   return (
     <FormProvider {...methods}>
-      <div className="mx-auto max-w-5xl space-y-6 md:space-y-8 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]">
+      <div className="mx-auto max-w-5xl space-y-5 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]">
         
         {/* Step Indicator Banner */}
-        <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-xs shadow-xs">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded bg-amber-500 text-slate-950 font-bold text-xs shadow-xs">
                 1
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900 leading-tight">Step 1: WPK เปิดเคสแจ้งเรื่อง (Case Initiation)</h2>
-                <p className="text-xs text-slate-500">กรอกข้อมูลเบื้องต้นเพื่อสร้าง Case ID อัตโนมัติและส่งเคสเข้าสู่สถานะ <strong className="text-amber-700">"รอวิเคราะห์"</strong></p>
+                <h2 className="text-sm font-bold text-slate-900 leading-tight">Step 1: เปิดเคสแจ้งเรื่อง (Case Initiation)</h2>
+                <p className="text-xs text-slate-500">กรอกข้อมูลเบื้องต้นเพื่อสร้าง Case ID อัตโนมัติและส่งเคสเข้าสู่สถานะ <strong className="text-amber-700 font-semibold">"รอวิเคราะห์"</strong></p>
               </div>
             </div>
 
-            {/* Mode Switcher */}
-            <div className="flex items-center gap-1 rounded-2xl bg-slate-100 p-1 border border-slate-200/60 self-start md:self-auto">
-              <button
-                type="button"
-                onClick={() => setEntryMode('wpk_fast')}
-                className={`rounded-xl px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
-                  entryMode === 'wpk_fast' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                ⚡ WPK Fast Ticket
-              </button>
-              <button
-                type="button"
-                onClick={() => setEntryMode('full_items')}
-                className={`rounded-xl px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
-                  entryMode === 'full_items' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                📋 Advanced Item Entry
-              </button>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                📋 Rework Entry Form
+              </span>
             </div>
           </div>
 
           {/* Workflow Steps Preview */}
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-semibold text-slate-500 pt-1">
-            <div className="flex items-center gap-1.5 text-amber-700 font-bold">
-              <span className="h-2 w-2 rounded-full bg-amber-500 ring-4 ring-amber-100" />
-              1. WPK เปิดเคส
+          <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-medium text-slate-500 pt-1">
+            <div className="flex items-center gap-1.5 text-amber-800 font-bold">
+              <span className="h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-200" />
+              1. เปิดเคส
             </div>
             <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-2 w-2 rounded-full bg-slate-300" />
-              2. QSMS วิเคราะห์ & ขอภาชนะ
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+              2. วิเคราะห์ & ขอของ
             </div>
             <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-2 w-2 rounded-full bg-slate-300" />
-              3. WPK เบิกจ่ายของ
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+              3. เบิกจ่ายของ
             </div>
             <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-2 w-2 rounded-full bg-slate-300" />
-              4. PDF ซ่อม & Defend
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+              4. ซ่อมงาน
             </div>
             <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-2 w-2 rounded-full bg-slate-300" />
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
               5. ปิดงานสมบูรณ์
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Main Case Info Card */}
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-6">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs space-y-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-stretch">
               
-              {/* Case Name / Subject */}
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">ชื่อเรื่อง / หัวข้อเคส (Case Title) *</label>
-                <input
-                  type="text"
-                  {...register('caseName')}
-                  placeholder="เช่น พบน้ำมันรั่วซึมจากกล่องล็อต 26/08, งานรับคืน Eneos ฯลฯ"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
-                />
-              </div>
-
               {/* Customer Selection */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">ลูกค้า / แหล่งที่มา (Customer) *</label>
-                <Controller
-                  control={control}
-                  name="customerName"
-                  render={({ field }) => (
-                    <Combobox
-                      options={['SFC', ...CUSTOMER_OPTIONS]}
-                      value={field.value || 'SFC'}
-                      onChange={(val) => {
-                        field.onChange(val);
-                        setValue('caseSource', val === 'SFC' ? 'SFC' : 'Customer');
-                      }}
-                      placeholder="เลือกลูกค้า หรือ SFC"
-                      className="bg-slate-50/50 font-normal"
-                    />
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Auto Case ID Preview & Auto State Badge */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl bg-indigo-50/60 p-4 border border-indigo-100">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-mono font-bold text-xs shadow-xs">
-                  {isCustomerCase ? 'RT' : 'RW'}
+              <div className="flex flex-col justify-between rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">ลูกค้า / แหล่งที่มา (Customer) *</label>
+                  <Controller
+                    control={control}
+                    name="customerName"
+                    render={({ field }) => (
+                      <Combobox
+                        options={['SFC', ...CUSTOMER_OPTIONS]}
+                        value={field.value || 'SFC'}
+                        onChange={(val) => {
+                          const previousVal = field.value || 'SFC';
+                          field.onChange(val);
+                          const newSource = val === 'SFC' ? 'SFC' : 'Customer';
+                          setValue('caseSource', newSource);
+                          // Auto-propagate to items that had empty or previous default customer
+                          const currentItems = getValues('items');
+                          if (currentItems && currentItems.length > 0) {
+                            currentItems.forEach((item, idx) => {
+                              if (!item.customerName || item.customerName === previousVal || item.customerName === 'SFC') {
+                                setValue(`items.${idx}.customerName`, val, { shouldDirty: true });
+                              }
+                            });
+                          }
+                        }}
+                        placeholder="เลือกลูกค้า หรือ SFC"
+                        className="bg-white font-medium"
+                      />
+                    )}
+                  />
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-indigo-950 flex items-center gap-2">
-                    <span>รหัสเคสอัตโนมัติ:</span>
-                    <span className="font-mono bg-white px-2 py-0.5 rounded-md border border-indigo-200 text-indigo-700">
-                      {isCustomerCase ? `RT-${new Date().getFullYear()}-XXX` : `RW-${new Date().getFullYear()}-XXX`}
+                <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-500">
+                  ชื่อลูกค้านี้จะเป็นค่าเริ่มต้นให้กับทุกรายการสินค้าด้านล่าง
+                </div>
+              </div>
+
+              {/* Auto Case ID Preview & Auto State Badge */}
+              <div className="flex flex-col justify-between rounded-lg bg-slate-50 p-4 border border-slate-200">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-mono font-bold text-sm shadow-2xs shrink-0">
+                      {isCustomerCase ? 'RT' : 'RW'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold text-slate-500">รหัสเคสอัตโนมัติ:</div>
+                      <div className="font-mono text-sm font-bold text-slate-900 tracking-wide whitespace-nowrap">
+                        {isCustomerCase ? `RT-${new Date().getFullYear()}-XXX` : `RW-${new Date().getFullYear()}-XXX`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse shrink-0" />
+                      รอวิเคราะห์
                     </span>
                   </div>
-                  <p className="text-[11px] text-indigo-600">ระบบจะกำหนดหมายเลขลำดับ 001, 002... ให้อัตโนมัติเมื่อกดบันทึก</p>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center">
-                <span className="text-[11px] font-semibold text-slate-500">สถานะเริ่มต้น:</span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />
-                  รอวิเคราะห์ (Pending Analysis)
-                </span>
+                <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-500">
+                  ระบบจะรันหมายเลข Case ID ให้โดยอัตโนมัติเมื่อกดบันทึก
+                </div>
               </div>
             </div>
 
             {/* Reference Files Section (OR, Excel, PDF, Initial Photos) */}
-            <div className="border-t border-slate-100 pt-5 space-y-3">
-              <div className="flex items-center justify-between">
+            <div className={`border-t border-slate-100 pt-5 space-y-3 rounded-2xl p-4 transition-all ${
+              isCustomerCase && orFiles.length === 0
+                ? 'bg-amber-50/60 border border-amber-200'
+                : 'bg-transparent'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800">เอกสารหรือรูปถ่ายอ้างอิงเบื้องต้น (Reference Attachments)</h4>
-                  <p className="text-[11px] text-slate-400">แนบไฟล์ Excel, PDF ใบส่งของ หรือรูปถ่ายหน้างานเบื้องต้น (ถ้ามี)</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-xs font-bold text-slate-800">
+                      {isCustomerCase
+                        ? 'เอกสารหรือรูปถ่ายอ้างอิงของลูกค้า * (Mandatory for RT)'
+                        : 'เอกสารหรือรูปถ่ายอ้างอิงเบื้องต้น (Reference Attachments)'}
+                    </h4>
+                    {isCustomerCase ? (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        orFiles.length > 0
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
+                      }`}>
+                        {orFiles.length > 0 ? `✓ แนบแล้ว ${orFiles.length} ไฟล์` : '* จำเป็นต้องแนบเอกสารสำหรับงาน RT'}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        ไม่บังคับ (เปิดงาน RW ได้ทันที)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {isCustomerCase
+                      ? 'งาน RT ต้องมีเอกสารแนบก่อนเปิดเคส เช่น ใบส่งของ, ใบแจ้งเคลมจากลูกค้า, ไฟล์สรุป OR, หรือรูปภาพหน้างาน'
+                      : 'งาน RW สามารถเปิดเคสได้ทันที (แนบไฟล์ Excel, PDF หรือรูปถ่ายหน้างานเพิ่มเติมได้ถ้ามี)'}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex flex-wrap gap-4 items-center pt-1">
                 <div className="flex-1 min-w-[240px]">
                   <input
                     ref={fileInputRef}
@@ -546,21 +572,25 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                       const files = Array.from(e.target.files || []);
                       handleOrFileUpload(files.slice(0, 4));
                     }}
-                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                    className={`block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold cursor-pointer ${
+                      isCustomerCase && orFiles.length === 0
+                        ? 'file:bg-amber-600 file:text-white hover:file:bg-amber-700'
+                        : 'file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200'
+                    }`}
                   />
                 </div>
                 {orFiles.length > 0 && (
                   <div className="flex flex-wrap gap-2 items-center">
                     {orFiles.map((file, i) => (
-                      <div key={i} className="px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 flex items-center gap-2">
-                        <span>{file.name}</span>
+                      <div key={i} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs">
+                        <span className="truncate max-w-[200px]">{file.name}</span>
                         <button
                           type="button"
                           onClick={() => {
                             const remaining = orFiles.filter((_, idx) => idx !== i);
                             handleOrFileUpload(remaining);
                           }}
-                          className="text-slate-400 hover:text-red-600"
+                          className="text-slate-400 hover:text-red-600 cursor-pointer"
                         >
                           <X size={14} />
                         </button>
@@ -642,9 +672,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                           setValue('items', generatedItems);
                           showToast(`✓ ดึงรายการสินค้า ${generatedItems.length} รายการจากไฟล์ OR สำเร็จ!`, 'success');
                         }}
-                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-medium transition-all shadow-xs active:scale-95 cursor-pointer"
                       >
-                        <Sparkles size={14} /> ดึงรายการสินค้าทั้งหมดจากไฟล์ OR ({orItemsList.length} รายการ)
+                        <FileSpreadsheet size={14} /> ดึงรายการสินค้าทั้งหมดจากไฟล์ OR ({orItemsList.length} รายการ)
                       </button>
                     </div>
                   )}
@@ -653,15 +683,14 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             )}
           </div>
 
-          {/* Detailed Item List (Only shown in full items mode) */}
-          {entryMode === 'full_items' && (
-            <div className="flex flex-col">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800">รายการสินค้าและสาเหตุความเสียหาย (Item Breakdown)</h3>
-                  <p className="text-xs text-slate-400">กรอกรหัสสินค้า, วันที่ล็อต, จำนวนกล่อง และสาเหตุที่พบ</p>
-                </div>
+          {/* Detailed Item List */}
+          <div className="flex flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800">รายการสินค้าและสาเหตุความเสียหาย (Item Breakdown)</h3>
+                <p className="text-xs text-slate-400">กรอกรหัสสินค้า, วันที่ล็อต, จำนวนกล่อง และสาเหตุที่พบ (ไม่จำกัดจำนวนรายการ)</p>
               </div>
+            </div>
 
               <AnimatePresence initial={false}>
                 {fields.map((field, idx) => {
@@ -680,25 +709,27 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                   >
                     <div
                       id={`form-card-${item.id}`}
-                      className="glass-card relative overflow-hidden bg-white p-5 sm:p-8"
+                      className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6 shadow-xs relative overflow-hidden"
                     >
-                      <div className="absolute left-0 top-0 h-full w-1 bg-accent opacity-20" />
-                      <div className="mb-8 flex items-center justify-between">
-                        <h3 className="flex items-center gap-2.5 text-sm font-bold text-accent">
-                          <Plus size={16} /> รายการที่ {idx + 1}
+                      <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-mono text-xs font-bold">
+                            {idx + 1}
+                          </span>
+                          รายการที่ {idx + 1}
                           {item.verificationStatus === 'verified' && (
-                            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> พบในระบบ
+                            <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.2 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> พบในระบบ
                             </span>
                           )}
                           {item.verificationStatus === 'new' && (
-                            <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> สินค้าใหม่
+                            <span className="text-xs font-semibold text-amber-900 bg-amber-50 border border-amber-300 px-2 py-0.2 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> สินค้าใหม่
                             </span>
                           )}
                           {item.verificationStatus === 'checking' && (
-                            <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> กำลังตรวจสอบ...
+                            <span className="text-xs font-semibold text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.2 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" /> กำลังตรวจ...
                             </span>
                           )}
                           {(() => {
@@ -706,17 +737,17 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                             const qirVal = qirMatch ? qirMatch[1] : null;
                             if (!qirVal) return null;
                             return (
-                              <span className="text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                <Tag size={12} className="text-purple-600" /> QIR: {qirVal}
+                              <span className="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.2 rounded-full flex items-center gap-1">
+                                <Tag size={11} className="text-slate-500" /> QIR: {qirVal}
                               </span>
                             );
                           })()}
                         </h3>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <div className="space-y-2">
-                          <label className="ml-1 text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+                        <div className="space-y-1">
+                          <label className="block text-xs font-semibold text-slate-700">ชื่อลูกค้า (Customer Name) *</label>
                           <Controller
                             control={control}
                             name={`items.${idx}.customerName`}
@@ -727,20 +758,19 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                 onChange={field.onChange}
                                 placeholder="กรุณาเลือก"
                                 searchPlaceholder="ค้นหาชื่อลูกค้า..."
-                                className="bg-slate-50/50 font-normal"
+                                className="bg-white font-medium"
                               />
                             )}
                           />
                         </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between ml-1 mb-1.5">
-                            <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
-                          </div>
+                        <div className="space-y-1">
+                          <label className="block text-xs font-semibold text-slate-700">หมายเลขบาร์โค้ด (Item Number)</label>
                           <div className="relative flex items-center">
                             <input
                               type="text"
                               autoComplete="off"
+                              onFocus={(e) => e.target.select()}
                               {...register(`items.${idx}.itemNumber`, {
                                 onChange: (e) => {
                                   const val = e.target.value.replace(/[<>]/g, '').slice(0, 50);
@@ -752,27 +782,26 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 60001234A"
                               disabled={isSaving}
-                              className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
+                              className={`w-full rounded-md border pl-3 pr-9 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
                             />
                             <button
                               type="button"
                               onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
                               disabled={isSaving || !item.itemNumber}
-                              className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                              className="absolute right-2.5 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors cursor-pointer"
                             >
-                              <Search size={16} />
+                              <Search size={15} />
                             </button>
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between ml-1 mb-1.5">
-                            <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
-                          </div>
+                        <div className="space-y-1">
+                          <label className="block text-xs font-semibold text-slate-700">รหัสสินค้า (Item Code)</label>
                           <div className="relative flex items-center">
                             <input
                               type="text"
                               autoComplete="off"
+                              onFocus={(e) => e.target.select()}
                               {...register(`items.${idx}.itemCode`, {
                                 onChange: (e) => {
                                   const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 50);
@@ -784,25 +813,25 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 40001234"
                               disabled={isSaving}
-                              className={`w-full rounded-xl border pl-4 pr-10 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-blue-500 bg-white ring-4 ring-blue-500/10' : 'border-border bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'}`}
+                              className={`w-full rounded-md border pl-3 pr-9 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
                             />
                             <button
                               type="button"
                               onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
                               disabled={isSaving || !item.itemCode}
-                              className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                              className="absolute right-2.5 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors cursor-pointer"
                             >
-                              <Search size={16} />
+                              <Search size={15} />
                             </button>
                           </div>
                         </div>
                       </div>
 
-                      <div className="mb-8">
+                      <div className="mb-5">
                         <InputField label="ชื่อรายการ (Item Name) *" {...register(`items.${idx}.itemName`)} disabled={isSaving} />
                       </div>
 
-                      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
                         <div className="col-span-2 sm:col-span-1">
                           <Controller
                             control={control}
@@ -831,15 +860,15 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                             )}
                           />
                         </div>
-                        <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
-                        <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                        <div className="col-span-1"><InputField label="จำนวนกล่อง (ลัง) *" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="Mold" className="font-mono uppercase font-semibold text-center" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="Line" className="font-mono uppercase font-semibold text-center" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนกล่อง (ลัง) *" type="number" className="font-mono font-bold text-center" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
                       </div>
 
-                      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="ml-1 text-xs font-semibold text-slate-500">สาเหตุที่พบ (Optional)</label>
-                          <div className="space-y-2">
+                      <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-1">
+                          <label className="block text-xs font-semibold text-slate-700">สาเหตุที่พบ (Defect Cause)</label>
+                          <div className="space-y-1.5">
                             <Controller
                               control={control}
                               name={`items.${idx}.reason`}
@@ -862,7 +891,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                       }
                                     }}
                                     placeholder="เลือกสาเหตุ (ระบุภายหลังได้)..."
-                                    className="bg-slate-50/50 font-normal"
+                                    className="bg-white font-medium"
                                   />
                                 );
                               }}
@@ -870,8 +899,8 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="ml-1 text-xs font-semibold text-slate-500">ผู้รับผิดชอบ (Optional)</label>
+                        <div className="space-y-1">
+                          <label className="block text-xs font-semibold text-slate-700">ผู้รับผิดชอบ (Responsible)</label>
                           <div className="space-y-2">
                             <Controller
                               control={control}
@@ -897,7 +926,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                       }
                                     }}
                                     placeholder="เลือกผู้รับผิดชอบ (ระบุภายหลังได้)..."
-                                    className="bg-slate-50/50 font-normal"
+                                    className="bg-white font-medium"
                                   />
                                 );
                               }}
@@ -907,16 +936,16 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                       </div>
 
                       {(item.reason === 'เปื้อน' || item.reason?.startsWith('เปื้อน')) && formItems.some((i, iidx) => (i.reason === 'รั่ว' || i.reason?.startsWith('รั่ว')) && iidx !== idx) && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-8 overflow-hidden">
-                          <div className="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-5 transition-all">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-5 overflow-hidden">
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 transition-all">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                                  <HelpCircle size={20} />
+                                <div className="flex h-8 w-8 items-center justify-center rounded bg-amber-100 text-amber-700">
+                                  <HelpCircle size={18} />
                                 </div>
                                 <div>
                                   <p className="text-xs font-bold text-amber-900">ระบุความเชื่อมโยง (Cross-Item Link)</p>
-                                  <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-amber-700">
+                                  <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-amber-800">
                                     <input
                                       type="checkbox"
                                       checked={!!item.linkedSourceId}
@@ -936,11 +965,11 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
                               <AnimatePresence>
                                 {item.linkedSourceId && (
-                                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-semibold text-amber-900/60">ไอเทมต้นเหตุ *</label>
+                                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1">
+                                    <label className="text-xs font-semibold text-amber-900">ไอเทมต้นเหตุ *</label>
                                     <select
                                       {...register(`items.${idx}.linkedSourceId`)}
-                                      className="min-w-[200px] rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm focus:border-amber-500 focus:outline-none"
+                                      className="min-w-[200px] rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-2xs focus:border-amber-500 focus:outline-none"
                                     >
                                       <option value="">-- เลือกรายการ --</option>
                                       {formItems.filter((i, iidx) => (i.reason === 'รั่ว' || i.reason?.startsWith('รั่ว')) && iidx !== idx).map(leak => (
@@ -957,14 +986,14 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         </motion.div>
                       )}
 
-                      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                        <div className="space-y-2 md:col-span-2">
-                          <label className="ml-1 text-xs font-semibold text-slate-500">รายละเอียดเพิ่มเติม</label>
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                        <div className="space-y-1.5 md:col-span-2">
+                          <label className="text-xs font-semibold text-slate-700">รายละเอียดเพิ่มเติม (Notes)</label>
                           <textarea
                             rows={3}
                             {...register(`items.${idx}.details`)}
                             placeholder="ระบุรายละเอียดเพิ่มเติม..."
-                            className="w-full resize-none rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
+                            className="w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm text-slate-900 transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                           />
                         </div>
 
@@ -980,48 +1009,37 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         </div>
                       </div>
 
-                      <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
-                        <motion.button
+                      <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+                        <button
                           type="button"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.97 }}
-                          transition={{ duration: 0.12 }}
-                          onClick={() => {
-                            const dup = { ...item, id: `form-${Date.now()}` };
-                            insert(idx + 1, dup);
-                          }}
-                          className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50/80 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition-colors"
+                          onClick={() => handleDuplicateItem(idx)}
+                          className="flex items-center justify-center gap-1.5 rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
                         >
-                          <Copy size={16} /> คัดลอกรายการ
-                        </motion.button>
+                          <Copy size={14} /> คัดลอกรายการ
+                        </button>
                         {fields.length > 1 ? (
-                          <motion.button
+                          <button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.97 }}
-                            transition={{ duration: 0.12 }}
                             onClick={() => {
                               remove(idx);
                               setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
                             }}
-                            className="flex items-center justify-center gap-2 rounded-xl bg-red-50/80 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                            className="flex items-center justify-center gap-1.5 rounded-md bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
                           >
-                            <Trash2 size={16} /> ลบรายการ
-                          </motion.button>
+                            <Trash2 size={14} /> ลบรายการ
+                          </button>
                         ) : (
-                          <motion.button
+                          <button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.97 }}
-                            transition={{ duration: 0.12 }}
                             onClick={() => {
-                              update(idx, { ...initialFormItem, id: item.id });
+                              const curCust = getValues('customerName') || 'SFC';
+                              update(idx, { ...initialFormItem, customerName: curCust, id: item.id });
                               setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
                             }}
-                            className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
+                            className="flex items-center justify-center gap-1.5 rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
                           >
-                            <Trash2 size={16} /> ล้างข้อมูลการ์ดนี้
-                          </motion.button>
+                            <Trash2 size={14} /> ล้างข้อมูลการ์ดนี้
+                          </button>
                         )}
                       </div>
                     </div>
@@ -1030,7 +1048,6 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
               })}
             </AnimatePresence>
           </div>
-          )}
 
           <AnimatePresence mode="wait">
             {isSaving ? (
@@ -1040,49 +1057,33 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                className="w-full rounded-lg border border-slate-200 bg-white p-4 shadow-xs"
               >
                 <AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} />
               </motion.div>
             ) : (
-              <div className="flex flex-col w-full gap-4">
-                <div className="flex flex-col gap-4 sm:flex-row w-full">
-                  {entryMode === 'full_items' && (
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.01, backgroundColor: 'rgba(241,245,249,1)' }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ duration: 0.12 }}
-                      onClick={() => append({ ...initialFormItem, id: `form-${Date.now()}` })}
-                      disabled={isSaving}
-                      className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-semibold text-slate-500 disabled:opacity-50 sm:h-auto cursor-pointer"
-                    >
-                      <Plus size={16} /> [ + ] เพิ่มรายการ
-                    </motion.button>
-                  )}
-                  <motion.button
+              <div className="flex flex-col w-full gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button
                     type="button"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ duration: 0.12 }}
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isSaving || (entryMode === 'full_items' && isSaveDisabled(formItems))}
-                    className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto transition-colors cursor-pointer"
+                    onClick={handleAddItem}
+                    disabled={isSaving}
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 bg-white py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 cursor-pointer transition-colors shadow-2xs"
                   >
-                      {entryMode === 'wpk_fast' ? (
-                        <>
-                          🚀 เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์ <ChevronRight size={16} />
-                        </>
-                      ) : (
-                        <>
-                          บันทึกข้อมูลแบบละเอียดเข้าสู่ระบบ <ChevronRight size={16} />
-                        </>
-                      )}
-                    </motion.button>
-                  </div>
+                    <Plus size={16} /> [ + ] เพิ่มรายการสินค้า
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmit(onSubmit)}
+                    disabled={isSaving || isSaveDisabled(formItems)}
+                    className="flex h-11 flex-[2] items-center justify-center gap-2 rounded-md bg-amber-500 py-2 text-xs sm:text-sm font-bold text-slate-950 hover:bg-amber-600 active:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
+                  >
+                    🚀 เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์ <ChevronRight size={16} />
+                  </button>
                 </div>
-              )}
-            </AnimatePresence>
+              </div>
+            )}
+          </AnimatePresence>
 
             <AnimatePresence>
               {saveMessage && (
@@ -1091,7 +1092,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  className={`rounded-lg border p-4 text-sm font-semibold ${saveMessage.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                  className={`rounded-md border p-3.5 text-xs font-semibold ${saveMessage.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}
                 >
                   {saveMessage.text}
                 </motion.div>
@@ -1104,17 +1105,23 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   );
 }
 
-const InputField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { label: string }>(({ label, className, id: externalId, ...props }, ref) => {
+const InputField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { label: string }>(({ label, className, id: externalId, onFocus, ...props }, ref) => {
   const internalId = React.useId();
   const id = externalId || internalId;
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="block ml-1 text-xs font-semibold text-slate-500">{label}</label>
+    <div className="space-y-1">
+      <label htmlFor={id} className="block text-xs font-semibold text-slate-700">{label}</label>
       <input
         id={id}
         ref={ref}
+        onFocus={(e) => {
+          if (props.type === 'number' || className?.includes('font-mono')) {
+            e.target.select();
+          }
+          onFocus?.(e);
+        }}
         {...props}
-        className={`block w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none ${className || ''}`}
+        className={`block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500 ${className || ''}`}
       />
     </div>
   );

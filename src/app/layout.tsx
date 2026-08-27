@@ -1,5 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { Prompt } from 'next/font/google';
 import '../index.css';
+
+const prompt = Prompt({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ['thai', 'latin'],
+  display: 'swap',
+  variable: '--font-prompt',
+});
 
 export const metadata: Metadata = {
   title: 'QSMS Rework Management',
@@ -19,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th">
-      <body className="min-h-screen bg-bg text-foreground font-sans antialiased">
+    <html lang="th" className={prompt.variable}>
+      <body className={`${prompt.className} min-h-screen bg-bg text-foreground font-sans antialiased`}>
         {children}
       </body>
     </html>

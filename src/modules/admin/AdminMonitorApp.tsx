@@ -29,7 +29,7 @@ import {
   X,
   Lock,
   ChevronRight,
-  Sparkles
+  ShieldCheck
 } from 'lucide-react';
 
 import {
@@ -261,7 +261,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
       case 'ADMIN':
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"><Shield size={12} /> Admin</span>;
       case 'QSMS':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200"><Sparkles size={12} /> QSMS (QC)</span>;
+        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200"><ShieldCheck size={12} /> QSMS (QC)</span>;
       case 'WPK':
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200"><Package size={12} /> WPK (คลัง)</span>;
       case 'PDF':

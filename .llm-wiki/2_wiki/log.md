@@ -1,6 +1,39 @@
 # 📋 Work Log — QSMS Rework Management
 > บันทึกประวัติการทำงานเรียงตามเวลา (Chronological Log)
 
+## 2026-08-27
+
+### [Operations Bottleneck Dashboard, Full 5-Stage Status, Prompt Font Standardization & MES Kitting Architecture]
+- **Operations Flow & Department Bottleneck Monitor (`Dashboard.tsx`)**:
+  * อัปเกรดแดชบอร์ดให้รองรับ **5-Stage Lifecycle Status**:
+    1. `Pending Analysis` (รอวิเคราะห์ - ฝ่าย QSMS)
+    2. `Awaiting Materials` (รอเบิกภาชนะ - ฝ่าย WPK)
+    3. `In-Progress` (กำลังผลิตซ่อม - ฝ่าย PDF)
+    4. `Blocked` (ติดปัญหา Defend / ขาดวัสดุ)
+    5. `Completed` (เสร็จสิ้น 100%)
+  * เพิ่ม **Operations Bottleneck Radar** ตรวจจับและระบุฝ่ายที่มีงานคั่งค้างสูงสุด (**🔥 จุดคอขวดสูงสุด**) แบบ Real-time
+  * เพิ่ม **Department Queue Status Island** (QSMS, WPK, PDF, Blocked) พร้อมระบบ Interactive 1-Click Cross-Filter เพื่อเจาะดูเฉพาะเคสที่ติดอยู่ที่แผนกนั้น
+  * อัปเดต Interactive SVG Donut Chart, Status Distribution Cards, และ Time-Series Trend Chart ให้แสดงผลตามยอดเคสและยอดกล่องจริง
+- **Prompt Font Standardization & Dotted Zero Elimination**:
+  * โหลด Google Font `Prompt` ทุกน้ำหนัก (`300, 400, 500, 600, 700`) ผ่าน `next/font/google` ใน `src/app/layout.tsx`
+  * แมป `--font-sans`, `--font-thai`, และ `--font-mono` ให้ชี้ไปที่ `var(--font-prompt)` ใน `src/index.css` และบังคับใช้ใน `@layer base`
+  * ยกเลิกการอิมพอร์ต `JetBrains Mono` กำจัดจุดไข่ปลาตรงกลางเลขศูนย์ (`0`) ในรหัสสินค้าและตัวเลขทั้งหมด
+  * ปรับลดความหนาของตัวอักษร (Excessive Boldness) ใน Central Portal และแถบนำทางให้ดูเรียบหรูและเป็นทางการ
+  * ถอดไอคอนตกแต่งที่ไม่เป็นทางการ (เช่น จรวด) เพื่อรักษาภาพลักษณ์ของระบบองค์กรระดับมืออาชีพ
+- **Sidebar Width & Label Visibility Polish (`MainLayout.tsx`)**:
+  * ปรับค่าเริ่มต้นความกว้างของ Sidebar จาก `260px` เป็น **`275px`** (`MIN_SIDEBAR_WIDTH = 240px`)
+  * ปรับ `SidebarItem` ให้ใช้ `whitespace-nowrap leading-normal` ยกเลิกการตัดคำและใส่จุดไข่ปลา `...` ทำให้ชื่อแท็บ เช่น `เปิดเคสใหม่ (Add Case)` และ `แดชบอร์ด (Dashboard)` แสดงผลครบถ้วนสมบูรณ์
+- **Evidence Management & Upload Acceleration (`CaseUpdateView.tsx` & `api.ts`)**:
+  * แก้ไขบั๊กรูปภาพพรีวิวร่างเสียและ Lightbox ขาว ด้วยการใช้ Base64 Data URL ผ่าน `FileReader.readAsDataURL` แทน `URL.createObjectURL`
+  * ลบแถบลอยแจ้งเตือนรูปค้างบันทึกตรงกลางจอ เพื่อลด Visual Noise
+  * ปรับแต่งการอัปโหลดรูปภาพหลักฐานใน `createCase` และ `updateCase` เป็นแบบ Concurrent Parallel Uploads ด้วย `Promise.all` เพิ่มความเร็ว 2–3 เท่า
+- **MES JIT Kitting & Closed-Loop Two-Way Handshake Architecture**:
+  * วินิจฉัยจุดพังของโฟลว์การเบิกภาชนะ RT/RW ระหว่าง WFG, QSMS, WPK, และ PDF
+  * กำหนดแนวทางการออกแบบ **Single-Batch JIT Kitting with Two-Way Handshake**: ห้ามเบิกของก่อนวิเคราะห์, QSMS ระบุ BOM รวม, WPK จัดของครบชุดรอบเดียว, และ PDF ตรวจรับสองทางเพื่อตัดปัญหาการโยนความรับผิดชอบ
+  * วางผังสถาปัตยกรรม **3-Tier Notification** (LINE Push Notification, In-App Notification Bell, และ Role-based Task Queue)
+
+---
+
 ## 2026-08-20
 
 ### [Mobile UI/UX Overhaul & Thesis Report] ปรับปรุง Responsive มือถือ (iPhone 13), เอกสารวิทยานิพนธ์ PIM และ Touch Navigation

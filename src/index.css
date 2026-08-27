@@ -1,140 +1,155 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Quicksand:wght@500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Sarabun", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
-  --font-thai: "Sarabun", sans-serif;
-  --font-quicksand: "Quicksand", sans-serif;
+  --font-sans: var(--font-prompt), "Prompt", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-thai: var(--font-prompt), "Prompt", sans-serif;
+  --font-mono: var(--font-prompt), "Prompt", sans-serif;
   
-  /* Honey-Infused Chat System */
-  --color-honey-surface: #fff8f7;
-  --color-honey-primary: #7c5800;
-  --color-honey-secondary: #755b00;
-  --color-honey-tertiary: #625f50;
-  --color-honey-on-surface: #201a1a;
-  --color-honey-outline: #837560;
-  --color-honey-surface-variant: #ebe0df;
-  
-  --color-bg: #fdfdfd;
-  --color-surface: #ffffff;
-  --color-foreground: #1d1d1f;
-  --color-muted: #86868b;
-  --color-border: #d2d2d7;
-  --color-accent: #1d1d1f;
-  
-  /* Apple Pro Blue replacement with Black */
-  --color-apple-blue: #1d1d1f;
-  --color-primary: #1d1d1f;
-  --color-primary-dark: #000000;
+  /* Modern Enterprise Soft Pastel Jasmine / Slate / White Brand Palette */
+  --color-jasmine-50: #fefdf5;
+  --color-jasmine-100: #fef9e7;
+  --color-jasmine-200: #fef3c7;
+  --color-jasmine-300: #fde68a;
+  --color-jasmine-400: #fcd34d;
+  --color-jasmine-500: #f5c754;
+  --color-jasmine-600: #d97706;
+  --color-jasmine-700: #b45309;
+  --color-jasmine-800: #92400e;
+  --color-jasmine-900: #78350f;
+  --color-jasmine-950: #451a03;
 
-  /* Prototype Theme Colors */
-  --color-system-background: #FFFFFF;
-  --color-surface-tertiary: #E8E8ED;
-  --color-surface-secondary: #F5F5F7;
-  --color-surface-bright: #fcf8fb;
-  --color-surface-variant: #e4e2e4;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container: #f0edef;
-  --color-on-surface: #1b1b1d;
-  --color-on-surface-variant: #414755;
-  --color-divider-color: rgba(0, 0, 0, 0.1);
-  --color-error: #ba1a1a;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
-  --color-apple-blue-deep: #0066CC;
-  --color-outline-variant: #c1c6d7;
+  /* Map Amber to Soft Pastel Scale for smooth system-wide consistency */
+  --color-amber-50: #fefdf5;
+  --color-amber-100: #fef9e7;
+  --color-amber-200: #fef3c7;
+  --color-amber-300: #fde68a;
+  --color-amber-400: #fcd34d;
+  --color-amber-500: #f5c754;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-amber-950: #451a03;
+
+  --color-primary: #f5c754;
+  --color-primary-hover: #fcd34d;
+  --color-primary-light: #fef9e7;
+  --color-primary-dark: #92400e;
+
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f1f5f9;
+  --color-surface-tertiary: #e2e8f0;
+  
+  --color-foreground: #0f172a;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+  --color-accent: #f5c754;
+  
+  /* Semantic Pastel Status Colors */
+  --color-status-success: #10b981;
+  --color-status-warning: #f5c754;
+  --color-status-error: #f43f5e;
+  --color-status-info: #38bdf8;
+
+  --color-system-background: #f8fafc;
+  --color-surface-bright: #ffffff;
+  --color-surface-variant: #f8fafc;
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #475569;
+  --color-divider-color: rgba(0, 0, 0, 0.06);
+}
+
+@layer base {
+  html, body, input, select, textarea, button, optgroup, code, kbd, samp, pre {
+    font-family: var(--font-prompt), "Prompt", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
 }
 
 @layer utilities {
-  .shadow-ambient {
-    box-shadow: 0 4px 20px 0 rgba(32, 26, 26, 0.08);
+  .shadow-subtle {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   
-  .shadow-fab {
-    box-shadow: 0 8px 15px 0 rgba(124, 88, 0, 0.2);
+  .shadow-card {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
   }
 
-  .animate-slide-up {
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  
-  .animate-float {
-    animation: float 4s ease-in-out infinite;
-  }
-
-  .animate-bounce-in {
-    animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  .animate-blob {
-    animation: blob 7s infinite;
-  }
-
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  
-  @keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
-    100% { transform: translateY(0px); }
-  }
-
-  @keyframes bounceIn {
-    0% { opacity: 0; transform: scale(0.9) translateY(10px); }
-    50% { opacity: 1; transform: scale(1.02) translateY(-2px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  @keyframes blob {
-    0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-    100% { transform: translate(0px, 0px) scale(1); }
+  .shadow-elevated {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
   }
 }
 
 @layer components {
+  /* Enterprise Form Inputs */
+  .enterprise-input {
+    @apply w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-colors;
+  }
+  
+  .enterprise-select {
+    @apply w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-colors;
+  }
+
+  .enterprise-label {
+    @apply block text-xs font-semibold text-slate-700 tracking-wide mb-1.5;
+  }
+
+  /* Enterprise Buttons */
+  .enterprise-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#FEF3C7] hover:bg-[#FDE68A] active:bg-[#F5C754] text-[#92400E] border border-[#FDE68A] font-medium text-sm rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .enterprise-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border border-slate-300 font-medium text-sm rounded-md shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .enterprise-btn-dark {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm rounded-md shadow-xs transition-colors cursor-pointer;
+  }
+
+  /* Enterprise Panels & Cards */
+  .enterprise-card {
+    @apply bg-white border border-slate-200 rounded-lg shadow-xs;
+  }
+
+  .enterprise-card-header {
+    @apply px-4 py-3 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between;
+  }
+
+  /* Legacy Compatibility Classes */
   .glass-panel {
-    @apply bg-white/40 backdrop-blur-xl border border-white/20;
+    @apply bg-white border border-slate-200 rounded-lg shadow-xs;
   }
   
   .glass-input {
-    @apply bg-white/50 border border-black/5 focus:border-black/20 focus:ring-4 focus:ring-black/5 transition-all outline-none;
+    @apply bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-colors;
   }
 
   .apple-btn-primary {
-    @apply bg-[#1d1d1f] text-white hover:bg-black transition-all shadow-lg shadow-black/10;
+    @apply bg-amber-500 text-slate-950 hover:bg-amber-600 font-medium px-4 py-2 rounded-md transition-colors;
   }
 
   .apple-input {
-    @apply border border-black/10 rounded-lg transition-all duration-200 outline-none focus:border-blue-500/50 focus:ring-[3px] focus:ring-blue-500/30;
+    @apply border border-slate-300 rounded-md bg-white text-slate-800 px-3 py-2 text-sm transition-colors outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20;
   }
 
   .apple-button {
-    @apply rounded-lg px-4 py-2 font-medium transition-colors duration-200;
+    @apply rounded-md px-4 py-2 font-medium text-sm transition-colors duration-150;
   }
 
   .apple-button-primary {
-    @apply bg-[#007AFF] text-white hover:bg-[#0056b3];
+    @apply bg-amber-500 text-slate-950 hover:bg-amber-600;
   }
 
   .glass-bg {
-    @apply bg-[#F5F5F7]/80 backdrop-blur-[12px];
+    @apply bg-slate-50/90 backdrop-blur-sm;
   }
 }
 
 .glass-card {
-  @apply bg-surface border border-border rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.02)];
+  @apply bg-white border border-slate-200 rounded-lg shadow-xs;
 }
 
 .sidebar-item {

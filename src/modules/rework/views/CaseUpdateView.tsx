@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, Save, FileText, ExternalLink, PenTool, Trash2, Plus, 
   ChevronDown, AlertCircle, Camera, CheckCircle2, Image as ImageIcon, X,
   Package, Wrench, Edit3, Check, HelpCircle, Tag, FileSpreadsheet, Download, 
-  Loader2, Shield, Eye, Clock, ChevronRight, Truck, CheckCheck, AlertTriangle,
-  Sparkles
+  Loader2, Shield, Eye, Clock, ChevronRight, Truck, CheckCheck, AlertTriangle
 } from 'lucide-react';
 import { ReworkCase, ReworkItem, updateCase, CUSTOMER_OPTIONS, MaterialRequestItem } from '@/src/services/api';
 import { getCurrentUser } from '@/src/services/auth';
@@ -83,6 +82,70 @@ function StatusBadge({ status }: { status: ReworkCase['status'] }) {
       <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse" />
       {thaiLabels[status] || status}
     </span>
+  );
+}
+
+function StagedImageThumbnail({
+  file,
+  canDelete,
+  onView,
+  onDelete,
+}: {
+  file: File;
+  canDelete: boolean;
+  onView: (url: string) => void;
+  onDelete: () => void;
+}) {
+  const [previewUrl, setPreviewUrl] = React.useState<string>('');
+
+  React.useEffect(() => {
+    if (!file) return;
+    let isCancelled = false;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (!isCancelled && typeof reader.result === 'string') {
+        setPreviewUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+    return () => {
+      isCancelled = true;
+    };
+  }, [file]);
+
+  return (
+    <div 
+      className="relative group w-16 h-16 rounded-xl overflow-hidden border-2 border-dashed border-amber-400 bg-amber-50/50 shadow-2xs cursor-pointer transition-all hover:scale-105"
+      onClick={() => {
+        if (previewUrl) onView(previewUrl);
+      }}
+    >
+      {previewUrl ? (
+        <img src={previewUrl} alt="Staged" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-slate-100">
+          <Loader2 size={16} className="animate-spin text-slate-400" />
+        </div>
+      )}
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white">
+        <Eye size={15} />
+      </div>
+      {canDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-1 right-1 w-5 h-5 rounded-md bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+        >
+          <span>X</span>
+        </button>
+      )}
+      <div className="absolute bottom-0 inset-x-0 bg-amber-500 text-white text-[8px] font-bold text-center py-0.5">
+        ใหม่
+      </div>
+    </div>
   );
 }
 
@@ -223,17 +286,41 @@ export function CaseUpdateView({
     );
   };
 
+  const currentCaseIdRef = useRef<string | null>(null);
+
   // Smart Auto-Tab Selection based on Case Status & User Role
   useEffect(() => {
     if (caseData) {
-      const itemsWithFallback = caseData.items.map(item => ({
-        ...item,
-        customerName: item.customerName || caseData.customerName || ''
-      }));
-      setEditedItems(itemsWithFallback);
-      setDeletedItemIds([]);
-      setNewOrFiles([]);
-      setNewImages({});
+      const isSameCase = currentCaseIdRef.current === caseData.id;
+      currentCaseIdRef.current = caseData.id;
+
+      if (!isSameCase || editedItems.length === 0) {
+        const itemsWithFallback = caseData.items.map((item, idx) => ({
+          ...item,
+          itemSequence: item.itemSequence ?? (idx + 1),
+          customerName: item.customerName || caseData.customerName || ''
+        }));
+        setEditedItems(itemsWithFallback);
+        setDeletedItemIds([]);
+        setNewOrFiles([]);
+        setNewImages({});
+        
+        // Initialize accordion: expand only the first incomplete item
+        const initialExpanded: Record<string, boolean> = {};
+        let foundFirstIncomplete = false;
+        itemsWithFallback.forEach((item, idx) => {
+          const itemKey = item.id || (item as any).uid || `idx-${idx}`;
+          const itemStat = calculateItemStatus(item, 0, []);
+          if (!foundFirstIncomplete && itemStat.status !== 'complete') {
+            initialExpanded[itemKey] = true;
+            foundFirstIncomplete = true;
+          } else {
+            initialExpanded[itemKey] = false;
+          }
+        });
+        setExpandedItemIds(initialExpanded);
+      }
+
       setCaseStatus(caseData.status);
       setMaterialRequests(caseData.materialRequests || []);
       setMissingBoxes(caseData.missingBoxes || 0);
@@ -241,34 +328,18 @@ export function CaseUpdateView({
       setMissingOil(caseData.missingOil || 0);
       setResolutionMethod(caseData.resolutionMethod || '');
       setIsDefendBlocked(caseData.status === 'Blocked');
-      // Initialize accordion: expand only the first incomplete item
-      const initialExpanded: Record<string, boolean> = {};
-      let foundFirstIncomplete = false;
-      itemsWithFallback.forEach((item, idx) => {
-        const itemKey = item.id || (item as any).uid || `idx-${idx}`;
-        const itemStat = calculateItemStatus(item, 0, []);
-        if (!foundFirstIncomplete && itemStat.status !== 'complete') {
-          initialExpanded[itemKey] = true;
-          foundFirstIncomplete = true;
-        } else {
-          initialExpanded[itemKey] = false;
-        }
-      });
-      setExpandedItemIds(initialExpanded);
 
       // Smart default tab
-      if (userRole === 'WPK' && (caseData.status === 'Awaiting Materials' || caseData.status === 'Pending Analysis')) {
+      if (caseData.status === 'Pending Analysis' || caseData.status === 'Pending') {
+        setActiveStep('items');
+      } else if (userRole === 'WPK' && caseData.status === 'Awaiting Materials') {
         setActiveStep('issuing');
       } else if (userRole === 'PDF' && (caseData.status === 'In-Progress' || caseData.status === 'Blocked' || caseData.status === 'Completed')) {
         setActiveStep('repair');
-      } else if (userRole === 'QSMS' && caseData.status === 'Pending Analysis') {
-        setActiveStep('analysis');
       } else if (caseData.status === 'Awaiting Materials') {
         setActiveStep('issuing');
       } else if (caseData.status === 'In-Progress' || caseData.status === 'Blocked') {
         setActiveStep('repair');
-      } else if (caseData.status === 'Pending Analysis') {
-        setActiveStep('analysis');
       } else {
         setActiveStep('items');
       }
@@ -482,9 +553,25 @@ export function CaseUpdateView({
     if (!caseData) return;
     startSaving();
     try {
+      let itemsToSave = [...editedItems];
+      const currentlyExpandedIndex = editedItems.findIndex(item => {
+        const k = item.id || (item as any).uid;
+        return k ? expandedItemIds[k] : false;
+      });
+
+      if (currentlyExpandedIndex >= 0 && currentlyExpandedIndex < editedItems.length - 1) {
+        const targetItem = itemsToSave[currentlyExpandedIndex];
+        const remainingItems = itemsToSave.filter((_, i) => i !== currentlyExpandedIndex);
+        itemsToSave = [...remainingItems, {
+          ...targetItem,
+          itemSequence: targetItem.itemSequence ?? (currentlyExpandedIndex + 1),
+          amount: Math.max(1, Number(targetItem.amount) || 1)
+        }];
+      }
+
       const updates: any = {
         status: forceDraft ? (globalCompleted > 0 ? 'In-Progress' : (caseData.status || 'Pending')) : caseStatus,
-        items: editedItems,
+        items: itemsToSave,
         materialRequests,
         missingBoxes,
         missingGallons,
@@ -498,12 +585,35 @@ export function CaseUpdateView({
 
       const res = await updateCase(caseData.id, updates);
       if (res.success) {
-        if (updates.items) {
-          setEditedItems(updates.items);
+        let finalItems: ReworkItem[] = itemsToSave;
+        if ((res.data as ReworkCase)?.items) {
+          const dbItems = (res.data as ReworkCase).items;
+          finalItems = itemsToSave.map(localItem => {
+            const matched = dbItems.find(dbItem => (dbItem.id && dbItem.id === localItem.id) || (dbItem.uid && dbItem.uid === localItem.uid));
+            if (matched) {
+              return {
+                ...localItem,
+                ...matched,
+                itemSequence: localItem.itemSequence
+              };
+            }
+            return localItem;
+          });
         }
+        setEditedItems(finalItems);
         setNewImages({});
         setDeletedItemIds([]);
         setNewOrFiles([]);
+
+        // Auto-expand next incomplete item
+        const nextIncompleteIdx = finalItems.findIndex((it: ReworkItem) => calculateItemStatus(it, 0, []).status !== 'complete');
+        const targetExpandIdx = nextIncompleteIdx >= 0 ? nextIncompleteIdx : 0;
+        const nextExpandedMap: Record<string, boolean> = {};
+        finalItems.forEach((it: ReworkItem, i: number) => {
+          const k = it.id || (it as any).uid || `idx-${i}`;
+          nextExpandedMap[k] = (i === targetExpandIdx);
+        });
+        setExpandedItemIds(nextExpandedMap);
       }
 
       finishSaving();
@@ -586,6 +696,7 @@ export function CaseUpdateView({
       const remainingItems = editedItems.filter((_, i) => i !== index);
       const updatedTargetItem: ReworkItem = {
         ...targetItem,
+        itemSequence: targetItem.itemSequence ?? (index + 1),
         amount: Math.max(1, Number(targetItem.amount) || 1)
       };
       const reorderedItems = [...remainingItems, updatedTargetItem];
@@ -608,7 +719,21 @@ export function CaseUpdateView({
       }
 
       const res = await updateCase(caseData.id, updates);
-      const finalItems: ReworkItem[] = (res.success && (res.data as ReworkCase)?.items) ? (res.data as ReworkCase).items : reorderedItems;
+      let finalItems: ReworkItem[] = reorderedItems;
+      if (res.success && (res.data as ReworkCase)?.items) {
+        const dbItems = (res.data as ReworkCase).items;
+        finalItems = reorderedItems.map(localItem => {
+          const matched = dbItems.find(dbItem => (dbItem.id && dbItem.id === localItem.id) || (dbItem.uid && dbItem.uid === localItem.uid));
+          if (matched) {
+            return {
+              ...localItem,
+              ...matched,
+              itemSequence: localItem.itemSequence
+            };
+          }
+          return localItem;
+        });
+      }
       setEditedItems(finalItems);
 
       // Clean up staged files and deleted URLs for this saved item
@@ -625,25 +750,22 @@ export function CaseUpdateView({
         setDeletedItemIds(prev => prev.filter(url => !itemDeletedUrls.includes(url)));
       }
 
-      // Auto-expand the next incomplete item in the new list
+      // Auto-expand the next incomplete item in the new list (or top item)
       const nextIncompleteIdx = finalItems.findIndex((it: ReworkItem) => calculateItemStatus(it, 0, []).status !== 'complete');
+      const targetExpandIdx = nextIncompleteIdx >= 0 ? nextIncompleteIdx : 0;
       const nextExpandedMap: Record<string, boolean> = {};
 
       finalItems.forEach((it: ReworkItem, i: number) => {
         const k = it.id || (it as any).uid || `idx-${i}`;
-        if (nextIncompleteIdx >= 0 && i === nextIncompleteIdx) {
-          nextExpandedMap[k] = true;
-        } else {
-          nextExpandedMap[k] = false;
-        }
+        nextExpandedMap[k] = (i === targetExpandIdx);
       });
       setExpandedItemIds(nextExpandedMap);
 
       const statusInfo = calculateItemStatus(updatedTargetItem, 0, []);
       finishSaving();
       showToast(
-        `✓ บันทึก "${updatedTargetItem.itemName || 'รายการที่ ' + (index + 1)}" แล้ว [${statusInfo.label}]`,
-        statusInfo.status === 'complete' ? 'success' : 'info'
+        `✓ บันทึกรายการที่ ${updatedTargetItem.itemSequence || (index + 1)} แล้ว ➔ ย้ายลงล่าง และเปิดรายการถัดไปให้อัตโนมัติ`,
+        'success'
       );
       onSaveSuccess?.();
     } catch (error) {
@@ -656,18 +778,12 @@ export function CaseUpdateView({
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: 15 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -15 }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute inset-0 z-30 flex flex-col w-full h-full bg-slate-50/60 overflow-hidden font-sans"
-    >
+    <div className="absolute inset-0 z-30 flex flex-col w-full h-full bg-slate-50 overflow-hidden font-sans">
       {/* 0. TOP PROGRESS STRIPE (Subtle Glowing Line on Save) */}
       {isSaving && (
         <div className="absolute top-0 left-0 right-0 z-50 h-1 bg-slate-100/60 overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"
+            className="h-full bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-500 shadow-[0_0_10px_rgba(236,197,66,0.8)]"
             initial={{ width: '0%' }}
             animate={{ width: `${progress}%` }}
             transition={{ ease: "easeOut", duration: 0.3 }}
@@ -676,21 +792,33 @@ export function CaseUpdateView({
       )}
 
       {/* 1. TOP ZEN FOCUS HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl shrink-0 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200 bg-white shrink-0 gap-3">
         {/* Left Side: Back button + Breadcrumb + Case ID + Status Badge */}
         <div className="flex items-center gap-3 min-w-0">
           <button
+            type="button"
             onClick={onBack}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer"
-            title="ย้อนกลับ (ESC)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition-all shrink-0 cursor-pointer shadow-2xs border border-slate-200"
+            title="ย้อนกลับไปหน้าภาพรวมเคส (ESC)"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={14} />
+            <span>กลับหน้าภาพรวมเคส</span>
           </button>
+          
+          <div className="hidden sm:block h-6 w-px bg-slate-200" />
+
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-slate-400">Rework Management /</span>
-              <h1 className="text-sm sm:text-base font-bold text-slate-900 truncate">
-                {caseData.caseName || caseData.id}
+              <button
+                type="button"
+                onClick={onBack}
+                className="text-xs font-semibold text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+                title="คลิกเพื่อกลับหน้าภาพรวมเคส"
+              >
+                ภาพรวมเคส (Overall) /
+              </button>
+              <h1 className="text-sm sm:text-base font-bold text-slate-900 font-mono truncate">
+                {caseData.id}
               </h1>
               <StatusBadge status={caseStatus} />
             </div>
@@ -718,7 +846,7 @@ export function CaseUpdateView({
             })}
             disabled={isExporting || !caseData}
             title="ส่งออกรายงาน Rework เป็นไฟล์ Excel พร้อมรูปภาพ"
-            className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-full transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
+            className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
           >
             {isExporting ? (
               <>
@@ -738,7 +866,7 @@ export function CaseUpdateView({
               type="button"
               onClick={handleDeleteCaseClick}
               disabled={isSaving}
-              className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200/80 flex items-center gap-1 cursor-pointer"
+              className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-all border border-red-200 flex items-center gap-1 cursor-pointer"
             >
               <Trash2 size={12} /> <span>ลบเคส</span>
             </button>
@@ -748,129 +876,168 @@ export function CaseUpdateView({
             type="button"
             onClick={() => handleSave(true)}
             disabled={isSaving}
-            className="whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer disabled:opacity-50"
+            className="whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-all cursor-pointer disabled:opacity-50"
           >
             <span>บันทึกร่าง</span>
           </button>
         </div>
       </div>
 
-      {/* 2. INTERACTIVE 4-STAGE WORKFLOW STEPPER HEADER */}
-      <div className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-2.5 shrink-0 shadow-2xs">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {[
-            {
-              id: 'items' as const,
-              stepNum: '1',
-              icon: FileText,
-              title: '1. รายการสินค้า & รูปภาพ',
-              subtitle: 'Item Breakdown & Evidence',
-              roleLabel: 'QSMS / WPK',
-              isCompleted: editedItems.length > 0 && editedItems.every(i => i.itemName),
-              isActive: activeStep === 'items',
-              canEdit: canEditItems
-            },
-            {
-              id: 'analysis' as const,
-              stepNum: '2',
-              icon: Wrench,
-              title: '2. QSMS วิเคราะห์ & ภาชนะ',
-              subtitle: 'Analysis & Requisition',
-              roleLabel: 'QSMS Only',
-              isCompleted: caseStatus !== 'Pending Analysis' && caseStatus !== 'Pending',
-              isActive: activeStep === 'analysis',
-              canEdit: canEditAnalysis
-            },
-            {
-              id: 'issuing' as const,
-              stepNum: '3',
-              icon: Truck,
-              title: '3. WPK คลังเบิกจ่ายภาชนะ',
-              subtitle: 'Warehouse Issuing',
-              roleLabel: 'WPK Only',
-              isCompleted: caseStatus === 'In-Progress' || caseStatus === 'Blocked' || caseStatus === 'Completed',
-              isActive: activeStep === 'issuing',
-              canEdit: canEditIssuing
-            },
-            {
-              id: 'repair' as const,
-              stepNum: '4',
-              icon: CheckCheck,
-              title: '4. PDF ซ่อม & Defend',
-              subtitle: 'Repair & Closure',
-              roleLabel: 'PDF Only',
-              isCompleted: caseStatus === 'Completed',
-              isActive: activeStep === 'repair',
-              canEdit: canEditRepair
-            },
-          ].map((step) => {
-            const IconComponent = step.icon;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => setActiveStep(step.id)}
-                className={`relative flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer select-none ${
-                  step.isActive 
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/10' 
-                    : step.isCompleted
-                    ? 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200/80'
-                    : 'bg-white hover:bg-slate-50 text-slate-500 border-slate-200/60'
-                }`}
-              >
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                  step.isActive 
-                    ? 'bg-white text-slate-900 shadow-xs' 
-                    : step.isCompleted 
-                    ? 'bg-emerald-100 text-emerald-800' 
-                    : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {step.isCompleted ? '✓' : step.stepNum}
-                </div>
+      {/* 2. MAIN 2-COLUMN WORKSPACE: LEFT WORKFLOW STEPPER SIDEBAR + RIGHT FORM VIEWPORT */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Left Workflow Stepper Navigation (Vertical on Desktop, Horizontal Tab Slider on Mobile) */}
+        <aside className="w-full md:w-64 lg:w-72 border-b md:border-b-0 md:border-r border-slate-200/90 bg-white shrink-0 overflow-y-auto p-3 sm:p-4 flex flex-col justify-between select-none">
+          <div>
+            <div className="hidden md:flex items-center justify-between px-1 mb-3">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ขั้นตอนการทำงาน</span>
+              <span className="text-[10px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">4 ขั้นตอน</span>
+            </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className={`text-xs font-bold truncate leading-tight ${step.isActive ? 'text-white' : 'text-slate-900'}`}>
-                      {step.title}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`text-[10px] truncate ${step.isActive ? 'text-slate-300' : 'text-slate-400'}`}>
-                      {step.subtitle}
-                    </span>
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold shrink-0 ${
-                      step.isActive 
-                        ? 'bg-slate-800 text-slate-200' 
-                        : 'bg-slate-100 text-slate-600'
+            <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-1 md:pb-0 scrollbar-hide">
+              {[
+                {
+                  id: 'items' as const,
+                  stepNum: '1',
+                  icon: FileText,
+                  title: '1. ข้อมูลสินค้า & รูปภาพ',
+                  subtitle: 'Item Breakdown & Evidence',
+                  roleLabel: 'QSMS / WPK',
+                  badgeText: `${editedItems.filter(it => calculateItemStatus(it).status === 'complete').length}/${editedItems.length} ครบ`,
+                  badgeComplete: editedItems.length > 0 && editedItems.every(i => calculateItemStatus(i).status === 'complete'),
+                  isActive: activeStep === 'items',
+                  canEdit: canEditItems,
+                },
+                {
+                  id: 'analysis' as const,
+                  stepNum: '2',
+                  icon: Wrench,
+                  title: '2. QSMS วิเคราะห์ & ภาชนะ',
+                  subtitle: 'Analysis & Requisition',
+                  roleLabel: 'QSMS Only',
+                  badgeText: caseStatus === 'Pending Analysis' ? 'รอวิเคราะห์' : 'วิเคราะห์แล้ว',
+                  badgeComplete: caseStatus !== 'Pending Analysis' && caseStatus !== 'Pending',
+                  isActive: activeStep === 'analysis',
+                  canEdit: canEditAnalysis,
+                },
+                {
+                  id: 'issuing' as const,
+                  stepNum: '3',
+                  icon: Truck,
+                  title: '3. WPK คลังเบิกจ่ายภาชนะ',
+                  subtitle: 'Warehouse Issuing',
+                  roleLabel: 'WPK Only',
+                  badgeText: missingBoxes === 0 && missingGallons === 0 && missingOil === 0 ? 'เบิกครบ' : 'รอเบิกของ',
+                  badgeComplete: caseStatus === 'In-Progress' || caseStatus === 'Blocked' || caseStatus === 'Completed',
+                  isActive: activeStep === 'issuing',
+                  canEdit: canEditIssuing,
+                },
+                {
+                  id: 'repair' as const,
+                  stepNum: '4',
+                  icon: CheckCheck,
+                  title: '4. PDF ซ่อม & Defend',
+                  subtitle: 'Repair & Closure',
+                  roleLabel: 'PDF Only',
+                  badgeText: caseStatus === 'Completed' ? 'เสร็จสิ้น' : 'กำลังซ่อม',
+                  badgeComplete: caseStatus === 'Completed',
+                  isActive: activeStep === 'repair',
+                  canEdit: canEditRepair,
+                },
+              ].map((step) => {
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setActiveStep(step.id)}
+                    className={`w-full shrink-0 md:shrink flex items-start gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer select-none min-w-[200px] md:min-w-0 ${
+                      step.isActive
+                        ? 'bg-[#FEF9E7] text-[#92400E] border-[#FDE68A] shadow-2xs ring-1 ring-[#FDE68A]/60'
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80'
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 font-mono mt-0.5 ${
+                      step.badgeComplete
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : step.isActive
+                          ? 'bg-[#FDE68A] text-[#78350F] border border-[#FCD34D]'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}>
-                      {step.canEdit ? '✏️ Edit' : '👁️ View'}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                      {step.badgeComplete ? '✓' : step.stepNum}
+                    </div>
 
-      {/* 3. STEP CONTENT WORKSPACE PANELS */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-slate-50/50">
-        <div className="max-w-6xl mx-auto space-y-6 pb-24">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className={`text-xs font-bold truncate leading-tight ${step.isActive ? 'text-[#92400E]' : 'text-slate-800'}`}>
+                          {step.title}
+                        </p>
+                      </div>
+                      <p className={`text-[10px] truncate mt-0.5 ${step.isActive ? 'text-[#B45309]' : 'text-slate-400'}`}>
+                        {step.subtitle}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-medium border ${
+                          step.badgeComplete
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : step.isActive
+                              ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
+                              : 'bg-slate-50 text-slate-600 border-slate-200/80'
+                        }`}>
+                          {step.badgeText}
+                        </span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-medium border ${
+                          step.canEdit
+                            ? 'bg-amber-50 text-amber-900 border-amber-200'
+                            : 'bg-slate-50 text-slate-500 border-slate-200/60'
+                        }`}>
+                          {step.canEdit ? 'แก้ไข' : 'ดู'}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* ========================================================================= */}
-          {/* STEP 1 PANEL: รายการสินค้า & รูปภาพหลักฐาน (ITEMS & EVIDENCE) */}
-          {/* ========================================================================= */}
-          {activeStep === 'items' && (
-            <div className="space-y-6">
+          {/* Quick Case Summary on Bottom Left (Desktop Only) */}
+          <div className="hidden md:block mt-6 pt-4 border-t border-slate-200/80">
+            <div className="rounded-xl bg-slate-50/90 border border-slate-200/80 p-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                <span>จำนวนสินค้า</span>
+                <span className="font-bold font-mono text-slate-800">{editedItems.length} รายการ</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                <span>ยอดกล่องรวม</span>
+                <span className="font-bold font-mono text-slate-800">
+                  {editedItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)} กล่อง
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                <span>สถานะเคส</span>
+                <StatusBadge status={caseStatus} />
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* 3. STEP CONTENT WORKSPACE PANELS */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 bg-slate-50/60">
+          <div className="max-w-5xl mx-auto space-y-6 pb-24">
+
+            {/* ========================================================================= */}
+            {/* STEP 1 PANEL: รายการสินค้า & รูปภาพหลักฐาน (ITEMS & EVIDENCE) */}
+            {/* ========================================================================= */}
+            {activeStep === 'items' && (
+              <div className="space-y-6">
               {/* Step Header Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-900">Step 1: ข้อมูลสินค้าและรูปภาพหลักฐาน</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                      canEditItems ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                    <h2 className="text-sm font-bold text-slate-900">Step 1: ข้อมูลสินค้าและรูปภาพหลักฐาน</h2>
+                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border ${
+                      canEditItems ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
-                      {canEditItems ? '✏️ โหมดแก้ไขข้อมูล (QSMS / Admin)' : '👁️ โหมดดูข้อมูล (Preview Only)'}
+                      {canEditItems ? 'โหมดแก้ไขข้อมูล (QSMS / Admin)' : 'โหมดดูข้อมูล (Preview Only)'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -881,21 +1048,6 @@ export function CaseUpdateView({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {canEditItems && (
-                    <button
-                      type="button"
-                      onClick={() => handleSave(true)}
-                      disabled={isSaving}
-                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
-                        hasUnsavedPhotos 
-                          ? 'bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-amber-400/40 animate-pulse' 
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      }`}
-                    >
-                      <Save size={13} />
-                      <span>{hasUnsavedPhotos ? 'บันทึกรูปภาพและข้อมูล' : 'บันทึกข้อมูลสินค้า'}</span>
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={async () => {
@@ -905,7 +1057,7 @@ export function CaseUpdateView({
                       }
                       setActiveStep('analysis');
                     }}
-                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>ถัดไป: QSMS วิเคราะห์ ➔</span>
                   </button>
@@ -920,7 +1072,7 @@ export function CaseUpdateView({
                     <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                       รายการสินค้าในเคส ({editedItems.length} รายการ)
                     </h3>
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
                       <CheckCircle2 size={11} />
                       <span>{editedItems.filter(it => calculateItemStatus(it).status === 'complete').length}/{editedItems.length} ข้อมูลสมบูรณ์</span>
                     </span>
@@ -937,7 +1089,7 @@ export function CaseUpdateView({
                         });
                         setExpandedItemIds(allOpen);
                       }}
-                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                       ขยายทั้งหมด
                     </button>
@@ -951,7 +1103,7 @@ export function CaseUpdateView({
                         });
                         setExpandedItemIds(allClosed);
                       }}
-                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                       พับทั้งหมด
                     </button>
@@ -978,7 +1130,7 @@ export function CaseUpdateView({
                           setExpandedItemIds(prev => ({ ...prev, [newKey]: true }));
                           showToast('+ เพิ่มแถวสินค้าใหม่เรียบร้อย', 'info');
                         }}
-                        className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-1 cursor-pointer ml-1 shadow-2xs"
+                        className="px-3 py-1.5 text-xs font-bold text-slate-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 transition-all flex items-center gap-1 cursor-pointer ml-1 shadow-2xs"
                       >
                         <Plus size={13} /> <span>เพิ่มรายการสินค้า</span>
                       </button>
@@ -1001,11 +1153,11 @@ export function CaseUpdateView({
                   const reasonBadgeColor = item.reason === 'รั่ว' 
                     ? 'bg-rose-50 text-rose-700 border-rose-200' 
                     : item.reason === 'เปื้อน' 
-                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                    ? 'bg-amber-50 text-amber-800 border-amber-300' 
                     : 'bg-slate-100 text-slate-700 border-slate-200';
 
                   const responsibleBadgeColor = item.responsible === 'SFC'
-                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    ? 'bg-slate-100 text-slate-800 border-slate-300'
                     : item.responsible === 'Supplier'
                     ? 'bg-purple-50 text-purple-700 border-purple-200'
                     : 'bg-sky-50 text-sky-700 border-sky-200';
@@ -1014,7 +1166,7 @@ export function CaseUpdateView({
                   const responsibleSubtypes = getResponsibleSubdivisionOptions(item.responsible || '');
 
                   return (
-                    <div key={itemIdStr} className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden transition-all">
+                    <div key={itemIdStr} className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden transition-all">
                       {/* ── Item Summary Bar (Clickable Accordion Header) ── */}
                       <div 
                         onClick={() => {
@@ -1023,31 +1175,31 @@ export function CaseUpdateView({
                             [itemIdStr]: !isExpanded
                           }));
                         }}
-                        className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 bg-white hover:bg-slate-50/70 cursor-pointer transition-colors select-none"
+                        className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 bg-white hover:bg-amber-50/20 cursor-pointer transition-colors select-none"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-6 h-6 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
-                            {index + 1}
+                          <span className="w-6 h-6 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center justify-center text-xs font-bold shrink-0 font-mono">
+                            {item.itemSequence ?? (index + 1)}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-bold text-slate-900 truncate">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                                 {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}
                               </h4>
                               {/* Status Badge */}
                               {itemStat.status === 'complete' ? (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shrink-0">
+                                <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1 shrink-0">
                                 <CheckCircle2 size={11} /> ข้อมูลสมบูรณ์
                               </span>
                               ) : itemStat.status === 'partial' ? (
                                 <span 
-                                  className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1 shrink-0" 
+                                  className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1 shrink-0" 
                                   title={`ยังขาด: ${itemStat.missingFields.join(', ')}`}
                                 >
                                   <AlertCircle size={11} /> อัปเดตแล้ว
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1 shrink-0">
+                                <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1 shrink-0">
                                   <Clock size={11} /> รอตรวจสอบ
                                 </span>
                               )}
@@ -1064,16 +1216,16 @@ export function CaseUpdateView({
 
                         <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0" onClick={e => e.stopPropagation()}>
                           <div className="flex flex-wrap items-center gap-1.5 justify-end">
-                            <span className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold font-mono">
+                            <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 border border-slate-200/90 rounded-md text-xs font-semibold font-mono">
                               {item.amount || 0} กล่อง
                             </span>
                             {item.reason && (
-                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${reasonBadgeColor}`}>
+                              <span className={`px-2 py-0.2 rounded text-[11px] font-semibold border ${reasonBadgeColor}`}>
                                 {item.reason}{item.reasonSubtype ? ` • ${item.reasonSubtype}` : ''}
                               </span>
                             )}
                             {item.responsible && (
-                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${responsibleBadgeColor}`}>
+                              <span className={`px-2 py-0.2 rounded text-[11px] font-semibold border ${responsibleBadgeColor}`}>
                                 {item.responsible}{item.responsibleSubtype ? ` • ${item.responsibleSubtype}` : ''}
                               </span>
                             )}
@@ -1083,10 +1235,10 @@ export function CaseUpdateView({
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(index)}
-                              className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer ml-1"
+                              className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors cursor-pointer ml-1"
                               title="ลบรายการนี้"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={13} />
                             </button>
                           )}
 
@@ -1098,25 +1250,25 @@ export function CaseUpdateView({
                                 [itemIdStr]: !isExpanded
                               }));
                             }}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-transform duration-200 cursor-pointer"
+                            className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-transform duration-200 cursor-pointer"
                             title={isExpanded ? "พับการ์ด" : "ขยายการ์ด"}
                           >
-                            <ChevronDown size={16} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={15} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                           </button>
                         </div>
                       </div>
 
                       {/* ── Item Details Form: AddCaseTab Styled Clean Block Structure ── */}
                       {isExpanded && (
-                        <div className="p-5 sm:p-6 space-y-6 bg-slate-50/30 border-t border-slate-100">
+                        <div className="p-4 sm:p-5 space-y-5 bg-white border-t border-slate-100">
 
                           {/* BLOCK 1: ข้อมูลสินค้าหลัก (Product Identification) */}
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             {/* 3 Columns: Customer, Item Number, Item Code */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               {/* ชื่อลูกค้า */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">ชื่อลูกค้า (Customer Name) *</label>
+                              <div className="space-y-1">
+                                <label className="block text-xs font-semibold text-slate-700">ชื่อลูกค้า (Customer Name) *</label>
                                 <Select
                                   value={item.customerName || ''}
                                   disabled={!canEditItems}
@@ -1126,10 +1278,10 @@ export function CaseUpdateView({
                                     setEditedItems(n);
                                   }}
                                 >
-                                  <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                  <SelectTrigger className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-800 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:text-slate-500">
                                     <SelectValue placeholder="กรุณาเลือก" />
                                   </SelectTrigger>
-                                  <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                  <SelectContent className="bg-white border border-slate-200 shadow-lg rounded-md p-1 z-[100]">
                                     {CUSTOMER_OPTIONS.map((opt) => (
                                       <SelectItem key={opt} value={opt}>
                                         {opt}
@@ -1140,39 +1292,41 @@ export function CaseUpdateView({
                               </div>
 
                               {/* หมายเลขบาร์โค้ด / สูตร */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
+                              <div className="space-y-1">
+                                <label className="block text-xs font-semibold text-slate-700">หมายเลขบาร์โค้ด (Item Number)</label>
                                 <input
                                   type="text"
                                   value={item.itemNumber || ''}
                                   disabled={!canEditItems}
+                                  onFocus={(e) => e.target.select()}
                                   onChange={(e) => {
                                     const n = [...editedItems];
                                     n[index] = { ...n[index], itemNumber: e.target.value };
                                     setEditedItems(n);
                                   }}
                                   placeholder="เช่น 6165xxxx"
-                                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm font-mono font-semibold tracking-tight text-slate-900 shadow-2xs placeholder-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
                                 />
                               </div>
 
                               {/* รหัสสินค้า */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
+                              <div className="space-y-1">
+                                <label className="block text-xs font-semibold text-slate-700">รหัสสินค้า (Item Code)</label>
                                 <input
                                   type="text"
                                   value={item.itemCode || ''}
                                   disabled={!canEditItems}
+                                  onFocus={(e) => e.target.select()}
                                   onChange={(e) => handleItemCodeChange(index, e.target.value)}
                                   placeholder="เช่น 4000xxxx"
-                                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm font-mono font-semibold tracking-tight text-slate-900 shadow-2xs placeholder-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
                                 />
                               </div>
                             </div>
 
                             {/* Full Width: ชื่อรายการ */}
-                            <div className="space-y-1.5">
-                              <label className="text-xs font-semibold text-slate-500">ชื่อรายการ (Item Name) *</label>
+                            <div className="space-y-1">
+                              <label className="block text-xs font-semibold text-slate-700">ชื่อรายการ (Item Name) *</label>
                               <input
                                 type="text"
                                 value={item.itemName || ''}
@@ -1183,31 +1337,32 @@ export function CaseUpdateView({
                                   setEditedItems(n);
                                 }}
                                 placeholder="ระบุชื่อสินค้า / น้ำมัน"
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-900 shadow-2xs placeholder-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
                               />
                             </div>
                           </div>
 
-                          {/* BLOCK 2: แผงไฮไลท์ข้อมูลการผลิต (Production Batch & Spec Highlight Card) */}
-                          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+                          {/* BLOCK 2: แผงไฮไลท์ข้อมูลการผลิต */}
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50 p-3.5 rounded-lg border border-slate-200 shadow-2xs">
                             <div className="col-span-2 sm:col-span-1 space-y-1">
-                              <label className="text-xs font-semibold text-slate-600">หมายเลขล็อต (Batch no.)</label>
+                              <label className="block text-xs font-semibold text-slate-700">หมายเลขล็อต (Batch no.)</label>
                               <input
                                 type="text"
                                 value={item.batchNo || ''}
                                 disabled={!canEditItems}
+                                onFocus={(e) => e.target.select()}
                                 onChange={(e) => {
                                   const n = [...editedItems];
                                   n[index] = { ...n[index], batchNo: e.target.value };
                                   setEditedItems(n);
                                 }}
                                 placeholder="เช่น 16/05/2026"
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-semibold tracking-tight text-slate-900 shadow-2xs placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
                             <div className="col-span-2 sm:col-span-1 space-y-1">
-                              <label className="text-xs font-semibold text-slate-600">วันที่ผลิตแกลลอน</label>
+                              <label className="block text-xs font-semibold text-slate-700">วันที่ผลิตแกลลอน</label>
                               <input
                                 type="date"
                                 value={item.gallonDate ? convertDMYToYMD(item.gallonDate) : (item.packagingDate ? convertDMYToYMD(item.packagingDate) : '')}
@@ -1218,55 +1373,58 @@ export function CaseUpdateView({
                                   n[index] = { ...n[index], gallonDate: dmy, packagingDate: dmy };
                                   setEditedItems(n);
                                 }}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-medium text-slate-900 shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
                             <div className="col-span-1 space-y-1">
-                              <label className="text-xs font-semibold text-slate-600 text-center block">Mold</label>
+                              <label className="block text-xs font-semibold text-slate-700 text-center">Mold</label>
                               <input
                                 type="text"
                                 value={item.mold || ''}
                                 disabled={!canEditItems}
+                                onFocus={(e) => e.target.select()}
                                 onChange={(e) => {
                                   const n = [...editedItems];
                                   n[index] = { ...n[index], mold: e.target.value };
                                   setEditedItems(n);
                                 }}
                                 placeholder="Mold"
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 text-center focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
                             <div className="col-span-1 space-y-1">
-                              <label className="text-xs font-semibold text-slate-600 text-center block">Line</label>
+                              <label className="block text-xs font-semibold text-slate-700 text-center">Line</label>
                               <input
                                 type="text"
                                 value={item.line || ''}
                                 disabled={!canEditItems}
+                                onFocus={(e) => e.target.select()}
                                 onChange={(e) => {
                                   const n = [...editedItems];
                                   n[index] = { ...n[index], line: e.target.value };
                                   setEditedItems(n);
                                 }}
                                 placeholder="Line"
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 text-center focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
+                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
                             <div className="col-span-2 sm:col-span-1 space-y-1">
-                              <label className="text-xs font-bold text-indigo-900 text-center block">จำนวนกล่อง (ลัง) *</label>
+                              <label className="block text-xs font-bold text-slate-900 text-center">จำนวนกล่อง (ลัง) *</label>
                               <input
                                 type="number"
                                 min="1"
                                 value={item.amount || ''}
                                 disabled={!canEditItems}
+                                onFocus={(e) => e.target.select()}
                                 onChange={(e) => {
                                   const n = [...editedItems];
                                   n[index] = { ...n[index], amount: Math.max(1, Number(e.target.value) || 1) };
                                   setEditedItems(n);
                                 }}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-indigo-900 text-center focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-slate-100"
+                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-bold tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-slate-100"
                               />
                             </div>
                           </div>
@@ -1469,49 +1627,28 @@ export function CaseUpdateView({
                                 })}
 
                                 {/* 2. Newly Staged Local Files */}
-                                {stagedFiles.map((file, fileIdx) => {
-                                  const previewUrl = URL.createObjectURL(file);
-                                  return (
-                                    <div 
-                                      key={`staged-${fileIdx}`} 
-                                      className="relative group w-16 h-16 rounded-xl overflow-hidden border-2 border-dashed border-amber-400 bg-amber-50/50 shadow-2xs cursor-pointer transition-all hover:scale-105"
-                                      onClick={() => setLightboxData({ url: previewUrl, title: `รูปใหม่ ${file.name} (Draft)` })}
-                                    >
-                                      <img src={previewUrl} alt="Staged" className="w-full h-full object-cover" />
-                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white">
-                                        <Eye size={15} />
-                                      </div>
-                                      {canEditItems && (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setNewImages(prev => {
-                                              const cur = prev[itemIdStr] || (item.id ? prev[item.id] : undefined) || prev[`idx-${index}`] || [];
-                                              const nextFiles = cur.filter((_, idx) => idx !== fileIdx);
-                                              return {
-                                                ...prev,
-                                                [itemIdStr]: nextFiles
-                                              };
-                                            });
-                                          }}
-                                          className="absolute top-1 right-1 w-5 h-5 rounded-md bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                          title="ยกเลิกรูปนี้"
-                                        >
-                                          <X size={11} />
-                                        </button>
-                                      )}
-                                      <div className="absolute bottom-0 inset-x-0 bg-amber-500 text-white text-[8px] font-bold text-center py-0.5">
-                                        ใหม่
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                {stagedFiles.map((file, fileIdx) => (
+                                  <StagedImageThumbnail
+                                    key={`staged-${fileIdx}-${file.name}`}
+                                    file={file}
+                                    canDelete={canEditItems}
+                                    onView={(url) => setLightboxData({ url, title: `รูปใหม่ ${file.name} (Draft)` })}
+                                    onDelete={() => {
+                                      setNewImages(prev => {
+                                        const cur = prev[itemIdStr] || (item.id ? prev[item.id] : undefined) || prev[`idx-${index}`] || [];
+                                        const nextFiles = cur.filter((_, idx) => idx !== fileIdx);
+                                        return {
+                                          ...prev,
+                                          [itemIdStr]: nextFiles
+                                        };
+                                      });
+                                    }}
+                                  />
+                                ))}
 
                                 {/* 3. Add Photo Button */}
                                 {canEditItems && (
-                                  <label className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50/50 flex flex-col items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shrink-0">
-                                    <Camera size={18} />
+                                  <label className="w-16 h-16 rounded-md border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/50 flex flex-col items-center justify-center text-slate-400 hover:text-amber-700 transition-colors cursor-pointer shrink-0">
                                     <span className="text-[9px] font-bold mt-0.5">+ เพิ่มรูป</span>
                                     <input
                                       type="file"
@@ -1547,18 +1684,12 @@ export function CaseUpdateView({
                                   type="button"
                                   disabled={savingItemIndex !== null}
                                   onClick={() => handleSaveSingleItem(index)}
-                                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                                  className="px-3.5 py-2 bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A] rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
                                 >
                                   {savingItemIndex === index ? (
-                                    <>
-                                      <Loader2 size={14} className="animate-spin" />
-                                      <span>กำลังบันทึก...</span>
-                                    </>
+                                    <span>กำลังบันทึก...</span>
                                   ) : (
-                                    <>
-                                      <Save size={14} />
-                                      <span>บันทึกรายการนี้ ➔ ย้ายลงล่าง</span>
-                                    </>
+                                    <span>บันทึกรายการนี้</span>
                                   )}
                                 </button>
                               </div>
@@ -1577,16 +1708,16 @@ export function CaseUpdateView({
           {/* STEP 2 PANEL: QSMS วิเคราะห์ & ระบุภาชนะ (ANALYSIS & REQUISITION) */}
           {/* ========================================================================= */}
           {activeStep === 'analysis' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Step Header Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-900">Step 2: ผลการวิเคราะห์และระบุภาชนะที่ต้องใช้</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                      canEditAnalysis ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                    <h2 className="text-sm font-bold text-slate-900">Step 2: ผลการวิเคราะห์และระบุภาชนะที่ต้องใช้</h2>
+                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border ${
+                      canEditAnalysis ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
-                      {canEditAnalysis ? '✏️ โหมดวิเคราะห์ & ขอเบิก (QSMS / Admin)' : '👁️ โหมดดูผลวิเคราะห์ (Preview Only)'}
+                      {canEditAnalysis ? 'โหมดวิเคราะห์ & ขอเบิก (QSMS / Admin)' : 'โหมดดูผลวิเคราะห์ (Preview Only)'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -1601,19 +1732,17 @@ export function CaseUpdateView({
                     type="button"
                     onClick={handleQSMSHandover}
                     disabled={isSaving}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A] text-xs font-medium rounded-lg transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <CheckCircle2 size={14} />
-                    <span>บันทึกผล & ส่งขอเบิกภาชนะ ➔</span>
+                    <span>บันทึกผล & ส่งขอเบิกภาชนะ</span>
                   </button>
                 )}
               </div>
 
               {/* Analysis Textarea */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Wrench size={14} className="text-indigo-600" />
                     <span>ผลการวิเคราะห์สาเหตุและแนวทางแก้ไข (Analysis & Resolution Notes)</span>
                   </h3>
                 </div>
@@ -1623,16 +1752,15 @@ export function CaseUpdateView({
                   disabled={!canEditAnalysis}
                   onChange={(e) => setResolutionMethod(e.target.value)}
                   placeholder="ระบุผลการวิเคราะห์สาเหตุ เช่น ซีลฟอยล์ไม่สนิทจากความร้อนตก และแนวทางการแก้ไข เช่น ให้เปลี่ยนแกลลอนใหม่และรันซีลซ้ำ..."
-                  className="w-full text-xs font-medium rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                  className="w-full text-xs font-medium rounded-md border border-slate-300 bg-white p-3 text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
                 />
               </div>
 
               {/* Container & Material Requisition Table */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                      <Package size={16} className="text-orange-600 shrink-0" />
                       <span>รายการภาชนะและวัสดุที่ต้องใช้ (Container & Material Requisition)</span>
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-800 border border-orange-200 shrink-0">
                         {materialRequests.length} รายการ
@@ -1644,8 +1772,7 @@ export function CaseUpdateView({
 
                 {canEditAnalysis && (
                   <div className="rounded-xl bg-slate-50/80 border border-slate-200/70 p-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 shrink-0">
-                      <Sparkles size={13} className="text-orange-500" />
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 shrink-0">
                       <span>เพิ่มด่วน:</span>
                     </div>
                     <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5 w-full flex-wrap sm:flex-nowrap">
@@ -1673,7 +1800,6 @@ export function CaseUpdateView({
 
                 {materialRequests.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-                    <Package size={28} className="mx-auto text-slate-300 mb-2" />
                     <p className="text-xs font-semibold text-slate-600">ยังไม่มีการระบุภาชนะหรือวัสดุที่ต้องใช้</p>
                     {canEditAnalysis && (
                       <div className="mt-3 flex justify-center">
@@ -1682,7 +1808,7 @@ export function CaseUpdateView({
                           onClick={() => setIsAddingCustomMaterial(true)}
                           className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
-                          <Plus size={13} /> เพิ่มรายการวัสดุแบบกำหนดเอง
+                          <span>เพิ่มรายการวัสดุแบบกำหนดเอง</span>
                         </button>
                       </div>
                     )}
@@ -1726,10 +1852,10 @@ export function CaseUpdateView({
                                 mat.status === 'unavailable' ? 'bg-red-100 text-red-800' :
                                 'bg-slate-100 text-slate-600'
                               }`}>
-                                {mat.status === 'fulfilled' ? '✓ เบิกจ่ายครบแล้ว' :
-                                 mat.status === 'partial' ? '⚡ เบิกจ่ายบางส่วน' :
-                                 mat.status === 'unavailable' ? '✗ ของขาด' :
-                                 '⏳ รอคลังเบิกจ่าย'}
+                                {mat.status === 'fulfilled' ? 'เบิกจ่ายครบแล้ว' :
+                                 mat.status === 'partial' ? 'เบิกจ่ายบางส่วน' :
+                                 mat.status === 'unavailable' ? 'ของขาด' :
+                                 'รอคลังเบิกจ่าย'}
                               </span>
                             </td>
                             {canEditAnalysis && (
@@ -1738,9 +1864,8 @@ export function CaseUpdateView({
                                   type="button"
                                   onClick={() => handleRemoveMaterial(mat.id)}
                                   className="p-1 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
-                                  title="ลบรายการ"
                                 >
-                                  <Trash2 size={13} />
+                                  <span>ลบ</span>
                                 </button>
                               </td>
                             )}
@@ -1756,7 +1881,7 @@ export function CaseUpdateView({
                           onClick={() => setIsAddingCustomMaterial(!isAddingCustomMaterial)}
                           className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer"
                         >
-                          <Plus size={13} /> {isAddingCustomMaterial ? 'ยกเลิก' : '+ เพิ่มรายการวัสดุอื่นๆ แบบกำหนดเอง'}
+                          <span>{isAddingCustomMaterial ? 'ยกเลิก' : '+ เพิ่มรายการวัสดุอื่นๆ แบบกำหนดเอง'}</span>
                         </button>
                       </div>
                     )}
@@ -1811,10 +1936,10 @@ export function CaseUpdateView({
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-bold text-slate-900">Step 3: คลังบันทึกการเบิกจ่ายภาชนะ (WPK Fulfillment)</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                       canEditIssuing ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
-                      {canEditIssuing ? '✏️ โหมดเบิกจ่ายของ (WPK / Admin)' : '👁️ โหมดดูการเบิกจ่าย (Preview Only)'}
+                      {canEditIssuing ? 'โหมดเบิกจ่ายของ (WPK / Admin)' : 'โหมดดูการเบิกจ่าย (Preview Only)'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -1831,16 +1956,15 @@ export function CaseUpdateView({
                       onClick={handleFulfillAllMaterials}
                       className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
                     >
-                      ✓ เบิกครบตามยอดทั้งหมด
+                      เบิกครบตามยอดทั้งหมด
                     </button>
                     <button
                       type="button"
                       onClick={handleWPKHandover}
                       disabled={isSaving}
-                      className="px-4 py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-medium rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Truck size={14} />
-                      <span>จ่ายของครบ & ส่งให้ PDF ซ่อม ➔</span>
+                      <span>จ่ายของครบ & ส่งให้ PDF ซ่อม</span>
                     </button>
                   </div>
                 )}
@@ -1849,7 +1973,6 @@ export function CaseUpdateView({
               {/* Warehouse Issuing Table */}
               <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Package size={16} className="text-orange-600" />
                   <span>ตารางเบิกจ่ายภาชนะและวัสดุ</span>
                 </h3>
 
@@ -1912,45 +2035,48 @@ export function CaseUpdateView({
               </div>
 
               {/* Material Shortage Card */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-2.5">
                 <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2">
                   <AlertCircle size={14} className="text-amber-600" />
                   <span>บันทึกวัสดุที่ขาด (Material Shortage Record)</span>
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ขาดกล่อง (ใบ)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">ขาดกล่อง (ใบ)</label>
                     <input
                       type="number"
                       min="0"
                       value={missingBoxes || ''}
                       disabled={!canEditIssuing}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setMissingBoxes(Number(e.target.value) || 0)}
-                      className="w-full text-xs font-semibold bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white"
+                      className="w-full text-xs font-mono font-bold tracking-tight bg-white border border-slate-300 rounded-md px-3 py-1.5 text-slate-900 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                       placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ขาดแกลลอน (ใบ)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">ขาดแกลลอน (ใบ)</label>
                     <input
                       type="number"
                       min="0"
                       value={missingGallons || ''}
                       disabled={!canEditIssuing}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setMissingGallons(Number(e.target.value) || 0)}
-                      className="w-full text-xs font-semibold bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white"
+                      className="w-full text-xs font-mono font-bold tracking-tight bg-white border border-slate-300 rounded-md px-3 py-1.5 text-slate-900 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                       placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ขาดน้ำมัน (ลิตร)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">ขาดน้ำมัน (ลิตร)</label>
                     <input
                       type="number"
                       min="0"
                       value={missingOil || ''}
                       disabled={!canEditIssuing}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setMissingOil(Number(e.target.value) || 0)}
-                      className="w-full text-xs font-semibold bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white"
+                      className="w-full text-xs font-mono font-bold tracking-tight bg-white border border-slate-300 rounded-md px-3 py-1.5 text-slate-900 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                       placeholder="0"
                     />
                   </div>
@@ -1963,16 +2089,16 @@ export function CaseUpdateView({
           {/* STEP 4 PANEL: PDF ซ่อมงาน & DEFEND MODE (REPAIR & DEFEND) */}
           {/* ========================================================================= */}
           {activeStep === 'repair' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Step Header Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-900">Step 4: ช่างซ่อมบันทึกความคืบหน้า & Defend</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                      canEditRepair ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                    <h2 className="text-sm font-bold text-slate-900">Step 4: ช่างซ่อมบันทึกความคืบหน้า & Defend</h2>
+                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border ${
+                      canEditRepair ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
-                      {canEditRepair ? '✏️ โหมดซ่อม & Defend (PDF / Admin)' : '👁️ โหมดดูความคืบหน้า (Preview Only)'}
+                      {canEditRepair ? 'โหมดซ่อม & Defend (PDF / Admin)' : 'โหมดดูความคืบหน้า (Preview Only)'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -1988,25 +2114,25 @@ export function CaseUpdateView({
                       type="button"
                       onClick={() => handlePDFSave(false, false)}
                       disabled={isSaving}
-                      className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                      className="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-all cursor-pointer"
                     >
-                      💾 บันทึกความคืบหน้า
+                      บันทึกความคืบหน้า
                     </button>
                     <button
                       type="button"
                       onClick={() => handlePDFSave(true, false)}
                       disabled={isSaving || globalCompleted < totalBoxes}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white text-xs font-medium rounded-md transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCheck size={14} />
-                      <span>🏁 ปิดเคส 100% (Completed)</span>
+                      <span>ปิดเคส 100% (Completed)</span>
                     </button>
                   </div>
                 )}
               </div>
 
               {/* Progress Gauge Card */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -2014,7 +2140,7 @@ export function CaseUpdateView({
                       <span>ความคืบหน้าการซ่อมรวม (Overall Progress)</span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      ยอดเสร็จ: <strong className="text-emerald-700">{globalCompleted}</strong> จากทั้งหมด <strong>{totalBoxes}</strong> กล่อง ({completionPercentage}%)
+                      ยอดเสร็จ: <strong className="text-emerald-800">{globalCompleted}</strong> จากทั้งหมด <strong>{totalBoxes}</strong> กล่อง ({completionPercentage}%)
                     </p>
                   </div>
 
@@ -2025,14 +2151,15 @@ export function CaseUpdateView({
                         min="0"
                         max={totalBoxes}
                         value={globalCompleted || ''}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => handleGlobalProgressChange(Number(e.target.value) || 0)}
                         placeholder="ระบุยอดรวมที่เสร็จ..."
-                        className="w-36 text-xs font-bold text-center border border-slate-200 rounded-xl py-2 px-3 bg-slate-50 focus:bg-white focus:border-emerald-500"
+                        className="w-32 text-xs font-mono font-bold tracking-tight text-center border border-slate-300 rounded-md py-1.5 px-3 bg-white text-slate-900 shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                       />
                       <button
                         type="button"
                         onClick={() => handleGlobalProgressChange(totalBoxes)}
-                        className="px-3 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-bold text-slate-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 transition-colors cursor-pointer"
                       >
                         เสร็จทั้งหมด
                       </button>
@@ -2040,16 +2167,16 @@ export function CaseUpdateView({
                   )}
                 </div>
 
-                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                    className="h-full bg-amber-500 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min(100, completionPercentage)}%` }}
                   />
                 </div>
               </div>
 
               {/* PDF Defend Mode Card */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -2066,7 +2193,7 @@ export function CaseUpdateView({
                       type="button"
                       onClick={() => handlePDFSave(false, true)}
                       disabled={isSaving}
-                      className="px-3.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                      className="px-3 py-1.5 text-xs font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
                     >
                       <AlertTriangle size={13} />
                       <span>⚠️ บันทึกสถานะติดปัญหา (Defend Case)</span>
@@ -2074,18 +2201,18 @@ export function CaseUpdateView({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5">หมวดหมู่ปัญหา (Defend Category)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">หมวดหมู่ปัญหา (Defend Category)</label>
                     <Select
                       value={defendCategory}
                       disabled={!canEditRepair}
                       onValueChange={setDefendCategory}
                     >
-                      <SelectTrigger className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 disabled:bg-slate-100 disabled:text-slate-400 transition-colors">
+                      <SelectTrigger className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:text-slate-400 transition-colors">
                         <SelectValue placeholder="เลือกหมวดหมู่ปัญหา" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                      <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-md p-1 z-[100]">
                         <SelectItem value="waiting_oil">รอน้ำมัน (Waiting for Oil)</SelectItem>
                         <SelectItem value="waiting_container">รอภาชนะจาก WPK (Waiting for Containers)</SelectItem>
                         <SelectItem value="waiting_label">รอฉลากจาก Supplier (Waiting for Labels)</SelectItem>
@@ -2096,14 +2223,14 @@ export function CaseUpdateView({
                     </Select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5">บันทึกข้อแก้ต่าง / อุปสรรค (Defend Notes)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">บันทึกข้อแก้ต่าง / อุปสรรค (Defend Notes)</label>
                     <textarea
                       rows={2}
                       value={defendNotes}
                       disabled={!canEditRepair}
                       onChange={(e) => setDefendNotes(e.target.value)}
                       placeholder="ระบุรายละเอียด เช่น รอน้ำมันล็อตพิเศษจากคลัง แจ้งเรื่องไปเมื่อ 10:00 น. กำลังรอการจัดส่ง..."
-                      className="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl p-2.5 disabled:bg-slate-100 disabled:text-slate-400 focus:bg-white focus:border-rose-500 focus:outline-none"
+                      className="w-full text-xs font-medium bg-white border border-slate-300 rounded-md p-2.5 disabled:bg-slate-100 disabled:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -2113,67 +2240,33 @@ export function CaseUpdateView({
 
         </div>
       </div>
+    </div>
 
       {/* Export Overlay */}
       <AnimatePresence>
         {isExporting && (
-          <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-8">
-            <div className="bg-white rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full text-center">
+          <div className="fixed inset-0 z-[120] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-8">
+            <div className="bg-white rounded-xl p-8 shadow-2xl flex flex-col items-center gap-5 max-w-sm w-full text-center border border-slate-200">
               <div className="relative">
-                <div className="w-20 h-20 border-4 border-emerald-500/10 border-t-emerald-500 rounded-full animate-spin" />
+                <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Download size={24} className="text-emerald-600 animate-pulse" />
+                  <Download size={20} className="text-amber-600 animate-pulse" />
                 </div>
               </div>
               <div>
-                <h4 className="text-lg font-black text-slate-900 mb-1">กำลังเตรียมเอกสาร Excel...</h4>
-                <p className="text-sm text-slate-500">{exportProgress}</p>
+                <h4 className="text-base font-bold text-slate-900 mb-1">กำลังเตรียมเอกสาร Excel...</h4>
+                <p className="text-xs text-slate-500">{exportProgress}</p>
               </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="h-full bg-emerald-500"
+                  className="h-full bg-amber-500"
                 />
               </div>
             </div>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Unsaved Changes Alert Bar */}
-      <AnimatePresence>
-        {hasUnsavedPhotos && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 text-white backdrop-blur-md px-4 sm:px-6 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center gap-4 max-w-xl w-[92vw] sm:w-auto justify-between"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 animate-pulse">
-                <AlertCircle size={18} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate">
-                  มี {totalNewPhotos > 0 ? `${totalNewPhotos} รูปใหม่` : ''}{totalNewPhotos > 0 && deletedItemIds.length > 0 ? ' และ' : ''}{deletedItemIds.length > 0 ? `ลบ ${deletedItemIds.length} รูป` : ''} ที่ยังไม่ได้บันทึก
-                </p>
-                <p className="text-[11px] text-slate-400 truncate">
-                  กดบันทึกเพื่ออัปโหลดเข้าระบบถาวร
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleSave(true)}
-              disabled={isSaving}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ring-2 ring-indigo-400/30"
-            >
-              <Save size={14} />
-              <span>{isSaving ? 'กำลังบันทึก...' : 'บันทึกรูปภาพทันที'}</span>
-            </button>
-          </motion.div>
         )}
       </AnimatePresence>
 
@@ -2186,7 +2279,7 @@ export function CaseUpdateView({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setLightboxData(null)}
-              className="absolute inset-0 bg-black/90 backdrop-blur-sm cursor-zoom-out"
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs cursor-zoom-out"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 15 }}
@@ -2195,30 +2288,30 @@ export function CaseUpdateView({
               className="relative z-10 max-w-4xl max-h-[90vh] flex flex-col items-center select-none"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-slate-950 flex items-center justify-center max-h-[80vh]">
+              <div className="relative rounded-lg overflow-hidden shadow-2xl border border-white/20 bg-slate-900 flex items-center justify-center max-h-[80vh]">
                 <img
                   src={lightboxData.url}
                   alt="Fullscreen Preview"
-                  className="max-h-[80vh] max-w-full object-contain rounded-2xl"
+                  className="max-h-[80vh] max-w-full object-contain rounded-lg"
                 />
                 <button
                   type="button"
                   onClick={() => setLightboxData(null)}
-                  className="absolute top-3 right-3 w-9 h-9 bg-black/60 hover:bg-black/90 text-white rounded-full flex items-center justify-center transition-colors border border-white/20 cursor-pointer"
+                  className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/90 text-white rounded-full flex items-center justify-center transition-colors border border-white/20 cursor-pointer"
                   title="ปิด (Esc)"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
               {lightboxData.title && (
-                <div className="mt-3 px-4 py-1.5 rounded-full bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/10 flex items-center gap-2">
-                  <Camera size={13} className="text-indigo-400" />
+                <div className="mt-3 px-3.5 py-1 rounded-full bg-slate-900/80 text-white text-xs font-semibold backdrop-blur-md border border-white/10 flex items-center gap-2">
+                  <Camera size={13} className="text-amber-400" />
                   <span>{lightboxData.title}</span>
                   <a
                     href={lightboxData.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="ml-2 text-indigo-300 hover:text-white underline text-[11px]"
+                    className="ml-2 text-amber-300 hover:text-white underline text-[11px]"
                   >
                     เปิดขนาดเต็ม ↗
                   </a>
@@ -2239,25 +2332,25 @@ export function CaseUpdateView({
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
           >
-            <div className="flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/15 text-white shadow-2xl shadow-black/40 min-w-[280px] sm:min-w-[340px]">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/95 text-slate-800 border border-slate-200 shadow-xl backdrop-blur-md min-w-[260px] sm:min-w-[300px]">
               {isComplete ? (
-                <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                  <CheckCircle2 size={18} className="animate-bounce" />
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={16} className="animate-bounce" />
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
-                  <Loader2 size={18} className="animate-spin" />
+                <div className="w-7 h-7 rounded-lg bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center justify-center shrink-0">
+                  <Loader2 size={16} className="animate-spin" />
                 </div>
               )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span className="truncate">{statusText || (isComplete ? 'บันทึกเรียบร้อย' : 'กำลังบันทึกข้อมูล...')}</span>
-                  <span className="font-mono text-indigo-300 shrink-0 ml-2">{Math.round(progress)}%</span>
+                  <span className="truncate text-slate-800">{statusText || (isComplete ? 'บันทึกเรียบร้อย' : 'กำลังบันทึกข้อมูล...')}</span>
+                  <span className="font-mono text-[#92400E] shrink-0 ml-2">{Math.round(progress)}%</span>
                 </div>
-                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-indigo-400 to-emerald-400 rounded-full"
+                    className="h-full bg-[#F5C754] rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.2 }}
@@ -2281,6 +2374,6 @@ export function CaseUpdateView({
           resolutionMethod
         } : null}
       />
-    </motion.div>
+    </div>
   );
 }

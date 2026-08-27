@@ -213,3 +213,22 @@ An automated Python pipeline leveraging `python-docx` to generate the formal 5-c
 
 ### Touch Gesture Deck Navigation (`GuideApp.tsx`)
 A touch-first navigation layer for the presentation deck on mobile devices, providing horizontal swipe gesture detection (`onTouchStart`/`onTouchEnd`), a floating bottom mobile control bar (`md:hidden`), and an emergency floating exit button (`top-3 left-3 z-[99999]`).
+
+### 5-Stage Operations Flow & Department Bottleneck Monitor (`Dashboard.tsx`)
+The comprehensive rework lifecycle analytics mapping case statuses to responsible operational departments:
+- **Pending Analysis** (QSMS / Quality Control)
+- **Awaiting Materials** (WPK / Warehouse & Store)
+- **In-Progress** (PDF / Production & Defect Repair)
+- **Blocked** (Defend Mode / Material Shortages)
+- **Completed** (100% Closed)
+Featuring the real-time **Operations Bottleneck Radar** to pinpoint backlogged departments and a 4-department status island with 1-click interactive cross-filtering.
+
+### Universal Prompt Font Standardization
+The global typography standard across all interfaces enforcing Google Font `Prompt` (300, 400, 500, 600, 700) for `--font-sans`, `--font-thai`, and `--font-mono`. This eliminates programmer dotted zeros (`0`) in numeric serials and codes, provides clean visual weight hierarchy, and replaces informal iconography with clean enterprise standards.
+
+### JIT Single-Batch Kitting & Closed-Loop Two-Way Handshake
+An industrial engineering workflow model for RT/RW material requisitions:
+1. **Pre-Analysis Gate**: No materials are drawn before inspection.
+2. **Consolidated BOM**: QSMS defines the exact required containers and parts upon defect analysis.
+3. **Single-Batch Delivery**: WPK fulfills the entire kit in one single run.
+4. **Digital Handshake Sign-off**: PDF verifies and signs off in the system before repair begins, establishing clear accountability and eliminating finger-pointing.

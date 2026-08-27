@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, UploadCloud, File, Loader2, Sparkles, AlertCircle, Trash2, CheckCircle2, Plus, RotateCw, ZoomIn, ZoomOut, Maximize2, Minimize2, RefreshCcw, Filter, LayoutGrid, LayoutList } from 'lucide-react';
+import { X, UploadCloud, File, Loader2, Bot, AlertCircle, Trash2, CheckCircle2, Plus, RotateCw, ZoomIn, ZoomOut, Maximize2, Minimize2, RefreshCcw, Filter, LayoutGrid, LayoutList } from 'lucide-react';
 import { useNotification } from '../../../contexts/NotificationContext';
 import type { User } from '../../../services/auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -398,7 +398,7 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
             <div className="px-6 py-3 bg-blue-50/50 dark:bg-blue-500/5 border-b border-slate-200 dark:border-white/10 shrink-0">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 animate-pulse text-blue-500" />
+                  <Bot className="h-3.5 w-3.5 text-blue-500" />
                   {showUploadProgress 
                     ? `Saving Documents: ${uploadedItemsCount} of ${totalItems} completed (${uploadProgressPercent}%)`
                     : `Gemini AI Processing: ${parsedItemsCount} of ${totalItems} completed (${parseProgressPercent}%)`
@@ -612,7 +612,7 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
                                 title="Re-parse with AI"
                                 className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded transition-colors"
                               >
-                                <Sparkles className="h-4 w-4" />
+                                <RotateCw className="h-4 w-4" />
                               </button>
                             )}
                             <button 

@@ -52,6 +52,7 @@ export interface ReworkItem {
   imageCount?: number;
   completedBoxes?: number;
   uid?: string; // Stable unique ID from backend
+  itemSequence?: number; // Original item sequence number (1-based)
   lastActiveField?: 'itemNumber' | 'itemCode'; // Tracks user priority
   verificationStatus?: 'idle' | 'checking' | 'verified' | 'new' | 'failed' | 'updating' | 'conflict';
 }
@@ -243,19 +244,20 @@ export async function insertCase(
     const processedItems = await Promise.all(items.map(async (item) => {
       const files = imageData && imageData[item.id] ? imageData[item.id] : [];
 
-      const newUrls: string[] = [];
-      for (const file of files) {
+      const uploadPromises = files.map(async (file) => {
         const compression = await compressImage(file, { maxSizeMB: 0.3 }); // Target 300KB
         const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
-        
         const uploadResult = await uploadImageToCloudinary(fileToUpload);
         if (uploadResult.success && uploadResult.url) {
-          newUrls.push(uploadResult.url);
           allUploadedUrls.push(uploadResult.url);
+          return uploadResult.url;
         } else {
           console.error(`Failed to upload image to Cloudinary for item ${item.itemNumber}:`, uploadResult.error);
+          return null;
         }
-      }
+      });
+      const uploadResults = await Promise.all(uploadPromises);
+      const newUrls = uploadResults.filter((url): url is string => url !== null);
 
       return {
         ...item,
@@ -526,16 +528,20 @@ export async function updateCase(
                         updates.newImages[i.toString()];
 
           if (files && files.length > 0) {
-            const newUrls: string[] = [];
-            for (const file of files) {
+            const uploadPromises = files.map(async (file) => {
               const compression = await compressImage(file, { maxSizeMB: 0.3 });
               const fileToUpload = compression.success && compression.compressedFile ? compression.compressedFile : file;
               const uploadResult = await uploadImageToCloudinary(fileToUpload);
               if (uploadResult.success && uploadResult.url) {
-                newUrls.push(uploadResult.url);
                 allUploadedUrls.push(uploadResult.url);
+                return uploadResult.url;
+              } else {
+                console.error(`Failed to upload image for item ${itemKey}:`, uploadResult.error);
+                return null;
               }
-            }
+            });
+            const uploadResults = await Promise.all(uploadPromises);
+            const newUrls = uploadResults.filter((url): url is string => url !== null);
             item.imageUrls = [...(item.imageUrls || []), ...newUrls];
           }
         }

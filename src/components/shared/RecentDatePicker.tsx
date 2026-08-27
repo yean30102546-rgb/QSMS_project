@@ -37,24 +37,24 @@ export function RecentDatePicker({
   };
 
   return (
-    <div className="space-y-2">
-      <label className="block ml-1 text-xs font-semibold text-slate-500">{label}</label>
+    <div className="space-y-1.5">
+      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 font-sans">{label}</label>
       <ConfigProvider
         locale={localeTh}
         theme={{
           token: {
-            fontFamily: `"Sarabun", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif`,
+            fontFamily: `"Prompt", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`,
             fontSize: 14,
-            colorText: "#1d1d1f",
-            colorTextPlaceholder: "#a1a1aa", // text-slate-400
-            colorBorder: "#d2d2d7", // border-border
-            borderRadius: 12, // rounded-xl
-            colorPrimary: "#3b82f6", // blue-500
+            colorText: "#0f172a",
+            colorTextPlaceholder: "#94a3b8", // text-slate-400
+            colorBorder: "#cbd5e1", // border-slate-300
+            borderRadius: 6, // rounded-md
+            colorPrimary: "#ecc542", // jasmine-500
           },
           components: {
             DatePicker: {
-              colorBgContainer: "rgba(248, 250, 252, 0.5)", // bg-slate-50/50
-              controlHeight: 46, // h-[46px]
+              colorBgContainer: "#ffffff",
+              controlHeight: 42,
             }
           }
         }}

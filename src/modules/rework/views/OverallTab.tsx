@@ -143,27 +143,24 @@ export function OverallTab({
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <AnimatePresence initial={false} mode="wait">
-        {activeView === 'list' && (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="flex h-full flex-col overflow-hidden bg-transparent"
-          >
-            <div className="flex-shrink-0 border-b border-white/20 bg-white/20 backdrop-blur-md px-0 py-3 sm:py-6 md:py-8 lg:py-10 shadow-sm shadow-primary/5">
-              <div className="px-3 sm:px-6 md:px-10 lg:px-12">
-                <header className="mb-3 sm:mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="mb-0.5 sm:mb-1 text-[11px] sm:text-xs font-medium text-on-surface-variant/80 uppercase tracking-wider">
-                      {new Date().toLocaleDateString('th-TH', {
-                        weekday: 'long',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </p>
-                    <h1 className="text-xl font-semibold tracking-tight text-primary sm:text-2xl md:text-3xl">
+      {/* 1. Main Case List Table (Instant Enterprise Viewport) */}
+      <div 
+        className={`h-full flex-col overflow-hidden bg-transparent ${
+          activeView === 'update' ? 'hidden' : 'flex'
+        }`}
+      >
+        <div className="flex-shrink-0 border-b border-slate-200 bg-white px-0 py-4 sm:py-5 md:py-6 shadow-xs">
+          <div className="px-4 sm:px-6 md:px-8 lg:px-10">
+            <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="mb-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  {new Date().toLocaleDateString('th-TH', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </p>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
                   สวัสดี {
                     userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
                     userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
@@ -177,69 +174,73 @@ export function OverallTab({
                   <button
                     onClick={loadCases}
                     disabled={isLoadingCases}
-                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/40 bg-white/40 text-primary transition-all hover:bg-white/80 disabled:opacity-50 active:scale-95 shadow-sm"
+                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 active:scale-95 shadow-xs cursor-pointer"
                   >
-                    <RefreshCw size={16} className={isLoadingCases ? 'animate-spin' : ''} />
+                    <RefreshCw size={15} className={isLoadingCases ? 'animate-spin' : ''} />
                   </button>
                 </Tooltip>
               </div>
             </header>
 
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4 lg:grid-cols-4">
-              <StatCard label="จำนวนงานทั้งหมด" value={stats.total.toString()} />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-4">
+              <StatCard label="จำนวนงานทั้งหมด" value={stats.total.toString()} variant="total" />
               <StatCard
                 label="รอดำเนินการ"
                 value={stats.pending.toString()}
                 trend={`${Math.round((stats.pending / (stats.total || 1)) * 100)}%`}
+                variant="pending"
               />
-              <StatCard label="กำลังดำเนินการ" value={stats.inProgress.toString()} />
-              <StatCard label="เสร็จสิ้น" value={stats.completed.toString()} />
+              <StatCard label="กำลังดำเนินการ" value={stats.inProgress.toString()} variant="progress" />
+              <StatCard label="เสร็จสิ้น" value={stats.completed.toString()} variant="completed" />
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide bg-transparent pb-28 sm:pb-8">
-          <div className="px-3 py-3 sm:px-6 sm:py-6 md:px-10 lg:px-12">
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex-1 overflow-y-auto scrollbar-hide bg-slate-100/60 pb-24 sm:pb-6">
+          <div className="px-4 py-4 sm:px-6 sm:py-5 md:px-8 lg:px-10">
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-1">
-                  <h3 className="text-sm font-semibold tracking-tight text-primary md:text-base">
-                    รายการงาน Rework ล่าสุด
-                  </h3>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="relative w-full sm:w-56">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/80" size={14} />
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold tracking-tight text-slate-800 md:text-base">
+                      รายการงาน Rework ทั้งหมด
+                    </h3>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-200 text-slate-700">
+                      {filteredCases.length} เคส
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="relative w-full sm:w-60">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                       <input
                         type="text"
-                        placeholder="ค้นหา..."
-                        className="w-full appearance-none rounded-xl border border-white/60 bg-white/90 py-2.5 pl-9 pr-4 text-xs font-medium text-primary transition-all placeholder:text-on-surface-variant/60 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+                        placeholder="ค้นหารหัสเคส, สินค้า, ลูกค้า..."
+                        className="w-full appearance-none rounded-md border border-slate-300 bg-white py-1.5 pl-8.5 pr-3 text-xs font-medium text-slate-900 transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-xs"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                    <button
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`flex h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all sm:h-auto shadow-sm ${
+                      className={`flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-xs font-semibold transition-colors shadow-2xs cursor-pointer ${
                         showFilters || hasActiveFilters
-                          ? 'bg-primary text-white shadow-md shadow-primary/25 border border-primary/20'
-                          : 'border border-white/45 bg-white/45 text-on-surface-variant hover:bg-white/60 hover:text-primary'
+                          ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <SlidersHorizontal size={14} />
-                      ตัวกรอง
+                      <SlidersHorizontal size={13} />
+                      <span>ตัวกรอง</span>
                       {activeFilterCount > 0 && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-primary">
+                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FDE68A] text-[10px] font-bold text-[#78350F]">
                           {activeFilterCount}
                         </span>
                       )}
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 px-1 overflow-x-auto pb-2 scrollbar-hide">
-                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant/85">สถานะ:</span>
+                <div className="flex items-center gap-1.5 px-1 overflow-x-auto pb-1 scrollbar-hide">
+                  <span className="shrink-0 text-xs font-semibold text-slate-500 mr-1">สถานะ:</span>
                   {(['all', 'Pending', 'In-Progress', 'Completed'] as const).map((status) => {
                     const isAll = status === 'all';
                     const isActive = isAll ? statusFilter.length === 0 : statusFilter.includes(status);
@@ -253,19 +254,9 @@ export function OverallTab({
                             ? 'กำลังดำเนินการ'
                             : 'เสร็จสิ้น';
 
-                    const activeColors = isAll
-                      ? 'bg-primary text-white shadow-md shadow-primary/20'
-                      : status === 'Pending'
-                        ? 'bg-tertiary text-white shadow-md shadow-tertiary/20'
-                        : status === 'In-Progress'
-                          ? 'bg-[#7c98b3] text-white shadow-md shadow-[#7c98b3]/25'
-                          : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20';
-
                     return (
-                      <motion.button
+                      <button
                         key={status}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
                         onClick={() => {
                           if (isAll) {
                             setStatusFilter([]);
@@ -273,15 +264,17 @@ export function OverallTab({
                             toggleStatusFilter(status);
                           }
                         }}
-                        className={`flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all border border-transparent shadow-sm ${
+                        className={`flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all border shadow-2xs cursor-pointer ${
                           isActive
-                            ? activeColors
-                            : 'border-white/45 bg-white/45 text-on-surface-variant hover:bg-white/60 hover:text-primary'
+                            ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A] font-bold'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                       >
-                        {thaiLabel}
-                        <span className={`text-[10px] font-bold ${isActive ? 'opacity-90' : 'opacity-65'}`}>{count}</span>
-                      </motion.button>
+                        <span>{thaiLabel}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                          isActive ? 'bg-[#FDE68A] text-[#78350F]' : 'bg-slate-100 text-slate-500'
+                        }`}>{count}</span>
+                      </button>
                     );
                   })}
                 </div>
@@ -290,118 +283,112 @@ export function OverallTab({
               <AnimatePresence>
                 {showFilters && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="rounded-2xl border border-white/50 bg-white/85 p-6 shadow-xl shadow-primary/5 backdrop-blur-2xl"
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="rounded-lg border border-slate-300 bg-white p-5 shadow-xs"
                   >
-                    <div className="mb-5 flex items-center justify-between">
+                    <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                          <Filter size={16} className="text-primary" />
+                        <div className="flex h-7 w-7 items-center justify-center rounded bg-amber-100 text-amber-900 font-bold">
+                          <Filter size={14} />
                         </div>
                         <div>
-                          <h4 className="text-sm font-semibold text-primary">ตัวกรองขั้นสูง</h4>
-                          <p className="text-[10px] text-on-surface-variant/80">เลือกเงื่อนไขเพื่อคัดกรองข้อมูล</p>
+                          <h4 className="text-xs font-bold text-slate-900">ตัวกรองขั้นสูง</h4>
+                          <p className="text-[11px] text-slate-500">เลือกเงื่อนไขเพื่อคัดกรองรายการเคส</p>
                         </div>
                       </div>
                       <button
                         onClick={() => setShowFilters(false)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-white/60 hover:text-primary"
+                        className="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                       >
-                        <X size={16} />
+                        <X size={15} />
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted">แหล่งที่มา (Source)</label>
-                        <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">แหล่งที่มา (Source)</label>
+                        <div className="flex flex-wrap gap-1.5">
                           {uniqueSources.map((source) => {
                             const isSelected = sourceFilter.includes(source);
                             return (
-                              <motion.button
+                              <button
                                 key={source}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
                                 onClick={() => {
                                   if (isSelected) setSourceFilter(sourceFilter.filter((s) => s !== source));
                                   else setSourceFilter([...sourceFilter, source]);
                                 }}
-                                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all border shadow-sm ${
+                                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors border shadow-xs ${
                                   isSelected
-                                    ? 'bg-primary text-white border-primary/20 shadow-primary/20'
-                                    : 'border-white/50 bg-white/40 text-on-surface-variant hover:bg-white/60 hover:text-primary'
+                                    ? 'bg-amber-500 text-slate-950 border-amber-600 font-bold'
+                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
                                 {source}
-                              </motion.button>
+                              </button>
                             );
                           })}
-                          {uniqueSources.length === 0 && <span className="text-xs italic text-on-surface-variant/70">ไม่มีข้อมูล</span>}
+                          {uniqueSources.length === 0 && <span className="text-xs text-slate-400 italic">ไม่มีข้อมูล</span>}
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-on-surface-variant">ประเภท Defect (Reason)</label>
-                        <div className="max-h-28 overflow-y-auto flex flex-wrap gap-2">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">ประเภท Defect (Reason)</label>
+                        <div className="max-h-28 overflow-y-auto flex flex-wrap gap-1.5">
                           {uniqueReasons.map((reason) => {
                             const isSelected = reasonFilter.includes(reason);
                             return (
-                              <motion.button
+                              <button
                                 key={reason}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
                                 onClick={() => {
                                   if (isSelected) setReasonFilter(reasonFilter.filter((r) => r !== reason));
                                   else setReasonFilter([...reasonFilter, reason]);
                                 }}
-                                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all border shadow-sm ${
+                                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors border shadow-xs ${
                                   isSelected
-                                    ? 'bg-tertiary text-white border-tertiary/20 shadow-tertiary/20'
-                                    : 'border-white/50 bg-white/40 text-on-surface-variant hover:bg-white/60 hover:text-primary'
+                                    ? 'bg-amber-500 text-slate-950 border-amber-600 font-bold'
+                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
                                 {reason}
-                              </motion.button>
+                              </button>
                             );
                           })}
-                          {uniqueReasons.length === 0 && <span className="text-xs italic text-on-surface-variant/70">ไม่มีข้อมูล</span>}
+                          {uniqueReasons.length === 0 && <span className="text-xs text-slate-400 italic">ไม่มีข้อมูล</span>}
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-on-surface-variant">ผู้รับผิดชอบ (Responsible)</label>
-                        <div className="max-h-28 overflow-y-auto flex flex-wrap gap-2">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">ผู้รับผิดชอบ (Responsible)</label>
+                        <div className="max-h-28 overflow-y-auto flex flex-wrap gap-1.5">
                           {uniqueResponsible.map((responsible) => {
                             const isSelected = responsibleFilter.includes(responsible);
                             return (
-                              <motion.button
+                              <button
                                 key={responsible}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
                                 onClick={() => {
                                   if (isSelected) setResponsibleFilter(responsibleFilter.filter((r) => r !== responsible));
                                   else setResponsibleFilter([...responsibleFilter, responsible]);
                                 }}
-                                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all border shadow-sm ${
+                                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors border shadow-xs ${
                                   isSelected
-                                    ? 'bg-secondary text-white border-secondary/20 shadow-secondary/20'
-                                    : 'border-white/50 bg-white/40 text-on-surface-variant hover:bg-white/60 hover:text-primary'
+                                    ? 'bg-slate-800 text-white border-slate-900 font-bold'
+                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
                                 {responsible}
-                              </motion.button>
+                              </button>
                             );
                           })}
-                          {uniqueResponsible.length === 0 && <span className="text-xs italic text-on-surface-variant/70">ไม่มีข้อมูล</span>}
+                          {uniqueResponsible.length === 0 && <span className="text-xs text-slate-400 italic">ไม่มีข้อมูล</span>}
                         </div>
                       </div>
 
-                      <div className="space-y-3 md:col-span-2 lg:col-span-3">
-                        <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-on-surface-variant">
-                          <Calendar size={12} /> ช่วงเวลา (Date Range)
+                      <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                          <Calendar size={13} /> ช่วงเวลา (Date Range)
                         </label>
                         <div className="flex items-center gap-3">
                           <div className="relative flex-1">
@@ -409,37 +396,35 @@ export function OverallTab({
                               type="date"
                               value={dateFromFilter}
                               onChange={(e) => setDateFromFilter(e.target.value)}
-                              className="w-full rounded-xl border border-white/45 bg-white/45 px-4 py-2.5 text-sm font-semibold transition-all focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+                              className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-xs"
                             />
-                            <span className="absolute -top-2 left-3 bg-white/95 backdrop-blur-sm px-1 text-[9px] font-semibold text-on-surface-variant">เริ่มต้น</span>
+                            <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-semibold text-slate-500">เริ่มต้น</span>
                           </div>
-                          <span className="text-xs font-semibold text-on-surface-variant">→</span>
+                          <span className="text-xs font-semibold text-slate-400">→</span>
                           <div className="relative flex-1">
                             <input
                               type="date"
                               value={dateToFilter}
                               onChange={(e) => setDateToFilter(e.target.value)}
-                              className="w-full rounded-xl border border-white/45 bg-white/45 px-4 py-2.5 text-sm font-semibold transition-all focus:bg-white/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+                              className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-xs"
                             />
-                            <span className="absolute -top-2 left-3 bg-white/95 backdrop-blur-sm px-1 text-[9px] font-semibold text-on-surface-variant">สิ้นสุด</span>
+                            <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-semibold text-slate-500">สิ้นสุด</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {hasActiveFilters && (
-                      <div className="mt-5 flex items-center justify-between border-t border-white/20 pt-4">
-                        <p className="text-xs text-on-surface-variant/80">
-                          พบ <span className="font-semibold text-primary">{filteredCases.length}</span> รายการ จากทั้งหมด {cases.length} รายการ
+                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                        <p className="text-xs text-slate-600">
+                          พบ <span className="font-bold text-slate-900">{filteredCases.length}</span> รายการ จากทั้งหมด {cases.length} รายการ
                         </p>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                        <button
                           onClick={clearAllFilters}
-                          className="flex items-center gap-1.5 rounded-xl border border-red-200/50 bg-red-50/50 backdrop-blur-sm px-4 py-2 text-xs font-semibold text-red-600 transition-all hover:bg-red-100/60 shadow-sm"
+                          className="flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 shadow-xs cursor-pointer"
                         >
-                          <X size={14} /> ล้างตัวกรองทั้งหมด
-                        </motion.button>
+                          <X size={13} /> ล้างตัวกรองทั้งหมด
+                        </button>
                       </div>
                     )}
                   </motion.div>
@@ -452,40 +437,40 @@ export function OverallTab({
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -5 }}
-                    className="flex flex-wrap items-center gap-2 px-1"
+                    className="flex flex-wrap items-center gap-1.5 px-1"
                   >
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">กรอง:</span>
+                    <span className="text-[11px] font-semibold text-slate-500">กรอง:</span>
                     {statusFilter.map((s) => (
-                      <span key={`tag-s-${s}`} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-700">
+                      <span key={`tag-s-${s}`} className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
                         {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : 'เสร็จสิ้น'}
-                        <button onClick={() => removeFilter('status', s)} className="hover:text-amber-900"><X size={10} /></button>
+                        <button onClick={() => removeFilter('status', s)} className="hover:text-amber-950 cursor-pointer"><X size={11} /></button>
                       </span>
                     ))}
                     {sourceFilter.map((s) => (
-                      <span key={`tag-src-${s}`} className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700">
+                      <span key={`tag-src-${s}`} className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-700">
                         {s}
-                        <button onClick={() => removeFilter('source', s)} className="hover:text-blue-900"><X size={10} /></button>
+                        <button onClick={() => removeFilter('source', s)} className="hover:text-slate-950 cursor-pointer"><X size={11} /></button>
                       </span>
                     ))}
                     {reasonFilter.map((r) => (
-                      <span key={`tag-r-${r}`} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-semibold text-orange-700">
+                      <span key={`tag-r-${r}`} className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-700">
                         {r}
-                        <button onClick={() => removeFilter('reason', r)} className="hover:text-orange-900"><X size={10} /></button>
+                        <button onClick={() => removeFilter('reason', r)} className="hover:text-slate-950 cursor-pointer"><X size={11} /></button>
                       </span>
                     ))}
                     {responsibleFilter.map((r) => (
-                      <span key={`tag-rsp-${r}`} className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700">
+                      <span key={`tag-rsp-${r}`} className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-700">
                         {r}
-                        <button onClick={() => removeFilter('responsible', r)} className="hover:text-violet-900"><X size={10} /></button>
+                        <button onClick={() => removeFilter('responsible', r)} className="hover:text-slate-950 cursor-pointer"><X size={11} /></button>
                       </span>
                     ))}
                     {(dateFromFilter || dateToFilter) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">
+                      <span className="inline-flex items-center gap-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
                         {dateFromFilter || '...'} → {dateToFilter || '...'}
-                        <button onClick={() => removeFilter('date')} className="hover:text-emerald-900"><X size={10} /></button>
+                        <button onClick={() => removeFilter('date')} className="hover:text-emerald-950 cursor-pointer"><X size={11} /></button>
                       </span>
                     )}
-                    <button onClick={clearAllFilters} className="ml-1 text-[10px] font-semibold text-red-500 underline underline-offset-2 hover:text-red-700">
+                    <button onClick={clearAllFilters} className="ml-1 text-xs font-semibold text-red-600 underline hover:text-red-800 cursor-pointer">
                       ล้างทั้งหมด
                     </button>
                   </motion.div>
@@ -518,31 +503,30 @@ export function OverallTab({
             isFiltered={hasActiveFilters}
           />
         )}
-      </motion.div>
-        )}
+      </div>
 
-        {activeView === 'update' && selectedCase && (
-          <CaseUpdateView
-            key="update"
-            caseData={selectedCase}
-            onBack={() => {
-              setActiveView('list');
-              setSelectedCase(null);
-            }}
-            onSuccess={() => {
-              setActiveView('list');
-              setSelectedCase(null);
-              loadCases();
-            }}
-            onSaveSuccess={() => {
-              loadCases();
-            }}
-            onDelete={handleDeleteCase}
-            isAdmin={userRole.toLowerCase() === 'qsms' || userRole.toLowerCase() === 'admin'}
-            isOperator={userRole.toLowerCase() === 'operator'}
-          />
-        )}
-      </AnimatePresence>
+      {/* 2. CaseUpdateView (Instant Enterprise Viewport) */}
+      {activeView === 'update' && selectedCase && (
+        <CaseUpdateView
+          key="update"
+          caseData={selectedCase}
+          onBack={() => {
+            setActiveView('list');
+            setSelectedCase(null);
+          }}
+          onSuccess={() => {
+            setActiveView('list');
+            setSelectedCase(null);
+            loadCases();
+          }}
+          onSaveSuccess={() => {
+            loadCases();
+          }}
+          onDelete={handleDeleteCase}
+          isAdmin={userRole.toLowerCase() === 'qsms' || userRole.toLowerCase() === 'admin'}
+          isOperator={userRole.toLowerCase() === 'operator'}
+        />
+      )}
 
       {/* Legacy update modal for other actions if any remain */}
       <UpdateModal
@@ -564,25 +548,38 @@ interface StatCardProps {
   label: string;
   value: string;
   trend?: string;
+  variant?: 'total' | 'pending' | 'progress' | 'completed';
 }
 
-function StatCard({ label, value, trend }: StatCardProps) {
+function StatCard({ label, value, trend, variant = 'total' }: StatCardProps) {
+  const dotColor =
+    variant === 'total' ? 'bg-slate-400' :
+    variant === 'pending' ? 'bg-amber-400' :
+    variant === 'progress' ? 'bg-sky-400' :
+    'bg-emerald-400';
+
+  const badgeStyle =
+    variant === 'total' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+    variant === 'pending' ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]' :
+    variant === 'progress' ? 'bg-sky-50 text-sky-700 border-sky-200' :
+    'bg-emerald-50 text-emerald-700 border-emerald-200';
+
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="stat-card rounded-xl border border-white/45 bg-white/45 backdrop-blur-md p-2.5 sm:p-4 md:p-6 shadow-sm shadow-primary/5 hover:bg-white/70 hover:shadow-md transition-all duration-300"
-    >
-      <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs font-semibold uppercase leading-none tracking-wider text-on-surface-variant/70">
-        {label}
-      </p>
-      <div className="flex items-end justify-between gap-1.5 sm:gap-2">
-        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-none tracking-tight text-primary">{value}</h3>
+    <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-xs">
+      <div className="flex items-center justify-between gap-1 mb-1.5">
+        <p className="text-[11px] font-semibold tracking-wide text-slate-500 truncate">
+          {label}
+        </p>
+        <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+      </div>
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-slate-900">{value}</h3>
         {trend && (
-          <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[8px] sm:text-[9px] font-semibold uppercase leading-none tracking-widest text-primary">
+          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold font-mono border ${badgeStyle}`}>
             {trend}
           </span>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

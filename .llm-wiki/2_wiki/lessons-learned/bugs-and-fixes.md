@@ -447,7 +447,35 @@ console.log('Keys:', Array.from(window.__itemMasterMap?.keys?.() || []));
 
 ---
 
-> 🔄 *อัปเดตเมื่อ 2026-08-20*: บันทึก BUG-028 (Mobile Layout Squashing & DocAI FAB Overlap) และ BUG-029 (CaseUpdateView Header Overlapping)
+## BUG-030: Staged Draft Photo Revocation & Broken Lightbox Preview in CaseUpdateView
+**Status**: ✅ FIXED (2026-08-27)
+- *Problem*: `URL.createObjectURL(file)` ถูกใช้งานในการพรีวิวรูปถ่ายหลักฐานที่เพิ่งเลือกใน `CaseUpdateView.tsx` โดยมี `useEffect` cleanup คอยเรียก `URL.revokeObjectURL(url)` เมื่อ Component หรือ State ของฟอร์มเปลี่ยน (เช่น เมื่อพิมพ์อาการเสียหรือเลือกรูปเพิ่ม) ส่งผลให้ URL ของภาพถูกทำลายก่อนเวลา ภาพแสดงเป็นไอคอนเสีย ("ใหม่") และกดดูรูปขนาดใหญ่ใน Lightbox Modal ไม่ได้
+- *Solution*: ปรับเปลี่ยนมาใช้ Base64 Data URL ผ่าน `FileReader.readAsDataURL(file)` ภายใน `StagedImageThumbnail` ทำให้ URL ของภาพที่เลือกมีความเสถียร ไม่ถูกเพิกถอนก่อนอัปโหลดเสร็จ และสามารถเปิดดูพรีวิวรูปใหญ่ใน Lightbox ได้ทันที
+
+---
+
+## BUG-031: Programmer Dotted Zero in Code Numbers & JetBrains Mono Bleed
+**Status**: ✅ FIXED (2026-08-27)
+- *Problem*: ตัวเลขและรหัสสินค้า (เช่น `404038`, `61651027A775A`, Case IDs) แสดงผลเลขศูนย์ที่มีจุดไข่ปลาตรงกลาง (`0`) เนื่องจากมีการโหลดและกำหนดค่าฟอนต์ `JetBrains Mono` เป็น `--font-mono` ใน Tailwind theme
+- *Solution*: ปรับมาตรฐานฟอนต์ทั้งระบบเป็น **Prompt** 100% (กำหนด `--font-sans`, `--font-thai`, `--font-mono` ชี้ไปที่ `var(--font-prompt)`) และบังคับใช้ใน `@layer base` ครอบคลุมทั้ง input, select, textarea, button, code, pre, kbd และตารางพิมพ์ทั้งหมด กำจัดจุดตรงกลางในเลขศูนย์ได้อย่างสมบูรณ์
+
+---
+
+## BUG-032: Sidebar Tab Label Truncation with Ellipsis on Thai/English Strings
+**Status**: ✅ FIXED (2026-08-27)
+- *Problem*: ข้อความบนแท็บในแถบ Sidebar ด้านซ้าย (เช่น `เปิดเคสใหม่ (Add Case)` และ `แดชบอร์ด (Dashboard)`) ถูกตัดคำและใส่จุดไข่ปลา `...` (เช่น `เปิดเคสใหม่ (Add C...`) เนื่องจากค่าเริ่มต้นความกว้าง `DEFAULT_SIDEBAR_WIDTH = 260px` และมีคลาส `span.truncate`
+- *Solution*: ปรับค่าเริ่มต้นความกว้าง Sidebar เป็น `DEFAULT_SIDEBAR_WIDTH = 275px` (`MIN_SIDEBAR_WIDTH = 240px`), ปรับคีย์ Storage เป็น `qsms_sidebar_width_v2`, และเปลี่ยนการจัดข้อความใน `SidebarItem` เป็น `whitespace-nowrap leading-normal` เพื่อให้แสดงชื่อแท็บเต็มคำทุกหน้าจอ
+
+---
+
+## BUG-033: Sequential Multi-Image Upload Latency in API Client
+**Status**: ✅ FIXED (2026-08-27)
+- *Problem*: ฟังก์ชัน `createCase` และ `updateCase` ใน `src/services/api.ts` ทำการวนลูปอัปโหลดรูปถ่ายหลักฐานขึ้น Cloudinary แบบทีละรูปเรียงตามลำดับ (`for...of` await) ทำให้เมื่ออัปโหลดรูปภาพ 3–5 รูปพร้อมกันจะเกิดอาการหน่วงและใช้เวลานาน
+- *Solution*: ปรับกระบวนการบีบอัดและอัปโหลดรูปภาพทั้งหมดให้ทำงานแบบขนานพร้อมกัน (Concurrent Parallel Uploads) ด้วย `Promise.all` ส่งผลให้ความเร็วในการอัปโหลดรูปภาพหลายรูปเพิ่มขึ้น 2–3 เท่า
+
+---
+
+> 🔄 *อัปเดตเมื่อ 2026-08-27*: บันทึก BUG-030 (Staged Photo Revocation), BUG-031 (Dotted Zero Font Fix), BUG-032 (Sidebar Label Truncation), และ BUG-033 (Parallel Multi-Image Uploads)
 
 ## Ingested Raw Sources
 - Ingested Raw Source: [[1_raw/BUG_FIX_CHANGELOG_1500189596.md]]

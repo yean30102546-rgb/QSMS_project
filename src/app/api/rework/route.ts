@@ -325,6 +325,18 @@ export async function POST(request: Request) {
           }
         }
 
+        // Validate mandatory attachments for Customer / RT cases
+        const primaryCustomer = String(caseData?.customerName || (caseData?.items && caseData.items[0]?.customerName) || '').trim();
+        const isCustomerCase = caseData?.source === 'Customer' || (primaryCustomer !== '' && primaryCustomer !== 'SFC') || (caseData?.id && String(caseData.id).startsWith('RT'));
+        const totalOrFiles = (caseData?.orFiles?.length || 0) + (caseData?.orFilesUrls?.length || 0);
+
+        if (isCustomerCase && totalOrFiles === 0 && !isFastTrack) {
+          return NextResponse.json(
+            { success: false, error: 'งาน RT (เคสลูกค้า) จำเป็นต้องมีเอกสารหรือไฟล์อ้างอิงแนบอย่างน้อย 1 ไฟล์ก่อนเปิดเคส' },
+            { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
+
         // Generate Case ID if missing or temporary
         let finalCaseId = caseData?.id;
         let caseSequence = caseData?.caseSequence || caseData?.case_sequence;
@@ -363,8 +375,6 @@ export async function POST(request: Request) {
             orFilesUrls.push(url);
           }
         }
-
-        const primaryCustomer = caseData.customerName || (caseData.items && caseData.items[0]?.customerName) || '';
 
         // 2. Insert Case with Graceful Schema Fallback
         const initialCasePayload: Record<string, unknown> = {
