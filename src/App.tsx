@@ -286,7 +286,8 @@ function AuthWrapper() {
         <motion.div
           drag
           dragMomentum={false}
-          dragElastic={0.1}
+          dragElastic={0}
+          dragTransition={{ power: 0, timeConstant: 0 }}
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.04 }}
@@ -300,7 +301,7 @@ function AuthWrapper() {
               setIsRagOpen(true);
             }
           }}
-          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[99] flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:border-[#FDE68A] text-slate-800 font-medium text-xs group cursor-grab active:cursor-grabbing select-none touch-none transition-all"
+          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[99] flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:border-[#FDE68A] text-slate-800 font-medium text-xs group cursor-grab active:cursor-grabbing select-none touch-none transition-colors duration-150"
           title="คลิกซ้ายค้างเพื่อย้ายตำแหน่ง | กดเพื่อใช้ DocAI Assistant (Ctrl+K)"
         >
           <div className="relative flex items-center justify-center w-5 h-5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-bold">
