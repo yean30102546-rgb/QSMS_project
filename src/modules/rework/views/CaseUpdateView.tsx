@@ -789,7 +789,7 @@ export function CaseUpdateView({
       const reorderedItems = [...remainingItems, updatedTargetItem];
 
       // 2. Prepare payload for updateCase
-      const updates: any = {
+      const updates: Partial<ReworkCase> & Record<string, unknown> = {
         items: reorderedItems,
         materialRequests,
         missingBoxes,

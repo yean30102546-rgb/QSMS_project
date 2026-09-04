@@ -51,10 +51,10 @@ interface UpdateModalContextValue {
   isAdmin: boolean;
   isOperator: boolean;
   canManageRows: boolean;
-  exportRef: React.RefObject<any>;
+  exportRef: React.RefObject<HTMLDivElement | null>;
   isExporting: boolean;
   exportProgress: string;
-  exportExcel: (data: any) => void;
+  exportExcel: (data?: unknown) => void;
   handleUpdate: () => Promise<void>;
   missingBoxes: number;
   setMissingBoxes: (val: number) => void;
@@ -283,7 +283,7 @@ export function UpdateModalProvider({
 
     startSaving();
     try {
-      const updates: any = {};
+      const updates: Partial<ReworkCase> & Record<string, unknown> = {};
       let targetStatus = (isAdmin || isOperator) ? caseStatus : caseData.status;
       let finalItems = [...editedItems];
 

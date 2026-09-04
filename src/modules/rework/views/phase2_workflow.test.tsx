@@ -582,7 +582,7 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
       caseName: 'เคสซ่อมเสร็จแล้ว',
       status: 'In-Progress',
       items: [
-        { id: 'item-1', itemCode: '40001234', itemName: 'น้ำมัน', amount: 10, completedBoxes: 10 }
+        { id: 'item-1', itemNumber: '61653013A700A', itemCode: '40001234', itemName: 'น้ำมัน', amount: 10, completedBoxes: 10, reason: 'รั่ว', responsible: 'SFC' }
       ]
     };
 

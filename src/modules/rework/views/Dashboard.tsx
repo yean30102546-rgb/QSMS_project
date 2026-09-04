@@ -1247,11 +1247,24 @@ function StatusDistributionSection({
   );
 }
 
+interface OffenderItem {
+  code: string;
+  name: string;
+  units: number;
+  frequency: number;
+}
+
+interface TrendItem {
+  date: string;
+  cases: number;
+  units: number;
+}
+
 // ===== TopOffendersSection Sub-Component =====
-function TopOffendersSection({ stats }: { stats: any }) {
+function TopOffendersSection({ stats }: { stats: { itemsData: Record<string, OffenderItem> } }) {
   const topItems = useMemo(() => {
     return Object.values(stats.itemsData)
-      .sort((a: any, b: any) => b.units - a.units)
+      .sort((a, b) => b.units - a.units)
       .slice(0, 3);
   }, [stats]);
 
@@ -1265,7 +1278,7 @@ function TopOffendersSection({ stats }: { stats: any }) {
       
       <div className="space-y-2.5 flex-1">
         {topItems.length > 0 ? (
-          topItems.map((item: any, index: number) => (
+          topItems.map((item, index: number) => (
             <div key={item.code} className="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-lg border border-slate-100">
               <div className="w-6 h-6 rounded-md bg-rose-100 text-rose-800 flex items-center justify-center font-bold text-xs shrink-0">
                 {index + 1}
@@ -1289,10 +1302,10 @@ function TopOffendersSection({ stats }: { stats: any }) {
 }
 
 // ===== TrendAnalysisSection Sub-Component =====
-function TrendAnalysisSection({ stats, viewMode }: { stats: any; viewMode: string }) {
+function TrendAnalysisSection({ stats, viewMode }: { stats: { trendByDate: Record<string, TrendItem> }; viewMode: string }) {
   const chartData = useMemo(() => {
     return Object.values(stats.trendByDate)
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [stats]);
 
   return (
