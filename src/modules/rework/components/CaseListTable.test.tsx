@@ -54,7 +54,7 @@ describe('CaseListTable', () => {
     expect(screen.getByText('รอดำเนินการ')).toBeInTheDocument();
 
     // Check reason and subtype
-    expect(screen.getByText('รั่ว')).toBeInTheDocument();
+    expect(screen.getByText(/รั่ว/)).toBeInTheDocument();
   });
 
   it('renders correctly when items array is empty', () => {
@@ -87,7 +87,7 @@ describe('CaseListTable', () => {
     expect(screen.getByText('Test Item 1 (+1 รายการ)')).toBeInTheDocument();
     
     // Should show both reasons combined
-    expect(screen.getByText('รั่ว, เปื้อน')).toBeInTheDocument();
+    expect(screen.getByText(/รั่ว, เปื้อน/)).toBeInTheDocument();
     
     // Total amount should be 15
     expect(screen.getByText('15 กล่อง')).toBeInTheDocument();

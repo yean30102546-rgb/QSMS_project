@@ -11,6 +11,16 @@
 - **Auto-Redirect** - ตรวจเช็คสถานะเซสชันอัตโนมัติเพื่อนำทางผู้ใช้ที่เข้าสู่ระบบแล้วไปยังโมดูลหลักโดยตรง
 - **Centralized App Registry** - เมนูคลังแอปพลิเคชันสำหรับเปิดโมดูลต่างๆ (Rework, Drawing & Master Storage, DocAI RAG, Presentation & Guide)
 
+### 📊 Operations Bottleneck & Department Flow Dashboard
+- **5-Stage Lifecycle Tracking** - ติดตามสถานะงาน Rework ครบทั้ง 5 ขั้นตอน (`Pending Analysis`, `Awaiting Materials`, `In-Progress`, `Blocked`, `Completed`)
+- **Operations Bottleneck Radar** - ตัวชี้เป้าแผนกที่มีงานคั่งค้างสูงสุด (**🔥 จุดคอขวดสูงสุด**) แบบ Real-time
+- **Department Queue Status Island** - สรุปภาระงานและยอดกล่องคงค้างแยกรายแผนก (QSMS, WPK, PDF, Blocked) พร้อมระบบ Interactive 1-Click Cross-Filter เพื่อเจาะดูงานเฉพาะฝ่ายได้ทันที
+- **Root Cause & Responsible Analytics** - วิเคราะห์อาการเสียและผู้รับผิดชอบต้นเหตุ (SFC, Suppliers, Customer) ทั้งในมุมจำนวนกล่อง (Units) และความถี่ (Defects)
+
+### 🔤 Universal Prompt Typography & Dotted Zero Elimination
+- **Standardized Prompt Font** - บังคับใช้ Google Font Prompt 100% ครอบคลุมทั้งระบบ กำจัดจุดไข่ปลาตรงกลางเลขศูนย์ (`0`) ในรหัสสินค้าและตัวเลขทั้งหมด
+- **Minimal Enterprise Aesthetics** - ปรับลดความหนาตัวอักษรที่ไม่จำเป็น และถอดไอคอนที่ไม่เป็นทางการออก เพื่อภาพลักษณ์ระบบปฏิบัติการองค์กรระดับสากล
+
 ### ⚙️ Rework Module (ระบบจัดการเคสแก้ตัวสินค้า)
 - **Multi-Item Support** - บันทึกได้หลายรายการสินค้า (Rework Items) ภายใต้ใบงาน (Case) เดียวกัน
 - **Rework Item Granular Fields** - รองรับข้อมูลเฉพาะของรายการสินค้า ได้แก่ หมายเลขล็อต (Batch No), วันที่ผลิตแกลลอน (gallonDate), เลขกล่อง (boxNumber), หมายเลขแม่พิมพ์ (mold) และสายการผลิต (line)

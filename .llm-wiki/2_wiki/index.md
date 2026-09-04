@@ -39,6 +39,7 @@
 - [[architecture/multimodal-rag.md]] - การออกแบบสถาปัตยกรรมประมวลผลข้อความและภาพหลายรูปแบบของโมดูล RAG
 - [[architecture/tech-stack-2026.md]] - สรุปรายการเทคโนโลยี ไลบรารี และไดอะแกรมความเชื่อมโยงของ Stack ปี 2026
 - [[architecture/fsd-migration.md]] - การจัดระเบียบโครงสร้างโฟลเดอร์แบบ Feature-Sliced Design (FSD)
+- [[architecture/mes-kitting-and-bottleneck-monitor.md]] - สถาปัตยกรรม MES JIT Kitting, ระบบส่งมอบสองทาง และแดชบอร์ดชี้เป้าคอขวด 5 ขั้นตอน
 - [[architecture/modular-breakdown.md]] - รายละเอียดโครงสร้างและการทำงานเชิงลึกของทั้ง 7 โมดูลหลักในระบบ
 - [[architecture/project-overview.md]] - ภาพรวมของแอปพลิเคชัน ขอบเขตการทำงาน และบันทึกการรันงาน
 - [[architecture/project-history.md]] - บันทึกเหตุการณ์ ลำดับพัฒนาการ และไทม์ไลน์ของระบบ QSMS
@@ -48,7 +49,7 @@
 
 ## 📂 4. Lessons Learned & Bug Fixes (บทเรียนแก้บั๊กและการพัฒนา)
 - [[lessons-learned/development-learnings.md]] - สรุปบทเรียนพัฒนาการ 36 รายการในอดีต (React, Next.js, Google Apps Script)
-- [[lessons-learned/bugs-and-fixes.md]] - ประวัติบั๊กสำคัญ BUG-001 ถึง BUG-029 และตัวอย่างโค้ดก่อน/หลังปรับปรุง
+- [[lessons-learned/bugs-and-fixes.md]] - ประวัติบั๊กสำคัญ BUG-001 ถึง BUG-033 และตัวอย่างโค้ดก่อน/หลังปรับปรุง
 - [[lessons-learned/bug-review-2026-05-28.md]] - รีวิวข้อบกพร่องและปัญหารายสัปดาห์ ณ สิ้นเดือนพฤษภาคม 2026
 - [[lessons-learned/debugging-practices.md]] - กฎและแนวปฏิบัติการสืบสวนหาสาเหตุบั๊กอย่างปลอดภัย (Systematic Debugging)
 - [[lessons-learned/mobile-fast-track-ui.md]] - การสร้างหน้าจอ Fast-Track มือถือ การทำ Watermark และ react-hook-form Bridge

@@ -5,9 +5,9 @@ import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
   ChevronRight, ChevronLeft, ArrowLeft,
   AlertTriangle, FileText, LayoutGrid, CheckCircle2, TrendingDown,
-  Clock, CheckCircle, Database, Layers, Cpu, ShieldCheck, Sparkles,
+  Clock, CheckCircle, Database, Layers, Cpu, ShieldCheck,
   Bot, Search, Play, RotateCcw, Maximize2, Minimize2, ZoomIn, ZoomOut, Move,
-  Rocket, Users, HelpCircle, Award, Zap, MessageSquare, X,
+  Users, HelpCircle, Award, Zap, MessageSquare, X,
   Globe, Server, Table, Key, Workflow, Activity, GitBranch, ArrowUpRight
 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
@@ -321,7 +321,7 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
             "ย้ายฐานข้อมูลจาก Sheets มายัง Supabase PostgreSQL",
             "ออกแบบระบบยืนยันสินค้า Two-Way Auto-fill"
           ],
-          icon: <Rocket className="w-5 h-5 text-blue-600" />,
+          icon: <Workflow className="w-5 h-5 text-blue-600" />,
           status: "COMPLETED",
           color: "blue"
         },
@@ -962,7 +962,7 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
           title: "Pilot & Live Testing",
           time: "สัปดาห์ที่ 1 - 2",
           color: "blue",
-          icon: <Rocket className="w-5 h-5 text-blue-600" />,
+          icon: <Workflow className="w-5 h-5 text-blue-600" />,
           points: [
             "ทดลองใช้งานนำร่องกับทีม Operator สายการผลิตหลัก",
             "นำเข้าแบบแปลน PDF สู่ Drawing Storage",
@@ -999,7 +999,7 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
           title: "1. การขยายขีดความสามารถ AI (Domain Fine-tuning)",
           horizon: "Future Scope",
           desc: "เทรนและปรับแต่งโมเดล RAG ด้วยคำศัพท์เฉพาะทางวิศวกรรมระดับโรงงาน เพื่อเพิ่มความแม่นยำในการวิเคราะห์อาการเสียเชิงลึก",
-          icon: <Sparkles className="w-5 h-5 text-purple-600" />,
+          icon: <Cpu className="w-5 h-5 text-purple-600" />,
           tags: ["LoRA / Fine-tuning", "Factory Domain Vocabulary", "Precision Analysis"]
         },
         {
@@ -1684,7 +1684,7 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
                       {activeSlides[currentIdx].futureRoadmap && (
                         <div className="w-full">
                           <div className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-purple-600" />
+                            <Cpu className="w-4 h-4 text-purple-600" />
                             <span>Future Scope & Next Level Horizons</span>
                           </div>
                           <div className="grid grid-cols-2 gap-8">

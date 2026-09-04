@@ -130,6 +130,28 @@ export function validateBatchNo(value: string | undefined | null): ValidationErr
   return null;
 }
 
+export interface CaseAttachmentValidationInput {
+  caseSource?: string;
+  customerName?: string;
+  orFilesCount?: number;
+  orFilesUrlsCount?: number;
+}
+
+export function validateCaseAttachments(input: CaseAttachmentValidationInput): ValidationError | null {
+  const source = String(input.caseSource || '').trim();
+  const customer = String(input.customerName || '').trim();
+  const isCustomerCase = source === 'Customer' || (customer && customer !== 'SFC');
+  const totalFiles = (input.orFilesCount || 0) + (input.orFilesUrlsCount || 0);
+
+  if (isCustomerCase && totalFiles === 0) {
+    return {
+      field: 'orFiles',
+      message: 'งาน RT (เคสลูกค้า) จำเป็นต้องมีเอกสารหรือไฟล์อ้างอิงแนบอย่างน้อย 1 ไฟล์ก่อนเปิดเคส',
+    };
+  }
+  return null;
+}
+
 export function validateBoxNumber(value: string | undefined): ValidationError | null {
   const boxNumber = String(value || '').trim();
   if (!boxNumber) {

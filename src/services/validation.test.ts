@@ -8,6 +8,7 @@ import {
   findDuplicateItemNumbers,
   isSaveDisabled,
   validateEmail,
+  validateCaseAttachments,
 } from './validation'
 
 describe('Validation Services', () => {
@@ -236,6 +237,61 @@ describe('Validation Services', () => {
     it('should return false for invalid email', () => {
       expect(validateEmail('test@')).toBe(false)
       expect(validateEmail('testexample.com')).toBe(false)
+    })
+  })
+
+  describe('validateCaseAttachments', () => {
+    it('should fail for Customer / RT case when no attachments are provided', () => {
+      const result = validateCaseAttachments({
+        caseSource: 'Customer',
+        customerName: 'Customer',
+        orFilesCount: 0,
+        orFilesUrlsCount: 0,
+      })
+      expect(result).not.toBeNull()
+      expect(result?.field).toBe('orFiles')
+      expect(result?.message).toContain('งาน RT (เคสลูกค้า) จำเป็นต้องมีเอกสารหรือไฟล์อ้างอิงแนบอย่างน้อย 1 ไฟล์ก่อนเปิดเคส')
+    })
+
+    it('should fail for customer with custom name (e.g. Eneos, OR) when no attachments are provided', () => {
+      const result = validateCaseAttachments({
+        caseSource: 'SFC',
+        customerName: 'Eneos',
+        orFilesCount: 0,
+        orFilesUrlsCount: 0,
+      })
+      expect(result).not.toBeNull()
+      expect(result?.field).toBe('orFiles')
+    })
+
+    it('should pass for Customer / RT case when at least 1 attachment is provided', () => {
+      const result = validateCaseAttachments({
+        caseSource: 'Customer',
+        customerName: 'OR',
+        orFilesCount: 1,
+        orFilesUrlsCount: 0,
+      })
+      expect(result).toBeNull()
+    })
+
+    it('should pass for Customer / RT case when orFilesUrls are provided', () => {
+      const result = validateCaseAttachments({
+        caseSource: 'Customer',
+        customerName: 'BCP',
+        orFilesCount: 0,
+        orFilesUrlsCount: 1,
+      })
+      expect(result).toBeNull()
+    })
+
+    it('should pass for SFC / RW case even without any attachments', () => {
+      const result = validateCaseAttachments({
+        caseSource: 'SFC',
+        customerName: 'SFC',
+        orFilesCount: 0,
+        orFilesUrlsCount: 0,
+      })
+      expect(result).toBeNull()
     })
   })
 })

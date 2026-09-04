@@ -58,6 +58,9 @@ ReworkApp.tsx
 - **Priority Rules**: ตรวจจับ `lastActiveField` เพื่อค้นหาข้อมูลสินค้าจาก `Item Number` หรือ `Item Code` อัตโนมัติ (Debounce 600ms)
 - **Zero-Value Restriction**: ไม่อนุญาตให้ระบุยอดสินค้า (`amount`) หรือจำนวนกล่องเป็น 0 เพื่อป้องกันข้อมูลขยะ
 - **Cross-Item Link**: เปิดตัวเลือกเชื่อมโยงสินค้าเปื้อนไปยังสินค้าที่รั่วในเคสเดียวกันผ่านฟิลด์ `linkedSourceId`
+- **RT Mandatory Attachments vs RW Instant Creation**:
+  - **เคส RT (Customer / ลูกค้า)**: บังคับแนบเอกสารหรือไฟล์อ้างอิงอย่างน้อย 1 ไฟล์ก่อนเปิดเคส (เช่น ใบส่งของ, ใบแจ้งเคลม, ไฟล์ Excel/PDF อ้างอิง) หากไม่มีการแนบไฟล์ ระบบจะไม่ยอมให้เปิดเคส
+  - **เคส RW (SFC ภายใน)**: สามารถเปิดเคสได้ทันทีโดยไม่ต้องมีเอกสารแนบ (เอกสารแนบเป็น Optional)
 
 ## 5. Knowledge Relationships
 - **Depends On**: [[nextjs-frontend/auth-flow.md]] — สิทธิ์และการยืนยันตัวตน (QSMS Admin / Operator)

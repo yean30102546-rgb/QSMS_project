@@ -103,9 +103,9 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
     >
       {/* Drag & Drop Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-indigo-500/10 backdrop-blur-sm border-4 border-dashed border-indigo-500">
-          <div className="flex flex-col items-center bg-white dark:bg-black/80 p-8 rounded-2xl shadow-2xl pointer-events-none">
-            <Upload className="h-12 w-12 text-indigo-600 dark:text-indigo-400 mb-4 animate-bounce" />
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-amber-500/10 backdrop-blur-xs border-4 border-dashed border-amber-500">
+          <div className="flex flex-col items-center bg-white dark:bg-slate-900 p-8 rounded-xl shadow-2xl pointer-events-none border border-amber-300">
+            <Upload className="h-12 w-12 text-amber-600 mb-4 animate-bounce" />
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Drop PDF files here</h2>
             <p className="text-slate-500 dark:text-slate-400 mt-2">Release to open upload modal</p>
           </div>
@@ -113,20 +113,20 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
       )}
 
       {/* Header */}
-      <header className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 dark:border-white/10 bg-white/70 dark:bg-black/50 px-4 backdrop-blur-xl md:px-6">
+      <header className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
         <div className="flex items-center gap-4">
           <button
             onClick={onBackToPortal}
-            className="group flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+            className="group flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
           >
-            <ArrowLeft className="h-5 w-5 text-slate-600 dark:text-slate-300 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="h-4 w-4 text-slate-600 group-hover:-translate-x-0.5 transition-transform" />
           </button>
           
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-base font-bold tracking-tight text-slate-900">
               Drawing & Master Storage
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500">
               Supabase RAG Engineering File Vault
             </p>
           </div>
@@ -143,13 +143,13 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
               placeholder="Search by item code, number, drawing no, part..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-64 lg:w-96 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100/50 dark:bg-white/5 pl-9 pr-4 text-sm outline-none transition-all focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-[#1c1c1e]"
+              className="h-9 w-64 lg:w-96 rounded-md border border-slate-300 bg-white pl-9 pr-4 text-xs text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
             />
           </div>
 
           <button
             onClick={() => setRefreshKey(prev => prev + 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-slate-600"
             title="Refresh Data"
           >
             <RefreshCw className="h-4 w-4" />
@@ -157,7 +157,7 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
           
           <button
             onClick={() => setIsShortcutsOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-slate-600"
             title="Keyboard Shortcuts"
           >
             <Keyboard className="h-4 w-4" />
@@ -165,7 +165,7 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
 
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="flex h-9 items-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 px-4 text-sm font-medium text-white transition-all shadow-sm hover:shadow active:scale-95"
+            className="flex h-9 items-center gap-2 rounded-md bg-amber-500 hover:bg-amber-600 px-3.5 text-xs font-bold text-slate-950 transition-all shadow-xs active:scale-95 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Upload File</span>

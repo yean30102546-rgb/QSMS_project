@@ -85,100 +85,102 @@ export function Login({
   };
 
   return (
-    <div className="apple-shell flex h-full w-full items-center justify-center overflow-y-auto custom-scrollbar bg-gradient-to-br from-[#F5F5F7] via-[#FFFFFF] to-[#E8E8ED] px-4 py-8 md:px-8">
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.05),transparent_70%)]" />
-        <div className="absolute -right-24 bottom-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.04),transparent_70%)]" />
-      </div>
-
+    <div className="flex h-full w-full items-center justify-center overflow-y-auto bg-slate-100 px-4 py-8 md:px-8">
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-[980px] overflow-hidden rounded-[36px] bg-white/30 backdrop-blur-md shadow-2xl shadow-blue-900/5 border border-white/40"
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-[920px] overflow-hidden rounded-xl bg-white shadow-xl border border-slate-200"
       >
         <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="border-b border-white/60 bg-white/40 backdrop-blur-xl px-7 py-10 text-[#1d1d1f] md:px-10 lg:border-b-0 lg:border-r lg:border-r-black/5">
+          <div className="border-b border-slate-200 bg-slate-900 px-7 py-10 text-white md:px-10 lg:border-b-0 lg:border-r">
             <div className="mb-8 flex items-center gap-3">
-              <img src="/img/logo.png" alt="QSMS" className="h-10 object-contain" />
-              <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#1d1d1f]/70">Central Workspace</div>
+              <div className="w-8 h-8 rounded bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm">
+                Q
+              </div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">QSMS Central Workspace</div>
             </div>
-            <h1 className="max-w-lg text-4xl font-semibold leading-[1.04] tracking-[-0.03em] md:text-5xl text-[#1d1d1f]">
-              One login for all QSMS enterprise operations.
+            <h1 className="max-w-lg text-3xl font-bold leading-tight tracking-tight md:text-4xl text-white">
+              Enterprise Operations & Quality Control
             </h1>
-            <p className="mt-5 max-w-md text-[16px] leading-7 text-[#515154]">
-              เข้าสู่ระบบครั้งเดียว แล้วเลือกใช้งานแต่ละ webapp ผ่าน Central Control ได้ทันที
-              โดยรักษา workflow เดิมของ Rework ให้ทำงานต่อเนื่อง
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-300">
+              เข้าสู่ระบบศูนย์กลางเพื่อจัดการเคส Rework, ตรวจสอบแบบแปลน Drawing & Master, และเข้าถึงเครื่องมือทั้งหมดขององค์กร
             </p>
-            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-black/60">
-              Platform session secured
+            <div className="mt-8 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-1.5 text-xs font-semibold text-amber-400 border border-white/10">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Platform Session Secured</span>
             </div>
           </div>
 
-          <div className="bg-white/80 px-6 py-8 md:px-9 md:py-10">
+          <div className="bg-white px-6 py-8 md:px-9 md:py-10">
             <button
               type="button"
               onClick={handleBack}
-              className="mb-6 inline-flex items-center gap-1 text-xs font-semibold text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+              className="mb-6 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
             >
               <ChevronLeft size={14} />
               ย้อนกลับสู่ศูนย์ควบคุม
             </button>
 
-            <div className="mb-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6e6e73]">Sign in</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-[#1d1d1f]">เข้าสู่ Central Control</h2>
-              <p className="mt-2 text-sm leading-6 text-[#5d5d63]">
-                ใช้ profile และ password เดิมของระบบเพื่อเข้าสู่ Portal
+            <div className="mb-6">
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">เข้าสู่ระบบ (Sign In)</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                ใช้บัญชีผู้ใช้งานของท่านเพื่อเข้าสู่ระบบงาน
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="relative group">
-                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    setError(null);
-                  }}
-                  placeholder="Username"
-                  className="glass-input w-full rounded-2xl py-3.5 pl-11 pr-4 text-[15px]"
-                />
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">ชื่อผู้ใช้งาน (Username)</label>
+                <div className="relative group">
+                  <UserCircle2 size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-600 transition-colors" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setError(null);
+                    }}
+                    placeholder="ระบุชื่อผู้ใช้งาน"
+                    className="w-full rounded-md border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 shadow-2xs placeholder-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                  />
+                </div>
               </div>
 
-              <div className="relative group">
-                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError(null);
-                  }}
-                  placeholder="Password"
-                  className="glass-input w-full rounded-2xl py-3.5 pl-11 pr-11 text-[15px]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7a7a80] transition hover:text-[#1d1d1f]"
-                >
-                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                </button>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">รหัสผ่าน (Password)</label>
+                <div className="relative group">
+                  <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-600 transition-colors" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError(null);
+                    }}
+                    placeholder="ระบุรหัสผ่าน"
+                    className="w-full rounded-md border border-slate-300 bg-white py-2.5 pl-9 pr-10 text-sm text-slate-900 shadow-2xs placeholder-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between px-1">
+              <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id="rememberMe"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
                   />
-                  <label htmlFor="rememberMe" className="text-xs font-medium text-[#6e6e73] cursor-pointer hover:text-[#1d1d1f] transition-colors">
+                  <label htmlFor="rememberMe" className="text-xs font-medium text-slate-600 cursor-pointer hover:text-slate-900 transition-colors">
                     จดจำชื่อผู้ใช้งาน
                   </label>
                 </div>
@@ -186,7 +188,7 @@ export function Login({
                   <button
                     type="button"
                     onClick={onNavigateToForgotPassword}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                    className="text-xs font-semibold text-amber-700 hover:text-amber-800 transition-colors"
                   >
                     ลืมรหัสผ่าน?
                   </button>
@@ -195,39 +197,37 @@ export function Login({
 
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, y: -8 }}
+                  initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-2xl border border-[#ffd4d4] bg-[#fff6f6] px-4 py-3 text-sm text-[#b42318]"
+                  className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700"
                 >
                   {error}
                 </motion.div>
               )}
 
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 type="submit"
                 disabled={!username.trim() || !password.trim() || isLoading}
-                className="apple-btn-primary mt-1 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold shadow-lg shadow-blue-600/20 disabled:cursor-not-allowed disabled:opacity-55"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 py-2.5 px-4 rounded-md bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 text-sm font-bold shadow-xs transition-all disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 {isLoading ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white" />
-                    Processing...
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/20 border-t-slate-950" />
+                    <span>กำลังเข้าสู่ระบบ...</span>
                   </>
                 ) : (
                   <>
-                    เข้าสู่ระบบ
-                    <ArrowRight size={16} />
+                    <span>เข้าสู่ระบบ</span>
+                    <ArrowRight size={15} />
                   </>
                 )}
-              </motion.button>
+              </button>
             </form>
 
-            <div className="mt-7 border-t border-[#e8e8ed] pt-5">
-              <div className="flex items-start gap-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-[#6e6e73]">
-                <Lock size={15} className="text-slate-400 mt-0.5 shrink-0" />
-                <p className="leading-relaxed">
+            <div className="mt-6 border-t border-slate-200 pt-4">
+              <div className="flex items-start gap-2.5 rounded-md bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+                <Lock size={14} className="text-slate-400 mt-0.5 shrink-0" />
+                <p className="leading-relaxed text-[11px]">
                   <strong className="text-slate-800 font-semibold block mb-0.5">การจำกัดสิทธิ์การเข้าใช้งาน (Authorized Access Only)</strong>
                   ระบบนี้ไม่อนุญาตให้ลงทะเบียนด้วยตนเอง หากต้องการขอรับสิทธิ์เข้าใช้งานหรือลืมรหัสผ่าน กรุณาติดต่อผู้ดูแลระบบ (System Administrator)
                 </p>

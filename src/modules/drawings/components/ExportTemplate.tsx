@@ -50,7 +50,7 @@ export const ExportTemplate = React.forwardRef<HTMLDivElement, ExportTemplatePro
       >
         <div
           style={{
-            fontFamily: "'Inter', 'Noto Sans Thai', sans-serif",
+            fontFamily: "'Prompt', 'Inter', -apple-system, sans-serif",
             backgroundColor: '#ffffff',
             padding: '50px',
             color: '#1d1d1f',

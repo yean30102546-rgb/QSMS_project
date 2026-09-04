@@ -16,7 +16,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ToastContainer } from '@/src/components/shared/Toast';
 import { AlertModal } from '@/src/components/shared/AlertModal';
 import { FeedbackModal } from '@/src/components/shared/FeedbackModal';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
 const Login = dynamic(() => import('@/src/modules/auth/views/Login').then(mod => mod.Login), { ssr: false });
@@ -286,7 +286,8 @@ function AuthWrapper() {
         <motion.div
           drag
           dragMomentum={false}
-          dragElastic={0.1}
+          dragElastic={0}
+          dragTransition={{ power: 0, timeConstant: 0 }}
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.04 }}
@@ -300,75 +301,47 @@ function AuthWrapper() {
               setIsRagOpen(true);
             }
           }}
-          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[99] flex items-center gap-2 p-2.5 sm:px-3.5 sm:py-2.5 rounded-full border border-blue-200/80 dark:border-blue-700/50 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl shadow-lg hover:shadow-xl text-slate-800 dark:text-white font-semibold text-xs group cursor-grab active:cursor-grabbing select-none touch-none"
+          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[99] flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:border-[#FDE68A] text-slate-800 font-medium text-xs group cursor-grab active:cursor-grabbing select-none touch-none transition-colors duration-150"
           title="คลิกซ้ายค้างเพื่อย้ายตำแหน่ง | กดเพื่อใช้ DocAI Assistant (Ctrl+K)"
         >
-          <div className="relative flex items-center justify-center w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-blue-600 text-white group-hover:bg-blue-700 transition-colors shadow-xs">
-            <Bot size={14} />
+          <div className="relative flex items-center justify-center w-5 h-5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-bold">
+            <Bot size={13} />
           </div>
-          <span className="hidden sm:inline font-sans">DocAI Assistant</span>
-          <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600">
+          <span className="hidden sm:inline font-sans text-xs text-slate-700 font-medium">DocAI Assistant</span>
+          <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-50 rounded border border-slate-200/70">
             Ctrl+K
           </span>
         </motion.div>
       )}
 
-      {/* Premium Apple-Style Glassmorphic Logout Overlay */}
+      {/* Clean Enterprise Logout Overlay */}
       <AnimatePresence>
         {isLoggingOut && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/10 dark:bg-black/20 backdrop-blur-[16px]"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs"
           >
             <motion.div
-              initial={{ scale: 0.92, y: 15, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.96, y: 8, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 120, damping: 18 }}
-              className="relative overflow-hidden rounded-[28px] border border-white/40 dark:border-white/10 bg-white/60 dark:bg-[#1c1c1e]/50 p-8 text-center shadow-[0_16px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl max-w-xs w-[85%]"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 text-center shadow-lg max-w-xs w-[85%]"
             >
-              {/* Subtle background glow spots */}
-              <div className="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-white/30 dark:bg-white/5 blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-white/25 dark:bg-white/5 blur-3xl pointer-events-none" />
-
-              {/* Apple-style iOS spoke spinner */}
-              <div className="flex justify-center mb-6">
-                <div className="relative h-8 w-8 flex items-center justify-center">
-                  {[...Array(12)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute top-0 left-[14.75px] w-[2.5px] h-[7.5px] bg-[#1d1d1f] dark:bg-white rounded-[1.25px]"
-                      style={{
-                        transform: `rotate(${i * 30}deg)`,
-                        transformOrigin: '1.25px 16px',
-                        animation: 'ios-spinner-fade 1.2s linear infinite',
-                        animationDelay: `${(i - 12) * 0.1}s`,
-                      }}
-                    />
-                  ))}
-                </div>
+              <div className="flex justify-center mb-4">
+                <div className="h-8 w-8 rounded-full border-3 border-amber-500 border-t-transparent animate-spin" />
               </div>
 
-              <motion.h3
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
-                className="text-base font-semibold text-[#1d1d1f] dark:text-white tracking-wide font-sans"
-              >
+              <h3 className="text-sm font-bold text-slate-900 font-sans">
                 กำลังออกจากระบบอย่างปลอดภัย
-              </motion.h3>
+              </h3>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                transition={{ delay: 0.3, duration: 0.3 }}
-                className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-light font-sans"
-              >
+              <p className="mt-1.5 text-xs text-slate-500 font-sans">
                 ล้างข้อมูลเซสชันและการเชื่อมต่อสำเร็จ
-              </motion.p>
+              </p>
             </motion.div>
           </motion.div>
         )}
