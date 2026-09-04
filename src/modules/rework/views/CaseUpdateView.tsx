@@ -270,6 +270,19 @@ export function CaseUpdateView({
   const [defendCategory, setDefendCategory] = useState<string>('waiting_oil');
   const [defendNotes, setDefendNotes] = useState<string>('');
 
+  // Phase 5: Closed-Loop MES Handshake & QC Sign-off Gate
+  const [receivedHandshake, setReceivedHandshake] = useState<{
+    receivedBy?: string;
+    receivedAt?: string;
+  } | null>((caseData as unknown as { materialReceivedInfo?: { receivedBy?: string; receivedAt?: string } })?.materialReceivedInfo || null);
+
+  const [qcSignoff, setQcSignoff] = useState<{
+    approvedBy?: string;
+    approvedAt?: string;
+    qcNotes?: string;
+  } | null>((caseData as unknown as { qcApprovalInfo?: { approvedBy?: string; approvedAt?: string; qcNotes?: string } })?.qcApprovalInfo || null);
+  const [qcNotesInput, setQcNotesInput] = useState('');
+
   // Keyboard shortcut to close Lightbox, Drawers, or Return to Overall
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -343,6 +356,8 @@ export function CaseUpdateView({
       setMissingOil(caseData.missingOil || 0);
       setResolutionMethod(caseData.resolutionMethod || '');
       setIsDefendBlocked(caseData.status === 'Blocked');
+      setReceivedHandshake((caseData as unknown as { materialReceivedInfo?: { receivedBy?: string; receivedAt?: string } })?.materialReceivedInfo || null);
+      setQcSignoff((caseData as unknown as { qcApprovalInfo?: { approvedBy?: string; approvedAt?: string; qcNotes?: string } })?.qcApprovalInfo || null);
 
       // Smart default tab
       if (caseData.status === 'Pending Analysis' || caseData.status === 'Pending') {
@@ -452,7 +467,7 @@ export function CaseUpdateView({
   const handleQSMSHandover = async () => {
     startSaving();
     try {
-      const updates: any = {
+      const updates: Partial<ReworkCase> & Record<string, unknown> = {
         status: 'Awaiting Materials',
         resolutionMethod,
         materialRequests,
@@ -462,9 +477,9 @@ export function CaseUpdateView({
       if (newOrFiles.length > 0) updates.newOrFiles = newOrFiles;
       if (deletedItemIds.length > 0) updates.deleteItemIds = deletedItemIds;
 
-      const res = await updateCase(caseData.id, updates);
+      const res = await updateCase(caseData.id, updates as Partial<ReworkCase>);
       if (res.success) {
-        if (updates.items) setEditedItems(updates.items);
+        if (updates.items) setEditedItems(updates.items as ReworkItem[]);
         setNewImages({});
         setDeletedItemIds([]);
         setNewOrFiles([]);
@@ -485,7 +500,7 @@ export function CaseUpdateView({
   const handleWPKHandover = async () => {
     startSaving();
     try {
-      const updates: any = {
+      const updates: Partial<ReworkCase> & Record<string, unknown> = {
         status: 'In-Progress',
         materialRequests,
         missingBoxes,
@@ -493,9 +508,9 @@ export function CaseUpdateView({
         missingOil,
         items: editedItems,
       };
-      const res = await updateCase(caseData.id, updates);
+      const res = await updateCase(caseData.id, updates as Partial<ReworkCase>);
       if (res.success) {
-        if (updates.items) setEditedItems(updates.items);
+        if (updates.items) setEditedItems(updates.items as ReworkItem[]);
         setNewImages({});
         setDeletedItemIds([]);
         setNewOrFiles([]);
@@ -512,6 +527,28 @@ export function CaseUpdateView({
     }
   };
 
+  // Step 3 Handshake: PDF / Operator Confirm Material Receipt
+  const handleConfirmMaterialReceipt = async () => {
+    startSaving();
+    try {
+      const receiptInfo = {
+        receivedBy: currentUser?.name || 'PDF Technician',
+        receivedAt: new Date().toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      };
+      const updates: Record<string, unknown> = {
+        materialReceivedInfo: receiptInfo
+      };
+      await updateCase(caseData.id, updates as Partial<ReworkCase>);
+      setReceivedHandshake(receiptInfo);
+      finishSaving();
+      showToast('✓ ยืนยันตรวจนับและรับมอบชิ้นส่วนครบชุดหน้างานเรียบร้อยแล้ว', 'success');
+      onSaveSuccess?.();
+    } catch (err) {
+      failSaving();
+      showAlert('ไม่สามารถบันทึกการรับมอบได้', 'error');
+    }
+  };
+
   // Step 4 Completion / Defend Action
   const handlePDFSave = async (isClosure: boolean = false, isBlocked: boolean = false) => {
     startSaving();
@@ -525,7 +562,7 @@ export function CaseUpdateView({
         targetStatus = 'In-Progress';
       }
 
-      const updates: any = {
+      const updates: Partial<ReworkCase> & Record<string, unknown> = {
         status: targetStatus,
         items: editedItems,
         missingBoxes,
@@ -534,15 +571,18 @@ export function CaseUpdateView({
         resolutionMethod,
         materialRequests,
         blockedInfo: isBlocked ? {
-          category: defendCategory,
-          notes: defendNotes,
-          blockedAt: new Date().toISOString()
+          isBlocked: true,
+          reasonCategory: defendCategory,
+          reasonDetail: defendNotes,
+          blockedAt: new Date().toISOString(),
+          reportedBy: currentUser?.name || 'PDF Technician',
+          reportedByRole: userRole
         } : undefined
       };
 
-      const res = await updateCase(caseData.id, updates);
+      const res = await updateCase(caseData.id, updates as Partial<ReworkCase>);
       if (res.success) {
-        if (updates.items) setEditedItems(updates.items);
+        if (updates.items) setEditedItems(updates.items as ReworkItem[]);
         setNewImages({});
         setDeletedItemIds([]);
         setNewOrFiles([]);
@@ -560,6 +600,32 @@ export function CaseUpdateView({
     } catch (error) {
       failSaving();
       showAlert('บันทึกไม่สำเร็จ', 'error');
+    }
+  };
+
+  // Step 4 QC Sign-off Gate (QSMS / Admin only)
+  const handleQCSignoff = async () => {
+    startSaving();
+    try {
+      const signoffInfo = {
+        approvedBy: currentUser?.name || (userRole === 'ADMIN' ? 'QSMS Administrator' : 'QSMS Inspector'),
+        approvedAt: new Date().toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        qcNotes: qcNotesInput.trim() || 'ตรวจรับงาน Rework ผ่านเกณฑ์คุณภาพมาตรฐาน 100%'
+      };
+      const updates: Partial<ReworkCase> & Record<string, unknown> = {
+        status: 'Completed',
+        qcApprovalInfo: signoffInfo,
+        items: editedItems,
+      };
+      await updateCase(caseData.id, updates as Partial<ReworkCase>);
+      setQcSignoff(signoffInfo);
+      setCaseStatus('Completed');
+      finishSaving();
+      showToast('🏅 ตรวจรับงานผ่านเกณฑ์ QC และลงนามปิดเคสสมบูรณ์ 100% เรียบร้อยแล้ว', 'success');
+      onSuccess?.();
+    } catch (err) {
+      failSaving();
+      showAlert('เกิดข้อผิดพลาดในการลงนามตรวจรับ QC', 'error');
     }
   };
 
@@ -2142,6 +2208,52 @@ export function CaseUpdateView({
                   </div>
                 </div>
               </div>
+
+              {/* Material Receipt & Handshake Card */}
+              <div className={`p-4 rounded-xl border transition-all ${
+                receivedHandshake
+                  ? 'bg-emerald-50/50 border-emerald-200'
+                  : 'bg-white border-slate-200 shadow-xs'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center border font-bold text-sm ${
+                      receivedHandshake
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}>
+                      {receivedHandshake ? '✓' : '📦'}
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span>สถานะการรับมอบชิ้นส่วนหน้างาน (Material Handshake Receipt)</span>
+                        {receivedHandshake && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
+                            ✓ รับมอบเรียบร้อย
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {receivedHandshake
+                          ? `ยืนยันตรวจรับชิ้นส่วนครบชุดแล้ว โดย ${receivedHandshake.receivedBy} เมื่อ ${receivedHandshake.receivedAt}`
+                          : 'ฝ่ายซ่อม (PDF) หรือผู้รับมอบหน้างานต้องตรวจนับและยืนยันการรับมอบเมื่อของมาถึง'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!receivedHandshake && (canEditRepair || userRole === 'ADMIN' || userRole === 'PDF') && (
+                    <button
+                      type="button"
+                      onClick={handleConfirmMaterialReceipt}
+                      disabled={isSaving}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 min-h-[40px]"
+                    >
+                      <CheckCircle2 size={15} />
+                      <span>🤝 ยืนยันตรวจรับชิ้นส่วนครบชุด</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -2294,6 +2406,80 @@ export function CaseUpdateView({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* QC Verification Gate & Final Sign-Off Card */}
+              <div className={`rounded-xl border p-5 transition-all ${
+                qcSignoff
+                  ? 'border-emerald-300 bg-emerald-50/40 shadow-xs'
+                  : 'border-slate-200 bg-white shadow-xs'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-lg ${
+                      qcSignoff
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-amber-50 text-amber-800 border-amber-300'
+                    }`}>
+                      🏅
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span>QC Verification Gate (การตรวจรับคุณภาพและปิดเคสอย่างเป็นทางการ)</span>
+                        {qcSignoff && (
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
+                            ✓ QC Approved
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {qcSignoff
+                          ? `เคสนี้ได้รับการตรวจรับและลงนามปิดเคสเรียบร้อยแล้ว โดย ${qcSignoff.approvedBy} เมื่อ ${qcSignoff.approvedAt}`
+                          : 'เมื่อยอดซ่อมเสร็จ 100% เจ้าหน้าที่ QSMS หรือ Admin สามารถตรวจสอบและลงนามรับรองผลเพื่อปิดเคส'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* QC Action for Admin / QSMS */}
+                  {!qcSignoff && (userRole === 'ADMIN' || userRole === 'QSMS') && globalCompleted >= totalBoxes && totalBoxes > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleQCSignoff}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 min-h-[40px]"
+                    >
+                      <CheckCheck size={16} />
+                      <span>🏅 ลงนามตรวจรับ QC & ปิดเคส</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Inspection Details / Input */}
+                {qcSignoff ? (
+                  <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-xs space-y-1">
+                    <div className="font-bold text-emerald-900 flex items-center justify-between">
+                      <span>ผลการตรวจรับ QC:</span>
+                      <span className="font-normal text-slate-500 text-[11px]">{qcSignoff.approvedAt}</span>
+                    </div>
+                    <p className="text-emerald-800 font-medium">{qcSignoff.qcNotes || 'ตรวจรับงาน Rework ผ่านเกณฑ์คุณภาพมาตรฐาน 100%'}</p>
+                    <p className="text-[11px] text-emerald-700 pt-1">ผู้ลงนามอนุมัติ: <strong>{qcSignoff.approvedBy}</strong></p>
+                  </div>
+                ) : (
+                  (userRole === 'ADMIN' || userRole === 'QSMS') && (
+                    <div className="mt-3 space-y-2">
+                      <label className="block text-xs font-semibold text-slate-700">
+                        บันทึกผลการตรวจสอบของ QC (QC Inspection Notes):
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={qcNotesInput}
+                        onChange={(e) => setQcNotesInput(e.target.value)}
+                        placeholder="ระบุข้อคิดเห็น QC เช่น ตรวจสอบสภาพกล่อง แกลลอน และรอยรั่วซึมแล้ว อยู่ในเกณฑ์มาตรฐาน พร้อมส่งเข้าคลัง..."
+                        className="w-full text-xs font-medium bg-white border border-slate-300 rounded-md p-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                      />
+                    </div>
+                  )
+                )}
               </div>
             </div>
           )}

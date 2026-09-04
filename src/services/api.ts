@@ -111,6 +111,15 @@ export interface ReworkCase {
   missingOil?: number;
   materialRequests?: MaterialRequestItem[];
   blockedInfo?: BlockedDefendInfo;
+  materialReceivedInfo?: {
+    receivedBy?: string;
+    receivedAt?: string;
+  };
+  qcApprovalInfo?: {
+    approvedBy?: string;
+    approvedAt?: string;
+    qcNotes?: string;
+  };
   createdByRole?: string;
   createdByName?: string;
 }
