@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, QrCode, ScanLine, RotateCcw, AlertTriangle, Save } from 'lucide-react';
 import { parseOrExcelFile, findOrMatch, type OrItemInfo } from '@/src/utils/orExcelParser';
 import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -140,6 +140,18 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   const [expandedResponsibleSelection, setExpandedResponsibleSelection] = useState<number | null>(null);
   const [isRestoring, setIsRestoring] = useState(true);
 
+  // Phase 4: Local Draft & Quick Scanner states
+  const [draftNotice, setDraftNotice] = useState<{
+    savedAt: string;
+    itemCount: number;
+  } | null>(null);
+  const [scannerModal, setScannerModal] = useState<{
+    itemIndex: number;
+    itemId: string;
+    field: 'itemNumber' | 'itemCode';
+  } | null>(null);
+  const [scannerInputVal, setScannerInputVal] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const methods = useForm<FormValues>({
@@ -172,7 +184,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     setValue: methods.setValue as unknown as UseFormSetValue<import('@/src/hooks/useItemVerification').ReworkFormValues>
   });
 
-  // Restore session state
+  // Restore session state and check local draft
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedItems = sessionStorage.getItem('rework_formItems');
@@ -187,6 +199,27 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
         } catch (e) { }
       }
 
+      // Check persistent localStorage draft
+      try {
+        const localDraft = localStorage.getItem('rework_case_draft_v1');
+        if (localDraft) {
+          const parsedDraft = JSON.parse(localDraft);
+          if (parsedDraft && Array.isArray(parsedDraft.items) && parsedDraft.items.length > 0) {
+            const hasMeaningfulContent = parsedDraft.items.some((it: Record<string, unknown>) => 
+              Boolean(it.itemCode || it.itemNumber || (typeof it.itemName === 'string' && it.itemName.trim().length > 0))
+            );
+            if (hasMeaningfulContent) {
+              setDraftNotice({
+                savedAt: parsedDraft.savedAt || 'ไม่ระบุเวลา',
+                itemCount: parsedDraft.items.length,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Safe JSON parsing fallback
+      }
+
       // Allow DOM to update with restored state before enabling animations
       requestAnimationFrame(() => {
         setTimeout(() => setIsRestoring(false), 10);
@@ -194,13 +227,56 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     }
   }, [setValue]);
 
-  // Save session state
+  // Save session state & auto-save persistent draft to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('rework_caseSource', caseSource);
       sessionStorage.setItem('rework_formItems', JSON.stringify(formItems));
+
+      // Persist draft to localStorage with debouncing if items have meaningful data
+      if (!isRestoring) {
+        const hasContent = formItems.some(it => Boolean(it.itemCode || it.itemNumber || (it.itemName && it.itemName.trim().length > 0)));
+        if (hasContent) {
+          const timer = setTimeout(() => {
+            localStorage.setItem('rework_case_draft_v1', JSON.stringify({
+              savedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: 'short' }),
+              caseSource,
+              customerName,
+              items: formItems
+            }));
+          }, 800);
+          return () => clearTimeout(timer);
+        }
+      }
     }
-  }, [caseSource, formItems]);
+  }, [caseSource, customerName, formItems, isRestoring]);
+
+  const handleRestoreLocalDraft = () => {
+    try {
+      const localDraft = localStorage.getItem('rework_case_draft_v1');
+      if (localDraft) {
+        const parsed = JSON.parse(localDraft);
+        if (parsed.caseSource) setValue('caseSource', parsed.caseSource);
+        if (parsed.customerName) setValue('customerName', parsed.customerName);
+        if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+          setValue('items', parsed.items);
+        }
+        showToast(`✓ กู้คืนข้อมูลร่าง ${parsed.items.length} รายการสำเร็จ`, 'success');
+      }
+    } catch (e) {
+      showToast('ไม่สามารถกู้คืนข้อมูลร่างได้', 'warning');
+    } finally {
+      setDraftNotice(null);
+    }
+  };
+
+  const handleDiscardLocalDraft = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('rework_case_draft_v1');
+    }
+    setDraftNotice(null);
+    showToast('ลบข้อมูลร่างเรียบร้อยแล้ว', 'info');
+  };
 
   // Handle OR File Upload & Auto-Parsing
   const handleOrFileUpload = async (files: File[]) => {
@@ -404,6 +480,11 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           setIsComplete(false);
           setProgress(0);
           setSaveMessage(null);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('rework_case_draft_v1');
+            sessionStorage.removeItem('rework_formItems');
+            sessionStorage.removeItem('rework_caseSource');
+          }
           loadCases();
         }, 1500);
       } else {
@@ -424,6 +505,47 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
     <FormProvider {...methods}>
       <div className="mx-auto max-w-5xl space-y-5 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]">
         
+        {/* Local Draft Recovery Banner */}
+        <AnimatePresence>
+          {draftNotice && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="rounded-lg border border-amber-300 bg-amber-50 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+            >
+              <div className="flex items-center gap-2.5 text-amber-900">
+                <div className="p-1.5 bg-amber-200/70 rounded-md text-amber-800">
+                  <Save size={16} />
+                </div>
+                <div>
+                  <span className="font-bold">พบข้อมูลร่างในอุปกรณ์นี้</span>
+                  <span className="text-amber-800/80 ml-1.5">
+                    ({draftNotice.itemCount} รายการ บันทึกล่าสุดเมื่อ {draftNotice.savedAt})
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleRestoreLocalDraft}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-md transition-colors shadow-2xs cursor-pointer flex items-center gap-1 text-xs min-h-[36px]"
+                >
+                  <RotateCcw size={13} />
+                  <span>กู้คืนข้อมูลร่าง</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDiscardLocalDraft}
+                  className="px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium rounded-md transition-colors cursor-pointer text-xs min-h-[36px]"
+                >
+                  <span>ล้างทิ้ง</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Step Indicator Banner */}
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
@@ -786,6 +908,14 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               type="text"
                               autoComplete="off"
                               onFocus={(e) => e.target.select()}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (item.itemNumber) {
+                                    triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber);
+                                  }
+                                }
+                              }}
                               {...register(`items.${idx}.itemNumber`, {
                                 onChange: (e) => {
                                   const val = e.target.value.replace(/[<>]/g, '').slice(0, 50);
@@ -797,16 +927,29 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 60001234A"
                               disabled={isSaving}
-                              className={`w-full rounded-md border pl-3 pr-9 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
+                              className={`w-full rounded-md border pl-3 pr-16 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
                             />
-                            <button
-                              type="button"
-                              onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
-                              disabled={isSaving || !item.itemNumber}
-                              className="absolute right-2.5 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors cursor-pointer"
-                            >
-                              <Search size={15} />
-                            </button>
+                            <div className="absolute right-1.5 flex items-center gap-1">
+                              <button
+                                type="button"
+                                title="สแกนบาร์โค้ด / Quick Scan"
+                                onClick={() => {
+                                  setScannerModal({ itemIndex: idx, itemId: item.id, field: 'itemNumber' });
+                                  setScannerInputVal(item.itemNumber || '');
+                                }}
+                                className="p-1 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+                              >
+                                <ScanLine size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
+                                disabled={isSaving || !item.itemNumber}
+                                className="p-1 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors cursor-pointer"
+                              >
+                                <Search size={15} />
+                              </button>
+                            </div>
                           </div>
                         </div>
 
@@ -817,6 +960,14 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               type="text"
                               autoComplete="off"
                               onFocus={(e) => e.target.select()}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (item.itemCode) {
+                                    triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode);
+                                  }
+                                }
+                              }}
                               {...register(`items.${idx}.itemCode`, {
                                 onChange: (e) => {
                                   const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 50);
@@ -828,16 +979,29 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 40001234"
                               disabled={isSaving}
-                              className={`w-full rounded-md border pl-3 pr-9 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
+                              className={`w-full rounded-md border pl-3 pr-16 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
                             />
-                            <button
-                              type="button"
-                              onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
-                              disabled={isSaving || !item.itemCode}
-                              className="absolute right-2.5 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors cursor-pointer"
-                            >
-                              <Search size={15} />
-                            </button>
+                            <div className="absolute right-1.5 flex items-center gap-1">
+                              <button
+                                type="button"
+                                title="สแกนบาร์โค้ด / Quick Scan"
+                                onClick={() => {
+                                  setScannerModal({ itemIndex: idx, itemId: item.id, field: 'itemCode' });
+                                  setScannerInputVal(item.itemCode || '');
+                                }}
+                                className="p-1 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+                              >
+                                <ScanLine size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
+                                disabled={isSaving || !item.itemCode}
+                                className="p-1 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors cursor-pointer"
+                              >
+                                <Search size={15} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1028,9 +1192,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         <button
                           type="button"
                           onClick={() => handleDuplicateItem(idx)}
-                          className="flex items-center justify-center gap-1.5 rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+                          className="flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.99] transition-all cursor-pointer shadow-2xs"
                         >
-                          <Copy size={14} /> คัดลอกรายการ
+                          <Copy size={15} /> คัดลอกรายการ
                         </button>
                         {fields.length > 1 ? (
                           <button
@@ -1039,9 +1203,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               remove(idx);
                               setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
                             }}
-                            className="flex items-center justify-center gap-1.5 rounded-md bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                            className="flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700 hover:bg-red-100 border border-red-200 active:scale-[0.99] transition-all cursor-pointer shadow-2xs"
                           >
-                            <Trash2 size={14} /> ลบรายการ
+                            <Trash2 size={15} /> ลบรายการ
                           </button>
                         ) : (
                           <button
@@ -1051,9 +1215,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               update(idx, { ...initialFormItem, customerName: curCust, id: item.id });
                               setUploadedImages(prev => { const n = { ...prev }; delete n[item.id]; return n; });
                             }}
-                            className="flex items-center justify-center gap-1.5 rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+                            className="flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 active:scale-[0.99] transition-all cursor-pointer shadow-2xs"
                           >
-                            <Trash2 size={14} /> ล้างข้อมูลการ์ดนี้
+                            <Trash2 size={15} /> ล้างข้อมูลการ์ดนี้
                           </button>
                         )}
                       </div>
@@ -1116,6 +1280,95 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           </div>
         </div>
       <ConflictModal isOpen={isConflictModalOpen} onClose={() => setIsConflictModalOpen(false)} />
+
+      {/* Barcode & QR Code Scanner Quick Dialog */}
+      <AnimatePresence>
+        {scannerModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2 text-slate-900">
+                  <div className="p-2 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                    <ScanLine size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold leading-tight">
+                      {scannerModal.field === 'itemNumber' ? 'สแกนหมายเลขบาร์โค้ด (Item Number)' : 'สแกนรหัสสินค้า (Item Code)'}
+                    </h4>
+                    <p className="text-xs text-slate-500">สำหรับรายการที่ {scannerModal.itemIndex + 1}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setScannerModal(null)}
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-700">
+                  ยิงบาร์โค้ดจากปืนสแกน หรือพิมพ์รหัสที่นี่:
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={scannerInputVal}
+                    onChange={(e) => setScannerInputVal(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = scannerInputVal.trim();
+                        if (val) {
+                          setValue(`items.${scannerModal.itemIndex}.${scannerModal.field}`, val, { shouldDirty: true });
+                          triggerDebouncedVerification(scannerModal.itemId, scannerModal.itemIndex, scannerModal.field, val);
+                        }
+                        setScannerModal(null);
+                      }
+                    }}
+                    placeholder={scannerModal.field === 'itemNumber' ? 'เช่น 61653013A700A' : 'เช่น 40001234'}
+                    className="w-full text-sm font-mono font-bold tracking-wider px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  💡 สามารถใช้เครื่องสแกนบาร์โค้ดแบบ USB หรือบลูทูธยิงเข้าช่องนี้ได้โดยตรง
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setScannerModal(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer min-h-[40px]"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const val = scannerInputVal.trim();
+                    if (val) {
+                      setValue(`items.${scannerModal.itemIndex}.${scannerModal.field}`, val, { shouldDirty: true });
+                      triggerDebouncedVerification(scannerModal.itemId, scannerModal.itemIndex, scannerModal.field, val);
+                    }
+                    setScannerModal(null);
+                  }}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs min-h-[40px]"
+                >
+                  ตกลงและตรวจสอบสินค้า
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </FormProvider>
   );
 }
