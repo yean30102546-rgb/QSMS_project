@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { promisify } from 'util';
 import { supabaseServer } from '../../../lib/supabaseServer';
-import { assertPermission, AuthError, requireServerAuth } from '../../../lib/serverAuth';
+import { assertPermission, AuthError, generateToken, requireServerAuth } from '../../../lib/serverAuth';
 import { generateCaseId } from '../../../utils/helpers';
+
+const scryptAsync = promisify(crypto.scrypt);
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -952,7 +956,7 @@ export async function POST(request: Request) {
         const buffer = Buffer.from(base64Clean, 'base64');
         const uniqueFileName = `${Date.now()}-${fileName}`;
 
-        const { data, error } = await supabaseServer
+        const { error } = await supabaseServer
           .storage
           .from('rework_images')
           .upload(uniqueFileName, buffer, {
@@ -980,70 +984,60 @@ export async function POST(request: Request) {
 
       case 'loginWithPassword': {
         const { profile, password } = body;
-        const profileLower = (profile || '').toLowerCase();
+        const profileClean = (profile || '').trim().toLowerCase();
 
-        // MOCK ACCOUNTS
-        const mockAccounts: Record<string, { pass: string, role: string, name: string }> = {
-          'qsms': { pass: 'Qsms123', role: 'qsms', name: 'QSMS Test' },
-          'operator': { pass: 'Operator123', role: 'operator', name: 'Operator Test' },
-        };
+        if (!profileClean || !password) {
+          return NextResponse.json(
+            { success: false, error: 'รหัสผ่านหรือชื่อผู้ใช้ไม่ถูกต้อง' },
+            { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
 
-        if (mockAccounts[profileLower]) {
-          if (mockAccounts[profileLower].pass === password) {
-            // Generate a fake JWT token that passes frontend AND backend validation
-            const headerObj = { alg: 'HS256', typ: 'JWT' };
-            const payloadObj = {
-              sub: profileLower,
-              profile: mockAccounts[profileLower].role, // MUST match serverAuth.ts expectation
-              exp: Math.floor(Date.now() / 1000) + (8 * 3600),
-              type: 'auth_token'
-            };
+        // Query user from Supabase users table
+        const { data: user, error: fetchError } = await supabaseServer
+          .from('users')
+          .select('id, username, password_hash, name, role')
+          .eq('username', profileClean)
+          .single();
 
-            const headerStr = Buffer.from(JSON.stringify(headerObj)).toString('base64url');
-            const payloadStr = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
-            const unsignedToken = `${headerStr}.${payloadStr}`;
+        if (fetchError || !user) {
+          return NextResponse.json(
+            { success: false, error: 'รหัสผ่านหรือชื่อผู้ใช้ไม่ถูกต้อง' },
+            { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
 
-            // Sign the token using AUTH_SECRET (same logic as serverAuth.ts)
-            const AUTH_SECRET = (process.env.AUTH_TOKEN_SECRET || '').trim();
-            if (!AUTH_SECRET) {
-              return NextResponse.json(
-                { success: false, error: 'AUTH_TOKEN_SECRET is not configured on the server.', statusCode: 500 },
-                { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-              );
-            }
+        // Verify password using scrypt
+        const [salt, hash] = (user.password_hash || '').split(':');
+        if (!salt || !hash) {
+          return NextResponse.json(
+            { success: false, error: 'รูปแบบรหัสผ่านในระบบไม่ถูกต้อง' },
+            { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
 
-            const key = await crypto.subtle.importKey(
-              'raw',
-              new TextEncoder().encode(AUTH_SECRET),
-              { name: 'HMAC', hash: 'SHA-256' },
-              false,
-              ['sign'],
-            );
-            const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(unsignedToken));
-            const signatureStr = Buffer.from(signature).toString('base64url');
-            const mockToken = `${unsignedToken}.${signatureStr}`;
+        const hashBuffer = (await scryptAsync(password, salt, 64)) as Buffer;
+        const verifyHash = hashBuffer.toString('hex');
 
-            return NextResponse.json(
-              {
-                success: true,
-                data: {
-                  token: mockToken,
-                  user: {
-                    email: `${profileLower}@test.com`,
-                    name: mockAccounts[profileLower].name,
-                    role: mockAccounts[profileLower].role
-                  },
-                  expiresIn: 8 * 3600
-                }
-              },
-              { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-            );
-          } else {
-            return NextResponse.json(
-              { success: false, error: 'รหัสผ่านไม่ถูกต้อง (Mock)' },
-              { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-            );
-          }
+        if (hash === verifyHash) {
+          const role = user.role.toLowerCase();
+          const token = await generateToken(profileClean, role);
+
+          return NextResponse.json(
+            {
+              success: true,
+              data: {
+                token,
+                user: {
+                  email: profileClean,
+                  name: user.name,
+                  role
+                },
+                expiresIn: 8 * 3600
+              }
+            },
+            { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
         }
 
         return NextResponse.json(
