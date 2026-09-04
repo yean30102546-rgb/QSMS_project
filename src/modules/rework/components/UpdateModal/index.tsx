@@ -39,24 +39,24 @@ function UpdateModalContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             onClick={handleRequestClose}
-            className={`${inline ? 'absolute' : 'fixed'} inset-0 bg-black/35 z-[9998] will-change-opacity`}
+            className={`${inline ? 'absolute' : 'fixed'} inset-0 bg-black/35 z-[9998] will-change-opacity transform-gpu`}
           />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             className={`${inline ? 'absolute' : 'fixed'} top-0 left-0 w-full ${inline ? 'h-full' : 'h-[100dvh]'} z-[9999] flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 pointer-events-none will-change-transform`}
           >
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: editExitIntent ? 0.6 : 1, y: 0, scale: editExitIntent ? 0.98 : 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: editExitIntent ? 0.6 : 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               aria-hidden={!!editExitIntent}
-              className="pointer-events-auto w-full max-w-6xl flex flex-col h-[calc(100dvh-2rem)] sm:h-[90vh] will-change-transform rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
+              className="pointer-events-auto w-full max-w-6xl flex flex-col h-[calc(100dvh-2rem)] sm:h-[90vh] will-change-transform transform-gpu rounded-[24px] sm:rounded-[16px] overflow-hidden shadow-2xl"
             >
               {isEditMode ? <UpdateModalEdit /> : <UpdateModalView />}
             </motion.div>

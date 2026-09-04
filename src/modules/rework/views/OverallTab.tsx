@@ -146,8 +146,9 @@ export function OverallTab({
       {/* 1. Main Case List Table (Instant Enterprise Viewport) */}
       <div 
         className={`h-full flex-col overflow-hidden bg-transparent ${
-          activeView === 'update' ? 'hidden' : 'flex'
+          activeView === 'update' ? 'pointer-events-none' : 'flex'
         }`}
+        aria-hidden={activeView === 'update'}
       >
         <div className="flex-shrink-0 border-b border-slate-200 bg-white px-0 py-4 sm:py-5 md:py-6 shadow-xs">
           <div className="px-4 sm:px-6 md:px-8 lg:px-10">
@@ -608,28 +609,39 @@ export function OverallTab({
         )}
       </div>
 
-      {/* 2. CaseUpdateView (Instant Enterprise Viewport) */}
-      {activeView === 'update' && selectedCase && (
-        <CaseUpdateView
-          key="update"
-          caseData={selectedCase}
-          onBack={() => {
-            setActiveView('list');
-            setSelectedCase(null);
-          }}
-          onSuccess={() => {
-            setActiveView('list');
-            setSelectedCase(null);
-            loadCases();
-          }}
-          onSaveSuccess={() => {
-            loadCases();
-          }}
-          onDelete={handleDeleteCase}
-          isAdmin={userRole.toLowerCase() === 'qsms' || userRole.toLowerCase() === 'admin'}
-          isOperator={userRole.toLowerCase() === 'operator'}
-        />
-      )}
+      {/* 2. CaseUpdateView (Instant Enterprise Viewport with GPU Slide-in) */}
+      <AnimatePresence>
+        {activeView === 'update' && selectedCase && (
+          <motion.div
+            key="case-update-viewport"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 14 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 z-30 bg-slate-100 flex flex-col overflow-hidden transform-gpu will-change-transform"
+          >
+            <CaseUpdateView
+              key="update"
+              caseData={selectedCase}
+              onBack={() => {
+                setActiveView('list');
+                setSelectedCase(null);
+              }}
+              onSuccess={() => {
+                setActiveView('list');
+                setSelectedCase(null);
+                loadCases();
+              }}
+              onSaveSuccess={() => {
+                loadCases();
+              }}
+              onDelete={handleDeleteCase}
+              isAdmin={userRole.toLowerCase() === 'qsms' || userRole.toLowerCase() === 'admin'}
+              isOperator={userRole.toLowerCase() === 'operator'}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Legacy update modal for other actions if any remain */}
       <UpdateModal
