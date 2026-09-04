@@ -246,16 +246,9 @@ export function CaseUpdateView({
   const totalNewPhotos = Object.values(newImages).reduce((acc, files) => acc + files.length, 0);
   const hasUnsavedPhotos = totalNewPhotos > 0 || deletedItemIds.length > 0;
 
-  // Keyboard shortcut to close Lightbox
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && lightboxData) {
-        setLightboxData(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxData]);
+  // Requisition Slip & Drawing Drawer Modals
+  const [isRequisitionModalOpen, setIsRequisitionModalOpen] = useState<boolean>(false);
+  const [drawingDrawerQuery, setDrawingDrawerQuery] = useState<{ query: string; title?: string } | null>(null);
 
   // Step 2 & 3: Material Requests State
   const [materialRequests, setMaterialRequests] = useState<MaterialRequestItem[]>([]);
@@ -277,9 +270,24 @@ export function CaseUpdateView({
   const [defendCategory, setDefendCategory] = useState<string>('waiting_oil');
   const [defendNotes, setDefendNotes] = useState<string>('');
 
-  // Requisition Slip & Drawing Drawer Modals
-  const [isRequisitionModalOpen, setIsRequisitionModalOpen] = useState<boolean>(false);
-  const [drawingDrawerQuery, setDrawingDrawerQuery] = useState<{ query: string; title?: string } | null>(null);
+  // Keyboard shortcut to close Lightbox, Drawers, or Return to Overall
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (lightboxData) {
+          setLightboxData(null);
+        } else if (drawingDrawerQuery) {
+          setDrawingDrawerQuery(null);
+        } else if (isRequisitionModalOpen) {
+          setIsRequisitionModalOpen(false);
+        } else if (!isSaving) {
+          onBack();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxData, drawingDrawerQuery, isRequisitionModalOpen, isSaving, onBack]);
 
   const handleDeleteCaseClick = () => {
     const caseName = caseData.caseName || caseData.id;
@@ -316,7 +324,7 @@ export function CaseUpdateView({
         const initialExpanded: Record<string, boolean> = {};
         let foundFirstIncomplete = false;
         itemsWithFallback.forEach((item, idx) => {
-          const itemKey = item.id || (item as any).uid || `idx-${idx}`;
+          const itemKey = item.id || (item as unknown as { uid?: string }).uid || `idx-${idx}`;
           const itemStat = calculateItemStatus(item, 0, []);
           if (!foundFirstIncomplete && itemStat.status !== 'complete') {
             initialExpanded[itemKey] = true;
@@ -791,7 +799,7 @@ export function CaseUpdateView({
   };
 
   return (
-    <div className="absolute inset-0 z-30 flex flex-col w-full h-full bg-slate-50 overflow-hidden font-sans">
+    <div className="relative flex flex-col w-full h-full bg-slate-50 overflow-hidden font-sans">
       {/* 0. TOP PROGRESS STRIPE (Subtle Glowing Line on Save) */}
       {isSaving && (
         <div className="absolute top-0 left-0 right-0 z-50 h-1 bg-slate-100/60 overflow-hidden">

@@ -143,9 +143,15 @@ export function OverallTab({
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {/* 1. Main Case List Table (Instant Enterprise Viewport) */}
-      <div 
-        className={`h-full flex-col overflow-hidden bg-transparent ${
+      {/* 1. Main Case List Table (Instant Enterprise Viewport with Parallax Depth) */}
+      <motion.div 
+        animate={{
+          x: activeView === 'update' ? -32 : 0,
+          opacity: activeView === 'update' ? 0.35 : 1,
+          scale: activeView === 'update' ? 0.985 : 1,
+        }}
+        transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+        className={`h-full flex-col overflow-hidden bg-transparent transform-gpu will-change-transform ${
           activeView === 'update' ? 'pointer-events-none' : 'flex'
         }`}
         aria-hidden={activeView === 'update'}
@@ -607,18 +613,36 @@ export function OverallTab({
             isFiltered={hasActiveFilters}
           />
         )}
-      </div>
+      </motion.div>
 
-      {/* 2. CaseUpdateView (Instant Enterprise Viewport with GPU Slide-in) */}
+      {/* Backdrop Dim Overlay */}
+      <AnimatePresence>
+        {activeView === 'update' && (
+          <motion.div
+            key="update-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            onClick={() => {
+              setActiveView('list');
+              setSelectedCase(null);
+            }}
+            className="absolute inset-0 z-20 bg-slate-900/15 backdrop-blur-[1px] transform-gpu will-change-opacity cursor-pointer"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* 2. CaseUpdateView (Enterprise Slide-Over Viewport) */}
       <AnimatePresence>
         {activeView === 'update' && selectedCase && (
           <motion.div
             key="case-update-viewport"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 14 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute inset-0 z-30 bg-slate-100 flex flex-col overflow-hidden transform-gpu will-change-transform"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+            className="absolute inset-0 z-30 bg-slate-50 flex flex-col overflow-hidden transform-gpu will-change-transform shadow-[-24px_0_48px_rgba(0,0,0,0.16)] border-l border-slate-200"
           >
             <CaseUpdateView
               key="update"
