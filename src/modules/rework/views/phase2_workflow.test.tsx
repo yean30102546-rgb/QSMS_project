@@ -501,5 +501,117 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
     expect(screen.getAllByText(/รอเบิกภาชนะ/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/ติดปัญหา Defend/i).length).toBeGreaterThanOrEqual(1);
   });
+
+  it('renders Local Draft Recovery Banner and recovers saved draft in AddCaseTab', () => {
+    const mockDraft = {
+      savedAt: '14:00 น.',
+      caseSource: 'SFC',
+      customerName: 'SFC',
+      items: [
+        {
+          id: 'draft-item-1',
+          itemNumber: '61653013A700A',
+          itemCode: '40001234',
+          itemName: 'สินค้าร่างที่บันทึกค้างไว้',
+          amount: 5,
+          customerName: 'SFC'
+        }
+      ]
+    };
+    window.localStorage.setItem('rework_case_draft_v1', JSON.stringify(mockDraft));
+
+    render(<AddCaseTab onOpenTutorial={vi.fn()} />);
+
+    expect(screen.getByText(/พบข้อมูลร่างในอุปกรณ์นี้/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /กู้คืนข้อมูลร่าง/i })).toBeInTheDocument();
+    
+    // Click restore
+    fireEvent.click(screen.getByRole('button', { name: /กู้คืนข้อมูลร่าง/i }));
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('กู้คืนข้อมูลร่าง'), 'success');
+  });
+
+  it('confirms material receipt handshake in Step 3 of CaseUpdateView', async () => {
+    mockCurrentUser.mockReturnValue({ name: 'PDF Tech Officer', role: 'PDF' });
+
+    const mockCase: ReworkCase = {
+      id: 'RW-2026-001',
+      date: '2026-08-26',
+      source: 'SFC',
+      caseName: 'เคสรอเบิกของ',
+      status: 'Awaiting Materials',
+      items: [],
+      materialRequests: [
+        { id: 'm-1', materialName: 'กล่องใหม่', requestedQty: 10, issuedQty: 10, unit: 'กล่อง', status: 'fulfilled' }
+      ]
+    };
+
+    render(
+      <CaseUpdateView
+        caseData={mockCase}
+        onBack={vi.fn()}
+        onSuccess={vi.fn()}
+        onDelete={vi.fn()}
+        isAdmin={false}
+        isOperator={false}
+      />
+    );
+
+    // Click step 3
+    fireEvent.click(screen.getAllByText(/คลังเบิกจ่ายภาชนะ/i)[0]);
+
+    const handshakeBtn = screen.getByRole('button', { name: /ยืนยันตรวจรับชิ้นส่วนครบชุด/i });
+    expect(handshakeBtn).toBeInTheDocument();
+
+    fireEvent.click(handshakeBtn);
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.stringContaining('ยืนยันตรวจนับและรับมอบชิ้นส่วนครบชุดหน้างานเรียบร้อยแล้ว'),
+        'success'
+      );
+    });
+  });
+
+  it('renders QC Verification Gate and allows QSMS sign-off on 100% completion in Step 4', async () => {
+    mockCurrentUser.mockReturnValue({ name: 'QSMS Lead', role: 'QSMS' });
+    const mockSuccess = vi.fn();
+
+    const mockCase: ReworkCase = {
+      id: 'RW-2026-001',
+      date: '2026-08-26',
+      source: 'SFC',
+      caseName: 'เคสซ่อมเสร็จแล้ว',
+      status: 'In-Progress',
+      items: [
+        { id: 'item-1', itemCode: '40001234', itemName: 'น้ำมัน', amount: 10, completedBoxes: 10 }
+      ]
+    };
+
+    render(
+      <CaseUpdateView
+        caseData={mockCase}
+        onBack={vi.fn()}
+        onSuccess={mockSuccess}
+        onDelete={vi.fn()}
+        isAdmin={false}
+        isOperator={false}
+      />
+    );
+
+    // Click step 4
+    fireEvent.click(screen.getAllByText(/PDF ซ่อม & Defend/i)[0]);
+
+    expect(screen.getByText(/QC Verification Gate/i)).toBeInTheDocument();
+    const qcSignoffBtn = screen.getByRole('button', { name: /ลงนามตรวจรับ QC & ปิดเคส/i });
+    expect(qcSignoffBtn).toBeInTheDocument();
+
+    fireEvent.click(qcSignoffBtn);
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.stringContaining('ตรวจรับงานผ่านเกณฑ์ QC และลงนามปิดเคสสมบูรณ์ 100%'),
+        'success'
+      );
+      expect(mockSuccess).toHaveBeenCalled();
+    });
+  });
 });
 
