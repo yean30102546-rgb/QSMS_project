@@ -151,18 +151,25 @@ describe('Helper Functions', () => {
   })
 
   describe('getStatistics', () => {
-    it('should calculate correct statistics', () => {
+    it('should calculate correct statistics for all 6 lifecycle statuses', () => {
       const mockCases = [
+        { status: 'Pending Analysis', items: [] },
+        { status: 'Awaiting Materials', items: [] },
         { status: 'Pending', items: [] },
         { status: 'In-Progress', items: [] },
+        { status: 'Blocked', items: [] },
         { status: 'Completed', items: [] },
       ] as unknown as ReworkCase[]
 
       const stats = getStatistics(mockCases)
-      expect(stats.total).toBe(3)
+      expect(stats.total).toBe(6)
+      expect(stats.pendingAnalysis).toBe(1)
+      expect(stats.awaitingMaterials).toBe(1)
       expect(stats.pending).toBe(1)
+      expect(stats.inProgress).toBe(1)
+      expect(stats.blocked).toBe(1)
       expect(stats.completed).toBe(1)
-      expect(stats.completionRate).toBeCloseTo(33.33)
+      expect(stats.completionRate).toBeCloseTo(16.67, 1)
     })
   })
 

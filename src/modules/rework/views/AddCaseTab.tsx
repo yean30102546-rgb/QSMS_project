@@ -319,12 +319,25 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       setStatusText('กำลังเตรียมข้อมูลเคส...');
 
       // Transform items for API
-      const apiItems = (entryMode === 'full_items' && data.items.length > 0 && data.items[0].itemName)
+      const apiItems: ReworkItem[] = (entryMode === 'full_items' && data.items.length > 0 && data.items[0].itemName)
         ? data.items.map(item => ({
             ...item,
             amount: Number(item.boxNumber) || Number(item.amount) || 1
           })) as ReworkItem[]
-        : [];
+        : [
+            {
+              id: `fast-item-${Date.now()}`,
+              itemCode: 'FAST-TICKET',
+              itemNumber: 'WAITING-SPEC',
+              itemName: 'รอระบุรายการสินค้า (WPK Fast Ticket)',
+              customerName: data.customerName || data.caseSource || 'SFC',
+              amount: 1,
+              completedBoxes: 0,
+              reason: 'รอระบุ',
+              responsible: 'รอระบุ',
+              verificationStatus: 'idle'
+            } as ReworkItem
+          ];
 
       setProgress(45);
       setStatusText('กำลังสร้าง Case ID และบันทึกข้อมูล...');

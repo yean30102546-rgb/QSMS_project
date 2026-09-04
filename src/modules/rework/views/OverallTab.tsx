@@ -188,12 +188,19 @@ export function OverallTab({
             <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4 lg:grid-cols-4">
               <StatCard label="จำนวนงานทั้งหมด" value={stats.total.toString()} />
               <StatCard
-                label="รอดำเนินการ"
-                value={stats.pending.toString()}
-                trend={`${Math.round((stats.pending / (stats.total || 1)) * 100)}%`}
+                label="รอวิเคราะห์ & เบิกของ"
+                value={((stats.pendingAnalysis || 0) + (stats.awaitingMaterials || 0)).toString()}
+                trend={stats.total > 0 ? `${Math.round((((stats.pendingAnalysis || 0) + (stats.awaitingMaterials || 0)) / stats.total) * 100)}%` : undefined}
               />
-              <StatCard label="กำลังดำเนินการ" value={stats.inProgress.toString()} />
-              <StatCard label="เสร็จสิ้น" value={stats.completed.toString()} />
+              <StatCard
+                label="กำลังดำเนินการซ่อม"
+                value={((stats.pending || 0) + (stats.inProgress || 0)).toString()}
+              />
+              <StatCard
+                label="เสร็จสิ้นแล้ว"
+                value={stats.completed.toString()}
+                trend={`${Math.round(stats.completionRate || 0)}%`}
+              />
             </div>
           </div>
         </div>
@@ -238,52 +245,129 @@ export function OverallTab({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 px-1 overflow-x-auto pb-2 scrollbar-hide">
-                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant/85">สถานะ:</span>
-                  {(['all', 'Pending', 'In-Progress', 'Completed'] as const).map((status) => {
-                    const isAll = status === 'all';
-                    const isActive = isAll ? statusFilter.length === 0 : statusFilter.includes(status);
-                    const count = isAll ? cases.length : statusCounts[status] || 0;
-                    const thaiLabel =
-                      isAll
-                        ? 'ทั้งหมด'
-                        : status === 'Pending'
-                          ? 'รอดำเนินการ'
-                          : status === 'In-Progress'
-                            ? 'กำลังดำเนินการ'
-                            : 'เสร็จสิ้น';
+                {/* 1-Click Workflow Stage Swimlane Bar */}
+                <div className="overflow-x-auto pb-1 pt-0.5 scrollbar-hide -mx-1 px-1">
+                  <div className="flex items-center gap-2 min-w-max">
+                    {[
+                      {
+                        id: 'all',
+                        label: 'ทั้งหมด',
+                        subLabel: 'TOTAL',
+                        statuses: [] as (ReworkCase['status'])[],
+                        count: cases.length,
+                        activeClass: 'bg-primary text-white border-primary/20 shadow-md shadow-primary/25',
+                      },
+                      {
+                        id: 'stage-1',
+                        stepNumber: 1,
+                        label: 'รอวิเคราะห์',
+                        subLabel: 'QSMS',
+                        statuses: ['Pending Analysis'] as (ReworkCase['status'])[],
+                        count: statusCounts['Pending Analysis'] || 0,
+                        activeClass: 'bg-amber-600 text-white border-amber-500/30 shadow-md shadow-amber-500/25',
+                      },
+                      {
+                        id: 'stage-2',
+                        stepNumber: 2,
+                        label: 'รอเบิกภาชนะ',
+                        subLabel: 'WPK',
+                        statuses: ['Awaiting Materials'] as (ReworkCase['status'])[],
+                        count: statusCounts['Awaiting Materials'] || 0,
+                        activeClass: 'bg-purple-600 text-white border-purple-500/30 shadow-md shadow-purple-500/25',
+                      },
+                      {
+                        id: 'stage-3',
+                        stepNumber: 3,
+                        label: 'กำลังซ่อม',
+                        subLabel: 'PROD',
+                        statuses: ['Pending', 'In-Progress'] as (ReworkCase['status'])[],
+                        count: (statusCounts['Pending'] || 0) + (statusCounts['In-Progress'] || 0),
+                        activeClass: 'bg-blue-600 text-white border-blue-500/30 shadow-md shadow-blue-500/25',
+                      },
+                      {
+                        id: 'stage-4',
+                        stepNumber: 4,
+                        label: 'ติดปัญหา Defend',
+                        subLabel: 'BLOCKED',
+                        statuses: ['Blocked'] as (ReworkCase['status'])[],
+                        count: statusCounts['Blocked'] || 0,
+                        activeClass: 'bg-rose-600 text-white border-rose-500/30 shadow-md shadow-rose-500/25',
+                      },
+                      {
+                        id: 'stage-5',
+                        stepNumber: 5,
+                        label: 'เสร็จสิ้น',
+                        subLabel: 'VERIFIED',
+                        statuses: ['Completed'] as (ReworkCase['status'])[],
+                        count: statusCounts['Completed'] || 0,
+                        activeClass: 'bg-emerald-600 text-white border-emerald-500/30 shadow-md shadow-emerald-500/25',
+                      },
+                    ].map((stage) => {
+                      const isActive = stage.id === 'all'
+                        ? statusFilter.length === 0
+                        : stage.statuses.some((s) => statusFilter.includes(s));
 
-                    const activeColors = isAll
-                      ? 'bg-primary text-white shadow-md shadow-primary/20'
-                      : status === 'Pending'
-                        ? 'bg-tertiary text-white shadow-md shadow-tertiary/20'
-                        : status === 'In-Progress'
-                          ? 'bg-[#7c98b3] text-white shadow-md shadow-[#7c98b3]/25'
-                          : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20';
-
-                    return (
-                      <motion.button
-                        key={status}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          if (isAll) {
-                            setStatusFilter([]);
-                          } else {
-                            toggleStatusFilter(status);
-                          }
-                        }}
-                        className={`flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all border border-transparent shadow-sm ${
-                          isActive
-                            ? activeColors
-                            : 'border-white/45 bg-white/45 text-on-surface-variant hover:bg-white/60 hover:text-primary'
-                        }`}
-                      >
-                        {thaiLabel}
-                        <span className={`text-[10px] font-bold ${isActive ? 'opacity-90' : 'opacity-65'}`}>{count}</span>
-                      </motion.button>
-                    );
-                  })}
+                      return (
+                        <motion.button
+                          key={stage.id}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            if (stage.id === 'all') {
+                              setStatusFilter([]);
+                            } else {
+                              const isExactMatch =
+                                stage.statuses.length === statusFilter.length &&
+                                stage.statuses.every((s) => statusFilter.includes(s));
+                              if (isExactMatch) {
+                                setStatusFilter([]);
+                              } else {
+                                setStatusFilter(stage.statuses);
+                              }
+                            }
+                          }}
+                          className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all border shadow-sm ${
+                            isActive
+                              ? stage.activeClass
+                              : 'border-white/50 bg-white/50 text-on-surface-variant hover:bg-white/80 hover:text-primary'
+                          }`}
+                        >
+                          {stage.stepNumber && (
+                            <span
+                              className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                                isActive
+                                  ? 'bg-white/25 text-white'
+                                  : 'bg-primary/10 text-primary'
+                              }`}
+                            >
+                              {stage.stepNumber}
+                            </span>
+                          )}
+                          <div className="flex flex-col items-start leading-tight">
+                            <span className="text-[11px] font-bold whitespace-nowrap">{stage.label}</span>
+                            {stage.subLabel && (
+                              <span
+                                className={`text-[8px] tracking-wider uppercase font-medium ${
+                                  isActive ? 'text-white/80' : 'text-on-surface-variant/60'
+                                }`}
+                              >
+                                {stage.subLabel}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`ml-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-extrabold ${
+                              isActive
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'bg-white/80 text-on-surface-variant group-hover:bg-white'
+                            }`}
+                          >
+                            {stage.count}
+                          </span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -457,7 +541,17 @@ export function OverallTab({
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">กรอง:</span>
                     {statusFilter.map((s) => (
                       <span key={`tag-s-${s}`} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-700">
-                        {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : 'เสร็จสิ้น'}
+                        {s === 'Pending Analysis'
+                          ? 'รอวิเคราะห์'
+                          : s === 'Awaiting Materials'
+                            ? 'รอเบิกภาชนะ'
+                            : s === 'Pending'
+                              ? 'รอดำเนินการ'
+                              : s === 'In-Progress'
+                                ? 'กำลังดำเนินการ'
+                                : s === 'Blocked'
+                                  ? 'ติดปัญหา Defend'
+                                  : 'เสร็จสิ้น'}
                         <button onClick={() => removeFilter('status', s)} className="hover:text-amber-900"><X size={10} /></button>
                       </span>
                     ))}

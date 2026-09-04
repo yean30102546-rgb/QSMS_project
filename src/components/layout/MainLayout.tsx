@@ -166,6 +166,14 @@ export function MainLayout({
             label="ภาพรวม (Overall)"
             icon={<LayoutDashboard size={16} />}
           />
+          {(['ADMIN', 'QSMS', 'MANAGEMENT'].includes(String(userRole || '').toUpperCase())) && (
+            <SidebarItem
+              active={activeTab === 'dashboard'}
+              onClick={() => handleTabChange('dashboard')}
+              label="แดชบอร์ด (Dashboard)"
+              icon={<BarChart3 size={16} />}
+            />
+          )}
           <SidebarItem
             active={activeTab === 'add'}
             onClick={() => handleTabChange('add')}
@@ -202,17 +210,6 @@ export function MainLayout({
             icon={<Bot size={16} className="text-blue-600" />}
           />
         </nav>
-
-        {String(userRole || '').toUpperCase() === 'QSMS' && (
-          <div className="mt-auto border-t border-slate-200 pt-8">
-            <SidebarItem
-              active={activeTab === 'dashboard'}
-              onClick={() => handleTabChange('dashboard')}
-              label="แดชบอร์ด (Dashboard)"
-              icon={<BarChart3 size={16} />}
-            />
-          </div>
-        )}
 
         <div className="mt-8 border-t border-slate-200 pt-8">
           <div 

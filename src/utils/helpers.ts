@@ -307,8 +307,11 @@ export function calculateCompletionRate(cases: ReworkCase[]): number {
  */
 export interface CaseStatistics {
   total: number;
+  pendingAnalysis: number;
+  awaitingMaterials: number;
   pending: number;
   inProgress: number;
+  blocked: number;
   completed: number;
   completionRate: number;
   linkedCount: number;
@@ -316,16 +319,22 @@ export interface CaseStatistics {
 
 export function getStatistics(cases: ReworkCase[]): CaseStatistics {
   const total = cases.length;
+  const pendingAnalysis = cases.filter((c) => c.status === 'Pending Analysis').length;
+  const awaitingMaterials = cases.filter((c) => c.status === 'Awaiting Materials').length;
   const pending = cases.filter((c) => c.status === 'Pending').length;
   const inProgress = cases.filter((c) => c.status === 'In-Progress').length;
+  const blocked = cases.filter((c) => c.status === 'Blocked').length;
   const completed = cases.filter((c) => c.status === 'Completed').length;
   const completionRate = total > 0 ? (completed / total) * 100 : 0;
   const linkedCount = cases.reduce((acc, c) => acc + (c.items?.filter(i => String(i.reason || '').includes('เปื้อน') && i.linkedSourceId).length || 0), 0);
 
   return {
     total,
+    pendingAnalysis,
+    awaitingMaterials,
     pending,
     inProgress,
+    blocked,
     completed,
     completionRate,
     linkedCount,

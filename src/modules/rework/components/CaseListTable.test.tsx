@@ -61,7 +61,7 @@ describe('CaseListTable', () => {
     const emptyCase: ReworkCase = { ...mockCase, items: [] };
     render(<CaseListTable cases={[emptyCase]} onRowClick={vi.fn()} isLoading={false} isEmpty={false} isFilterEmpty={false} onRetry={vi.fn()} onClearFilters={vi.fn()} error={null} searchQuery="" hasActiveFilters={false} />);
     
-    expect(screen.getByText('N/A')).toBeInTheDocument();
+    expect(screen.getByText('รอระบุสินค้า')).toBeInTheDocument();
   });
 
   it('handles multiple items correctly', () => {

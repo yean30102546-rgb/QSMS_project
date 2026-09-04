@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, AlertCircle, FileText, ExternalLink, PenTool, Trash2, Plus, ChevronDown } from 'lucide-react';
+import { X, ArrowLeft, AlertCircle, FileText, ExternalLink, PenTool, Trash2, Plus, ChevronDown } from 'lucide-react';
 import { useUpdateModal } from './UpdateModalContext';
 import { CUSTOMER_OPTIONS } from '@/src/services/api';
 import { convertDMYToYMD, convertYMDToDMY, enforceNumeric } from '@/src/utils/helpers';
@@ -156,10 +156,21 @@ export function UpdateModalEdit() {
               {/* Status segmented control removed */}
 
               <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-divider-color bg-surface-secondary/70 hover:bg-surface-secondary text-on-surface text-xs font-bold transition-all cursor-pointer active:scale-95"
+                title="ย้อนกลับ (ESC)"
+              >
+                <ArrowLeft size={14} />
+                <span>ย้อนกลับ</span>
+              </button>
+              <button
+                type="button"
                 onClick={handleCancelEdit}
                 className="text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full transition-colors focus:outline-none"
+                title="ปิด"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </>
           )}

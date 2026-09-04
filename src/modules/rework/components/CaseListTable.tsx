@@ -164,16 +164,17 @@ interface CaseRowProps {
 
 function CaseRow({ caseItem, onClick }: CaseRowProps) {
   const deadlineStatus = getDeadlineStatus(caseItem.date, caseItem.status);
-  const firstItem = caseItem.items[0];
-  const totalAmount = caseItem.items.reduce((sum, item) => sum + (item.amount || 0), 0);
-  const totalCompleted = caseItem.status === 'Completed' ? totalAmount : caseItem.items.reduce((sum, item) => sum + (Number(item.completedBoxes) || 0), 0);
+  const itemsList = caseItem.items || [];
+  const firstItem = itemsList[0];
+  const totalAmount = itemsList.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const totalCompleted = caseItem.status === 'Completed' ? totalAmount : itemsList.reduce((sum, item) => sum + (Number(item.completedBoxes) || 0), 0);
   const progressPercent = totalAmount > 0 ? Math.round((totalCompleted / totalAmount) * 100) : 0;
-  const multipleItems = caseItem.items.length > 1;
+  const multipleItems = itemsList.length > 1;
   const itemNameDisplay = multipleItems 
-    ? `${firstItem?.itemName || 'N/A'} (+${caseItem.items.length - 1} รายการ)` 
-    : firstItem?.itemName || 'N/A';
+    ? `${firstItem?.itemName || 'รอระบุสินค้า'} (+${itemsList.length - 1} รายการ)` 
+    : firstItem?.itemName || 'รอระบุสินค้า';
   
-  const uniqueReasons = Array.from(new Set(caseItem.items.map(i => i.reason).filter(Boolean)));
+  const uniqueReasons = Array.from(new Set(itemsList.map(i => i.reason).filter(Boolean)));
   const reasonsDisplay = uniqueReasons.length > 0 ? uniqueReasons.join(', ') : 'ไม่ระบุ';
 
   // Derive correct display prefix based on source

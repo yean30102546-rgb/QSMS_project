@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2, Package, Plus, FileSpreadsheet } from 'lucide-react';
+import { X, ArrowLeft, CheckCircle2, Clock, AlertCircle, ImageOff, ExternalLink, FileText, Download, FileImage, HelpCircle, Landmark, PenTool, Calculator, Trash2, Package, Plus, FileSpreadsheet } from 'lucide-react';
 import { useUpdateModal } from './UpdateModalContext';
 import { CUSTOMER_OPTIONS, ReworkCase } from '@/src/services/api';
 import { formatThaiDate, formatThaiDateShort, convertDMYToYMD, convertYMDToDMY, enforceNumeric } from '@/src/utils/helpers';
@@ -73,9 +73,18 @@ export function UpdateModalView() {
                           {(previewCaseName || caseData?.id) && <CopyButton text={previewCaseName || caseData?.id || ''} size={13} />}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <button onClick={handleRequestClose} className="text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full transition-colors focus:outline-none">
-                          <X size={24} />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleRequestClose}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-divider-color bg-surface-secondary/70 hover:bg-surface-secondary text-on-surface text-xs font-bold transition-all cursor-pointer active:scale-95"
+                          title="ย้อนกลับ (ESC)"
+                        >
+                          <ArrowLeft size={14} />
+                          <span>ย้อนกลับ</span>
+                        </button>
+                        <button onClick={handleRequestClose} className="text-on-surface-variant hover:bg-surface-secondary p-1.5 sm:p-2 rounded-full transition-colors focus:outline-none" title="ปิด">
+                          <X size={20} />
                         </button>
                       </div>
                     </div>
@@ -498,8 +507,13 @@ export function UpdateModalView() {
                               {isEditMode ? 'ยกเลิกแก้' : 'แก้ไข'}
                             </button>
                           )}
-                          <button onClick={onClose} className="flex-1 md:flex-none bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-4 py-2.5 rounded-xl font-bold transition-colors border border-divider-color whitespace-nowrap">
-                            ปิด
+                          <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-surface-secondary text-on-surface hover:bg-surface-variant text-[13px] sm:text-sm px-4 py-2.5 rounded-xl font-bold transition-colors border border-divider-color whitespace-nowrap cursor-pointer active:scale-95"
+                          >
+                            <ArrowLeft size={14} />
+                            <span>ย้อนกลับ</span>
                           </button>
                           {isSaving ? (
                             <div className="w-32 sm:w-48 shrink-0"><AppleProgressBar progress={progress} statusText={statusText} isComplete={isComplete} /></div>

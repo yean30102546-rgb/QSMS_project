@@ -5,7 +5,7 @@ import {
   ChevronDown, AlertCircle, Camera, CheckCircle2, Image as ImageIcon, X,
   Package, Wrench, Edit3, Check, HelpCircle, Tag, FileSpreadsheet, Download, 
   Loader2, Shield, Eye, Clock, ChevronRight, Truck, CheckCheck, AlertTriangle,
-  Sparkles
+  Sparkles, Printer
 } from 'lucide-react';
 import { ReworkCase, ReworkItem, updateCase, CUSTOMER_OPTIONS, MaterialRequestItem } from '@/src/services/api';
 import { getCurrentUser } from '@/src/services/auth';
@@ -25,6 +25,8 @@ import { useSaveProgress } from '@/src/hooks/useSaveProgress';
 import { useReworkData } from '@/src/contexts/ReworkDataContext';
 import { useExportReport } from '@/src/hooks/useExportReport';
 import { ExportTemplate } from '@/src/modules/drawings/components/ExportTemplate';
+import { RequisitionSlipModal } from '@/src/modules/rework/components/RequisitionSlipModal';
+import { DrawingPreviewDrawer } from '@/src/modules/rework/components/DrawingPreviewDrawer';
 
 const LEAK_SUBTYPES = [
   'รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน',
@@ -210,6 +212,10 @@ export function CaseUpdateView({
   const [isDefendBlocked, setIsDefendBlocked] = useState<boolean>(false);
   const [defendCategory, setDefendCategory] = useState<string>('waiting_oil');
   const [defendNotes, setDefendNotes] = useState<string>('');
+
+  // Requisition Slip & Drawing Drawer Modals
+  const [isRequisitionModalOpen, setIsRequisitionModalOpen] = useState<boolean>(false);
+  const [drawingDrawerQuery, setDrawingDrawerQuery] = useState<{ query: string; title?: string } | null>(null);
 
   const handleDeleteCaseClick = () => {
     const caseName = caseData.caseName || caseData.id;
@@ -482,8 +488,9 @@ export function CaseUpdateView({
     if (!caseData) return;
     startSaving();
     try {
+      const determinedStatus = caseStatus || caseData.status || 'Pending Analysis';
       const updates: any = {
-        status: forceDraft ? (globalCompleted > 0 ? 'In-Progress' : (caseData.status || 'Pending')) : caseStatus,
+        status: determinedStatus,
         items: editedItems,
         materialRequests,
         missingBoxes,
@@ -680,11 +687,13 @@ export function CaseUpdateView({
         {/* Left Side: Back button + Breadcrumb + Case ID + Status Badge */}
         <div className="flex items-center gap-3 min-w-0">
           <button
+            type="button"
             onClick={onBack}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer"
-            title="ย้อนกลับ (ESC)"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 font-bold text-xs transition-all shadow-2xs shrink-0 cursor-pointer active:scale-95"
+            title="ย้อนกลับไปหน้ารายการ (ESC)"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={16} />
+            <span>ย้อนกลับ</span>
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -756,102 +765,144 @@ export function CaseUpdateView({
       </div>
 
       {/* 2. INTERACTIVE 4-STAGE WORKFLOW STEPPER HEADER */}
-      <div className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-2.5 shrink-0 shadow-2xs">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {[
-            {
-              id: 'items' as const,
-              stepNum: '1',
-              icon: FileText,
-              title: '1. รายการสินค้า & รูปภาพ',
-              subtitle: 'Item Breakdown & Evidence',
-              roleLabel: 'QSMS / WPK',
-              isCompleted: editedItems.length > 0 && editedItems.every(i => i.itemName),
-              isActive: activeStep === 'items',
-              canEdit: canEditItems
-            },
-            {
-              id: 'analysis' as const,
-              stepNum: '2',
-              icon: Wrench,
-              title: '2. QSMS วิเคราะห์ & ภาชนะ',
-              subtitle: 'Analysis & Requisition',
-              roleLabel: 'QSMS Only',
-              isCompleted: caseStatus !== 'Pending Analysis' && caseStatus !== 'Pending',
-              isActive: activeStep === 'analysis',
-              canEdit: canEditAnalysis
-            },
-            {
-              id: 'issuing' as const,
-              stepNum: '3',
-              icon: Truck,
-              title: '3. WPK คลังเบิกจ่ายภาชนะ',
-              subtitle: 'Warehouse Issuing',
-              roleLabel: 'WPK Only',
-              isCompleted: caseStatus === 'In-Progress' || caseStatus === 'Blocked' || caseStatus === 'Completed',
-              isActive: activeStep === 'issuing',
-              canEdit: canEditIssuing
-            },
-            {
-              id: 'repair' as const,
-              stepNum: '4',
-              icon: CheckCheck,
-              title: '4. PDF ซ่อม & Defend',
-              subtitle: 'Repair & Closure',
-              roleLabel: 'PDF Only',
-              isCompleted: caseStatus === 'Completed',
-              isActive: activeStep === 'repair',
-              canEdit: canEditRepair
-            },
-          ].map((step) => {
-            const IconComponent = step.icon;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => setActiveStep(step.id)}
-                className={`relative flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer select-none ${
-                  step.isActive 
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/10' 
-                    : step.isCompleted
-                    ? 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200/80'
-                    : 'bg-white hover:bg-slate-50 text-slate-500 border-slate-200/60'
-                }`}
-              >
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                  step.isActive 
-                    ? 'bg-white text-slate-900 shadow-xs' 
-                    : step.isCompleted 
-                    ? 'bg-emerald-100 text-emerald-800' 
-                    : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {step.isCompleted ? '✓' : step.stepNum}
-                </div>
+      {(() => {
+        const workflowStepsList = [
+          {
+            id: 'items' as const,
+            stepNum: '1',
+            icon: FileText,
+            title: '1. รายการสินค้า & รูปภาพ',
+            shortTitle: '1. สินค้า/รูป',
+            subtitle: 'Item Breakdown & Evidence',
+            roleLabel: 'QSMS / WPK',
+            isCompleted: editedItems.length > 0 && editedItems.every(i => i.itemName),
+            isActive: activeStep === 'items',
+            canEdit: canEditItems
+          },
+          {
+            id: 'analysis' as const,
+            stepNum: '2',
+            icon: Wrench,
+            title: '2. QSMS วิเคราะห์ & ภาชนะ',
+            shortTitle: '2. วิเคราะห์/ภาชนะ',
+            subtitle: 'Analysis & Requisition',
+            roleLabel: 'QSMS Only',
+            isCompleted: caseStatus !== 'Pending Analysis' && caseStatus !== 'Pending',
+            isActive: activeStep === 'analysis',
+            canEdit: canEditAnalysis
+          },
+          {
+            id: 'issuing' as const,
+            stepNum: '3',
+            icon: Truck,
+            title: '3. WPK คลังเบิกจ่ายภาชนะ',
+            shortTitle: '3. คลังเบิกจ่าย',
+            subtitle: 'Warehouse Issuing',
+            roleLabel: 'WPK Only',
+            isCompleted: caseStatus === 'In-Progress' || caseStatus === 'Blocked' || caseStatus === 'Completed',
+            isActive: activeStep === 'issuing',
+            canEdit: canEditIssuing
+          },
+          {
+            id: 'repair' as const,
+            stepNum: '4',
+            icon: CheckCheck,
+            title: '4. PDF ซ่อม & Defend',
+            shortTitle: '4. ซ่อม/Defend',
+            subtitle: 'Repair & Closure',
+            roleLabel: 'PDF Only',
+            isCompleted: caseStatus === 'Completed',
+            isActive: activeStep === 'repair',
+            canEdit: canEditRepair
+          },
+        ];
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className={`text-xs font-bold truncate leading-tight ${step.isActive ? 'text-white' : 'text-slate-900'}`}>
-                      {step.title}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`text-[10px] truncate ${step.isActive ? 'text-slate-300' : 'text-slate-400'}`}>
-                      {step.subtitle}
-                    </span>
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold shrink-0 ${
+        return (
+          <div className="bg-white border-b border-slate-200/80 px-3 sm:px-6 py-2 sm:py-2.5 shrink-0 shadow-2xs">
+            {/* Desktop / Tablet Grid (4 columns) */}
+            <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 gap-2">
+              {workflowStepsList.map((step) => {
+                const IconComponent = step.icon;
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setActiveStep(step.id)}
+                    className={`relative flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer select-none ${
                       step.isActive 
-                        ? 'bg-slate-800 text-slate-200' 
-                        : 'bg-slate-100 text-slate-600'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/10' 
+                        : step.isCompleted
+                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200/80'
+                        : 'bg-white hover:bg-slate-50 text-slate-500 border-slate-200/60'
+                    }`}
+                  >
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                      step.isActive 
+                        ? 'bg-white text-slate-900 shadow-xs' 
+                        : step.isCompleted 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : 'bg-slate-100 text-slate-500'
                     }`}>
-                      {step.canEdit ? '✏️ Edit' : '👁️ View'}
+                      {step.isCompleted ? '✓' : step.stepNum}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className={`text-xs font-bold truncate leading-tight ${step.isActive ? 'text-white' : 'text-slate-900'}`}>
+                          {step.title}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[10px] truncate ${step.isActive ? 'text-slate-300' : 'text-slate-400'}`}>
+                          {step.subtitle}
+                        </span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold shrink-0 ${
+                          step.isActive 
+                            ? 'bg-slate-800 text-slate-200' 
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {step.canEdit ? '✏️ Edit' : '👁️ View'}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Mobile Compact Horizontal Pill Stepper (Single Row) */}
+            <div className="sm:hidden flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+              {workflowStepsList.map((step) => {
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setActiveStep(step.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      step.isActive
+                        ? 'bg-slate-900 text-white shadow-xs ring-2 ring-slate-900/15'
+                        : step.isCompleted
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
+                        : 'bg-slate-100 text-slate-600 border border-slate-200/60'
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
+                      step.isActive
+                        ? 'bg-white text-slate-900'
+                        : step.isCompleted
+                        ? 'bg-emerald-200 text-emerald-900'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {step.isCompleted ? '✓' : step.stepNum}
                     </span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                    <span className="truncate">{step.shortTitle}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 3. STEP CONTENT WORKSPACE PANELS */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-slate-50/50">
@@ -1141,7 +1192,20 @@ export function CaseUpdateView({
 
                               {/* หมายเลขบาร์โค้ด / สูตร */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs font-semibold text-slate-500">หมายเลขบาร์โค้ด (Item Number)</label>
+                                  {item.itemNumber && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setDrawingDrawerQuery({ query: item.itemNumber!, title: item.itemName || item.itemNumber! })}
+                                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+                                      title="ดูแบบแปลน Drawing สำหรับสูตรนี้"
+                                    >
+                                      <FileText size={11} />
+                                      <span>ดู Drawing</span>
+                                    </button>
+                                  )}
+                                </div>
                                 <input
                                   type="text"
                                   value={item.itemNumber || ''}
@@ -1158,7 +1222,20 @@ export function CaseUpdateView({
 
                               {/* รหัสสินค้า */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs font-semibold text-slate-500">รหัสสินค้า (Item Code)</label>
+                                  {item.itemCode && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setDrawingDrawerQuery({ query: item.itemCode!, title: item.itemName || item.itemCode! })}
+                                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+                                      title="ดูแบบแปลน Drawing สำหรับสินค้านี้"
+                                    >
+                                      <FileText size={11} />
+                                      <span>ดู Drawing</span>
+                                    </button>
+                                  )}
+                                </div>
                                 <input
                                   type="text"
                                   value={item.itemCode || ''}
@@ -1824,26 +1901,38 @@ export function CaseUpdateView({
                   </p>
                 </div>
 
-                {canEditIssuing && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleFulfillAllMaterials}
-                      className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
-                    >
-                      ✓ เบิกครบตามยอดทั้งหมด
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleWPKHandover}
-                      disabled={isSaving}
-                      className="px-4 py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Truck size={14} />
-                      <span>จ่ายของครบ & ส่งให้ PDF ซ่อม ➔</span>
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => setIsRequisitionModalOpen(true)}
+                    className="px-3.5 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 rounded-xl border border-slate-200/90 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                    title="เปิดใบขอเบิกภาชนะขนาด A5 สำหรับพิมพ์หรือดาวน์โหลด"
+                  >
+                    <Printer size={13} className="text-indigo-600" />
+                    <span>พิมพ์ใบเบิกภาชนะ</span>
+                  </button>
+
+                  {canEditIssuing && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleFulfillAllMaterials}
+                        className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer shrink-0"
+                      >
+                        ✓ เบิกครบตามยอดทั้งหมด
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleWPKHandover}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                      >
+                        <Truck size={14} />
+                        <span>จ่ายของครบ & ส่งให้ PDF ซ่อม ➔</span>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Warehouse Issuing Table */}
@@ -2280,6 +2369,27 @@ export function CaseUpdateView({
           missingOil,
           resolutionMethod
         } : null}
+      />
+
+      {/* Requisition Slip Modal (Print-ready) */}
+      <RequisitionSlipModal
+        isOpen={isRequisitionModalOpen}
+        onClose={() => setIsRequisitionModalOpen(false)}
+        caseData={{
+          ...caseData,
+          status: caseStatus,
+          items: editedItems,
+        }}
+        materialRequests={materialRequests}
+        resolutionMethod={resolutionMethod}
+      />
+
+      {/* 1-Click Drawing Preview Drawer */}
+      <DrawingPreviewDrawer
+        isOpen={Boolean(drawingDrawerQuery)}
+        onClose={() => setDrawingDrawerQuery(null)}
+        query={drawingDrawerQuery?.query || ''}
+        itemTitle={drawingDrawerQuery?.title}
       />
     </motion.div>
   );

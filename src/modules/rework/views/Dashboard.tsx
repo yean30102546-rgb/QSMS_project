@@ -120,8 +120,11 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
   const stats = useMemo(() => {
     const initialStats = {
       total: 0,
+      pendingAnalysis: 0,
+      awaitingMaterials: 0,
       pending: 0,
       inProgress: 0,
+      blocked: 0,
       completed: 0,
       completionRate: 0,
       linkedCount: 0, // Correlation KPI
@@ -130,6 +133,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       totalBoxes: 0,
       completedBoxes: 0,
       remainingBoxes: 0,
+      blockedReasons: {} as Record<string, number>,
       itemsData: {} as Record<string, { code: string; name: string; units: number; frequency: number }>,
       trendByDate: {} as Record<string, { date: string; cases: number; units: number; defects: number; completedUnits: number }>,
       unitsByReason: {} as Record<string, number>,
@@ -144,16 +148,24 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
     if (!filteredCases || filteredCases.length === 0) return initialStats;
 
     filteredCases.forEach(caseItem => {
-      if (caseItem.status === 'Pending') initialStats.pending++;
+      if (caseItem.status === 'Pending Analysis') initialStats.pendingAnalysis++;
+      else if (caseItem.status === 'Awaiting Materials') initialStats.awaitingMaterials++;
+      else if (caseItem.status === 'Pending') initialStats.pending++;
       else if (caseItem.status === 'In-Progress') initialStats.inProgress++;
+      else if (caseItem.status === 'Blocked') initialStats.blocked++;
       else if (caseItem.status === 'Completed') initialStats.completed++;
+
+      if (caseItem.status === 'Blocked' || caseItem.blockedInfo?.isBlocked) {
+        const cat = String(caseItem.blockedInfo?.reasonCategory || 'other');
+        initialStats.blockedReasons[cat] = (initialStats.blockedReasons[cat] || 0) + 1;
+      }
 
       const caseDateObj = new Date(caseItem.date);
       const today = new Date();
       const diffTime = Math.abs(today.getTime() - caseDateObj.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      if (caseItem.status === 'Pending' && diffDays > 7) {
+      if (caseItem.status !== 'Completed' && diffDays > 7) {
         initialStats.pendingOverdue++;
       }
 
@@ -350,10 +362,12 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-on-surface-variant mr-1">สถานะ:</span>
             {([
               { key: 'all', label: 'ทั้งหมด', color: 'bg-primary text-white shadow-lg shadow-primary/20' },
-              { key: 'Pending', label: 'รอดำเนินการ', color: 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' },
-              { key: 'In-Progress', label: 'กำลังดำเนินการ', color: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
-              { key: 'Completed', label: 'เสร็จสิ้น', color: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' },
-
+              { key: 'Pending Analysis', label: 'รอวิเคราะห์ (QSMS)', color: 'bg-amber-600 text-white shadow-lg shadow-amber-600/20' },
+              { key: 'Awaiting Materials', label: 'รอเบิกภาชนะ (WPK)', color: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' },
+              { key: 'Pending', label: 'รอดำเนินการ', color: 'bg-slate-700 text-white shadow-lg shadow-slate-700/20' },
+              { key: 'In-Progress', label: 'กำลังซ่อม (PDF)', color: 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' },
+              { key: 'Blocked', label: 'ติดปัญหา Defend', color: 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' },
+              { key: 'Completed', label: 'เสร็จสิ้น 100%', color: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' },
             ] as const).map(({ key, label, color }) => {
               const isAll = key === 'all';
               const isActive = isAll ? statusFilter.length === 0 : statusFilter.includes(key);
@@ -441,18 +455,21 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                 <div className="space-y-2.5">
                   <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">📊 สถานะ (Status)</label>
                   <div className="flex flex-wrap gap-2">
-                    {(['Pending', 'In-Progress', 'Completed'] as const).map(status => {
+                    {(['Pending Analysis', 'Awaiting Materials', 'Pending', 'In-Progress', 'Blocked', 'Completed'] as const).map(status => {
                       const isActive = statusFilter.includes(status);
-                      const labels = {
+                      const labels: Record<string, string> = {
+                        'Pending Analysis': '1. รอวิเคราะห์ (QSMS)',
+                        'Awaiting Materials': '2. รอเบิกภาชนะ (WPK)',
                         Pending: 'รอดำเนินการ',
-                        'In-Progress': 'กำลังดำเนินการ',
-                        Completed: 'เสร็จสิ้น'
+                        'In-Progress': '3. กำลังดำเนินการ (PDF)',
+                        Blocked: 'ติดปัญหา Defend',
+                        Completed: '4. เสร็จสิ้น'
                       };
                       return (
                         <motion.button key={status} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                           onClick={() => toggleArrayFilter(statusFilter, status, setStatusFilter)}
                           className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${isActive ? 'bg-primary/20 text-primary border-primary/30' : 'bg-slate-50 border-slate-100 text-on-surface-variant hover:bg-slate-100'}`}
-                        >{labels[status]}</motion.button>
+                        >{labels[status] || status}</motion.button>
                       );
                     })}
                   </div>
@@ -497,7 +514,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               <span className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">กรอง:</span>
               {statusFilter.map(s => (
                 <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-on-surface border border-slate-200 text-xs font-medium">
-                  {s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังดำเนินการ' : 'เสร็จสิ้น'}
+                  {s === 'Pending Analysis' ? 'รอวิเคราะห์ (QSMS)' : s === 'Awaiting Materials' ? 'รอเบิกภาชนะ (WPK)' : s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังซ่อม (PDF)' : s === 'Blocked' ? 'ติดปัญหา Defend' : 'เสร็จสิ้น 100%'}
                   <button onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-foreground text-on-surface-variant ml-0.5"><X size={10} /></button>
                 </span>
               ))}
@@ -529,6 +546,47 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* ===== 4-STAGE WORKFLOW PIPELINE COUNTERS ===== */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+        <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              4-Stage Workflow Pipeline (คอขวดงานแต่ละขั้นตอน)
+            </h4>
+          </div>
+          <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">คลิกที่การ์ดเพื่อกรองงานเฉพาะสเต็ป</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          {[
+            { key: 'Pending Analysis' as const, label: '1. รอวิเคราะห์', sub: 'QSMS Only', count: stats.pendingAnalysis, color: 'text-amber-800 bg-amber-50/80 border-amber-200 hover:bg-amber-100/70', dot: 'bg-amber-500' },
+            { key: 'Awaiting Materials' as const, label: '2. รอเบิกภาชนะ', sub: 'WPK Only', count: stats.awaitingMaterials, color: 'text-orange-800 bg-orange-50/80 border-orange-200 hover:bg-orange-100/70', dot: 'bg-orange-500' },
+            { key: 'Pending' as const, label: 'รอดำเนินการ', sub: 'Queue Legacy', count: stats.pending, color: 'text-slate-800 bg-slate-100/80 border-slate-200 hover:bg-slate-200/70', dot: 'bg-slate-400' },
+            { key: 'In-Progress' as const, label: '3. กำลังซ่อม', sub: 'PDF Team', count: stats.inProgress, color: 'text-sky-800 bg-sky-50/80 border-sky-200 hover:bg-sky-100/70', dot: 'bg-sky-500' },
+            { key: 'Blocked' as const, label: 'ติดปัญหา Defend', sub: 'Defend Mode', count: stats.blocked, color: 'text-rose-800 bg-rose-50/80 border-rose-200 hover:bg-rose-100/70', dot: 'bg-rose-500' },
+            { key: 'Completed' as const, label: '4. เสร็จสมบูรณ์', sub: '100% Closed', count: stats.completed, color: 'text-emerald-800 bg-emerald-50/80 border-emerald-200 hover:bg-emerald-100/70', dot: 'bg-emerald-500' },
+          ].map(stage => {
+            const isSelected = statusFilter.includes(stage.key);
+            return (
+              <button
+                key={stage.key}
+                type="button"
+                onClick={() => toggleArrayFilter(statusFilter, stage.key, setStatusFilter)}
+                className={`flex flex-col p-3 rounded-xl border text-left transition-all cursor-pointer ${stage.color} ${isSelected ? 'ring-2 ring-indigo-500 shadow-xs' : ''}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
+                  <span className="text-base font-black font-mono">{stage.count}</span>
+                </div>
+                <p className="text-xs font-bold truncate mt-1 leading-tight">{stage.label}</p>
+                <span className="text-[10px] opacity-70 truncate">{stage.sub}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ===== KEY METRICS ===== */}
@@ -830,50 +888,83 @@ function MetricCard({ label, value, icon, bgColor, trend, tooltip }: MetricCardP
 interface StatusDistributionSectionProps {
   stats: {
     total: number;
+    pendingAnalysis: number;
+    awaitingMaterials: number;
     pending: number;
     inProgress: number;
+    blocked: number;
     completed: number;
   };
 }
 
 function StatusDistributionSection({ stats }: StatusDistributionSectionProps) {
-  const { total, pending, inProgress, completed } = stats;
+  const { total, pendingAnalysis, awaitingMaterials, pending, inProgress, blocked, completed } = stats;
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   const data = useMemo(() => {
     return [
       { 
+        name: '1. รอวิเคราะห์ (QSMS)', 
+        count: pendingAnalysis, 
+        color: '#d97706', // Amber 600
+        borderColor: 'border-amber-600/30',
+        textColor: 'text-amber-600',
+        bgColor: 'bg-amber-500/10',
+        hoverBg: 'hover:bg-amber-500/20',
+        key: 'pendingAnalysis' 
+      },
+      { 
+        name: '2. รอเบิกภาชนะ (WPK)', 
+        count: awaitingMaterials, 
+        color: '#ea580c', // Orange 600
+        borderColor: 'border-orange-600/30',
+        textColor: 'text-orange-600',
+        bgColor: 'bg-orange-500/10',
+        hoverBg: 'hover:bg-orange-500/20',
+        key: 'awaitingMaterials' 
+      },
+      { 
         name: 'รอดำเนินการ (Pending)', 
         count: pending, 
-        color: '#f59e0b', // Amber 500
-        borderColor: 'border-amber-500/30',
-        textColor: 'text-amber-400',
-        bgColor: 'bg-amber-500/5',
-        hoverBg: 'hover:bg-amber-500/10',
+        color: '#64748b', // Slate 500
+        borderColor: 'border-slate-500/30',
+        textColor: 'text-slate-600',
+        bgColor: 'bg-slate-500/10',
+        hoverBg: 'hover:bg-slate-500/20',
         key: 'pending' 
       },
       { 
-        name: 'กำลังดำเนินการ (In-Progress)', 
+        name: '3. กำลังดำเนินการ (PDF)', 
         count: inProgress, 
-        color: '#6366f1', // Indigo 500
-        borderColor: 'border-indigo-500/30',
-        textColor: 'text-indigo-400',
-        bgColor: 'bg-indigo-500/5',
-        hoverBg: 'hover:bg-indigo-500/10',
+        color: '#0284c7', // Sky 600
+        borderColor: 'border-sky-600/30',
+        textColor: 'text-sky-600',
+        bgColor: 'bg-sky-500/10',
+        hoverBg: 'hover:bg-sky-500/20',
         key: 'inProgress' 
       },
       { 
-        name: 'เสร็จสมบูรณ์ (Completed)', 
+        name: 'ติดปัญหา (Defend Mode)', 
+        count: blocked, 
+        color: '#e11d48', // Rose 600
+        borderColor: 'border-rose-600/30',
+        textColor: 'text-rose-600',
+        bgColor: 'bg-rose-500/10',
+        hoverBg: 'hover:bg-rose-500/20',
+        key: 'blocked' 
+      },
+      { 
+        name: '4. เสร็จสมบูรณ์ (Completed)', 
         count: completed, 
         color: '#10b981', // Emerald 500
         borderColor: 'border-emerald-500/30',
-        textColor: 'text-emerald-400',
-        bgColor: 'bg-emerald-500/5',
-        hoverBg: 'hover:bg-emerald-500/10',
+        textColor: 'text-emerald-600',
+        bgColor: 'bg-emerald-500/10',
+        hoverBg: 'hover:bg-emerald-500/20',
         key: 'completed' 
       },
     ];
-  }, [pending, inProgress, completed]);
+  }, [pendingAnalysis, awaitingMaterials, pending, inProgress, blocked, completed]);
 
   const activeSegments = useMemo(() => {
     return data.filter(item => item.count > 0);
