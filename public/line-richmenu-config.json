@@ -1,0 +1,89 @@
+{
+  "size": {
+    "width": 2500,
+    "height": 1686
+  },
+  "selected": true,
+  "name": "QSMS_REWORK_RICH_MENU_V1",
+  "chatBarText": "เมนูระบบ QSMS",
+  "areas": [
+    {
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 833,
+        "height": 843
+      },
+      "action": {
+        "type": "uri",
+        "label": "เปิดเคส Rework",
+        "uri": "https://your-domain.com/?tab=add_case"
+      }
+    },
+    {
+      "bounds": {
+        "x": 833,
+        "y": 0,
+        "width": 833,
+        "height": 843
+      },
+      "action": {
+        "type": "uri",
+        "label": "ติดตามสถานะงาน",
+        "uri": "https://your-domain.com/?tab=overall"
+      }
+    },
+    {
+      "bounds": {
+        "x": 1666,
+        "y": 0,
+        "width": 834,
+        "height": 843
+      },
+      "action": {
+        "type": "message",
+        "label": "แจ้งวัสดุขาด",
+        "text": "#แจ้งวัสดุขาด"
+      }
+    },
+    {
+      "bounds": {
+        "x": 0,
+        "y": 843,
+        "width": 833,
+        "height": 843
+      },
+      "action": {
+        "type": "uri",
+        "label": "ค้นหา Drawing",
+        "uri": "https://your-domain.com/?tab=drawings"
+      }
+    },
+    {
+      "bounds": {
+        "x": 833,
+        "y": 843,
+        "width": 833,
+        "height": 843
+      },
+      "action": {
+        "type": "message",
+        "label": "ถาม AI คู่มือซ่อม",
+        "text": "@DocAI วิธีแก้ปัญหารั่วเปื้อน"
+      }
+    },
+    {
+      "bounds": {
+        "x": 1666,
+        "y": 843,
+        "width": 834,
+        "height": 843
+      },
+      "action": {
+        "type": "uri",
+        "label": "แดชบอร์ดสรุปยอด",
+        "uri": "https://your-domain.com/?tab=dashboard"
+      }
+    }
+  ]
+}

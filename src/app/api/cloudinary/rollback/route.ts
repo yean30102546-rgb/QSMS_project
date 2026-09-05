@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'No URLs provided for rollback' });
     }
 
-    console.log(`🧹 Cloudinary Rollback triggered for ${urls.length} images`);
+    console.log(`[Cloudinary Rollback] Triggered for ${urls.length} images`);
 
     const results = [];
     
@@ -53,9 +53,9 @@ export async function POST(request: Request) {
         try {
           const result = await cloudinary.uploader.destroy(publicId);
           results.push({ url, publicId, result });
-          console.log(`🗑️ Deleted from Cloudinary: ${publicId}`, result);
+          console.log(`[Cloudinary Rollback] Deleted: ${publicId}`, result);
         } catch (delError) {
-          console.error(`❌ Failed to delete ${publicId} from Cloudinary:`, delError);
+          console.error(`[Cloudinary Rollback] Failed to delete ${publicId}:`, delError);
           results.push({ url, publicId, error: delError });
         }
       } else {
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
     );
   } catch (error) {
-    console.error('❌ Cloudinary rollback failed:', error);
+    console.error('[Cloudinary Rollback] Error during rollback:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error during rollback' },
       { status: 500 }

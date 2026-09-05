@@ -148,21 +148,21 @@ export function Combobox({
                 setOpen(false);
                 setSearchQuery("");
               }}
-              className="flex w-full items-center justify-between px-3 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all text-left border-b border-slate-100 mb-1"
+              className="flex w-full items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all text-left border-b border-slate-100 mb-1"
             >
               <span className="truncate">-- ไม่ระบุ (ล้างค่า) --</span>
             </button>
           )}
 
           {filteredOptions.length === 0 ? (
-            <div className="py-6 text-center text-xs font-bold text-slate-400">
+            <div className="py-6 text-center text-xs font-medium text-slate-500">
               {emptyText}
             </div>
           ) : (
             <>
               {Object.entries(groupedOptions.groups).map(([groupName, items]) => (
                 <div key={groupName} className="space-y-0.5">
-                  <div className="px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/50 rounded-md">
+                  <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100/80 rounded-md">
                     {groupName}
                   </div>
                   {items.map((option) => {
@@ -177,8 +177,8 @@ export function Combobox({
                           setSearchQuery("");
                         }}
                         className={cn(
-                          "flex w-full items-center justify-between px-6 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all text-left",
-                          isSelected && "bg-blue-50 text-blue-600 hover:bg-blue-100/70 hover:text-blue-700"
+                          "flex w-full items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all text-left",
+                          isSelected && "bg-amber-50 text-amber-900 font-bold hover:bg-amber-100/80 hover:text-amber-950"
                         )}
                       >
                         <span className="truncate">{option.label}</span>

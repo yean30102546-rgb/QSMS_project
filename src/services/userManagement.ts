@@ -206,6 +206,16 @@ export function getAvailableRoles(): Array<{ value: UserRole; label: string; des
       description: 'Defect analysis, photo verification, container requisition spec',
     },
     {
+      value: UserRole.WFG,
+      label: 'WFG (Warehouse Finished Goods)',
+      description: 'Internal RW case initiation from warehouse & factory lines',
+    },
+    {
+      value: UserRole.CS,
+      label: 'CS (Customer Service)',
+      description: 'Customer return RT case initiation & claim document handling',
+    },
+    {
       value: UserRole.WPK,
       label: 'WPK (Warehouse & Packaging)',
       description: 'Case initiation (Step 1) and material issuing/fulfillment',

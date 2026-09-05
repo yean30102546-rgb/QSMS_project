@@ -31,12 +31,8 @@ export function Tooltip({ text, position = 'top', children }: TooltipProps) {
 
   // กำหนดหัวลูกศร
   const arrowStyles = position === 'top'
-    ? 'top-full left-1/2 -translate-x-1/2 border-t-slate-800'
-    : 'bottom-full left-1/2 -translate-x-1/2 border-b-slate-800';
-
-  const arrowBorder = position === 'top'
-    ? 'border-l-transparent border-r-transparent border-b-transparent border-t-4 border-l-4 border-r-4'
-    : 'border-l-transparent border-r-transparent border-t-transparent border-b-4 border-l-4 border-r-4';
+    ? 'top-full -mt-1 left-1/2 -translate-x-1/2'
+    : 'bottom-full -mb-1 left-1/2 -translate-x-1/2';
 
   return (
     <div
@@ -49,12 +45,12 @@ export function Tooltip({ text, position = 'top', children }: TooltipProps) {
       {/* Tooltip bubble */}
       {isVisible && (
         <div
-          className={`absolute z-50 px-3 py-1.5 text-xs font-medium text-white bg-slate-800 rounded-lg whitespace-nowrap shadow-lg pointer-events-none ${positionStyles}`}
+          className={`absolute z-50 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-md whitespace-nowrap shadow-md pointer-events-none transition-opacity duration-150 ${positionStyles}`}
           role="tooltip"
         >
           {text}
-          {/* ลูกศร */}
-          <div className={`absolute w-0 h-0 ${arrowStyles} ${arrowBorder}`} />
+          {/* ลูกศร (Crisp rotated indicator) */}
+          <div className={`absolute h-2 w-2 rotate-45 bg-slate-900 pointer-events-none ${arrowStyles}`} />
         </div>
       )}
     </div>

@@ -37,6 +37,8 @@ export const AUTH_CONFIG = {
 export enum UserRole {
   ADMIN = 'ADMIN',           // Full access, User/Master Management, Delete, Edit
   QSMS = 'QSMS',             // Quality Control / Inspection, Item Master & Requisition
+  WFG = 'WFG',               // Warehouse Finished Goods / Internal RW Case Initiation
+  CS = 'CS',                 // Customer Service / Customer Return RT Case Initiation
   WPK = 'WPK',               // Warehouse & Packaging / Case Initiation & Material Issuing
   PDF = 'PDF',               // Production / Defect Fix & Repair, Defend Flagging
   OPERATOR = 'OPERATOR',     // Backward compatibility alias for PDF / Operator
@@ -72,6 +74,21 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'fill_analysis',
     'request_materials',
     'close_case',
+    'export_data',
+  ],
+  [UserRole.WFG]: [
+    'view_dashboard',
+    'view_overall',
+    'create_case',
+    'update_status',
+    'request_materials',
+    'export_data',
+  ],
+  [UserRole.CS]: [
+    'view_dashboard',
+    'view_overall',
+    'create_case',
+    'update_status',
     'export_data',
   ],
   [UserRole.WPK]: [

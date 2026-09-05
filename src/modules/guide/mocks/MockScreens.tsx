@@ -377,7 +377,7 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
                       {reworkStats.pending}
                     </span>
                     <span className="text-[9px] text-amber-700 font-semibold opacity-0 group-hover/stat:opacity-100 transition-opacity">
-                      กรองกลุ่มนี้ ↗
+                      กรองกลุ่มนี้
                     </span>
                   </motion.button>
 
@@ -396,7 +396,7 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
                       {reworkStats.inProgress}
                     </span>
                     <span className="text-[9px] text-sky-700 font-semibold opacity-0 group-hover/stat:opacity-100 transition-opacity">
-                      กรองกลุ่มนี้ ↗
+                      กรองกลุ่มนี้
                     </span>
                   </motion.button>
 
@@ -415,7 +415,7 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
                       {reworkStats.completed}
                     </span>
                     <span className="text-[9px] text-emerald-700 font-semibold opacity-0 group-hover/stat:opacity-100 transition-opacity">
-                      กรองกลุ่มนี้ ↗
+                      กรองกลุ่มนี้
                     </span>
                   </motion.button>
                 </div>
@@ -1894,7 +1894,7 @@ export function MockMobileFastTrack({
         {
           id: 'ft-p1',
           label: 'ฝารั่วซึม',
-          watermark: '📍 Plant 1, Line 3 | 18 ส.ค. 2569 14:00',
+          watermark: 'Plant 1, Line 3 | 18 ส.ค. 2569 14:00',
           previewColor: 'from-amber-100 to-amber-200'
         }
       ]);
@@ -1910,7 +1910,7 @@ export function MockMobileFastTrack({
       {
         id: 'ft-p1',
         label: 'ฝารั่วซึม',
-        watermark: '📍 Plant 1, Line 3 | 18 ส.ค. 2569 14:00',
+        watermark: 'Plant 1, Line 3 | 18 ส.ค. 2569 14:00',
         previewColor: 'from-amber-100 to-amber-200'
       }
     ];
@@ -1927,7 +1927,7 @@ export function MockMobileFastTrack({
 
     setPhoneQueue([...phoneQueue, newItem]);
     resetPhoneForm();
-    setPhoneToast('บันทึกไอเทมลงคิวแล้ว ✓');
+    setPhoneToast('บันทึกไอเทมลงคิวแล้ว');
     setTimeout(() => setPhoneToast(null), 2500);
   };
 
@@ -1939,7 +1939,7 @@ export function MockMobileFastTrack({
       setIsDesktopPopulated(true);
       setPhoneQueue([]);
       setPhoneTab('entry');
-      setPhoneToast('ส่งข้อมูลเข้าเคสหลักสำเร็จ! ✨');
+      setPhoneToast('ส่งข้อมูลเข้าเคสหลักสำเร็จ!');
       setTimeout(() => setPhoneToast(null), 3000);
     }, 800);
   };
@@ -1988,7 +1988,7 @@ export function MockMobileFastTrack({
       setPhoneItemName('PTT LIMITED SLIP GEAR OIL 80W-90 NP (10/1L)(404261)');
       setPhoneAmount(1);
       setPhoneReason('รั่ว:รั่วซึมฝายอด');
-      setPhoneToast('พบข้อมูลสินค้าและตรวจสอบถูกต้องแล้ว ✓');
+      setPhoneToast('พบข้อมูลสินค้าและตรวจสอบถูกต้องแล้ว');
 
       await new Promise(r => setTimeout(r, 1500));
       if (isCancelled) return;
@@ -2008,11 +2008,11 @@ export function MockMobileFastTrack({
         {
           id: 'ft-p1',
           label: 'ฝารั่วซึม',
-          watermark: '📍 Plant 1, Line 3 | 18 ส.ค. 2569 14:00',
+          watermark: 'Plant 1, Line 3 | 18 ส.ค. 2569 14:00',
           previewColor: 'from-amber-100 to-amber-200'
         }
       ]);
-      setPhoneToast('ถ่ายรูป & ประทับลายน้ำอัตโนมัติสำเร็จ ✓');
+      setPhoneToast('ถ่ายรูป & ประทับลายน้ำอัตโนมัติสำเร็จ');
 
       await new Promise(r => setTimeout(r, 1600));
       if (isCancelled) return;
@@ -2032,7 +2032,7 @@ export function MockMobileFastTrack({
       };
       setPhoneQueue([queuedItem]);
       resetPhoneForm();
-      setPhoneToast('บันทึกไอเทมลงคิวแล้ว (1 รายการ) ✓');
+      setPhoneToast('บันทึกไอเทมลงคิวแล้ว (1 รายการ)');
 
       await new Promise(r => setTimeout(r, 1600));
       if (isCancelled) return;
@@ -2052,7 +2052,7 @@ export function MockMobileFastTrack({
       setIsDesktopPopulated(true);
       setPhoneQueue([]);
       setPhoneTab('entry');
-      setPhoneToast('ถ่ายโอนข้อมูลเข้าฟอร์มหลักสำเร็จ! ✨');
+      setPhoneToast('ถ่ายโอนข้อมูลเข้าฟอร์มหลักสำเร็จ!');
 
       await new Promise(r => setTimeout(r, 3000));
       if (isCancelled) return;
@@ -2278,7 +2278,7 @@ export function MockMobileFastTrack({
 
                     {isTakingPhoto ? (
                       <div className="h-24 rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/70 flex flex-col items-center justify-center text-blue-600 animate-pulse">
-                        <Camera size={22} className="animate-bounce mb-1" />
+                        <Camera size={22} className="mb-1" />
                         <span className="text-[10px] font-bold">กำลังประทับลายน้ำและบันทึกภาพ...</span>
                       </div>
                     ) : phonePhotos.length > 0 ? (
@@ -2566,8 +2566,8 @@ export function MockMobileFastTrack({
                       <span className="text-[8px] font-bold">ฝารั่วซึม</span>
                     </div>
                     <div className="flex-1 text-[10px] text-slate-600 font-mono">
-                      <p className="font-bold text-slate-800">✓ ฝังลายน้ำ Auto-Watermark</p>
-                      <p className="text-slate-500">📍 Plant 1, Line 3 | 18 ส.ค. 2569 14:00</p>
+                      <p className="font-bold text-slate-800">ฝังลายน้ำ Auto-Watermark</p>
+                      <p className="text-slate-500">Plant 1, Line 3 | 18 ส.ค. 2569 14:00</p>
                     </div>
                   </div>
                 ) : (
@@ -2864,7 +2864,7 @@ export function MockDrawingMaster({
         issue_date: '2026-03-15',
         package_size: '5L Gallon (Cap: 45mm)'
       });
-      setToastMessage('สกัดข้อมูลสำเร็จ 7 ฟิลด์ (Drawing Schema) ✓');
+      setToastMessage('สกัดข้อมูลสำเร็จ 7 ฟิลด์ (Drawing Schema)');
 
       await new Promise(r => setTimeout(r, 1600));
       if (isCancelled) return;
@@ -2891,7 +2891,7 @@ export function MockDrawingMaster({
       if (isCancelled) return;
 
       setRotation(90);
-      setToastMessage('หมุนแบบแปลน 90° สำเร็จ และจำทิศทางลง localStorage ✓');
+      setToastMessage('หมุนแบบแปลน 90° สำเร็จ และจำทิศทางลง localStorage');
 
       await new Promise(r => setTimeout(r, 2000));
       if (isCancelled) return;
@@ -2904,7 +2904,7 @@ export function MockDrawingMaster({
       setTableTab('master');
       setSelectedDocId('mst-1');
       setRotation(0);
-      setToastMessage('สลับไปดู Master Sheet: ตรวจจับ "ตามความเหมาะสม" (Normalized) ✨');
+      setToastMessage('สลับไปดู Master Sheet: ตรวจจับ "ตามความเหมาะสม" (Normalized)');
 
       await new Promise(r => setTimeout(r, 2600));
       if (isCancelled) return;
@@ -2914,12 +2914,12 @@ export function MockDrawingMaster({
       // ----------------------------------------------------
       setSimStep(6);
       setSidebarTab('gap_analysis');
-      setToastMessage('สลับมาดู Gap Analysis: ตรวจพบ Drawing ที่ยังไม่มี Master Sheet 1 รายการ ⚠️');
+      setToastMessage('สลับมาดู Gap Analysis: ตรวจพบ Drawing ที่ยังไม่มี Master Sheet 1 รายการ');
 
       await new Promise(r => setTimeout(r, 2400));
       if (isCancelled) return;
 
-      setToastMessage('จำลองส่งออกรายงาน Gap_Analysis_Report.xlsx สำเร็จ ✓');
+      setToastMessage('จำลองส่งออกรายงาน Gap_Analysis_Report.xlsx สำเร็จ');
 
       await new Promise(r => setTimeout(r, 2000));
       if (isCancelled) return;
@@ -3078,7 +3078,7 @@ export function MockDrawingMaster({
                 <button
                   type="button"
                   onClick={() => {
-                    setToastMessage('ส่งออกรายงาน Gap_Analysis_Report_2026-08-18.xlsx สำเร็จ ✓');
+                    setToastMessage('ส่งออกรายงาน Gap_Analysis_Report_2026-08-18.xlsx สำเร็จ');
                     setTimeout(() => setToastMessage(null), 3000);
                   }}
                   className="shrink-0 flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 px-3.5 py-1.5 text-xs font-bold text-white transition-all shadow-xs cursor-pointer active:scale-95"
@@ -3243,7 +3243,7 @@ export function MockDrawingMaster({
                           onClick={() => setSelectedDocId(isSelected ? null : doc.id)}
                           className={`cursor-pointer transition-colors ${
                             isSelected
-                              ? 'bg-blue-50/80 border-l-4 border-l-blue-600 font-semibold'
+                              ? 'bg-blue-50/80 shadow-[inset_3px_0_0_0_#2563eb] font-semibold'
                               : 'hover:bg-slate-50/70'
                           }`}
                         >
@@ -3518,7 +3518,7 @@ export function MockDrawingMaster({
                       <button
                         type="button"
                         onClick={() => {
-                          setToastMessage('บันทึกข้อมูลเข้า Master Storage สำเร็จ! ✨');
+                          setToastMessage('บันทึกข้อมูลเข้า Master Storage สำเร็จ!');
                           setTimeout(() => setToastMessage(null), 2500);
                         }}
                         className="mt-3 w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
@@ -3582,8 +3582,8 @@ export function MockDrawingMaster({
               </div>
 
               {/* Upload Dropzone */}
-              <div className="border-2 border-dashed border-indigo-300 bg-indigo-50/50 rounded-xl p-5 text-center space-y-1.5">
-                <FileText className="w-9 h-9 text-indigo-600 mx-auto animate-bounce" />
+              <div className="border-2 border-dashed border-amber-300 bg-amber-50/40 rounded-xl p-5 text-center space-y-1.5">
+                <FileText className="w-9 h-9 text-amber-600 mx-auto" />
                 <p className="text-xs font-bold text-slate-900">DWG-40001234-A.pdf</p>
                 <p className="text-[10px] text-slate-500 font-mono">1.4 MB &bull; Ready for AI Extraction</p>
               </div>
@@ -3591,7 +3591,7 @@ export function MockDrawingMaster({
               {/* AI Processing Status */}
               {isAiProcessing ? (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-center">
-                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-indigo-600">
+                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-amber-700">
                     <Sparkles size={15} className="animate-spin text-amber-500" />
                     <span>Gemini 3.1 Flash กำลังประมวลผล OCR...</span>
                   </div>
@@ -3600,7 +3600,7 @@ export function MockDrawingMaster({
                       initial={{ width: '0%' }}
                       animate={{ width: '100%' }}
                       transition={{ duration: 1.5 }}
-                      className="bg-gradient-to-r from-indigo-500 to-blue-500 h-full rounded-full"
+                      className="bg-gradient-to-r from-amber-500 to-amber-600 h-full rounded-full"
                     />
                   </div>
                   <p className="text-[9px] text-slate-400 font-mono">Analyzing Blueprint Schematics & Text Layers</p>
@@ -3677,10 +3677,10 @@ interface MockDocItem {
 const RAG_WELCOME_TEXT = `สวัสดีครับ ผมคือ QSMS Enterprise AI Assistant ยินดีให้บริการครับ
 
 ผมสามารถช่วยคุณสืบค้นและวิเคราะห์ข้อมูลสดจากทุกโมดูลในระบบ:
-1. 📊 สถิติเคส Rework & รายการสินค้าชำรุด (รั่ว/เปื้อน)
-2. 📦 สเปกสินค้ากลาง (Item Master / พาเลท / กลุ่มน้ำมัน)
-3. 📐 แบบแปลนวิศวกรรม & Master Sheets (Drawing No / Revision)
-4. 📖 คู่มือการปฏิบัติงาน & เอกสารเทคนิค RAG PDF
+1. สถิติเคส Rework & รายการสินค้าชำรุด (รั่ว/เปื้อน)
+2. สเปกสินค้ากลาง (Item Master / พาเลท / กลุ่มน้ำมัน)
+3. แบบแปลนวิศวกรรม & Master Sheets (Drawing No / Revision)
+4. คู่มือการปฏิบัติงาน & เอกสารเทคนิค RAG PDF
 
 พิมพ์คำถามของคุณได้เลยครับ!`;
 
@@ -3815,7 +3815,7 @@ export function MockDocAIRAG({
           chips: ['สาเหตุหลักที่ทำให้สินค้าเกิดการรั่วคืออะไร?']
         }
       ]);
-      setToastMessage('สรุปยอด Rework 80 เคส (รั่ว 68 / เปื้อน 3) จากฐานข้อมูลจริง ✓');
+      setToastMessage('สรุปยอด Rework 80 เคส (รั่ว 68 / เปื้อน 3) จากฐานข้อมูลจริง');
 
       await new Promise(r => setTimeout(r, 2200));
       if (isCancelled) return;
@@ -3838,7 +3838,7 @@ export function MockDocAIRAG({
           chips: ['ค้นหาสเปกน้ำมัน 40001234', 'สรุปงาน Rework อีกครั้ง']
         }
       ]);
-      setToastMessage('ตอบคำถามพร้อมวิเคราะห์สาเหตุเชิงลึกและค่า Torque 4.5 Nm ✨');
+      setToastMessage('ตอบคำถามพร้อมวิเคราะห์สาเหตุเชิงลึกและค่า Torque 4.5 Nm');
 
       await new Promise(r => setTimeout(r, 2500));
       if (isCancelled) return;

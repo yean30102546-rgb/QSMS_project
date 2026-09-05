@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Eye, EyeOff, Lock, UserCircle2, ChevronLeft, User, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Lock, UserCircle2, ChevronLeft, User, ShieldCheck, Check } from 'lucide-react';
 import { type User as UserType } from '@/src/services/auth';
 import { useNotification } from '@/src/contexts/NotificationContext';
 import type { Variants } from 'motion/react';
@@ -247,17 +247,17 @@ export function Register({
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                    <span className={passwordChecks.length ? 'text-green-600' : 'text-[#9e9ea0]'}>
-                      {passwordChecks.length ? '✓' : '•'} 8 ตัวขึ้นไป
+                    <span className={`inline-flex items-center gap-1 ${passwordChecks.length ? 'text-green-600' : 'text-[#9e9ea0]'}`}>
+                      {passwordChecks.length ? <Check size={11} className="stroke-[3]" /> : '•'} 8 ตัวขึ้นไป
                     </span>
-                    <span className={passwordChecks.uppercase ? 'text-green-600' : 'text-[#9e9ea0]'}>
-                      {passwordChecks.uppercase ? '✓' : '•'} พิมพ์ใหญ่ (A-Z)
+                    <span className={`inline-flex items-center gap-1 ${passwordChecks.uppercase ? 'text-green-600' : 'text-[#9e9ea0]'}`}>
+                      {passwordChecks.uppercase ? <Check size={11} className="stroke-[3]" /> : '•'} พิมพ์ใหญ่ (A-Z)
                     </span>
-                    <span className={passwordChecks.number ? 'text-green-600' : 'text-[#9e9ea0]'}>
-                      {passwordChecks.number ? '✓' : '•'} ตัวเลข (0-9)
+                    <span className={`inline-flex items-center gap-1 ${passwordChecks.number ? 'text-green-600' : 'text-[#9e9ea0]'}`}>
+                      {passwordChecks.number ? <Check size={11} className="stroke-[3]" /> : '•'} ตัวเลข (0-9)
                     </span>
-                    <span className={passwordChecks.special ? 'text-green-600' : 'text-[#9e9ea0]'}>
-                      {passwordChecks.special ? '✓' : '•'} อักขระพิเศษ (!@#$)
+                    <span className={`inline-flex items-center gap-1 ${passwordChecks.special ? 'text-green-600' : 'text-[#9e9ea0]'}`}>
+                      {passwordChecks.special ? <Check size={11} className="stroke-[3]" /> : '•'} อักขระพิเศษ (!@#$)
                     </span>
                   </div>
                 </motion.div>

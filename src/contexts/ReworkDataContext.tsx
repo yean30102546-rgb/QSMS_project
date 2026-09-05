@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { fetchAllCases, fetchItemMaster, ReworkCase } from '../services/api';
+import { isAuthenticated, restoreSession } from '../services/auth';
 import { getStatistics, sortCasesByStatus } from '../utils/helpers';
 
 interface MasterItem {
@@ -39,6 +40,14 @@ export function ReworkDataProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoadingCases(true);
       setCaseError(null);
+      if (!isAuthenticated()) {
+        const restored = await restoreSession();
+        if (!restored) {
+          setIsLoadingCases(false);
+          setCaseError('Authentication required. Please login again.');
+          return;
+        }
+      }
       const result = await fetchAllCases();
       if (result.success && result.data) {
         setCases(sortCasesByStatus(result.data));
@@ -55,6 +64,13 @@ export function ReworkDataProvider({ children }: { children: ReactNode }) {
   const loadMasterData = useCallback(async () => {
     try {
       setIsLoadingMaster(true);
+      if (!isAuthenticated()) {
+        const restored = await restoreSession();
+        if (!restored) {
+          setIsLoadingMaster(false);
+          return;
+        }
+      }
       const result = await fetchItemMaster();
       if (result.success && result.data) {
         setItemMaster(result.data);

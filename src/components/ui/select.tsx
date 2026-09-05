@@ -19,7 +19,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-9 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100/80 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1",
+      "flex h-9 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100/80 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1",
       className
     )}
     {...props}
@@ -118,12 +118,12 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-xs font-semibold text-slate-700 outline-none hover:bg-slate-100 hover:text-slate-900 focus:bg-indigo-50 focus:text-indigo-900 data-[state=checked]:bg-indigo-50/70 data-[state=checked]:text-indigo-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 transition-colors",
+      "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-xs font-semibold text-slate-700 outline-none hover:bg-slate-100 hover:text-slate-900 focus:bg-amber-50 focus:text-amber-900 data-[state=checked]:bg-amber-50/80 data-[state=checked]:text-amber-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 transition-colors",
       className
     )}
     {...props}
   >
-    <span className="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center text-indigo-600">
+    <span className="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center text-amber-600">
       <SelectPrimitive.ItemIndicator>
         <Check className="h-4 w-4 stroke-[2.5]" />
       </SelectPrimitive.ItemIndicator>

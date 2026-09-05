@@ -19,10 +19,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { action } = body;
 
-    console.log(`🤖 RAG API Action: ${action}`);
+    console.log(`[RAG API] RAG API Action: ${action}`);
 
     if (!process.env.GEMINI_API_KEY) {
-      console.error('❌ GEMINI_API_KEY is missing in environment variables.');
+      console.error('[RAG API] GEMINI_API_KEY is missing in environment variables.');
       return NextResponse.json(
         { success: false, error: 'GEMINI_API_KEY is not configured on the server. Please check your .env configuration.' },
         { status: 500 }
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('❌ Error fetching rag_documents:', error);
+          console.error('[RAG API] Error fetching rag_documents:', error);
           throw error;
         }
         return NextResponse.json({ success: true, data: data || [] });
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ success: false, error: 'Missing document ID.' }, { status: 400 });
         }
 
-        console.log(`🗑️ Deleting document and chunks for ID: ${id}`);
+        console.log(`[RAG API] ️ Deleting document and chunks for ID: ${id}`);
         // Chunks are automatically deleted via ON DELETE CASCADE foreign key
         const { error } = await ragSupabaseServer
           .from('rag_documents')
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
           .eq('id', id);
 
         if (error) {
-          console.error('❌ Error deleting document:', error);
+          console.error('[RAG API] Error deleting document:', error);
           throw error;
         }
         return NextResponse.json({ success: true });
@@ -69,14 +69,14 @@ export async function POST(request: Request) {
           return NextResponse.json({ success: false, error: 'Missing document ID.' }, { status: 400 });
         }
 
-        console.log(`🔍 Fetching chunks for document ID: ${documentId}`);
+        console.log(`[RAG API] Fetching chunks for document ID: ${documentId}`);
         const { data, error } = await ragSupabaseServer
           .from('rag_document_chunks')
           .select('id, content, image_urls')
           .eq('document_id', documentId);
 
         if (error) {
-          console.error('❌ Error fetching document chunks:', error);
+          console.error('[RAG API] Error fetching document chunks:', error);
           throw error;
         }
         return NextResponse.json({ success: true, data: data || [] });
@@ -88,14 +88,14 @@ export async function POST(request: Request) {
           return NextResponse.json({ success: false, error: 'Missing or invalid document IDs.' }, { status: 400 });
         }
 
-        console.log(`🗑️ Bulk deleting documents for ${ids.length} IDs`);
+        console.log(`[RAG API] ️ Bulk deleting documents for ${ids.length} IDs`);
         const { error } = await ragSupabaseServer
           .from('rag_documents')
           .delete()
           .in('id', ids);
 
         if (error) {
-          console.error('❌ Error bulk deleting documents:', error);
+          console.error('[RAG API] Error bulk deleting documents:', error);
           throw error;
         }
         return NextResponse.json({ success: true });
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
           );
         }
 
-        console.log(`📥 Ingesting document: ${filename} (${fileType})`);
+        console.log(`[RAG API] Ingesting document: ${filename} (${fileType})`);
 
         // 1. Insert parent document metadata record
         const { data: docRecord, error: docError } = await ragSupabaseServer
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
           .single();
 
         if (docError) {
-          console.error('❌ Error inserting rag_documents metadata:', docError);
+          console.error('[RAG API] Error inserting rag_documents metadata:', docError);
           throw docError;
         }
 
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
 
           let parseResponse;
           try {
-            console.log(`🤖 Requesting Gemini 3.1 Flash Lite parsing for ${filename} (${mimeType})...`);
+            console.log(`[RAG API] Requesting Gemini 3.1 Flash Lite parsing for ${filename} (${mimeType})...`);
             parseResponse = await ai.models.generateContent({
               model: 'gemini-3.1-flash-lite',
               contents: [
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
               ]
             });
           } catch (error: unknown) {
-            console.warn(`⚠️ Gemini 3.1 Flash Lite failed (possibly 503 high demand). Falling back to gemini-2.0-flash:`, error instanceof Error ? error.message : String(error));
+            console.warn(`[RAG API] ️ Gemini 3.1 Flash Lite failed (possibly 503 high demand). Falling back to gemini-2.0-flash:`, error instanceof Error ? error.message : String(error));
             parseResponse = await ai.models.generateContent({
               model: 'gemini-2.0-flash',
               contents: [
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
 
           parsedText = parseResponse.text || '';
         } else if (fileType === 'xlsx' || fileType === 'xls') {
-          console.log(`📊 Parsing Excel file server-side with SheetJS for ${filename}...`);
+          console.log(`[RAG API] Parsing Excel file server-side with SheetJS for ${filename}...`);
           try {
             const buffer = Buffer.from(base64Data, 'base64');
             const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
 
             parsedText = excelText;
           } catch (err) {
-            console.error('❌ Error parsing Excel with SheetJS:', err);
+            console.error('[RAG API] Error parsing Excel with SheetJS:', err);
             throw new Error(`Failed to parse Excel file: ${err instanceof Error ? err.message : String(err)}`);
           }
         } else {
@@ -201,10 +201,10 @@ export async function POST(request: Request) {
           throw new Error('Parsed document content is empty.');
         }
 
-        console.log(`📝 Parsing completed. Length: ${parsedText.length} characters.`);
+        console.log(`[RAG API] Parsing completed. Length: ${parsedText.length} characters.`);
 
         // 3. Chunk the parsed text using Markdown Headers (Semantic Header-based Chunking)
-        console.log(`📦 Segmenting text based on markdown headers...`);
+        console.log(`[RAG API] Segmenting text based on markdown headers...`);
         const rawChunks = parsedText.split(/(?=\n#{1,3}\s)/);
         const chunks: string[] = [];
         let currentChunk = '';
@@ -226,10 +226,10 @@ export async function POST(request: Request) {
         }
 
         const filteredChunks = chunks.filter(c => c.length > 20);
-        console.log(`📦 Generated ${filteredChunks.length} header-based chunks for indexing.`);
+        console.log(`[RAG API] Generated ${filteredChunks.length} header-based chunks for indexing.`);
 
         // 4. Generate embeddings using Jina AI or Gemini as fallback (768 dimensions)
-        console.log(`✨ Generating embeddings...`);
+        console.log(`[RAG API] Generating embeddings...`);
         const allInsertRecords: Record<string, unknown>[] = [];
         const jinaApiKey = process.env.JINA_API_KEY || '';
 
@@ -275,11 +275,11 @@ export async function POST(request: Request) {
                   image_urls: imageUrls || []
                 });
               } else {
-                console.warn(`⚠️ Warning: Missing or invalid embedding at index ${index} in batch.`);
+                console.warn(`[RAG API] ️ Warning: Missing or invalid embedding at index ${index} in batch.`);
               }
             });
           } catch (err) {
-            console.warn('⚠️ Jina Embeddings failed, falling back to Gemini text-embedding-004:', err instanceof Error ? err.message : String(err));
+            console.warn('[RAG API] Jina Embeddings failed, falling back to Gemini text-embedding-004:', err instanceof Error ? err.message : String(err));
             
             try {
               console.log(`Processing Gemini embedding batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(filteredChunks.length / BATCH_SIZE)}...`);
@@ -308,26 +308,26 @@ export async function POST(request: Request) {
                 });
               });
             } catch (geminiErr) {
-              console.error('❌ Critical: Both Jina and Gemini embeddings failed:', geminiErr);
+              console.error('[RAG API] Critical: Both Jina and Gemini embeddings failed:', geminiErr);
               throw geminiErr;
             }
           }
         }
 
         // 5. Bulk insert into Supabase
-        console.log(`💾 Bulk inserting ${allInsertRecords.length} chunks into database...`);
+        console.log(`[RAG API] Bulk inserting ${allInsertRecords.length} chunks into database...`);
         if (allInsertRecords.length > 0) {
           const { error: chunkError } = await ragSupabaseServer
             .from('rag_document_chunks')
             .insert(allInsertRecords);
 
           if (chunkError) {
-            console.error(`❌ Error bulk inserting chunks:`, chunkError);
+            console.error(`[RAG API] Error bulk inserting chunks:`, chunkError);
             throw chunkError;
           }
         }
 
-        console.log(`🎉 Ingest successful for document: ${filename}`);
+        console.log(`[RAG API] Ingest successful for document: ${filename}`);
         return NextResponse.json({ success: true, data: { docId: docRecord.id, totalChunks: chunks.length } });
       }
 
@@ -337,12 +337,12 @@ export async function POST(request: Request) {
           return NextResponse.json({ success: false, error: 'Missing query message' }, { status: 400 });
         }
 
-        console.log(`💬 Processing chat query: "${message.substring(0, 50)}..."`);
+        console.log(`[RAG API] Processing chat query: "${message.substring(0, 50)}..."`);
 
         // 1. Query Expansion (Gemini generates 3 variations)
         let searchQueries = [message];
         try {
-          console.log('🤖 Expanding search queries with Gemini...');
+          console.log('[RAG API] Expanding search queries with Gemini...');
           const expansionResponse = await ai.models.generateContent({
             model: 'gemini-3.1-flash-lite',
             contents: `คุณคือผู้เชี่ยวชาญการสืบค้นข้อมูลคู่มือโรงงาน หน้าที่ของคุณคือสร้างประโยคคำค้นหาภาษาไทยที่แตกต่างกันแต่องค์ความรู้คล้ายคลึงกัน 3 ประโยค จากคำถามเริ่มต้น เพื่อใช้ในการทำ Semantic Search หาคู่มือการซ่อมหรือข้อมูลสเปกสินค้า
@@ -360,10 +360,10 @@ export async function POST(request: Request) {
           
           if (expandedList.length > 0) {
             searchQueries = [...searchQueries, ...expandedList.slice(0, 3)];
-            console.log('🔍 Expanded queries:', searchQueries);
+            console.log('[RAG API] Expanded queries:', searchQueries);
           }
         } catch (e) {
-          console.warn('⚠️ Query expansion failed, using original message:', e);
+          console.warn('[RAG API] Query expansion failed, using original message:', e);
         }
 
         // 2. Generate query embedding vector (Jina AI with Gemini fallback)
@@ -375,7 +375,7 @@ export async function POST(request: Request) {
             throw new Error('JINA_API_KEY is not configured. Forcing fallback.');
           }
 
-          console.log('✨ Generating query embeddings via Jina AI...');
+          console.log('[RAG API] Generating query embeddings via Jina AI...');
           const jinaRes = await fetch('https://api.jina.ai/v1/embeddings', {
             method: 'POST',
             headers: {
@@ -412,7 +412,7 @@ export async function POST(request: Request) {
             }
           }
         } catch (err) {
-          console.warn('⚠️ Jina query embedding failed, falling back to Gemini text-embedding-004:', err instanceof Error ? err.message : String(err));
+          console.warn('[RAG API] Jina query embedding failed, falling back to Gemini text-embedding-004:', err instanceof Error ? err.message : String(err));
           
           try {
             const embedPromises = searchQueries.map(async (q) => {
@@ -444,13 +444,13 @@ export async function POST(request: Request) {
               throw new Error('Gemini returned empty embeddings.');
             }
           } catch (geminiErr) {
-            console.error('❌ Critical: Both Jina and Gemini query embedding failed:', geminiErr);
+            console.error('[RAG API] Critical: Both Jina and Gemini query embedding failed:', geminiErr);
             throw geminiErr;
           }
         }
 
         // 3. Search similarity using Supabase RPC function (Hybrid Search)
-        console.log('🔍 Executing Hybrid Search in database (Match Count 12)...');
+        console.log('[RAG API] Executing Hybrid Search in database (Match Count 12)...');
         let matchedChunks: DocumentChunk[] | null = [];
 
         // Try hybrid search first
@@ -464,7 +464,7 @@ export async function POST(request: Request) {
         );
 
         if (hybridError || !hybridData) {
-          console.warn('⚠️ Hybrid search failed, falling back to pure vector search:', hybridError);
+          console.warn('[RAG API] Hybrid search failed, falling back to pure vector search:', hybridError);
           const { data: vectorData, error: matchError } = await ragSupabaseServer.rpc(
             'match_document_chunks',
             {
@@ -475,7 +475,7 @@ export async function POST(request: Request) {
           );
 
           if (matchError) {
-            console.error('❌ Error executing match_document_chunks RPC:', matchError);
+            console.error('[RAG API] Error executing match_document_chunks RPC:', matchError);
             throw matchError;
           }
           matchedChunks = vectorData;
@@ -483,14 +483,14 @@ export async function POST(request: Request) {
           matchedChunks = hybridData;
         }
 
-        console.log(`🎯 Found ${(matchedChunks as DocumentChunk[] | null)?.length || 0} raw matching document chunks.`);
+        console.log(`[RAG API] Found ${(matchedChunks as DocumentChunk[] | null)?.length || 0} raw matching document chunks.`);
         const rawChunks = (matchedChunks as DocumentChunk[] | null) || [];
         
         // 4. Jina Rerank to pick top 8 relevant chunks
         let rerankedChunks: DocumentChunk[] = [];
         if (rawChunks.length > 0 && jinaApiKey) {
           try {
-            console.log(`✨ Reranking ${rawChunks.length} chunks via Jina Reranker...`);
+            console.log(`[RAG API] Reranking ${rawChunks.length} chunks via Jina Reranker...`);
             const rerankRes = await fetch('https://api.jina.ai/v1/rerank', {
               method: 'POST',
               headers: {
@@ -518,14 +518,14 @@ export async function POST(request: Request) {
                   });
                 }
               });
-              console.log(`🎯 Rerank completed. Filtered down to ${rerankedChunks.length} high-relevance chunks.`);
+              console.log(`[RAG API] Rerank completed. Filtered down to ${rerankedChunks.length} high-relevance chunks.`);
             } else {
               const errorText = await rerankRes.text();
-              console.warn(`⚠️ Jina Rerank API error (${rerankRes.status}): ${errorText}. Using top 8 raw chunks.`);
+              console.warn(`[RAG API] ️ Jina Rerank API error (${rerankRes.status}): ${errorText}. Using top 8 raw chunks.`);
               rerankedChunks = rawChunks.slice(0, 8);
             }
           } catch (rerankErr) {
-            console.warn('⚠️ Jina Reranking failed, using raw vector chunks:', rerankErr);
+            console.warn('[RAG API] Jina Reranking failed, using raw vector chunks:', rerankErr);
             rerankedChunks = rawChunks.slice(0, 8);
           }
         } else {
@@ -556,7 +556,7 @@ Instructions:
 7. File Attachments: If System Data contains drawing/master PDF file links [📄 filename](url), include them cleanly in your answer so users can view the attached document.
 `;
 
-        console.log('🤖 Requesting streaming response from Gemini chat model (using gemini-3.1-flash-lite)...');
+        console.log('[RAG API] Requesting streaming response from Gemini chat model (using gemini-3.1-flash-lite)...');
 
         // Map conversation history
         const historyContents = messages.map((m: { role: string; text: string }) => ({
@@ -567,7 +567,7 @@ Instructions:
         let functionResponseContext = '';
         try {
           // Pre-flight Agentic Tool Check across All Modules
-          console.log('🔍 Checking if query requires system data tools across modules...');
+          console.log('[RAG API] Checking if query requires system data tools across modules...');
           const toolResponse = await ai.models.generateContent({
             model: 'gemini-3.1-flash-lite',
             contents: [
@@ -635,7 +635,7 @@ Instructions:
             const call = toolResponse.functionCalls[0];
             
             if (call.name === 'query_rework_analytics' || call.name === 'get_rework_statistics') {
-              console.log('🔧 Model requested rework analytics tool. Executing query...');
+              console.log('[RAG API] Model requested rework analytics tool. Executing query...');
               const { data: statsData, error: statsError } = await supabaseServer.from('rework_items').select('reason, amount, completed_boxes');
               const { data: casesData, error: casesError } = await supabaseServer.from('rework_cases').select('status');
 
@@ -652,12 +652,12 @@ Instructions:
                 }
 
                 functionResponseContext = `\n\n[System Data - Real-Time Rework Analytics]:\n- Total Rework Items: ${total}\n- Defect Breakdown: Leak (รั่ว): ${leaks}, Stain (เปื้อน): ${stains}\n- Case Status Breakdown: Pending: ${pending}, In-Progress: ${inProgress}, Completed: ${completed}\n`;
-                console.log(`📊 Analytics tool executed. Total items: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
+                console.log(`[RAG API] Analytics tool executed. Total items: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
               } else {
                 console.error('Failed to fetch rework analytics:', statsError);
               }
             } else if (call.name === 'lookup_item_master') {
-              console.log('🔧 Model requested lookup_item_master tool. Executing query...');
+              console.log('[RAG API] Model requested lookup_item_master tool. Executing query...');
               const args = call.args as Record<string, unknown> | undefined;
               const keyword = typeof args?.keyword === 'string' ? args.keyword.trim() : '';
 
@@ -670,12 +670,12 @@ Instructions:
               if (!itemsError && itemsData && itemsData.length > 0) {
                 const itemStr = itemsData.map(i => `- ItemCode: ${i.item_code}, ItemNo: ${i.item_number || 'N/A'}, Name: ${i.item_name || 'N/A'}, OilGroup: ${i.oil_group || 'N/A'}, PalletType: ${i.pallet_type || 'N/A'}, Boxes/Pallet: ${i.boxes_per_pallet || 'N/A'}, ShelfLife: ${i.shelf_life || 'N/A'}`).join('\n');
                 functionResponseContext = `\n\n[System Data - Central Item Master (${keyword || 'All'})]:\n${itemStr}\n`;
-                console.log(`📊 Item master lookup executed. Found ${itemsData.length} items.`);
+                console.log(`[RAG API] Item master lookup executed. Found ${itemsData.length} items.`);
               } else {
                 functionResponseContext = `\n\n[System Data - Item Master]: No matching item master specifications found for keyword '${keyword}'.\n`;
               }
             } else if (call.name === 'search_engineering_drawings') {
-              console.log('🔧 Model requested search_engineering_drawings tool. Executing query...');
+              console.log('[RAG API] Model requested search_engineering_drawings tool. Executing query...');
               const args = call.args as Record<string, unknown> | undefined;
               const searchQuery = typeof args?.query === 'string' ? args.query.trim() : '';
 
@@ -688,12 +688,12 @@ Instructions:
               if (!drawError && drawData && drawData.length > 0) {
                 const drawStr = drawData.map(d => `- Type: ${d.doc_type}, DrawingNo: ${d.drawing_number}, Rev: ${d.revision || 'N/A'}, Customer: ${d.customer_name || 'N/A'}, Part: ${d.part_name || 'N/A'}, ItemCode: ${d.item_code || 'N/A'}, Boxes/Pallet: ${d.boxes_per_pallet || 'N/A'}, File: [📄 ${d.file_name || d.drawing_number + '.pdf'}](/api/drawings?action=view&key=${d.r2_key || ''})`).join('\n');
                 functionResponseContext = `\n\n[System Data - Engineering Drawings & Master Sheets (${searchQuery || 'Recent'})]:\n${drawStr}\n`;
-                console.log(`📊 Drawing search executed. Found ${drawData.length} records.`);
+                console.log(`[RAG API] Drawing search executed. Found ${drawData.length} records.`);
               } else {
                 functionResponseContext = `\n\n[System Data - Engineering Drawings]: No drawings found matching '${searchQuery}'.\n`;
               }
             } else if (call.name === 'search_rework_history') {
-              console.log('🔧 Model requested search_rework_history tool. Executing query...');
+              console.log('[RAG API] Model requested search_rework_history tool. Executing query...');
               const args = call.args as Record<string, unknown> | undefined;
               const limit = typeof args?.limit === 'number' ? args.limit : 5;
               const { data: casesData, error: casesError } = await supabaseServer.from('rework_cases')
@@ -703,12 +703,12 @@ Instructions:
               if (!casesError && casesData) {
                 const casesStr = casesData.map(c => `- Case ${c.id}: Status: ${c.status}, Fix: ${c.resolution_method || 'N/A'}, Items: ${c.items ? (c.items as { item_code: string; reason: string }[]).map((i: { item_code: string; reason: string }) => i.item_code + ' (' + i.reason + ')').join(', ') : 'None'}`).join('\n');
                 functionResponseContext = `\n\n[System Data (Recent Rework Cases)]:\n${casesStr}\n`;
-                console.log(`📊 Tool search_rework_history executed. Fetched ${casesData.length} cases.`);
+                console.log(`[RAG API] Tool search_rework_history executed. Fetched ${casesData.length} cases.`);
               } else {
                 console.error('Failed to fetch rework history:', casesError);
               }
             } else if (call.name === 'get_rework_item_detail') {
-              console.log('🔧 Model requested get_rework_item_detail tool. Executing query...');
+              console.log('[RAG API] Model requested get_rework_item_detail tool. Executing query...');
               const args = call.args as Record<string, unknown> | undefined;
               const keyword = typeof args?.keyword === 'string' ? args.keyword : '';
               if (keyword) {
@@ -722,7 +722,7 @@ Instructions:
                     return `- Item ${c.item_code} (${c.item_number}): Defect: ${c.reason}, Fix: ${caseInfo?.resolution_method || 'N/A'}, Status: ${caseInfo?.status || 'Unknown'}, Amount: ${c.amount}, Responsible: ${c.responsible}`;
                   }).join('\n');
                   functionResponseContext = `\n\n[System Data (Item Detail for ${keyword})]:\n${itemsStr}\n`;
-                  console.log(`📊 Tool get_rework_item_detail executed for ${keyword}.`);
+                  console.log(`[RAG API] Tool get_rework_item_detail executed for ${keyword}.`);
                 } else {
                   functionResponseContext = `\n\n[System Data]: No details found for item '${keyword}'.\n`;
                   console.error('Failed to fetch item detail:', itemError);
@@ -796,7 +796,7 @@ Instructions:
           return NextResponse.json({ success: false, error: 'Missing required feedback fields' }, { status: 400 });
         }
 
-        console.log(`📝 Saving RAG Feedback: ${is_positive ? '👍' : '👎'}`);
+        console.log(`[RAG API] Saving RAG Feedback: ${is_positive ? 'positive' : 'negative'}`);
 
         const { error } = await ragSupabaseServer
           .from('rag_feedback')
@@ -809,7 +809,7 @@ Instructions:
 
         if (error) {
           // If table doesn't exist yet, we just log it and return success to not break UI
-          console.warn('⚠️ Could not save feedback (table might not exist):', error.message);
+          console.warn('[RAG API] Could not save feedback (table might not exist):', error.message);
         }
 
         return NextResponse.json({ success: true });
@@ -819,7 +819,7 @@ Instructions:
         return NextResponse.json({ success: false, error: `Invalid action: ${action}` }, { status: 400 });
     }
   } catch (error: unknown) {
-    console.error('❌ RAG API Handler Error:', error);
+    console.error('[RAG API] Handler Error:', error);
 
     let errMsg = error instanceof Error ? error.message : 'Internal Server Error';
     let statusCode = 500;

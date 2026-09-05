@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, FileText, Loader2, AlertCircle, RotateCw, ZoomIn, ZoomOut, CheckCircle2 } from 'lucide-react';
+import { X, ExternalLink, FileText, Loader2, AlertCircle, RotateCw, ZoomIn, ZoomOut, CheckCircle2, FileSpreadsheet, Compass } from 'lucide-react';
 
 interface DrawingPreviewDrawerProps {
   isOpen: boolean;
@@ -190,7 +190,19 @@ export function DrawingPreviewDrawer({
                       : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200/80'
                   }`}
                 >
-                  <span>{doc.type === 'master' ? '📋 Master Sheet' : '📐 Drawing'}</span>
+                  <span className="flex items-center gap-1">
+                    {doc.type === 'master' ? (
+                      <>
+                        <FileSpreadsheet size={13} className={isSelected ? 'text-white' : 'text-slate-500'} />
+                        <span>Master Sheet</span>
+                      </>
+                    ) : (
+                      <>
+                        <Compass size={13} className={isSelected ? 'text-white' : 'text-slate-500'} />
+                        <span>Drawing</span>
+                      </>
+                    )}
+                  </span>
                   <span className="font-mono opacity-80">({doc.drawing_number} R{doc.revision})</span>
                 </button>
               );

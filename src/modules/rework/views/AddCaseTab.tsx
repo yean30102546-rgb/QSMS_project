@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, QrCode, ScanLine, RotateCcw, AlertTriangle, Save } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, QrCode, ScanLine, RotateCcw, AlertTriangle, Save, ClipboardList, Factory, Package, Send, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { parseOrExcelFile, findOrMatch, type OrItemInfo } from '@/src/utils/orExcelParser';
 import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +20,8 @@ import { convertDMYToYMD, convertYMDToDMY, findDuplicateItemNumbers } from '@/sr
 import { ConflictModal } from '@/src/components/modals/ConflictModal';
 import { Combobox } from '@/src/components/ui/Combobox';
 import { RecentDatePicker } from '@/src/components/shared/RecentDatePicker';
+import { getCurrentUserRole } from '@/src/services/auth';
+import { UserRole } from '@/src/config/auth.config';
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -174,6 +176,36 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   const customerName = watch('customerName');
   const formItems = watch('items');
 
+  // Segmented Mode Switcher: 'RW' (WFG Factory) vs 'RT' (CS Customer Return)
+  const [caseMode, setCaseMode] = useState<'RW' | 'RT'>('RW');
+
+  const handleSwitchMode = (mode: 'RW' | 'RT') => {
+    setCaseMode(mode);
+    if (mode === 'RW') {
+      setValue('caseSource', 'SFC');
+      setValue('customerName', 'SFC');
+      const currentItems = getValues('items') || [];
+      currentItems.forEach((_, idx) => {
+        setValue(`items.${idx}.customerName`, 'SFC', { shouldDirty: true });
+      });
+    } else {
+      setValue('caseSource', 'Customer');
+      const cur = getValues('customerName');
+      if (!cur || cur === 'SFC') {
+        setValue('customerName', '');
+      }
+    }
+  };
+
+  useEffect(() => {
+    const role = getCurrentUserRole();
+    if (role === UserRole.CS) {
+      handleSwitchMode('RT');
+    } else if (role === UserRole.WFG || role === UserRole.WPK) {
+      handleSwitchMode('RW');
+    }
+  }, []);
+
   const { triggerDebouncedVerification } = useItemVerification({
     onConflict: () => setIsConflictModalOpen(true),
     onAutofillTriggered: (itemId) => {
@@ -261,7 +293,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
         if (Array.isArray(parsed.items) && parsed.items.length > 0) {
           setValue('items', parsed.items);
         }
-        showToast(`✓ กู้คืนข้อมูลร่าง ${parsed.items.length} รายการสำเร็จ`, 'success');
+        showToast(`กู้คืนข้อมูลร่าง ${parsed.items.length} รายการสำเร็จ`, 'success');
       }
     } catch (e) {
       showToast('ไม่สามารถกู้คืนข้อมูลร่างได้', 'warning');
@@ -312,7 +344,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           }
         });
 
-        showToast(`✓ อ่าน Sheet 2 สำเร็จ: พบข้อมูล QIR ${result.itemsList.length} รายการ (จับคู่ตรงกับฟอร์ม ${matchedCount} รายการ)`, 'success');
+        showToast(`อ่าน Sheet 2 สำเร็จ: พบข้อมูล QIR ${result.itemsList.length} รายการ (จับคู่ตรงกับฟอร์ม ${matchedCount} รายการ)`, 'success');
       } else if (result.error) {
         showToast(`ไม่สามารถอ่านข้อมูล QIR จากไฟล์ Excel ได้: ${result.error}`, 'warning');
       }
@@ -394,7 +426,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       }));
     }
     insert(index + 1, dup);
-    showToast(`✓ คัดลอกข้อมูลจากรายการที่ ${index + 1} เรียบร้อยแล้ว`, 'success');
+    showToast(`คัดลอกข้อมูลจากรายการที่ ${index + 1} เรียบร้อยแล้ว`, 'success');
   };
 
   const onSubmit = async (data: FormValues) => {
@@ -408,11 +440,17 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
       return;
     }
 
-    const isCustomerCase = data.caseSource === 'Customer' || (data.customerName && data.customerName !== 'SFC');
+    const isCustomer = caseMode === 'RT' || data.caseSource === 'Customer' || (data.customerName && data.customerName !== 'SFC');
+
+    // Validate mandatory customer selection for RT
+    if (isCustomer && (!data.customerName || data.customerName === 'SFC')) {
+      showAlert('งาน RT (เคสรับคืนจากลูกค้า) จำเป็นต้องระบุชื่อลูกค้าภายนอก', 'error');
+      return;
+    }
 
     // Validate mandatory attachments for Customer / RT cases
-    if (isCustomerCase && orFiles.length === 0) {
-      showAlert('งาน RT (เคสลูกค้า) จำเป็นต้องมีเอกสารหรือไฟล์อ้างอิงแนบอย่างน้อย 1 ไฟล์ก่อนเปิดเคส', 'error');
+    if (isCustomer && orFiles.length === 0) {
+      showAlert('งาน RT (เคสรับคืนจากลูกค้า CS) จำเป็นต้องมีเอกสารหรือไฟล์อ้างอิงแนบอย่างน้อย 1 ไฟล์ก่อนเปิดเคส', 'error');
       if (fileInputRef.current) {
         fileInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -465,7 +503,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
         setIsComplete(true);
         const assignedId = result.data?.caseId || '';
         setSaveMessage({ type: 'success', text: `เปิดเคสใหม่ (${assignedId}) และส่งต่อให้ QSMS วิเคราะห์สำเร็จ!` });
-        showToast(`✓ เปิดเคสสำเร็จ: ${assignedId} สถานะงานเป็น "รอวิเคราะห์" ส่งต่อให้ QSMS เรียบร้อยแล้ว`, 'success');
+        showToast(`เปิดเคสสำเร็จ: ${assignedId} สถานะงานเป็น "รอวิเคราะห์" ส่งต่อให้ QSMS เรียบร้อยแล้ว`, 'success');
 
         // Reset form
         setTimeout(() => {
@@ -547,7 +585,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
         </AnimatePresence>
 
         {/* Step Indicator Banner */}
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded bg-amber-500 text-slate-950 font-bold text-xs shadow-xs">
@@ -560,14 +598,93 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                📋 Rework Entry Form
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <ClipboardList size={13} className="text-slate-500" />
+                <span>Rework Entry Form</span>
               </span>
             </div>
           </div>
 
+          {/* Department / Workflow Switcher (WFG / RW vs CS / RT) */}
+          <div className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-2.5">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-xs font-bold text-slate-700">
+                สายงานที่เปิดเคส (Case Origin):
+              </span>
+              <span className="text-[11px] text-slate-500 font-medium inline-flex items-center gap-1.5">
+                {caseMode === 'RW' ? (
+                  <>
+                    <Factory size={12} className="text-amber-600 shrink-0" />
+                    <span>สายโรงงาน WFG &rarr; สร้างเคส RW</span>
+                  </>
+                ) : (
+                  <>
+                    <Package size={12} className="text-blue-600 shrink-0" />
+                    <span>สายลูกค้ารับคืน CS &rarr; สร้างเคส RT</span>
+                  </>
+                )}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleSwitchMode('RW')}
+                className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                  caseMode === 'RW'
+                    ? 'bg-amber-50/80 border-amber-300 ring-2 ring-amber-400/20 text-slate-900 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-bold text-sm font-mono ${
+                  caseMode === 'RW' ? 'bg-amber-500 text-slate-950 shadow-2xs' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  RW
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-slate-900">งานโรงงาน (RW)</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                      คลัง WFG
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                    พบปัญหาในไลน์ผลิต/คลังสินค้า SFC (เอกสารแนบไม่บังคับ)
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSwitchMode('RT')}
+                className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                  caseMode === 'RT'
+                    ? 'bg-sky-50/80 border-sky-300 ring-2 ring-sky-400/20 text-slate-900 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-bold text-sm font-mono ${
+                  caseMode === 'RT' ? 'bg-sky-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  RT
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-slate-900">งานรับคืนลูกค้า (RT)</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-900 border border-sky-200">
+                      แผนก CS
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                    สินค้าตีกลับจากลูกค้าภายนอก (บังคับเลือกลูกค้าและแนบเอกสารเคลม)
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Workflow Steps Preview */}
-          <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-medium text-slate-500 pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-medium text-slate-500 pt-1 border-t border-slate-100">
             <div className="flex items-center gap-1.5 text-amber-800 font-bold">
               <span className="h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-200" />
               1. เปิดเคส
@@ -596,54 +713,85 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-stretch">
               
-              {/* Customer Selection */}
-              <div className="flex flex-col justify-between rounded-lg border border-slate-200 bg-slate-50/50 p-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">ลูกค้า / แหล่งที่มา (Customer) *</label>
-                  <Controller
-                    control={control}
-                    name="customerName"
-                    render={({ field }) => (
-                      <Combobox
-                        options={['SFC', ...CUSTOMER_OPTIONS]}
-                        value={field.value || 'SFC'}
-                        onChange={(val) => {
-                          const previousVal = field.value || 'SFC';
-                          field.onChange(val);
-                          const newSource = val === 'SFC' ? 'SFC' : 'Customer';
-                          setValue('caseSource', newSource);
-                          // Auto-propagate to items that had empty or previous default customer
-                          const currentItems = getValues('items');
-                          if (currentItems && currentItems.length > 0) {
-                            currentItems.forEach((item, idx) => {
-                              if (!item.customerName || item.customerName === previousVal || item.customerName === 'SFC') {
+              {/* Customer Selection Block */}
+              {caseMode === 'RW' ? (
+                <div className="flex flex-col justify-between rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700">แหล่งที่มาของงาน (Source)</label>
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+                        ภายในโรงงาน
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2.5 p-2.5 bg-white border border-slate-200 rounded-lg">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-800 font-bold text-xs">
+                        SFC
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">SFC (โรงงานภายใน / คลัง WFG)</div>
+                        <div className="text-[11px] text-slate-500">สำหรับสินค้าที่พบความชำรุดในคลังหรือกระบวนการผลิต</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-500">
+                    ข้อมูลแหล่งที่มาถูกตั้งเป็น SFC โดยอัตโนมัติสำหรับเคส RW
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col justify-between rounded-lg border border-sky-200 bg-sky-50/30 p-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700">ลูกค้าที่ส่งงานคืน (Customer) *</label>
+                      <span className="text-[10px] font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded border border-sky-200">
+                        บังคับระบุ
+                      </span>
+                    </div>
+                    <Controller
+                      control={control}
+                      name="customerName"
+                      render={({ field }) => (
+                        <Combobox
+                          options={CUSTOMER_OPTIONS.filter(c => c !== 'SFC')}
+                          value={field.value && field.value !== 'SFC' ? field.value : ''}
+                          onChange={(val) => {
+                            field.onChange(val);
+                            setValue('caseSource', 'Customer');
+                            const currentItems = getValues('items');
+                            if (currentItems && currentItems.length > 0) {
+                              currentItems.forEach((_, idx) => {
                                 setValue(`items.${idx}.customerName`, val, { shouldDirty: true });
-                              }
-                            });
-                          }
-                        }}
-                        placeholder="เลือกลูกค้า หรือ SFC"
-                        className="bg-white font-medium"
-                      />
-                    )}
-                  />
+                              });
+                            }
+                          }}
+                          placeholder="-- ค้นหาหรือเลือกลูกค้า (เช่น OR, Toyota, ...) --"
+                          className="bg-white font-medium border-sky-300"
+                        />
+                      )}
+                    />
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-500">
+                    ชื่อลูกค้านี้จะถูกนำไปอ้างอิงกับเอกสารเคลม/ใบส่งคืน และรายการสินค้าทั้งหมด
+                  </div>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-500">
-                  ชื่อลูกค้านี้จะเป็นค่าเริ่มต้นให้กับทุกรายการสินค้าด้านล่าง
-                </div>
-              </div>
+              )}
 
               {/* Auto Case ID Preview & Auto State Badge */}
               <div className="flex flex-col justify-between rounded-lg bg-slate-50 p-4 border border-slate-200">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-mono font-bold text-sm shadow-2xs shrink-0">
-                      {isCustomerCase ? 'RT' : 'RW'}
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg font-mono font-bold text-sm shadow-2xs shrink-0 ${
+                      caseMode === 'RT' 
+                        ? 'bg-sky-100 text-sky-800 border border-sky-200' 
+                        : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                    }`}>
+                      {caseMode === 'RT' ? 'RT' : 'RW'}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[11px] font-semibold text-slate-500">รหัสเคสอัตโนมัติ:</div>
+                      <div className="text-[11px] font-semibold text-slate-500">
+                        รหัสเคสอัตโนมัติ: <span className="font-normal text-slate-400">({caseMode === 'RT' ? 'สาย CS' : 'สาย WFG'})</span>
+                      </div>
                       <div className="font-mono text-sm font-bold text-slate-900 tracking-wide whitespace-nowrap">
-                        {isCustomerCase ? `RT-${new Date().getFullYear()}-XXX` : `RW-${new Date().getFullYear()}-XXX`}
+                        {caseMode === 'RT' ? `RT-${new Date().getFullYear()}-XXX` : `RW-${new Date().getFullYear()}-XXX`}
                       </div>
                     </div>
                   </div>
@@ -682,7 +830,12 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                           : 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
                       }`}>
-                        {orFiles.length > 0 ? `✓ แนบแล้ว ${orFiles.length} ไฟล์` : '* จำเป็นต้องแนบเอกสารสำหรับงาน RT'}
+                        {orFiles.length > 0 ? (
+                          <span className="inline-flex items-center gap-1">
+                            <CheckCircle2 size={11} className="text-emerald-700 shrink-0" />
+                            <span>แนบแล้ว {orFiles.length} ไฟล์</span>
+                          </span>
+                        ) : '* จำเป็นต้องแนบเอกสารสำหรับงาน RT'}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
@@ -807,7 +960,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                             verificationStatus: 'verified' as const,
                           }));
                           setValue('items', generatedItems);
-                          showToast(`✓ ดึงรายการสินค้า ${generatedItems.length} รายการจากไฟล์ OR สำเร็จ!`, 'success');
+                          showToast(`ดึงรายการสินค้า ${generatedItems.length} รายการจากไฟล์ OR สำเร็จ!`, 'success');
                         }}
                         className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-medium transition-all shadow-xs active:scale-95 cursor-pointer"
                       >
@@ -1010,7 +1163,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         <InputField label="ชื่อรายการ (Item Name) *" {...register(`items.${idx}.itemName`)} disabled={isSaving} />
                       </div>
 
-                      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50 p-3.5 rounded-lg border border-slate-200 items-end">
                         <div className="col-span-2 sm:col-span-1">
                           <Controller
                             control={control}
@@ -1257,7 +1410,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     disabled={isSaving || isSaveDisabled(formItems)}
                     className="flex h-11 flex-[2] items-center justify-center gap-2 rounded-md bg-amber-500 py-2 text-xs sm:text-sm font-bold text-slate-950 hover:bg-amber-600 active:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
                   >
-                    🚀 เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์ <ChevronRight size={16} />
+                    <Send size={15} />
+                    <span>เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์</span>
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
@@ -1337,8 +1492,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     className="w-full text-sm font-mono font-bold tracking-wider px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                   />
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  💡 สามารถใช้เครื่องสแกนบาร์โค้ดแบบ USB หรือบลูทูธยิงเข้าช่องนี้ได้โดยตรง
+                <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                  <Lightbulb size={12} className="text-amber-500 shrink-0" />
+                  <span>สามารถใช้เครื่องสแกนบาร์โค้ดแบบ USB หรือบลูทูธยิงเข้าช่องนี้ได้โดยตรง</span>
                 </p>
               </div>
 
@@ -1377,8 +1533,8 @@ const InputField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<
   const internalId = React.useId();
   const id = externalId || internalId;
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-xs font-semibold text-slate-700">{label}</label>
+    <div className="space-y-1.5 flex flex-col justify-end">
+      <label htmlFor={id} className="block text-xs font-semibold text-slate-700 h-5 flex items-center truncate">{label}</label>
       <input
         id={id}
         ref={ref}
@@ -1389,7 +1545,7 @@ const InputField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<
           onFocus?.(e);
         }}
         {...props}
-        className={`block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500 ${className || ''}`}
+        className={`block w-full h-[42px] rounded-md border border-slate-300 bg-white px-3 text-xs sm:text-sm font-medium text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500 ${className || ''}`}
       />
     </div>
   );

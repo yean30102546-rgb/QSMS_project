@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, Sparkles, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -675,14 +675,23 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
                   </span>
                 </div>
                 {!caseNumber.trim() ? (
-                  <p className="ml-1 text-xs font-semibold text-red-600">⚠️ จำเป็นต้องกรอกหมายเลขเคส</p>
+                  <p className="ml-1 text-xs font-semibold text-red-600 flex items-center gap-1">
+                    <AlertTriangle size={12} className="shrink-0" />
+                    <span>จำเป็นต้องกรอกหมายเลขเคส</span>
+                  </p>
                 ) : (() => {
                   const composedId = `${String(caseSource).toLowerCase() === 'customer' ? 'RT' : 'RW'}${caseNumber.trim()}-${new Date().getFullYear()}`;
                   const isDuplicate = existingCaseIds.includes(composedId);
                   return isDuplicate ? (
-                    <p className="ml-1 text-xs font-semibold text-red-600">⚠️ Case ID "{composedId}" มีอยู่ในระบบแล้ว</p>
+                    <p className="ml-1 text-xs font-semibold text-red-600 flex items-center gap-1">
+                      <AlertTriangle size={12} className="shrink-0" />
+                      <span>Case ID "{composedId}" มีอยู่ในระบบแล้ว</span>
+                    </p>
                   ) : (
-                    <p className="ml-1 text-xs font-semibold text-emerald-600">✓ Case ID: {composedId}</p>
+                    <p className="ml-1 text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 size={12} className="shrink-0" />
+                      <span>Case ID: {composedId}</span>
+                    </p>
                   );
                 })()}
               </div>

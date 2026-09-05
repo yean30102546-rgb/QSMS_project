@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       created_at: new Date().toISOString(),
     };
 
-    console.log(`📝 [Feedback API] Received ${body.category} for module ${body.module} from ${body.userName || 'Anonymous'}`);
+    console.log(`[Feedback API] Received ${body.category} for module ${body.module} from ${body.userName || 'Anonymous'}`);
 
     // Attempt to persist in Supabase system_feedback table
     try {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         .single();
 
       if (error) {
-        console.warn('⚠️ [Feedback API] Supabase table insert warning (table might need migration):', error.message);
+        console.warn('[Feedback API] Supabase table insert warning (table might need migration):', error.message);
         // Return success with memory timestamp if table schema is pending migration
         return NextResponse.json({
           success: true,
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         data,
       });
     } catch (dbErr: unknown) {
-      console.warn('⚠️ [Feedback API] Database operation fallback:', dbErr instanceof Error ? dbErr.message : String(dbErr));
+      console.warn('[Feedback API] Database operation fallback:', dbErr instanceof Error ? dbErr.message : String(dbErr));
       return NextResponse.json({
         success: true,
         message: 'บันทึกข้อเสนอแนะเรียบร้อยแล้ว',
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       });
     }
   } catch (error: unknown) {
-    console.error('❌ [Feedback API] Error processing submission:', error);
+    console.error('[Feedback API] Error processing submission:', error);
     return NextResponse.json(
       { success: false, error: 'เกิดข้อผิดพลาดในการประมวลผลข้อเสนอแนะ' },
       { status: 500 }

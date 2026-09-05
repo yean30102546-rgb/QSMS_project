@@ -37,8 +37,8 @@ export function RecentDatePicker({
   };
 
   return (
-    <div className="space-y-1.5">
-      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 font-sans">{label}</label>
+    <div className="space-y-1.5 flex flex-col justify-end">
+      <label className="block text-xs font-semibold text-slate-700 h-5 flex items-center truncate">{label}</label>
       <ConfigProvider
         locale={localeTh}
         theme={{
@@ -49,7 +49,7 @@ export function RecentDatePicker({
             colorTextPlaceholder: "#94a3b8", // text-slate-400
             colorBorder: "#cbd5e1", // border-slate-300
             borderRadius: 6, // rounded-md
-            colorPrimary: "#ecc542", // jasmine-500
+            colorPrimary: "#f59e0b", // amber-500
           },
           components: {
             DatePicker: {
@@ -65,7 +65,7 @@ export function RecentDatePicker({
           disabled={disabled}
           format="DD/MM/YYYY"
           placeholder="เลือกวันที่..."
-          className="w-full text-sm font-medium"
+          className="w-full text-sm font-medium h-[42px]"
         />
       </ConfigProvider>
     </div>

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Calendar, Filter, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Calendar, Factory, Filter, Package, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { useOverallFilters } from '@/src/hooks/useOverallFilters';
 import { useReworkData } from '@/src/contexts/ReworkDataContext';
@@ -76,6 +76,9 @@ export function OverallTab({
     uniqueResponsible,
     uniqueSources,
   } = useOverallFilters(cases, searchQuery);
+
+  const rwCount = useMemo(() => cases.filter(c => c.source === 'SFC' || c.id.startsWith('RW')).length, [cases]);
+  const rtCount = useMemo(() => cases.filter(c => c.source === 'Customer' || c.id.startsWith('RT')).length, [cases]);
 
   const openUpdateModal = (caseItem: ReworkCase) => {
     setSelectedCase(caseItem);
@@ -253,6 +256,45 @@ export function OverallTab({
                       )}
                     </button>
                   </div>
+                </div>
+
+                {/* Department / Stream Quick Filter Buttons */}
+                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setSourceFilter([])}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      sourceFilter.length === 0
+                        ? 'bg-white text-slate-900 shadow-2xs border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    ทุกสายงาน ({cases.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSourceFilter(['SFC'])}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      sourceFilter.length === 1 && sourceFilter.includes('SFC')
+                        ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    <Factory size={13} className="shrink-0" />
+                    <span>งานโรงงาน RW (WFG: {rwCount})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSourceFilter(['Customer'])}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      sourceFilter.length === 1 && sourceFilter.includes('Customer')
+                        ? 'bg-sky-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    <Package size={13} className="shrink-0" />
+                    <span>งานลูกค้ารับคืน RT (CS: {rtCount})</span>
+                  </button>
                 </div>
 
                 {/* 1-Click Workflow Stage Swimlane Bar */}

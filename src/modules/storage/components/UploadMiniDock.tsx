@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Loader2, Maximize2, X, AlertCircle } from 'lucide-react';
+import { Loader2, Maximize2, X, AlertCircle, Check } from 'lucide-react';
 import { UploadItem } from '../hooks/useUploadQueue';
 
 interface UploadMiniDockProps {
@@ -30,8 +30,8 @@ export function UploadMiniDock({ items, isQuotaPaused, onExpand, onCancel }: Upl
         {isQuotaPaused ? (
           <AlertCircle className="h-5 w-5 text-amber-500" />
         ) : isDone ? (
-          <div className="h-5 w-5 rounded-full bg-green-500 text-white flex items-center justify-center">
-             <span className="text-xs">✓</span>
+          <div className="h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <Check className="h-3.5 w-3.5 text-white stroke-[2.5]" />
           </div>
         ) : (
           <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />

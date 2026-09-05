@@ -134,21 +134,21 @@ export function PermissionsModal({
 
             {/* Permissions List */}
             <div className="flex-1 overflow-y-auto pr-1 space-y-3 scrollbar-thin">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2">ขอบเขตการเข้าถึง (Permissions Detail)</h3>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2">ขอบเขตการเข้าถึง (Permissions Detail)</h3>
               {details.permissions.map((p, i) => (
                 <div
                   key={i}
                   className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                     p.allowed
-                      ? 'bg-emerald-500/5 border-emerald-500/10 text-slate-800'
-                      : 'bg-red-500/5 border-red-500/10 text-slate-400'
+                      ? 'bg-emerald-500/5 border-emerald-500/15 text-slate-800'
+                      : 'bg-red-500/5 border-red-500/15 text-slate-600'
                   }`}
                 >
                   <div className="mt-0.5 flex-shrink-0">
                     {p.allowed ? (
-                      <CheckCircle2 size={15} className="text-emerald-500" />
+                      <CheckCircle2 size={15} className="text-emerald-600" />
                     ) : (
-                      <XCircle size={15} className="text-red-400" />
+                      <XCircle size={15} className="text-rose-500" />
                     )}
                   </div>
                   <span className="text-xs font-semibold leading-normal">{p.text}</span>

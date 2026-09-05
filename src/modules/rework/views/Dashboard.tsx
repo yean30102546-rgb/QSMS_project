@@ -693,7 +693,8 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             ))}
             {(dateFrom || dateTo) && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-medium">
-                📅 {dateFrom || '...'} → {dateTo || '...'}
+                <Calendar size={12} className="text-emerald-700 shrink-0" />
+                <span>{dateFrom || '...'} &rarr; {dateTo || '...'}</span>
                 <button type="button" onClick={() => { setDateFrom(''); setDateTo(''); }} className="hover:text-emerald-900 text-emerald-800 ml-0.5 cursor-pointer"><X size={11} /></button>
               </span>
             )}

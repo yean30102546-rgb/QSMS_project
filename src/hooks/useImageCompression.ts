@@ -76,7 +76,7 @@ export function useImageCompression(): UseImageCompressionReturn {
     setProgress(100);
 
     console.log(
-      `✅ บีบอัดสำเร็จ: ${formatFileSize(result.originalSize)} → ${formatFileSize(result.compressedSize!)} (ลด ${calculateCompressionRatio(result.originalSize, result.compressedSize!)}%)`
+      `[ImageCompression] บีบอัดสำเร็จ: ${formatFileSize(result.originalSize)} → ${formatFileSize(result.compressedSize!)} (ลด ${calculateCompressionRatio(result.originalSize, result.compressedSize!)}%)`
     );
 
     return result.compressedFile;

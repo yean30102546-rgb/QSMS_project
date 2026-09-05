@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, BarChart3, Bot, X, RotateCw, Eye } from 'lucide-react';
+import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, BarChart3, Bot, X, RotateCw, Eye, Clock } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { User } from '../../services/auth';
 import { useNotification } from '@/src/contexts/NotificationContext';
@@ -14,7 +14,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_RAG_SUPABASE_ANON_KEY || process
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_RAG_SUPABASE_ANON_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  console.warn('⚠️ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in .env. Supabase client features will fail.');
+  console.warn('[Supabase] NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in .env. Supabase client features will fail.');
 }
 
 interface RagAppProps {
@@ -51,7 +51,7 @@ interface UploadQueueItem {
   error?: string;
 }
 
-const WELCOME_MESSAGE = 'สวัสดีครับ ผมคือ QSMS Enterprise AI Assistant ยินดีให้บริการครับ \n\nผมสามารถช่วยคุณสืบค้นและวิเคราะห์ข้อมูลสดจากทุกโมดูลในระบบ:\n1. 📊 สถิติเคส Rework & รายการสินค้าชำรุด (รั่ว/เปื้อน)\n2. 📦 สเปกสินค้ากลาง (Item Master / พาเลท / กลุ่มน้ำมัน)\n3. 📐 แบบแปลนวิศวกรรม & Master Sheets (Drawing No / Revision)\n4. 📖 คู่มือการปฏิบัติงาน & เอกสารเทคนิค RAG PDF\n\nพิมพ์คำถามของคุณได้เลยครับ!';
+const WELCOME_MESSAGE = 'สวัสดีครับ ผมคือ QSMS Enterprise AI Assistant ยินดีให้บริการครับ \n\nผมสามารถช่วยคุณสืบค้นและวิเคราะห์ข้อมูลสดจากทุกโมดูลในระบบ:\n1. สถิติเคส Rework & รายการสินค้าชำรุด (รั่ว/เปื้อน)\n2. สเปกสินค้ากลาง (Item Master / พาเลท / กลุ่มน้ำมัน)\n3. แบบแปลนวิศวกรรม & Master Sheets (Drawing No / Revision)\n4. คู่มือการปฏิบัติงาน & เอกสารเทคนิค RAG PDF\n\nพิมพ์คำถามของคุณได้เลยครับ!';
 
 export function RagApp({ user, open, onOpenChange }: RagAppProps) {
   const { showAlert, showConfirm } = useNotification();
@@ -375,9 +375,9 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
         const newMsgs = [...prev];
         // If the last message was the empty model response, replace it. Otherwise append.
         if (newMsgs[newMsgs.length - 1].role === 'model' && !newMsgs[newMsgs.length - 1].text) {
-          newMsgs[newMsgs.length - 1].text = `❌ เกิดข้อผิดพลาด: ${errorMessage || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}`;
+          newMsgs[newMsgs.length - 1].text = `เกิดข้อผิดพลาด: ${errorMessage || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}`;
         } else {
-          newMsgs.push({ role: 'model', text: `❌ เกิดข้อผิดพลาด: ${errorMessage || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}` });
+          newMsgs.push({ role: 'model', text: `เกิดข้อผิดพลาด: ${errorMessage || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}` });
         }
         return newMsgs;
       });
@@ -467,8 +467,14 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                 <div className="bg-amber-500 h-full transition-all duration-500" style={{ width: `${(stains / total) * 100}%` }} title={`เปื้อน: ${stains}`} />
               </div>
               <div className="flex items-center justify-between text-[11px] font-medium pt-0.5">
-                <span className="text-red-600 dark:text-red-400 flex items-center gap-1">🔴 รั่ว: {leaks} ({Math.round((leaks / total) * 100)}%)</span>
-                <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">🟡 เปื้อน: {stains} ({Math.round((stains / total) * 100)}%)</span>
+                <span className="text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                  <span>รั่ว: {leaks} ({Math.round((leaks / total) * 100)}%)</span>
+                </span>
+                <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                  <span>เปื้อน: {stains} ({Math.round((stains / total) * 100)}%)</span>
+                </span>
               </div>
             </div>
           );
@@ -756,7 +762,8 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                     <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-[#1c1c1e]">
                       {cooldown > 0 && (
                         <div className="flex items-center justify-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">⏳ กรุณารอสักครู่ ({cooldown} วินาที) โควตาเต็มครับ</span>
+                          <Clock size={12} className="text-slate-500 shrink-0" />
+                          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">กรุณารอสักครู่ ({cooldown} วินาที) โควตาเต็มครับ</span>
                         </div>
                       )}
                       <form onSubmit={handleSendMessage} className="relative flex items-center">

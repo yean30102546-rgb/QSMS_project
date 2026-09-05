@@ -19,10 +19,12 @@ describe('User Management Service & Admin API Client', () => {
 
   it('returns available roles with Thai descriptions', () => {
     const roles = getAvailableRoles();
-    expect(roles).toHaveLength(4);
+    expect(roles).toHaveLength(6);
     const roleValues = roles.map(r => r.value);
     expect(roleValues).toContain(UserRole.ADMIN);
     expect(roleValues).toContain(UserRole.QSMS);
+    expect(roleValues).toContain(UserRole.WFG);
+    expect(roleValues).toContain(UserRole.CS);
     expect(roleValues).toContain(UserRole.WPK);
     expect(roleValues).toContain(UserRole.PDF);
   });
@@ -31,6 +33,8 @@ describe('User Management Service & Admin API Client', () => {
     expect(userHasPermission(UserRole.ADMIN, 'manage_users')).toBe(true);
     expect(userHasPermission(UserRole.WPK, 'manage_users')).toBe(false);
     expect(userHasPermission(UserRole.WPK, 'create_case')).toBe(true);
+    expect(userHasPermission(UserRole.WFG, 'create_case')).toBe(true);
+    expect(userHasPermission(UserRole.CS, 'create_case')).toBe(true);
     expect(userHasPermission(UserRole.PDF, 'repair_case')).toBe(true);
     expect(userHasPermission(UserRole.PDF, 'manage_masters')).toBe(false);
   });

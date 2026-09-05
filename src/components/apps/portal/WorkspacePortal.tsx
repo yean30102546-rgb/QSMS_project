@@ -11,7 +11,8 @@ import {
   Activity,
   FileText,
   CheckCircle2,
-  MessageSquarePlus
+  MessageSquarePlus,
+  ArrowUpRight
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -376,8 +377,9 @@ export function WorkspacePortal({
                     <span className="text-xl md:text-2xl font-semibold text-slate-800 font-mono tabular-nums">
                       {reworkStats.hasData ? reworkStats.pending : '--'}
                     </span>
-                    <span className="text-[9px] text-amber-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity">
-                      กรองกลุ่มนี้ ↗
+                    <span className="text-[9px] text-amber-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+                      <span>กรองกลุ่มนี้</span>
+                      <ArrowUpRight size={10} />
                     </span>
                   </motion.button>
 
@@ -396,8 +398,9 @@ export function WorkspacePortal({
                     <span className="text-xl md:text-2xl font-semibold text-slate-800 font-mono tabular-nums">
                       {reworkStats.hasData ? reworkStats.inProgress : '--'}
                     </span>
-                    <span className="text-[9px] text-sky-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity">
-                      กรองกลุ่มนี้ ↗
+                    <span className="text-[9px] text-sky-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+                      <span>กรองกลุ่มนี้</span>
+                      <ArrowUpRight size={10} />
                     </span>
                   </motion.button>
 
@@ -416,8 +419,9 @@ export function WorkspacePortal({
                     <span className="text-xl md:text-2xl font-semibold text-slate-800 font-mono tabular-nums">
                       {reworkStats.hasData ? reworkStats.completed : '--'}
                     </span>
-                    <span className="text-[9px] text-emerald-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity">
-                      กรองกลุ่มนี้ ↗
+                    <span className="text-[9px] text-emerald-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+                      <span>กรองกลุ่มนี้</span>
+                      <ArrowUpRight size={10} />
                     </span>
                   </motion.button>
                 </div>

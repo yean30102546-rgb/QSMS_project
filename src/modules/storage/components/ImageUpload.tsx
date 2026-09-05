@@ -13,7 +13,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   validateImageFile,
@@ -423,9 +423,9 @@ export function ImageUpload({
                     {/* Status Overlay */}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       {item.status === 'complete' ? (
-                        <div className="text-white text-2xl">✅</div>
+                        <CheckCircle2 className="w-8 h-8 text-emerald-400 drop-shadow" />
                       ) : item.status === 'error' ? (
-                        <div className="text-white text-2xl">❌</div>
+                        <AlertCircle className="w-8 h-8 text-rose-400 drop-shadow" />
                       ) : item.status === 'compressing' ? (
                         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : null}
@@ -511,10 +511,13 @@ export function ImageUpload({
           animate={{ opacity: 1 }}
           className="bg-emerald-50 border border-emerald-200 rounded-lg p-3"
         >
-          <div className="text-xs text-emerald-700">
-            <span className="font-semibold">✓ Compression Summary:</span> {completedCount} files
-            compressed • Reduced by <span className="font-bold">{totalCompressionRatio}%</span> (
-            {formatFileSize(totalOriginalSize)} → {formatFileSize(totalCompressedSize)})
+          <div className="text-xs text-emerald-700 flex items-center gap-1.5">
+            <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+            <span>
+              <span className="font-semibold">Compression Summary:</span> {completedCount} files
+              compressed • Reduced by <span className="font-bold">{totalCompressionRatio}%</span> (
+              {formatFileSize(totalOriginalSize)} → {formatFileSize(totalCompressedSize)})
+            </span>
           </div>
         </motion.div>
       )}
@@ -526,8 +529,9 @@ export function ImageUpload({
           animate={{ opacity: 1 }}
           className="bg-amber-50 border border-amber-200 rounded-lg p-3"
         >
-          <div className="text-[10px] text-amber-700 font-semibold">
-            ✓ ถึงจำนวนภาพสูงสุดแล้ว ({maxImages} files)
+          <div className="text-[10px] text-amber-700 font-semibold flex items-center gap-1.5">
+            <Info size={12} className="text-amber-600 shrink-0" />
+            <span>ถึงจำนวนภาพสูงสุดแล้ว ({maxImages} files)</span>
           </div>
         </motion.div>
       )}

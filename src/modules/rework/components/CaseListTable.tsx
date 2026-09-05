@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Calendar, Clock, Package, Search } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, Factory, Package, Search } from 'lucide-react';
 
 import type { ReworkCase } from '@/src/services/api';
 import { formatThaiDateShort } from '@/src/utils/helpers';
@@ -173,76 +173,81 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
     ? correctPrefix + caseItem.id.substring(2)
     : caseItem.id;
 
+  const originDept = correctPrefix === 'RT' ? 'CS' : 'WFG';
+  const primaryCustomer = caseItem.items?.[0]?.customerName || caseItem.customerName || (correctPrefix === 'RT' ? 'ลูกค้า' : 'SFC');
+  const hasMultipleCustomers = new Set(itemsList.map(i => i.customerName).filter(Boolean)).size > 1;
+  const customerDisplay = `${primaryCustomer}${hasMultipleCustomers ? ' (+หลายลูกค้า)' : ''}`;
+
   return (
     <div
       onClick={onClick}
-      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-5 p-4 rounded-xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all duration-150 hover:shadow-xs hover:border-[#FDE68A] hover:bg-[#FEFDF5]/50 cursor-pointer"
+      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:px-4 sm:py-3 rounded-xl border border-slate-200/90 bg-white hover:border-amber-300 hover:bg-[#FEFDF5]/50 transition-all duration-150 shadow-2xs hover:shadow-xs cursor-pointer"
     >
-      {/* Top & Info Section */}
+      {/* Left & Info Section */}
       <div className="flex-1 min-w-0">
-        {/* Header line: Case ID + Badges + Customer */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-md bg-slate-100/90 text-slate-800 text-xs font-bold font-mono border border-slate-200/80 tracking-tight shrink-0">
+        {/* Top line: Status Pill + Case ID + Unified Route Badge + Case Name */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
+
+          <span className={`px-2 py-0.5 rounded-md text-xs font-bold font-mono tabular-nums border shrink-0 ${
+            correctPrefix === 'RT' 
+              ? 'bg-sky-50 text-sky-900 border-sky-200/90' 
+              : 'bg-amber-50 text-amber-900 border-amber-200/90'
+          }`}>
             {displayId}
           </span>
-          {caseItem.caseName && caseItem.caseName !== displayId && (
-            <span className="inline-flex items-center rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 border border-slate-200/70">
-              {caseItem.caseName}
+
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100/90 text-slate-700 border border-slate-200/80 shrink-0">
+            {correctPrefix === 'RT' ? (
+              <Package size={11} className="shrink-0 text-sky-700" />
+            ) : (
+              <Factory size={11} className="shrink-0 text-amber-700" />
+            )}
+            <span className={correctPrefix === 'RT' ? 'text-sky-700 font-bold' : 'text-amber-800 font-bold'}>
+              {originDept}
             </span>
-          )}
-          {caseItem.items.length > 0 && caseItem.items[0].customerName && (
-            <span className="inline-flex items-center rounded-md bg-[#FEF9E7] px-2 py-0.5 text-[11px] font-semibold text-[#92400E] border border-[#FDE68A]/80">
-              {caseItem.items[0].customerName}
-              {new Set(caseItem.items.map(i => i.customerName)).size > 1 ? ' (+หลายลูกค้า)' : ''}
-            </span>
-          )}
-          <span className="text-xs text-slate-400 font-normal">
-            (แหล่งที่มา: <strong className="text-slate-600 font-semibold">{caseItem.source}</strong>)
+            <span className="text-slate-400">→</span>
+            <span className="truncate max-w-[130px]">{customerDisplay}</span>
           </span>
-          {deadlineStatus === 'warning' && (
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-[#92400E] bg-[#FEF3C7]/90 px-2 py-0.5 rounded-md border border-[#FDE68A]" title="งานค้างเกิน 7 วัน">
-              <Clock size={11} />
-              <span>ค้าง 7 วัน</span>
-            </span>
-          )}
-          {deadlineStatus === 'danger' && (
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-[#9F1239] bg-[#FFE4E6]/90 px-2 py-0.5 rounded-md border border-[#FECDD3]" title="งานค้างเกิน 30 วัน">
-              <AlertCircle size={11} />
-              <span>เกิน 30 วัน</span>
+
+          {caseItem.caseName && caseItem.caseName !== displayId && (
+            <span className="inline-flex items-center rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 border border-slate-200/70 truncate max-w-[120px]">
+              {caseItem.caseName}
             </span>
           )}
         </div>
 
-        {/* Item Name */}
-        <h4 className="mt-2 text-sm font-bold text-slate-800 leading-snug line-clamp-1 group-hover:text-[#92400E] transition-colors">
+        {/* Item Title */}
+        <h4 className="mt-1.5 text-sm font-bold text-slate-800 leading-snug line-clamp-1 group-hover:text-amber-900 transition-colors">
           {itemNameDisplay}
         </h4>
 
         {/* Metadata Details */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
           <div className="flex items-center gap-1 text-slate-500 font-medium">
             <Calendar size={12} className="shrink-0 text-slate-400" />
             <span>{formatThaiDateShort(caseItem.date)}</span>
           </div>
-          <span className="text-slate-300">&bull;</span>
-          <span className="text-slate-400">{formatTimestamp(caseItem.timestamp || caseItem.date)}</span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-400 font-mono tabular-nums">{formatTimestamp(caseItem.timestamp || caseItem.date)}</span>
+          
           {uniqueReasons.length > 0 && (
             <>
-              <span className="text-slate-300">&bull;</span>
-              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-medium bg-slate-50 text-slate-600 border border-slate-200/60">
-                สาเหตุ: {reasonsDisplay}
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-600">
+                สาเหตุ: <span className="font-medium text-slate-700">{reasonsDisplay}</span>
               </span>
             </>
           )}
 
           {caseItem.items.every(i => i.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
-            <span className="inline-flex items-center gap-1 rounded bg-[#FFE4E6]/80 px-1.5 py-0.2 text-[10px] font-semibold text-[#9F1239] border border-[#FECDD3]">
+            <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
               <AlertCircle size={10} />
               ขาดไฟล์ OR
             </span>
           )}
           {(caseItem.missingBoxes! > 0 || caseItem.missingGallons! > 0 || caseItem.missingOil! > 0) && (
-            <span className="inline-flex items-center gap-1 rounded bg-[#FEF3C7]/80 px-1.5 py-0.2 text-[10px] font-semibold text-[#92400E] border border-[#FDE68A]" title={`ขาดกล่อง: ${caseItem.missingBoxes || 0}, ขาดแกลลอน: ${caseItem.missingGallons || 0}, ขาดน้ำมัน: ${caseItem.missingOil || 0} ลิตร`}>
+            <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200" title={`ขาดกล่อง: ${caseItem.missingBoxes || 0}, ขาดแกลลอน: ${caseItem.missingGallons || 0}, ขาดน้ำมัน: ${caseItem.missingOil || 0} ลิตร`}>
               <AlertCircle size={10} />
               รอของ ({[
                 caseItem.missingBoxes ? `กล่อง ${caseItem.missingBoxes}` : '',
@@ -251,34 +256,36 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
               ].filter(Boolean).join(', ')})
             </span>
           )}
+          {deadlineStatus === 'warning' && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200" title="งานค้างเกิน 7 วัน">
+              <Clock size={10} />
+              ค้าง 7 วัน
+            </span>
+          )}
+          {deadlineStatus === 'danger' && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200" title="งานค้างเกิน 30 วัน">
+              <AlertCircle size={10} />
+              เกิน 30 วัน
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Progress, Amount & Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0 sm:min-w-[240px] pt-2.5 sm:pt-0 border-t border-slate-100 sm:border-0 justify-between sm:justify-end">
-        <div className="flex-1 sm:min-w-[120px] sm:text-right flex flex-col sm:items-end">
-          <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
-            <span className="text-xs font-semibold text-slate-700 font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-200/80">
-              {totalAmount} กล่อง
-            </span>
-          </div>
-          <div className="w-full mt-1.5 mb-0.5">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] font-mono font-medium text-slate-400">เสร็จ {totalCompleted}/{totalAmount}</span>
-              <span className="text-[10px] font-mono font-bold text-slate-700">{progressPercent}%</span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-300 ${progressPercent === 100 ? 'bg-emerald-400' : 'bg-[#F5C754]'}`}
-                style={{ width: `${progressPercent}%` }} 
-              />
-            </div>
-          </div>
+      {/* Right: Quantity & Progress Bar */}
+      <div className="shrink-0 sm:w-56 pt-2.5 sm:pt-0 border-t border-slate-100 sm:border-0 flex flex-col justify-center">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <span className="text-xs font-bold text-slate-800 font-mono tabular-nums">
+            {totalAmount} กล่อง
+          </span>
+          <span className="text-[11px] font-mono tabular-nums text-slate-500">
+            เสร็จ {totalCompleted}/{totalAmount} <span className="font-semibold text-slate-700">({progressPercent}%)</span>
+          </span>
         </div>
-
-        {/* Status Pill */}
-        <div className="shrink-0 self-end sm:self-center">
-          <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
+        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-300 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-[#F5C754]'}`}
+            style={{ width: `${progressPercent}%` }} 
+          />
         </div>
       </div>
     </div>
@@ -321,7 +328,7 @@ function StatusPill({ status, deadlineStatus }: StatusPillProps) {
 
   return (
     <span 
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${styles[status]}`}
+      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold shrink-0 ${styles[status]}`}
     >
       {status === 'Pending' && deadlineStatus === 'danger' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse" />}
       {status === 'Pending' && deadlineStatus === 'warning' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-pulse" />}

@@ -5,7 +5,7 @@ import {
   ChevronDown, AlertCircle, Camera, CheckCircle2, Image as ImageIcon, X,
   Package, Wrench, Edit3, Check, HelpCircle, Tag, FileSpreadsheet, Download, 
   Loader2, Shield, Eye, Clock, ChevronRight, Truck, CheckCheck, AlertTriangle,
-  Sparkles, Printer
+  Sparkles, Printer, Award, Send, Layers
 } from 'lucide-react';
 import { ReworkCase, ReworkItem, updateCase, CUSTOMER_OPTIONS, MaterialRequestItem } from '@/src/services/api';
 import { getCurrentUser } from '@/src/services/auth';
@@ -257,6 +257,12 @@ export function CaseUpdateView({
   const [customMaterialUnit, setCustomMaterialUnit] = useState('ชิ้น');
   const [isAddingCustomMaterial, setIsAddingCustomMaterial] = useState(false);
 
+  // Step 3: WPK Quick Add Material State
+  const [isAddingWPKMaterial, setIsAddingWPKMaterial] = useState(false);
+  const [wpkMaterialName, setWpkMaterialName] = useState('');
+  const [wpkMaterialQty, setWpkMaterialQty] = useState(1);
+  const [wpkMaterialUnit, setWpkMaterialUnit] = useState('กล่อง');
+
   // Step 2 Analysis
   const [resolutionMethod, setResolutionMethod] = useState<string>('');
 
@@ -455,12 +461,60 @@ export function CaseUpdateView({
       issuedQty: m.requestedQty,
       status: 'fulfilled'
     })));
-    showToast('✓ ปรับยอดเบิกจ่ายครบตามจำนวนที่ขอแล้วทุกรายการ', 'success');
+    showToast('ปรับยอดเบิกจ่ายครบตามจำนวนที่ขอแล้วทุกรายการ', 'success');
   };
 
   const handleRemoveMaterial = (id: string) => {
     if (!canEditAnalysis) return;
     setMaterialRequests(prev => prev.filter(m => m.id !== id));
+  };
+
+  const handleMaterialSetFulfilled = (id: string) => {
+    if (!canEditIssuing) return;
+    setMaterialRequests(prev => prev.map(m => {
+      if (m.id === id) {
+        return { ...m, issuedQty: m.requestedQty, status: 'fulfilled' };
+      }
+      return m;
+    }));
+  };
+
+  const handleMaterialSetUnavailable = (id: string) => {
+    if (!canEditIssuing) return;
+    setMaterialRequests(prev => prev.map(m => {
+      if (m.id === id) {
+        return { ...m, issuedQty: 0, status: 'unavailable' };
+      }
+      return m;
+    }));
+    showToast('ระบุสถานะเป็น "ของขาด" เรียบร้อย', 'info');
+  };
+
+  const handleRemoveMaterialWPK = (id: string) => {
+    if (!canEditIssuing) return;
+    setMaterialRequests(prev => prev.filter(m => m.id !== id));
+    showToast('ลบรายการเบิกจ่ายเรียบร้อย', 'info');
+  };
+
+  const handleWPKAddCustomMaterial = () => {
+    if (!canEditIssuing) return;
+    if (!wpkMaterialName.trim()) {
+      showAlert('กรุณาระบุชื่อภาชนะหรือวัสดุ', 'warning');
+      return;
+    }
+    const newItem: MaterialRequestItem = {
+      id: `mat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      materialName: wpkMaterialName.trim(),
+      requestedQty: Math.max(1, wpkMaterialQty),
+      issuedQty: Math.max(1, wpkMaterialQty),
+      unit: wpkMaterialUnit.trim() || 'ชิ้น',
+      status: 'fulfilled'
+    };
+    setMaterialRequests(prev => [...prev, newItem]);
+    setWpkMaterialName('');
+    setWpkMaterialQty(1);
+    setIsAddingWPKMaterial(false);
+    showToast(`+ เพิ่ม "${newItem.materialName}" ในรายการเบิกจ่ายแล้ว`, 'info');
   };
 
   // Step 2 Handover: QSMS Completed Analysis ➔ Awaiting Materials
@@ -487,7 +541,7 @@ export function CaseUpdateView({
 
       setCaseStatus('Awaiting Materials');
       finishSaving();
-      showToast('✓ บันทึกผลวิเคราะห์สำเร็จ: เปลี่ยนสถานะเป็น "รอเบิกภาชนะ" ส่งต่อให้ WPK แล้ว', 'success');
+      showToast('บันทึกผลวิเคราะห์สำเร็จ: เปลี่ยนสถานะเป็น "รอเบิกภาชนะ" ส่งต่อให้ WPK แล้ว', 'success');
       setActiveStep('issuing');
       onSaveSuccess?.();
     } catch (error) {
@@ -518,7 +572,7 @@ export function CaseUpdateView({
 
       setCaseStatus('In-Progress');
       finishSaving();
-      showToast('✓ บันทึกการเบิกจ่ายสำเร็จ: เปลี่ยนสถานะเป็น "กำลังซ่อม" ส่งงานให้ PDF แล้ว', 'success');
+      showToast('บันทึกการเบิกจ่ายสำเร็จ: เปลี่ยนสถานะเป็น "กำลังซ่อม" ส่งงานให้ PDF แล้ว', 'success');
       setActiveStep('repair');
       onSaveSuccess?.();
     } catch (error) {
@@ -541,7 +595,7 @@ export function CaseUpdateView({
       await updateCase(caseData.id, updates as Partial<ReworkCase>);
       setReceivedHandshake(receiptInfo);
       finishSaving();
-      showToast('✓ ยืนยันตรวจนับและรับมอบชิ้นส่วนครบชุดหน้างานเรียบร้อยแล้ว', 'success');
+      showToast('ยืนยันตรวจนับและรับมอบชิ้นส่วนครบชุดหน้างานเรียบร้อยแล้ว', 'success');
       onSaveSuccess?.();
     } catch (err) {
       failSaving();
@@ -590,7 +644,7 @@ export function CaseUpdateView({
 
       setCaseStatus(targetStatus);
       finishSaving();
-      showToast(isClosure ? '🎉 ปิดเคส Rework เสร็จสมบูรณ์ 100% เรียบร้อยแล้ว' : isBlocked ? '⚠️ บันทึกสถานะติดปัญหา (Defend Mode) แล้ว' : 'บันทึกความคืบหน้าสำเร็จ', 'success');
+      showToast(isClosure ? 'ปิดเคส Rework เสร็จสมบูรณ์ 100% เรียบร้อยแล้ว' : isBlocked ? 'บันทึกสถานะติดปัญหา (Defend Mode) แล้ว' : 'บันทึกความคืบหน้าสำเร็จ', 'success');
       
       if (isClosure) {
         onSuccess?.();
@@ -621,7 +675,7 @@ export function CaseUpdateView({
       setQcSignoff(signoffInfo);
       setCaseStatus('Completed');
       finishSaving();
-      showToast('🏅 ตรวจรับงานผ่านเกณฑ์ QC และลงนามปิดเคสสมบูรณ์ 100% เรียบร้อยแล้ว', 'success');
+      showToast('ตรวจรับงานผ่านเกณฑ์ QC และลงนามปิดเคสสมบูรณ์ 100% เรียบร้อยแล้ว', 'success');
       onSuccess?.();
     } catch (err) {
       failSaving();
@@ -704,7 +758,7 @@ export function CaseUpdateView({
       }
 
       finishSaving();
-      showToast(forceDraft ? '✓ บันทึกรูปภาพและข้อมูลสำเร็จ' : '✓ บันทึกสำเร็จ', 'success');
+      showToast(forceDraft ? 'บันทึกรูปภาพและข้อมูลสำเร็จ' : 'บันทึกสำเร็จ', 'success');
       onSaveSuccess?.();
     } catch (error) {
       failSaving();
@@ -851,7 +905,7 @@ export function CaseUpdateView({
       const statusInfo = calculateItemStatus(updatedTargetItem, 0, []);
       finishSaving();
       showToast(
-        `✓ บันทึกรายการที่ ${updatedTargetItem.itemSequence || (index + 1)} แล้ว ➔ ย้ายลงล่าง และเปิดรายการถัดไปให้อัตโนมัติ`,
+        `บันทึกรายการที่ ${updatedTargetItem.itemSequence || (index + 1)} แล้ว ➔ ย้ายลงล่าง และเปิดรายการถัดไปให้อัตโนมัติ`,
         'success'
       );
       onSaveSuccess?.();
@@ -973,7 +1027,7 @@ export function CaseUpdateView({
       {/* 2. MAIN 2-COLUMN WORKSPACE: LEFT WORKFLOW STEPPER SIDEBAR + RIGHT FORM VIEWPORT */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Workflow Stepper Navigation (Vertical on Desktop, Horizontal Tab Slider on Mobile) */}
-        <aside className="w-full md:w-64 lg:w-72 border-b md:border-b-0 md:border-r border-slate-200/90 bg-white shrink-0 overflow-y-auto p-3 sm:p-4 flex flex-col justify-between select-none">
+        <aside className="w-full md:w-64 lg:w-72 border-b md:border-b-0 md:border-r border-slate-200/90 bg-white shrink-0 overflow-y-auto p-3 sm:p-4 pb-20 md:pb-24 flex flex-col justify-between select-none">
           <div>
             <div className="hidden md:flex items-center justify-between px-1 mb-3">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ขั้นตอนการทำงาน</span>
@@ -1049,7 +1103,7 @@ export function CaseUpdateView({
                           ? 'bg-[#FDE68A] text-[#78350F] border border-[#FCD34D]'
                           : 'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}>
-                      {step.badgeComplete ? '✓' : step.stepNum}
+                      {step.badgeComplete ? <Check size={12} strokeWidth={3} /> : step.stepNum}
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -1058,11 +1112,11 @@ export function CaseUpdateView({
                           {step.title}
                         </p>
                       </div>
-                      <p className={`text-[10px] truncate mt-0.5 ${step.isActive ? 'text-[#B45309]' : 'text-slate-400'}`}>
+                      <p className={`text-[11px] truncate mt-0.5 ${step.isActive ? 'text-[#B45309] font-medium' : 'text-slate-500'}`}>
                         {step.subtitle}
                       </p>
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-medium border ${
+                        <span className={`text-[11px] px-2 py-0.5 rounded font-semibold border ${
                           step.badgeComplete
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : step.isActive
@@ -1071,10 +1125,10 @@ export function CaseUpdateView({
                         }`}>
                           {step.badgeText}
                         </span>
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-medium border ${
+                        <span className={`text-[11px] px-2 py-0.5 rounded font-semibold border ${
                           step.canEdit
                             ? 'bg-amber-50 text-amber-900 border-amber-200'
-                            : 'bg-slate-50 text-slate-500 border-slate-200/60'
+                            : 'bg-slate-50 text-slate-600 border-slate-200/60'
                         }`}>
                           {step.canEdit ? 'แก้ไข' : 'ดู'}
                         </span>
@@ -1087,7 +1141,7 @@ export function CaseUpdateView({
           </div>
 
           {/* Quick Case Summary on Bottom Left (Desktop Only) */}
-          <div className="hidden md:block mt-6 pt-4 border-t border-slate-200/80">
+          <div className="hidden md:block mt-6 pt-4 pb-6 border-t border-slate-200/80">
             <div className="rounded-xl bg-slate-50/90 border border-slate-200/80 p-3 space-y-2 text-xs">
               <div className="flex items-center justify-between text-slate-500 text-[11px]">
                 <span>จำนวนสินค้า</span>
@@ -1109,7 +1163,7 @@ export function CaseUpdateView({
 
         {/* 3. STEP CONTENT WORKSPACE PANELS */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 bg-slate-50/60">
-          <div className="max-w-5xl mx-auto space-y-6 pb-24">
+          <div className="max-w-5xl mx-auto space-y-6 pb-32">
 
             {/* ========================================================================= */}
             {/* STEP 1 PANEL: รายการสินค้า & รูปภาพหลักฐาน (ITEMS & EVIDENCE) */}
@@ -1253,7 +1307,11 @@ export function CaseUpdateView({
                   const responsibleSubtypes = getResponsibleSubdivisionOptions(item.responsible || '');
 
                   return (
-                    <div key={itemIdStr} className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden transition-all">
+                    <div key={itemIdStr} className={`rounded-xl border transition-all overflow-hidden ${
+                      isExpanded 
+                        ? 'border-amber-300/90 shadow-xs ring-1 ring-amber-300/20' 
+                        : 'border-slate-200 shadow-2xs hover:border-slate-300'
+                    }`}>
                       {/* ── Item Summary Bar (Clickable Accordion Header) ── */}
                       <div 
                         onClick={() => {
@@ -1262,15 +1320,25 @@ export function CaseUpdateView({
                             [itemIdStr]: !isExpanded
                           }));
                         }}
-                        className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 bg-white hover:bg-amber-50/20 cursor-pointer transition-colors select-none"
+                        className={`p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b transition-colors cursor-pointer select-none ${
+                          isExpanded 
+                            ? 'bg-gradient-to-r from-amber-50/95 via-[#FEF9E7] to-amber-50/60 border-amber-200/90' 
+                            : 'bg-slate-50/80 hover:bg-[#FEFDF5] border-slate-100'
+                        }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-6 h-6 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center justify-center text-xs font-bold shrink-0 font-mono">
+                          <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold shrink-0 font-mono transition-colors ${
+                            isExpanded 
+                              ? 'bg-amber-500 text-slate-950 font-black shadow-2xs' 
+                              : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                          }`}>
                             {item.itemSequence ?? (index + 1)}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                              <h4 className={`text-xs sm:text-sm font-bold truncate transition-colors ${
+                                isExpanded ? 'text-amber-950' : 'text-slate-900'
+                              }`}>
                                 {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}
                               </h4>
                               {/* Status Badge */}
@@ -1337,7 +1405,11 @@ export function CaseUpdateView({
                                 [itemIdStr]: !isExpanded
                               }));
                             }}
-                            className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-transform duration-200 cursor-pointer"
+                            className={`p-1 rounded transition-colors cursor-pointer ${
+                              isExpanded 
+                                ? 'text-amber-800 bg-amber-100/80 hover:bg-amber-200/80' 
+                                : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                            }`}
                             title={isExpanded ? "พับการ์ด" : "ขยายการ์ด"}
                           >
                             <ChevronDown size={15} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
@@ -1347,7 +1419,7 @@ export function CaseUpdateView({
 
                       {/* ── Item Details Form: AddCaseTab Styled Clean Block Structure ── */}
                       {isExpanded && (
-                        <div className="p-4 sm:p-5 space-y-5 bg-white border-t border-slate-100">
+                        <div className="p-4 sm:p-5 space-y-5 bg-white border-t border-amber-100/90">
 
                           {/* BLOCK 1: ข้อมูลสินค้าหลัก (Product Identification) */}
                           <div className="space-y-3">
@@ -1386,10 +1458,10 @@ export function CaseUpdateView({
                                     <button
                                       type="button"
                                       onClick={() => setDrawingDrawerQuery({ query: item.itemNumber!, title: item.itemName || item.itemNumber! })}
-                                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 cursor-pointer transition-colors shadow-2xs"
                                       title="ดูแบบแปลน Drawing สำหรับสูตรนี้"
                                     >
-                                      <FileText size={11} />
+                                      <FileText size={10} className="text-amber-700" />
                                       <span>ดู Drawing</span>
                                     </button>
                                   )}
@@ -1417,10 +1489,10 @@ export function CaseUpdateView({
                                     <button
                                       type="button"
                                       onClick={() => setDrawingDrawerQuery({ query: item.itemCode!, title: item.itemName || item.itemCode! })}
-                                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 cursor-pointer transition-colors shadow-2xs"
                                       title="ดูแบบแปลน Drawing สำหรับสินค้านี้"
                                     >
-                                      <FileText size={11} />
+                                      <FileText size={10} className="text-amber-700" />
                                       <span>ดู Drawing</span>
                                     </button>
                                   )}
@@ -1456,9 +1528,9 @@ export function CaseUpdateView({
                           </div>
 
                           {/* BLOCK 2: แผงไฮไลท์ข้อมูลการผลิต */}
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50 p-3.5 rounded-lg border border-slate-200 shadow-2xs">
-                            <div className="col-span-2 sm:col-span-1 space-y-1">
-                              <label className="block text-xs font-semibold text-slate-700">หมายเลขล็อต (Batch no.)</label>
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 bg-slate-50 p-3.5 rounded-lg border border-slate-200 shadow-2xs items-end">
+                            <div className="col-span-2 sm:col-span-1 space-y-1.5 flex flex-col justify-end">
+                              <label className="block text-xs font-semibold text-slate-700 h-5 flex items-center truncate">หมายเลขล็อต (Batch no.)</label>
                               <input
                                 type="text"
                                 value={item.batchNo || ''}
@@ -1470,12 +1542,12 @@ export function CaseUpdateView({
                                   setEditedItems(n);
                                 }}
                                 placeholder="เช่น 16/05/2026"
-                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-semibold tracking-tight text-slate-900 shadow-2xs placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
+                                className="w-full h-[42px] rounded-md border border-slate-300 bg-white px-3 text-xs font-mono font-semibold tracking-tight text-slate-900 shadow-2xs placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
-                            <div className="col-span-2 sm:col-span-1 space-y-1">
-                              <label className="block text-xs font-semibold text-slate-700">วันที่ผลิตแกลลอน</label>
+                            <div className="col-span-2 sm:col-span-1 space-y-1.5 flex flex-col justify-end">
+                              <label className="block text-xs font-semibold text-slate-700 h-5 flex items-center truncate">วันที่ผลิตแกลลอน</label>
                               <input
                                 type="date"
                                 value={item.gallonDate ? convertDMYToYMD(item.gallonDate) : (item.packagingDate ? convertDMYToYMD(item.packagingDate) : '')}
@@ -1486,12 +1558,12 @@ export function CaseUpdateView({
                                   n[index] = { ...n[index], gallonDate: dmy, packagingDate: dmy };
                                   setEditedItems(n);
                                 }}
-                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-medium text-slate-900 shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
+                                className="w-full h-[42px] rounded-md border border-slate-300 bg-white px-3 text-xs font-mono font-medium text-slate-900 shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
-                            <div className="col-span-1 space-y-1">
-                              <label className="block text-xs font-semibold text-slate-700 text-center">Mold</label>
+                            <div className="col-span-1 space-y-1.5 flex flex-col justify-end">
+                              <label className="block text-xs font-semibold text-slate-700 h-5 flex items-center truncate">Mold</label>
                               <input
                                 type="text"
                                 value={item.mold || ''}
@@ -1502,13 +1574,13 @@ export function CaseUpdateView({
                                   n[index] = { ...n[index], mold: e.target.value };
                                   setEditedItems(n);
                                 }}
-                                placeholder="Mold"
-                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
+                                placeholder="ระบุ Mold"
+                                className="w-full h-[42px] rounded-md border border-slate-300 bg-white px-3 text-xs font-mono font-semibold uppercase tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
-                            <div className="col-span-1 space-y-1">
-                              <label className="block text-xs font-semibold text-slate-700 text-center">Line</label>
+                            <div className="col-span-1 space-y-1.5 flex flex-col justify-end">
+                              <label className="block text-xs font-semibold text-slate-700 h-5 flex items-center truncate">Line</label>
                               <input
                                 type="text"
                                 value={item.line || ''}
@@ -1519,13 +1591,16 @@ export function CaseUpdateView({
                                   n[index] = { ...n[index], line: e.target.value };
                                   setEditedItems(n);
                                 }}
-                                placeholder="Line"
-                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
+                                placeholder="ระบุ Line"
+                                className="w-full h-[42px] rounded-md border border-slate-300 bg-white px-3 text-xs font-mono font-semibold uppercase tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
                               />
                             </div>
 
-                            <div className="col-span-2 sm:col-span-1 space-y-1">
-                              <label className="block text-xs font-bold text-slate-900 text-center">จำนวนกล่อง (ลัง) *</label>
+                            <div className="col-span-2 sm:col-span-1 space-y-1.5 flex flex-col justify-end">
+                              <label className="block text-xs font-bold text-amber-950 h-5 flex items-center truncate gap-1">
+                                <span>จำนวนกล่อง (ลัง)</span>
+                                <span className="text-amber-600 font-bold">*</span>
+                              </label>
                               <input
                                 type="number"
                                 min="1"
@@ -1537,7 +1612,7 @@ export function CaseUpdateView({
                                   n[index] = { ...n[index], amount: Math.max(1, Number(e.target.value) || 1) };
                                   setEditedItems(n);
                                 }}
-                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono font-bold tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-slate-100"
+                                className="w-full h-[42px] rounded-md border-2 border-amber-400 bg-amber-50/40 px-3 text-xs font-mono font-bold tracking-tight text-slate-900 text-center shadow-2xs focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-slate-100"
                               />
                             </div>
                           </div>
@@ -1547,7 +1622,7 @@ export function CaseUpdateView({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {/* สาเหตุที่พบ */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">สาเหตุที่พบ (Optional)</label>
+                                <label className="text-xs font-semibold text-slate-600">สาเหตุที่พบ (Optional)</label>
                                 <div className="grid grid-cols-2 gap-2">
                                   <Select
                                     value={item.reason || ''}
@@ -1558,10 +1633,10 @@ export function CaseUpdateView({
                                       setEditedItems(n);
                                     }}
                                   >
-                                    <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                    <SelectTrigger className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:text-slate-500">
                                       <SelectValue placeholder="เลือกสาเหตุหลัก" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-md p-1 z-[100]">
                                       {REASON_OPTIONS.map((opt) => (
                                         <SelectItem key={opt.value} value={opt.value}>
                                           {opt.label}
@@ -1579,10 +1654,10 @@ export function CaseUpdateView({
                                       setEditedItems(n);
                                     }}
                                   >
-                                    <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                    <SelectTrigger className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:text-slate-500">
                                       <SelectValue placeholder={item.reason ? "เลือกประเภทย่อย" : "ระบุสาเหตุหลักก่อน"} />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-md p-1 z-[100]">
                                       {reasonSubtypes.map((opt) => (
                                         <SelectItem key={opt.value} value={opt.value}>
                                           {opt.label}
@@ -1595,7 +1670,7 @@ export function CaseUpdateView({
 
                               {/* ผู้รับผิดชอบ */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">ผู้รับผิดชอบ (Optional)</label>
+                                <label className="text-xs font-semibold text-slate-600">ผู้รับผิดชอบ (Optional)</label>
                                 <div className="grid grid-cols-2 gap-2">
                                   <Select
                                     value={item.responsible || ''}
@@ -1606,10 +1681,10 @@ export function CaseUpdateView({
                                       setEditedItems(n);
                                     }}
                                   >
-                                    <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                    <SelectTrigger className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:text-slate-500">
                                       <SelectValue placeholder="เลือกผู้รับผิดชอบ" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                    <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-md p-1 z-[100]">
                                       {RESPONSIBLE_OPTIONS.map((opt) => (
                                         <SelectItem key={opt.value} value={opt.value}>
                                           {opt.label}
@@ -1628,10 +1703,10 @@ export function CaseUpdateView({
                                         setEditedItems(n);
                                       }}
                                     >
-                                      <SelectTrigger className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-500">
+                                      <SelectTrigger className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:text-slate-500">
                                         <SelectValue placeholder="เลือกแผนก/ผู้ผลิต" />
                                       </SelectTrigger>
-                                      <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-xl p-1 z-[100]">
+                                      <SelectContent className="bg-white border border-slate-200/90 shadow-xl rounded-md p-1 z-[100]">
                                         {responsibleSubtypes.map((opt) => (
                                           <SelectItem key={opt.value} value={opt.value}>
                                             {opt.label}
@@ -1649,7 +1724,7 @@ export function CaseUpdateView({
                                         n[index] = { ...n[index], responsibleSubtype: e.target.value };
                                         setEditedItems(n);
                                       }}
-                                      className="w-full h-10 text-xs font-medium bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 disabled:bg-slate-100 disabled:text-slate-500 focus:bg-white focus:outline-none focus:border-indigo-500"
+                                      className="w-full h-9 text-xs font-medium bg-white border border-slate-300 rounded-md px-3 py-1.5 shadow-2xs disabled:bg-slate-100 disabled:text-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                                       placeholder="ระบุชื่อแผนก/ผู้ผลิต"
                                     />
                                   )}
@@ -1659,7 +1734,7 @@ export function CaseUpdateView({
 
                             {/* อาการเสีย / รายละเอียดเพิ่มเติม */}
                             <div className="space-y-1.5">
-                              <label className="text-xs font-semibold text-slate-500">อาการเสีย / รายละเอียดเพิ่มเติม (Defect Notes & Details)</label>
+                              <label className="text-xs font-semibold text-slate-600">อาการเสีย / รายละเอียดเพิ่มเติม (Defect Notes & Details)</label>
                               <input
                                 type="text"
                                 value={item.details || ''}
@@ -1669,7 +1744,7 @@ export function CaseUpdateView({
                                   n[index] = { ...n[index], details: e.target.value };
                                   setEditedItems(n);
                                 }}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                className="w-full rounded-md border border-slate-300 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
                                 placeholder="ระบุอาการ เช่น รอยพับซีลฟอยล์ไม่สนิท น้ำมันซึมออกมาเล็กน้อยที่ขอบฝา..."
                               />
                             </div>
@@ -1797,12 +1872,18 @@ export function CaseUpdateView({
                                   type="button"
                                   disabled={savingItemIndex !== null}
                                   onClick={() => handleSaveSingleItem(index)}
-                                  className="px-3.5 py-2 bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A] rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
+                                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                                 >
                                   {savingItemIndex === index ? (
-                                    <span>กำลังบันทึก...</span>
+                                    <>
+                                      <Loader2 size={13} className="animate-spin text-slate-800" />
+                                      <span>กำลังบันทึก...</span>
+                                    </>
                                   ) : (
-                                    <span>บันทึกรายการนี้</span>
+                                    <>
+                                      <Check size={13} strokeWidth={2.5} className="text-slate-900" />
+                                      <span>บันทึกรายการนี้</span>
+                                    </>
                                   )}
                                 </button>
                               </div>
@@ -1845,27 +1926,50 @@ export function CaseUpdateView({
                     type="button"
                     onClick={handleQSMSHandover}
                     disabled={isSaving}
-                    className="px-4 py-2 bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A] text-xs font-medium rounded-lg transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                    className="h-9 px-4 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                   >
+                    <Send size={13} />
                     <span>บันทึกผล & ส่งขอเบิกภาชนะ</span>
                   </button>
                 )}
               </div>
 
               {/* Analysis Textarea */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-2.5">
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <FileText size={13} className="text-amber-700" />
                     <span>ผลการวิเคราะห์สาเหตุและแนวทางแก้ไข (Analysis & Resolution Notes)</span>
                   </h3>
                 </div>
+
+                {canEditAnalysis && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+                    <span className="text-[11px] font-medium text-slate-500 shrink-0">ข้อความแนะนำ:</span>
+                    {[
+                      'เปลี่ยนแกลลอนใหม่และรันซีลซ้ำ',
+                      'เช็ดทำความสะอาดและเปลี่ยนกล่องใหม่',
+                      'เปลี่ยนฝาและตรวจเช็กแรงบิด'
+                    ].map((templateText) => (
+                      <button
+                        key={templateText}
+                        type="button"
+                        onClick={() => setResolutionMethod(prev => prev ? `${prev} | ${templateText}` : templateText)}
+                        className="px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:text-amber-900 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-md transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        + {templateText}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <textarea
                   rows={3}
                   value={resolutionMethod}
                   disabled={!canEditAnalysis}
                   onChange={(e) => setResolutionMethod(e.target.value)}
                   placeholder="ระบุผลการวิเคราะห์สาเหตุ เช่น ซีลฟอยล์ไม่สนิทจากความร้อนตก และแนวทางการแก้ไข เช่น ให้เปลี่ยนแกลลอนใหม่และรันซีลซ้ำ..."
-                  className="w-full text-xs font-medium rounded-md border border-slate-300 bg-white p-3 text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                  className="w-full text-xs font-medium rounded-lg border border-slate-300 bg-white p-3 text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500 leading-relaxed"
                 />
               </div>
 
@@ -1875,7 +1979,7 @@ export function CaseUpdateView({
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                       <span>รายการภาชนะและวัสดุที่ต้องใช้ (Container & Material Requisition)</span>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-800 border border-orange-200 shrink-0">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 shrink-0">
                         {materialRequests.length} รายการ
                       </span>
                     </h3>
@@ -1884,8 +1988,8 @@ export function CaseUpdateView({
                 </div>
 
                 {canEditAnalysis && (
-                  <div className="rounded-xl bg-slate-50/80 border border-slate-200/70 p-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 shrink-0">
+                  <div className="rounded-xl bg-slate-50/90 border border-slate-200/80 p-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 shrink-0">
                       <span>เพิ่มด่วน:</span>
                     </div>
                     <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5 w-full flex-wrap sm:flex-nowrap">
@@ -1902,7 +2006,7 @@ export function CaseUpdateView({
                           key={preset.name}
                           type="button"
                           onClick={() => handleAddPresetMaterial(preset.name, preset.unit)}
-                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer shrink-0 whitespace-nowrap"
+                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-amber-50 hover:text-amber-900 hover:border-amber-300 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer shrink-0 whitespace-nowrap"
                         >
                           + {preset.name}
                         </button>
@@ -1913,14 +2017,16 @@ export function CaseUpdateView({
 
                 {materialRequests.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                    <Package size={26} className="text-slate-400 mx-auto mb-1.5" />
                     <p className="text-xs font-semibold text-slate-600">ยังไม่มีการระบุภาชนะหรือวัสดุที่ต้องใช้</p>
                     {canEditAnalysis && (
                       <div className="mt-3 flex justify-center">
                         <button
                           type="button"
                           onClick={() => setIsAddingCustomMaterial(true)}
-                          className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
+                          <Plus size={13} />
                           <span>เพิ่มรายการวัสดุแบบกำหนดเอง</span>
                         </button>
                       </div>
@@ -1929,7 +2035,7 @@ export function CaseUpdateView({
                 ) : (
                   <div className="overflow-x-auto rounded-xl border border-slate-200/80">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold">
+                      <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-700 font-bold">
                         <tr>
                           <th className="py-2.5 px-3">#</th>
                           <th className="py-2.5 px-3">รายการภาชนะ / วัสดุ</th>
@@ -1951,19 +2057,19 @@ export function CaseUpdateView({
                                   min="1"
                                   value={mat.requestedQty}
                                   onChange={(e) => handleMaterialQtyChange(mat.id, Number(e.target.value) || 0)}
-                                  className="w-16 text-center border border-slate-200 bg-slate-50 rounded-lg py-1 px-2 font-bold text-slate-900 focus:bg-white focus:border-orange-500"
+                                  className="w-18 h-8 text-center border border-slate-300 bg-white rounded-md py-1 px-2 font-mono font-bold text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                                 />
                               ) : (
-                                <span className="font-bold text-slate-900">{mat.requestedQty}</span>
+                                <span className="font-mono font-bold text-slate-900">{mat.requestedQty}</span>
                               )}
                             </td>
                             <td className="py-2 px-3 text-center text-slate-500">{mat.unit}</td>
                             <td className="py-2 px-3 text-center">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                mat.status === 'fulfilled' ? 'bg-emerald-100 text-emerald-800' :
-                                mat.status === 'partial' ? 'bg-amber-100 text-amber-800' :
-                                mat.status === 'unavailable' ? 'bg-red-100 text-red-800' :
-                                'bg-slate-100 text-slate-600'
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
+                                mat.status === 'fulfilled' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                mat.status === 'partial' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                mat.status === 'unavailable' ? 'bg-rose-50 text-rose-800 border-rose-200' :
+                                'bg-slate-100 text-slate-600 border-slate-200'
                               }`}>
                                 {mat.status === 'fulfilled' ? 'เบิกจ่ายครบแล้ว' :
                                  mat.status === 'partial' ? 'เบิกจ่ายบางส่วน' :
@@ -1976,9 +2082,10 @@ export function CaseUpdateView({
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveMaterial(mat.id)}
-                                  className="p-1 text-slate-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="ลบรายการนี้"
                                 >
-                                  <span>ลบ</span>
+                                  <Trash2 size={13} />
                                 </button>
                               </td>
                             )}
@@ -1992,8 +2099,9 @@ export function CaseUpdateView({
                         <button
                           type="button"
                           onClick={() => setIsAddingCustomMaterial(!isAddingCustomMaterial)}
-                          className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer"
+                          className="text-xs font-semibold text-amber-800 hover:text-amber-900 flex items-center gap-1 cursor-pointer"
                         >
+                          <Plus size={13} />
                           <span>{isAddingCustomMaterial ? 'ยกเลิก' : '+ เพิ่มรายการวัสดุอื่นๆ แบบกำหนดเอง'}</span>
                         </button>
                       </div>
@@ -2003,7 +2111,7 @@ export function CaseUpdateView({
 
                 {/* Custom Material Input Form */}
                 {isAddingCustomMaterial && canEditAnalysis && (
-                  <div className="p-3.5 rounded-xl border border-orange-200 bg-orange-50/40 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                  <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/30 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
                     <div className="sm:col-span-2">
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">ชื่อภาชนะ / วัสดุ *</label>
                       <input
@@ -2011,7 +2119,7 @@ export function CaseUpdateView({
                         value={customMaterialName}
                         onChange={(e) => setCustomMaterialName(e.target.value)}
                         placeholder="เช่น ฝาซีลกันปลอม, ฟิล์มหด ฯลฯ"
-                        className="w-full text-xs border border-slate-200 rounded-lg py-1.5 px-3 bg-white focus:outline-none focus:border-orange-500"
+                        className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-3 bg-white shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                       />
                     </div>
                     <div>
@@ -2021,14 +2129,14 @@ export function CaseUpdateView({
                         min="1"
                         value={customMaterialQty}
                         onChange={(e) => setCustomMaterialQty(Number(e.target.value) || 1)}
-                        className="w-full text-xs border border-slate-200 rounded-lg py-1.5 px-3 bg-white focus:outline-none focus:border-orange-500"
+                        className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-3 bg-white shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                       />
                     </div>
                     <div>
                       <button
                         type="button"
                         onClick={handleCustomMaterialAdd}
-                        className="w-full py-1.5 px-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        className="w-full h-8.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs cursor-pointer"
                       >
                         บันทึกเข้าตาราง
                       </button>
@@ -2043,33 +2151,35 @@ export function CaseUpdateView({
           {/* STEP 3 PANEL: WPK คลังเบิกจ่ายภาชนะ (WAREHOUSE ISSUING) */}
           {/* ========================================================================= */}
           {activeStep === 'issuing' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Step Header Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-900">Step 3: คลังบันทึกการเบิกจ่ายภาชนะ (WPK Fulfillment)</h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                      canEditIssuing ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-bold text-slate-900 leading-snug">
+                      Step 3: คลังบันทึกการเบิกจ่ายภาชนะ (WPK Fulfillment)
+                    </h2>
+                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border shrink-0 whitespace-nowrap ${
+                      canEditIssuing ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
                       {canEditIssuing ? 'โหมดเบิกจ่ายของ (WPK / Admin)' : 'โหมดดูการเบิกจ่าย (Preview Only)'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 mt-1">
                     {canEditIssuing
                       ? 'ตรวจสอบรายการที่ QSMS ขอ และบันทึกยอดเบิกได้จริงเพื่อส่งมอบงานให้ PDF ซ่อม'
                       : 'รายการเบิกจ่ายของแผนกคลัง (เฉพาะแผนก WPK/Admin จึงจะสามารถบันทึกยอดเบิกได้)'}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsRequisitionModalOpen(true)}
-                    className="px-3.5 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 rounded-xl border border-slate-200/90 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-all cursor-pointer shadow-2xs shrink-0"
                     title="เปิดใบขอเบิกภาชนะขนาด A5 สำหรับพิมพ์หรือดาวน์โหลด"
                   >
-                    <Printer size={13} className="text-indigo-600" />
+                    <Printer size={13} className="text-slate-500" />
                     <span>พิมพ์ใบเบิกภาชนะ</span>
                   </button>
 
@@ -2078,17 +2188,19 @@ export function CaseUpdateView({
                       <button
                         type="button"
                         onClick={handleFulfillAllMaterials}
-                        className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer shrink-0"
+                        disabled={materialRequests.length === 0}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg border border-slate-200/80 transition-all cursor-pointer shrink-0"
                       >
-                        ✓ เบิกครบตามยอดทั้งหมด
+                        <Check size={12} className="text-slate-600" />
+                        <span>เบิกครบตามยอดทั้งหมด</span>
                       </button>
                       <button
                         type="button"
                         onClick={handleWPKHandover}
                         disabled={isSaving}
-                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all shadow-xs cursor-pointer shrink-0"
                       >
-                        <Truck size={14} />
+                        <Truck size={13} />
                         <span>จ่ายของครบ & ส่งให้ PDF ซ่อม ➔</span>
                       </button>
                     </>
@@ -2096,20 +2208,189 @@ export function CaseUpdateView({
                 </div>
               </div>
 
-              {/* Warehouse Issuing Table */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>ตารางเบิกจ่ายภาชนะและวัสดุ</span>
-                </h3>
+              {/* 1. Case Items Production Reference for Warehouse */}
+              <div className="bg-slate-50/70 rounded-lg border border-slate-200/80 p-3.5 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/60 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Layers size={14} className="text-amber-600 shrink-0" />
+                    <h3 className="text-xs font-bold text-slate-800">
+                      รายการสินค้าในเคสที่ต้องจัดเตรียม ({editedItems.length} รายการ / รวม {totalBoxes} กล่อง)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-normal">
+                    ใช้อ้างอิงชนิดแกลลอนและบรรจุภัณฑ์ที่ต้องจัดเตรียม
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-0.5">
+                  {editedItems.map((item, idx) => (
+                    <div key={item.id || idx} className="p-2.5 rounded-md bg-white border border-slate-200/90 shadow-2xs text-xs space-y-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-mono font-bold text-slate-900 text-[11px] truncate">
+                          #{idx + 1} {item.itemNumber || item.itemCode || 'ไม่ระบุรหัส'}
+                        </span>
+                        <span className="font-mono font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[11px] shrink-0">
+                          {item.amount || 0} กล่อง
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 line-clamp-1">{item.itemName || 'ไม่ระบุชื่อสินค้า'}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 pt-0.5 flex-wrap">
+                        {item.batchNo && <span>Lot: <strong className="font-mono text-slate-700">{item.batchNo}</strong></span>}
+                        {item.gallonDate && <span>วันที่แกลลอน: <strong className="font-mono text-slate-700">{convertYMDToDMY(item.gallonDate)}</strong></span>}
+                        {item.reason && <span className="text-rose-700 font-medium">({item.reason})</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Warehouse Issuing Table */}
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-bold text-slate-900">ตารางเบิกจ่ายภาชนะและวัสดุ</h3>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
+                      {materialRequests.length} รายการ
+                    </span>
+                    {materialRequests.length > 0 && (
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border inline-flex items-center gap-1 ${
+                        materialRequests.every(m => m.status === 'fulfilled')
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                      }`}>
+                        {materialRequests.every(m => m.status === 'fulfilled') ? (
+                          <>
+                            <CheckCircle2 size={11} className="text-emerald-700" />
+                            <span>เบิกครบทุกรายการแล้ว</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock size={11} className="text-amber-700" />
+                            <span>เบิกจ่ายแล้ว {materialRequests.filter(m => m.status === 'fulfilled').length}/{materialRequests.length} รายการ</span>
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {canEditIssuing && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingWPKMaterial(!isAddingWPKMaterial)}
+                      className="text-xs font-semibold text-amber-800 hover:text-amber-900 inline-flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+                    >
+                      <Plus size={13} />
+                      <span>{isAddingWPKMaterial ? 'ปิดฟอร์มเพิ่ม' : '+ เพิ่มรายการเบิกด่วน'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Inline WPK Quick Add Form */}
+                {isAddingWPKMaterial && canEditIssuing && (
+                  <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-2.5">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Sparkles size={13} className="text-amber-600" />
+                        <span>เพิ่มรายการเบิกจ่ายด่วน (WPK Direct Add)</span>
+                      </span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[10px] text-slate-500 mr-1">ทางลัด:</span>
+                        {['กล่องใหม่', 'แกลลอนใหม่', 'ฝาใหม่', 'สติ๊กเกอร์', 'ฟิล์มยืด'].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              setWpkMaterialName(preset);
+                              if (preset.includes('กล่อง')) setWpkMaterialUnit('กล่อง');
+                              else if (preset.includes('แกลลอน')) setWpkMaterialUnit('ใบ');
+                              else if (preset.includes('ฝา')) setWpkMaterialUnit('ฝา');
+                              else if (preset.includes('สติ๊กเกอร์')) setWpkMaterialUnit('แผ่น');
+                              else setWpkMaterialUnit('ม้วน');
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-white text-slate-700 border border-slate-200 hover:border-amber-400 hover:text-amber-900 transition-colors cursor-pointer"
+                          >
+                            +{preset}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-end">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">ชื่อภาชนะ / วัสดุ *</label>
+                        <input
+                          type="text"
+                          value={wpkMaterialName}
+                          onChange={(e) => setWpkMaterialName(e.target.value)}
+                          placeholder="เช่น กล่องบรรจุภัณฑ์ใหม่, แกลลอนใหม่"
+                          className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-3 bg-white shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">จำนวนที่เบิก *</label>
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            min="1"
+                            value={wpkMaterialQty}
+                            onChange={(e) => setWpkMaterialQty(Number(e.target.value) || 1)}
+                            className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-2.5 bg-white shadow-2xs font-mono font-bold text-center focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                          />
+                          <input
+                            type="text"
+                            value={wpkMaterialUnit}
+                            onChange={(e) => setWpkMaterialUnit(e.target.value)}
+                            placeholder="หน่วย"
+                            className="w-16 h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-2 bg-white text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleWPKAddCustomMaterial}
+                          className="w-full h-8.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <Plus size={13} />
+                          <span>เพิ่มเข้าตาราง</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {materialRequests.length === 0 ? (
-                  <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl">
-                    <p className="text-xs font-semibold text-slate-500">QSMS ยังไม่ได้ระบุรายการขอเบิกภาชนะใน Step 2</p>
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                    <Package size={26} className="text-slate-400 mx-auto mb-1.5" />
+                    <p className="text-xs font-semibold text-slate-600">QSMS ยังไม่ได้ระบุรายการขอเบิกภาชนะใน Step 2</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      สามารถจัดเตรียมตามยอดสินค้าในเคสด้านบน หรือเพิ่มรายการเบิกด่วนได้ทันที
+                    </p>
+                    <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                      {canEditIssuing && (
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingWPKMaterial(true)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-200 transition-colors cursor-pointer"
+                        >
+                          <Plus size={12} />
+                          <span>+ เพิ่มรายการเบิกด่วน</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setActiveStep('analysis')}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 bg-white hover:bg-slate-50 rounded-md border border-slate-200 transition-colors cursor-pointer"
+                      >
+                        <span>ไปยัง Step 2 (วิเคราะห์ & ภาชนะ)</span>
+                        <ChevronRight size={12} />
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="overflow-x-auto rounded-xl border border-slate-200/80">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
                         <tr>
                           <th className="py-2.5 px-3">#</th>
                           <th className="py-2.5 px-3">รายการภาชนะ / วัสดุ</th>
@@ -2117,41 +2398,89 @@ export function CaseUpdateView({
                           <th className="py-2.5 px-3 text-center">ยอดเบิกได้จริง (WPK)</th>
                           <th className="py-2.5 px-3 text-center">หน่วยนับ</th>
                           <th className="py-2.5 px-3 text-center">สถานะ</th>
+                          {canEditIssuing && <th className="py-2.5 px-3 text-center">การดำเนินการ</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
                         {materialRequests.map((mat, idx) => (
                           <tr key={mat.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="py-2.5 px-3 font-mono text-slate-400">{idx + 1}</td>
-                            <td className="py-2.5 px-3 font-semibold text-slate-800">{mat.materialName}</td>
-                            <td className="py-2.5 px-3 text-center font-bold text-slate-600">{mat.requestedQty}</td>
-                            <td className="py-2.5 px-3 text-center">
+                            <td className="py-2 px-3 font-mono text-slate-400">{idx + 1}</td>
+                            <td className="py-2 px-3 font-semibold text-slate-800">{mat.materialName}</td>
+                            <td className="py-2 px-3 text-center font-mono font-bold text-slate-600">{mat.requestedQty}</td>
+                            <td className="py-2 px-3 text-center">
                               {canEditIssuing ? (
                                 <input
                                   type="number"
                                   min="0"
                                   value={mat.issuedQty ?? 0}
                                   onChange={(e) => handleMaterialIssuedQtyChange(mat.id, Number(e.target.value) || 0)}
-                                  className="w-20 text-center border border-slate-200 bg-slate-50 rounded-lg py-1 px-2 font-bold text-orange-900 focus:bg-white focus:border-orange-500"
+                                  className="w-20 h-8 text-center border border-slate-300 bg-white rounded-md py-1 px-2.5 font-mono font-bold text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                                 />
                               ) : (
-                                <span className="font-bold text-orange-950">{mat.issuedQty ?? '-'}</span>
+                                <span className="font-mono font-bold text-slate-900">{mat.issuedQty ?? '-'}</span>
                               )}
                             </td>
-                            <td className="py-2.5 px-3 text-center text-slate-500">{mat.unit}</td>
-                            <td className="py-2.5 px-3 text-center">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                mat.status === 'fulfilled' ? 'bg-emerald-100 text-emerald-800' :
-                                mat.status === 'partial' ? 'bg-amber-100 text-amber-800' :
-                                mat.status === 'unavailable' ? 'bg-red-100 text-red-800' :
-                                'bg-slate-100 text-slate-600'
+                            <td className="py-2 px-3 text-center text-slate-500">{mat.unit}</td>
+                            <td className="py-2 px-3 text-center">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${
+                                mat.status === 'fulfilled' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                mat.status === 'partial' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                mat.status === 'unavailable' ? 'bg-rose-50 text-rose-800 border-rose-200' :
+                                'bg-slate-100 text-slate-600 border-slate-200'
                               }`}>
-                                {mat.status === 'fulfilled' ? '✓ เบิกจ่ายครบแล้ว' :
-                                 mat.status === 'partial' ? '⚡ เบิกจ่ายบางส่วน' :
-                                 mat.status === 'unavailable' ? '✗ ของขาด' :
-                                 '⏳ รอคลังเบิกจ่าย'}
+                                {mat.status === 'fulfilled' ? (
+                                  <>
+                                    <CheckCircle2 size={11} className="text-emerald-700" />
+                                    <span>เบิกจ่ายครบแล้ว</span>
+                                  </>
+                                ) : mat.status === 'partial' ? (
+                                  <>
+                                    <Clock size={11} className="text-amber-700" />
+                                    <span>เบิกจ่ายบางส่วน</span>
+                                  </>
+                                ) : mat.status === 'unavailable' ? (
+                                  <>
+                                    <AlertCircle size={11} className="text-rose-700" />
+                                    <span>ของขาด</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock size={11} className="text-slate-500" />
+                                    <span>รอคลังเบิกจ่าย</span>
+                                  </>
+                                )}
                               </span>
                             </td>
+                            {canEditIssuing && (
+                              <td className="py-2 px-3 text-center">
+                                <div className="inline-flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMaterialSetFulfilled(mat.id)}
+                                    title="ระบุเบิกครบตามยอดที่ขอ"
+                                    className="px-2 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition-colors cursor-pointer"
+                                  >
+                                    ครบ
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMaterialSetUnavailable(mat.id)}
+                                    title="ระบุของขาด"
+                                    className="px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded transition-colors cursor-pointer"
+                                  >
+                                    ของขาด
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveMaterialWPK(mat.id)}
+                                    title="ลบรายการนี้"
+                                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -2160,12 +2489,41 @@ export function CaseUpdateView({
                 )}
               </div>
 
-              {/* Material Shortage Card */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-2.5">
-                <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                  <AlertCircle size={14} className="text-amber-600" />
-                  <span>บันทึกวัสดุที่ขาด (Material Shortage Record)</span>
-                </h3>
+              {/* 3. Material Shortage Card */}
+              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle size={14} className="text-amber-600" />
+                    <h3 className="text-xs font-bold text-slate-800">
+                      บันทึกวัสดุที่ขาด (Material Shortage Record)
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {(missingBoxes > 0 || missingGallons > 0 || missingOil > 0) ? (
+                      <>
+                        <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <AlertCircle size={11} />
+                          <span>มีรายการวัสดุขาดที่ต้องติดตาม</span>
+                        </span>
+                        {canEditIssuing && (
+                          <button
+                            type="button"
+                            onClick={() => { setMissingBoxes(0); setMissingGallons(0); setMissingOil(0); }}
+                            className="text-[11px] text-slate-400 hover:text-slate-600 underline cursor-pointer"
+                          >
+                            ล้างค่าเป็น 0
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                        <CheckCircle2 size={11} />
+                        <span>วัสดุพร้อมครบ ไม่มีรายการขาด</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">ขาดกล่อง (ใบ)</label>
@@ -2176,7 +2534,11 @@ export function CaseUpdateView({
                       disabled={!canEditIssuing}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setMissingBoxes(Number(e.target.value) || 0)}
-                      className="w-full text-xs font-mono font-bold tracking-tight bg-white border border-slate-300 rounded-md px-3 py-1.5 text-slate-900 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                      className={`w-full h-9 text-xs font-mono font-bold tracking-tight rounded-md px-3 py-1.5 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:ring-2 ${
+                        missingBoxes > 0 
+                          ? 'border-2 border-amber-400 bg-amber-50/30 text-amber-950 focus:border-amber-500 focus:ring-amber-500/20' 
+                          : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
+                      }`}
                       placeholder="0"
                     />
                   </div>
@@ -2189,7 +2551,11 @@ export function CaseUpdateView({
                       disabled={!canEditIssuing}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setMissingGallons(Number(e.target.value) || 0)}
-                      className="w-full text-xs font-mono font-bold tracking-tight bg-white border border-slate-300 rounded-md px-3 py-1.5 text-slate-900 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                      className={`w-full h-9 text-xs font-mono font-bold tracking-tight rounded-md px-3 py-1.5 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:ring-2 ${
+                        missingGallons > 0 
+                          ? 'border-2 border-amber-400 bg-amber-50/30 text-amber-950 focus:border-amber-500 focus:ring-amber-500/20' 
+                          : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
+                      }`}
                       placeholder="0"
                     />
                   </div>
@@ -2202,41 +2568,56 @@ export function CaseUpdateView({
                       disabled={!canEditIssuing}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setMissingOil(Number(e.target.value) || 0)}
-                      className="w-full text-xs font-mono font-bold tracking-tight bg-white border border-slate-300 rounded-md px-3 py-1.5 text-slate-900 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                      className={`w-full h-9 text-xs font-mono font-bold tracking-tight rounded-md px-3 py-1.5 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:ring-2 ${
+                        missingOil > 0 
+                          ? 'border-2 border-amber-400 bg-amber-50/30 text-amber-950 focus:border-amber-500 focus:ring-amber-500/20' 
+                          : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
+                      }`}
                       placeholder="0"
                     />
                   </div>
                 </div>
+                <p className="text-[11px] text-slate-400">
+                  ข้อมูลวัสดุที่ขาดจะถูกบันทึกเพื่อแจ้งให้ฝ่ายจัดซื้อ/หน้างานทราบ และจะถูกล้างค่าอัตโนมัติเมื่อเคสซ่อมเสร็จสมบูรณ์
+                </p>
               </div>
 
-              {/* Material Receipt & Handshake Card */}
+              {/* 4. Material Receipt & Handshake Card */}
               <div className={`p-4 rounded-xl border transition-all ${
                 receivedHandshake
-                  ? 'bg-emerald-50/50 border-emerald-200'
-                  : 'bg-white border-slate-200 shadow-xs'
+                  ? 'bg-emerald-50/70 border-emerald-200 shadow-xs'
+                  : 'bg-slate-50/80 border-slate-200 shadow-2xs'
               }`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center border font-bold text-sm ${
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center border font-bold text-sm shrink-0 ${
                       receivedHandshake
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-white text-slate-500 border-slate-200'
                     }`}>
-                      {receivedHandshake ? '✓' : '📦'}
+                      {receivedHandshake ? <Check size={16} className="text-emerald-700" /> : <Package size={16} />}
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                         <span>สถานะการรับมอบชิ้นส่วนหน้างาน (Material Handshake Receipt)</span>
-                        {receivedHandshake && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
-                            ✓ รับมอบเรียบร้อย
+                        {receivedHandshake ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 inline-flex items-center gap-1">
+                            <CheckCircle2 size={11} className="text-emerald-700" />
+                            <span>รับมอบเรียบร้อย</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium border border-slate-200 inline-flex items-center gap-1">
+                            <Clock size={11} className="text-slate-500" />
+                            <span>รอฝ่ายซ่อม (PDF) ยืนยันตรวจรับ</span>
                           </span>
                         )}
                       </h4>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {receivedHandshake
                           ? `ยืนยันตรวจรับชิ้นส่วนครบชุดแล้ว โดย ${receivedHandshake.receivedBy} เมื่อ ${receivedHandshake.receivedAt}`
-                          : 'ฝ่ายซ่อม (PDF) หรือผู้รับมอบหน้างานต้องตรวจนับและยืนยันการรับมอบเมื่อของมาถึง'}
+                          : (canEditRepair || userRole === 'ADMIN' || userRole === 'PDF')
+                            ? 'ฝ่ายซ่อม (PDF) หรือผู้รับมอบหน้างานต้องตรวจนับและยืนยันการรับมอบเมื่อของมาถึง'
+                            : 'คลัง (WPK) ส่งมอบของเรียบร้อยแล้ว ช่างซ่อม (PDF) จะเป็นผู้ตรวจนับและกดยืนยันการรับมอบหน้างาน'}
                       </p>
                     </div>
                   </div>
@@ -2246,10 +2627,10 @@ export function CaseUpdateView({
                       type="button"
                       onClick={handleConfirmMaterialReceipt}
                       disabled={isSaving}
-                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 min-h-[40px]"
+                      className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
-                      <CheckCircle2 size={15} />
-                      <span>🤝 ยืนยันตรวจรับชิ้นส่วนครบชุด</span>
+                      <CheckCircle2 size={14} />
+                      <span>ยืนยันตรวจรับชิ้นส่วนครบชุด</span>
                     </button>
                   )}
                 </div>
@@ -2264,16 +2645,22 @@ export function CaseUpdateView({
             <div className="space-y-5">
               {/* Step Header Banner */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-sm font-bold text-slate-900">Step 4: ช่างซ่อมบันทึกความคืบหน้า & Defend</h2>
-                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border ${
+                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border shrink-0 ${
                       canEditRepair ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
                       {canEditRepair ? 'โหมดซ่อม & Defend (PDF / Admin)' : 'โหมดดูความคืบหน้า (Preview Only)'}
                     </span>
+                    {caseStatus === 'Blocked' && (
+                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300 inline-flex items-center gap-1 shrink-0">
+                        <AlertTriangle size={11} />
+                        <span>ติดปัญหา (Blocked)</span>
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 mt-1">
                     {canEditRepair
                       ? 'บันทึกยอดกล่องที่ซ่อมเสร็จจริง หรือบันทึกปัญหา Defend กรณีติดอุปสรรคหน้างาน'
                       : 'ความคืบหน้างานซ่อมของแผนก PDF (เฉพาะแผนก PDF/Admin จึงจะสามารถบันทึกยอดซ่อมได้)'}
@@ -2281,20 +2668,21 @@ export function CaseUpdateView({
                 </div>
 
                 {canEditRepair && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
                     <button
                       type="button"
                       onClick={() => handlePDFSave(false, false)}
                       disabled={isSaving}
-                      className="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-all cursor-pointer"
+                      className="h-9 px-3.5 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-2xs transition-all cursor-pointer"
                     >
-                      บันทึกความคืบหน้า
+                      <Save size={13} className="text-slate-500" />
+                      <span>บันทึกความคืบหน้า</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handlePDFSave(true, false)}
                       disabled={isSaving || globalCompleted < totalBoxes}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white text-xs font-medium rounded-md transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCheck size={14} />
                       <span>ปิดเคส 100% (Completed)</span>
@@ -2303,35 +2691,39 @@ export function CaseUpdateView({
                 )}
               </div>
 
-              {/* Progress Gauge Card */}
+              {/* 1. Overall Progress Gauge Card */}
               <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-emerald-600" />
+                      <CheckCircle2 size={16} className={completionPercentage >= 100 ? 'text-emerald-600' : 'text-amber-600'} />
                       <span>ความคืบหน้าการซ่อมรวม (Overall Progress)</span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      ยอดเสร็จ: <strong className="text-emerald-800">{globalCompleted}</strong> จากทั้งหมด <strong>{totalBoxes}</strong> กล่อง ({completionPercentage}%)
+                      ยอดเสร็จ: <strong className="text-slate-900 font-mono text-sm">{globalCompleted}</strong> จากทั้งหมด <strong className="font-mono text-slate-700">{totalBoxes}</strong> กล่อง ({completionPercentage}%)
                     </p>
                   </div>
 
                   {canEditRepair && (
                     <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max={totalBoxes}
-                        value={globalCompleted || ''}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => handleGlobalProgressChange(Number(e.target.value) || 0)}
-                        placeholder="ระบุยอดรวมที่เสร็จ..."
-                        className="w-32 text-xs font-mono font-bold tracking-tight text-center border border-slate-300 rounded-md py-1.5 px-3 bg-white text-slate-900 shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                      />
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-medium text-slate-500 mr-1 hidden sm:inline">ระบุยอดรวม:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max={totalBoxes}
+                          value={globalCompleted || ''}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => handleGlobalProgressChange(Number(e.target.value) || 0)}
+                          placeholder="0"
+                          className="w-24 h-9 text-xs font-mono font-bold tracking-tight text-center border border-slate-300 rounded-md py-1.5 px-2 bg-white text-slate-900 shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                        />
+                        <span className="text-xs text-slate-500 font-medium">/ {totalBoxes} กล่อง</span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleGlobalProgressChange(totalBoxes)}
-                        className="px-3 py-1.5 text-xs font-bold text-slate-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 transition-colors cursor-pointer"
+                        className="h-9 px-3.5 text-xs font-bold text-slate-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 transition-colors cursor-pointer shadow-2xs shrink-0"
                       >
                         เสร็จทั้งหมด
                       </button>
@@ -2339,21 +2731,141 @@ export function CaseUpdateView({
                   )}
                 </div>
 
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      completionPercentage >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
+                    }`}
                     style={{ width: `${Math.min(100, completionPercentage)}%` }}
                   />
                 </div>
               </div>
 
-              {/* PDF Defend Mode Card */}
+              {/* 2. Granular Item-by-Item Repair Progress Breakdown */}
               <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Layers size={14} className="text-amber-600 shrink-0" />
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                      บันทึกความคืบหน้ารายการสินค้า ({editedItems.length} รายการ)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-normal">
+                    สามารถระบุยอดเสร็จแยกตามรายการสินค้า หรือปรับยอดรวมด้านบนได้
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                      <tr>
+                        <th className="py-2.5 px-3">#</th>
+                        <th className="py-2.5 px-3">รายการสินค้า / รหัสสินค้า</th>
+                        <th className="py-2.5 px-3 text-center">ยอดทั้งหมด (ลัง)</th>
+                        <th className="py-2.5 px-3 text-center">ซ่อมเสร็จแล้ว (ลัง)</th>
+                        <th className="py-2.5 px-3 text-center">ความคืบหน้า</th>
+                        {canEditRepair && <th className="py-2.5 px-3 text-center">การดำเนินการ</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {editedItems.map((item, idx) => {
+                        const amount = Number(item.amount) || 0;
+                        const completed = Number(item.completedBoxes) || 0;
+                        const percent = amount > 0 ? Math.round((completed / amount) * 100) : 0;
+                        const isDone = completed >= amount && amount > 0;
+
+                        return (
+                          <tr key={item.id || idx} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-2.5 px-3 font-mono text-slate-400 font-bold">{idx + 1}</td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono font-bold text-slate-900">{item.itemNumber || item.itemCode || '-'}</span>
+                                {item.itemCode && item.itemNumber && (
+                                  <span className="font-mono text-[10px] text-slate-500">({item.itemCode})</span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-600 truncate mt-0.5">{item.itemName || 'ไม่ระบุชื่อสินค้า'}</div>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                                {item.batchNo && <span>Lot: <strong className="text-slate-600 font-mono">{item.batchNo}</strong></span>}
+                                {item.reason && <span className="text-rose-600 font-medium">({item.reason})</span>}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-700">
+                              {amount}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              {canEditRepair ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={amount}
+                                  value={item.completedBoxes ?? 0}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => handleItemProgressChange(idx, Number(e.target.value) || 0)}
+                                  className={`w-20 h-8 text-center font-mono font-bold text-xs rounded-md shadow-2xs focus:outline-none focus:ring-2 ${
+                                    isDone 
+                                      ? 'border-2 border-emerald-400 bg-emerald-50/40 text-emerald-900 focus:border-emerald-500 focus:ring-emerald-500/20' 
+                                      : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
+                                  }`}
+                                />
+                              ) : (
+                                <span className="font-mono font-bold text-slate-900">{completed}</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <div className="flex flex-col items-center gap-1 min-w-[90px]">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                  isDone ? 'bg-emerald-100 text-emerald-800' : completed > 0 ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {isDone ? '100% ครบ' : `${percent}%`}
+                                </span>
+                                <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${isDone ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                    style={{ width: `${Math.min(100, percent)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            {canEditRepair && (
+                              <td className="py-2.5 px-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleItemProgressChange(idx, amount)}
+                                  disabled={isDone}
+                                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-all cursor-pointer ${
+                                    isDone 
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 opacity-80 cursor-default'
+                                      : 'bg-white text-slate-700 border-slate-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-900 shadow-2xs'
+                                  }`}
+                                >
+                                  {isDone ? 'ครบแล้ว' : 'เสร็จครบ'}
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* 3. PDF Defend Mode Card */}
+              <div className={`bg-white rounded-lg border shadow-xs space-y-3 p-4 transition-all ${
+                caseStatus === 'Blocked' ? 'border-rose-300 ring-1 ring-rose-300/30' : 'border-slate-200'
+              }`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                       <Shield size={16} className="text-rose-600" />
                       <span>PDF Defend Mode (รายงานอุปสรรค & ข้อแก้ต่างหน้างาน)</span>
+                      {caseStatus === 'Blocked' && (
+                        <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <AlertTriangle size={11} />
+                          <span>ติดสถานะ Defend Case</span>
+                        </span>
+                      )}
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
                       ระบุเหตุผลที่งานยังไม่เสร็จสิ้น เพื่อชี้แจงความรับผิดชอบอย่างโปร่งใส
@@ -2361,15 +2873,28 @@ export function CaseUpdateView({
                   </div>
 
                   {canEditRepair && (
-                    <button
-                      type="button"
-                      onClick={() => handlePDFSave(false, true)}
-                      disabled={isSaving}
-                      className="px-3 py-1.5 text-xs font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
-                    >
-                      <AlertTriangle size={13} />
-                      <span>⚠️ บันทึกสถานะติดปัญหา (Defend Case)</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {caseStatus === 'Blocked' && (
+                        <button
+                          type="button"
+                          onClick={() => handlePDFSave(false, false)}
+                          disabled={isSaving}
+                          className="px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <CheckCircle2 size={13} />
+                          <span>ปลดล็อคสถานะ Defend & ทำงานต่อ</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handlePDFSave(false, true)}
+                        disabled={isSaving}
+                        className="px-3 py-1.5 text-xs font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shadow-2xs"
+                      >
+                        <AlertTriangle size={13} />
+                        <span>บันทึกสถานะติดปัญหา (Defend Case)</span>
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -2395,7 +2920,29 @@ export function CaseUpdateView({
                     </Select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">บันทึกข้อแก้ต่าง / อุปสรรค (Defend Notes)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-slate-700">บันทึกข้อแก้ต่าง / อุปสรรค (Defend Notes)</label>
+                      {canEditRepair && (
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                          <span>ทางลัด:</span>
+                          <button
+                            type="button"
+                            onClick={() => setDefendNotes('รอน้ำมันล็อตพิเศษจากคลัง กำลังรอจัดส่ง')}
+                            className="text-amber-800 hover:underline cursor-pointer"
+                          >
+                            +รอน้ำมัน
+                          </button>
+                          <span>•</span>
+                          <button
+                            type="button"
+                            onClick={() => setDefendNotes('รอเปลี่ยนแกลลอนใหม่จาก Supplier')}
+                            className="text-amber-800 hover:underline cursor-pointer"
+                          >
+                            +รอแกลลอน
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <textarea
                       rows={2}
                       value={defendNotes}
@@ -2408,7 +2955,7 @@ export function CaseUpdateView({
                 </div>
               </div>
 
-              {/* QC Verification Gate & Final Sign-Off Card */}
+              {/* 4. QC Verification Gate & Final Sign-Off Card */}
               <div className={`rounded-xl border p-5 transition-all ${
                 qcSignoff
                   ? 'border-emerald-300 bg-emerald-50/40 shadow-xs'
@@ -2416,19 +2963,29 @@ export function CaseUpdateView({
               }`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-lg ${
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-lg shrink-0 ${
                       qcSignoff
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                         : 'bg-amber-50 text-amber-800 border-amber-300'
                     }`}>
-                      🏅
+                      <Award className="w-5 h-5 text-amber-600" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                         <span>QC Verification Gate (การตรวจรับคุณภาพและปิดเคสอย่างเป็นทางการ)</span>
-                        {qcSignoff && (
-                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
-                            ✓ QC Approved
+                        {qcSignoff ? (
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 inline-flex items-center gap-1">
+                            <CheckCircle2 size={11} className="text-emerald-700" />
+                            <span>QC Approved</span>
+                          </span>
+                        ) : globalCompleted >= totalBoxes && totalBoxes > 0 ? (
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold border border-amber-200 inline-flex items-center gap-1">
+                            <Clock size={11} className="text-amber-700" />
+                            <span>พร้อมตรวจรับ QC</span>
+                          </span>
+                        ) : (
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium border border-slate-200">
+                            รอซ่อมเสร็จ 100%
                           </span>
                         )}
                       </h3>
@@ -2449,7 +3006,7 @@ export function CaseUpdateView({
                       className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 min-h-[40px]"
                     >
                       <CheckCheck size={16} />
-                      <span>🏅 ลงนามตรวจรับ QC & ปิดเคส</span>
+                      <span>ลงนามตรวจรับ QC & ปิดเคส</span>
                     </button>
                   )}
                 </div>
@@ -2467,9 +3024,29 @@ export function CaseUpdateView({
                 ) : (
                   (userRole === 'ADMIN' || userRole === 'QSMS') && (
                     <div className="mt-3 space-y-2">
-                      <label className="block text-xs font-semibold text-slate-700">
-                        บันทึกผลการตรวจสอบของ QC (QC Inspection Notes):
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-semibold text-slate-700">
+                          บันทึกผลการตรวจสอบของ QC (QC Inspection Notes):
+                        </label>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                          <span>ทางลัด:</span>
+                          <button
+                            type="button"
+                            onClick={() => setQcNotesInput('ตรวจสอบสภาพกล่อง แกลลอน และรอยรั่วซึมแล้ว อยู่ในเกณฑ์มาตรฐาน 100%')}
+                            className="text-amber-800 hover:underline cursor-pointer"
+                          >
+                            +ผ่านเกณฑ์ 100%
+                          </button>
+                          <span>•</span>
+                          <button
+                            type="button"
+                            onClick={() => setQcNotesInput('สุ่มตรวจรอยต่อและแรงบิดฝา ผ่านเกณฑ์มาตรฐาน QSMS พร้อมส่งเข้าคลัง')}
+                            className="text-amber-800 hover:underline cursor-pointer"
+                          >
+                            +สุ่มตรวจผ่าน
+                          </button>
+                        </div>
+                      </div>
                       <textarea
                         rows={2}
                         value={qcNotesInput}
@@ -2557,9 +3134,10 @@ export function CaseUpdateView({
                     href={lightboxData.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="ml-2 text-amber-300 hover:text-white underline text-[11px]"
+                    className="ml-2 text-amber-300 hover:text-white underline text-[11px] inline-flex items-center gap-1"
                   >
-                    เปิดขนาดเต็ม ↗
+                    <span>เปิดขนาดเต็ม</span>
+                    <ExternalLink size={11} />
                   </a>
                 </div>
               )}

@@ -96,12 +96,19 @@ function AuthWrapper() {
     const handleOpenFeedback = () => {
       setIsFeedbackOpen(true);
     };
+    const handleAuthRequired = () => {
+      setIsAuthenticated(false);
+      setAppUser(null);
+      setCurrentView('login');
+    };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('open-feedback-modal', handleOpenFeedback);
+    window.addEventListener('auth-required', handleAuthRequired);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('open-feedback-modal', handleOpenFeedback);
+      window.removeEventListener('auth-required', handleAuthRequired);
     };
   }, []);
 
@@ -219,10 +226,21 @@ function AuthWrapper() {
         onOpenFeedback={() => setIsFeedbackOpen(true)}
       />
     );
-  } else if (currentView === 'storage') {
-    content = <StorageApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else if (currentView === 'guide') {
     content = <GuideApp onBackToPortal={() => setCurrentView('portal')} />;
+  } else if (!isAuthenticated) {
+    content = (
+      <Login
+        onSuccess={refreshAuth}
+        onBack={() => {
+          setRedirectAfterLogin(null);
+          setCurrentView('portal');
+        }}
+        onNavigateToForgotPassword={() => setCurrentView('forgot-password')}
+      />
+    );
+  } else if (currentView === 'storage') {
+    content = <StorageApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else if (currentView === 'admin') {
     content = <AdminMonitorApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else {

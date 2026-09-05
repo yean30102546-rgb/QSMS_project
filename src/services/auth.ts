@@ -2,7 +2,7 @@
  * Authentication Service
  * Handles Google OAuth, Firebase, and Role-Based Access Control
  * 
- * ⚠️ IMPORTANT: Replace hardcoded credentials with secure backends
+ * IMPORTANT: Replace hardcoded credentials with secure backends
  * Current implementation includes fallback for small organizations (<20 users)
  */
 

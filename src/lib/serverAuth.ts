@@ -47,6 +47,20 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'issue_materials',
     'export_data',
   ],
+  WFG: [
+    'view_overall',
+    'create_case',
+    'update_status',
+    'request_materials',
+    'issue_materials',
+    'export_data',
+  ],
+  CS: [
+    'view_overall',
+    'create_case',
+    'update_status',
+    'export_data',
+  ],
   PDF: [
     'view_overall',
     'update_status',
@@ -221,7 +235,7 @@ export async function requireServerAuth(body: Record<string, unknown> = {}): Pro
   }
 
   if (requestEmail && requestEmail !== tokenEmail) {
-    console.warn(`⚠️ Email mismatch (allowed): token=${tokenEmail}, request=${requestEmail}`);
+    console.warn(`[Auth] Email mismatch (allowed): token=${tokenEmail}, request=${requestEmail}`);
   }
 
   if (requestProfile && requestProfile !== tokenProfile) {

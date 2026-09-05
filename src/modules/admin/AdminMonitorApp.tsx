@@ -29,7 +29,8 @@ import {
   X,
   Lock,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 
 import {
@@ -609,8 +610,9 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                         <div className="text-xs font-bold text-slate-900">{bc.caseName}</div>
                         {bc.customerName && <div className="text-[11px] text-slate-500">ลูกค้า: {bc.customerName}</div>}
                         {bc.reasonDetail && (
-                          <div className="rounded-lg bg-white/90 border border-rose-200 p-2 text-xs text-slate-700 font-medium">
-                            💬 "{bc.reasonDetail}"
+                          <div className="rounded-lg bg-white/90 border border-rose-200 p-2 text-xs text-slate-700 font-medium flex items-start gap-1.5">
+                            <MessageSquare size={13} className="text-rose-500 shrink-0 mt-0.5" />
+                            <span>"{bc.reasonDetail}"</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-rose-100">

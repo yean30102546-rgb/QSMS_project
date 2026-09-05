@@ -149,7 +149,7 @@ export async function POST(request: Request) {
     const requiresAuth = action !== 'loginWithPassword' && action !== 'fetchPublicOverview';
     const auth = requiresAuth ? await requireServerAuth(body) : null;
 
-    console.log(`🚀 Rework API Action: ${action}`, { bodyKeys: Object.keys(body) });
+    console.log(`[Rework API] Action: ${action}`, { bodyKeys: Object.keys(body) });
 
     switch (action) {
       case 'fetchPublicOverview': {
@@ -251,7 +251,7 @@ export async function POST(request: Request) {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('❌ Supabase fetch error:', error);
+          console.error('[Rework API] Supabase fetch error:', error);
           throw error;
         }
 
@@ -314,7 +314,7 @@ export async function POST(request: Request) {
         const { caseData } = body;
         const isFastTrack = !!caseData?.isFastTrack;
 
-        console.log('📦 Inserting Case Data:', {
+        console.log('[Rework API] Inserting Case Data:', {
           id: caseData?.id,
           itemCount: caseData?.items?.length,
           hasOrFiles: !!caseData?.orFiles?.length,
@@ -410,7 +410,7 @@ export async function POST(request: Request) {
           .insert([initialCasePayload]);
 
         if (caseError && typeof caseError.message === 'string' && caseError.message.includes('schema cache')) {
-          console.warn('⚠️ Schema cache missing column on insert, retrying without optional workflow columns:', caseError.message);
+          console.warn('[Rework API] Schema cache missing column on insert, retrying without optional workflow columns:', caseError.message);
           const fallbackPayload = { ...initialCasePayload };
           delete fallbackPayload.case_sequence;
           delete fallbackPayload.material_requests;
@@ -422,7 +422,7 @@ export async function POST(request: Request) {
         }
 
         if (caseError) {
-          console.error('❌ Supabase case insert error:', caseError);
+          console.error('[Rework API] Supabase case insert error:', caseError);
           throw caseError;
         }
 
@@ -466,7 +466,7 @@ export async function POST(request: Request) {
             .insert(itemsToInsert);
 
           if (itemsError) {
-            console.error('❌ Supabase items insert error:', itemsError);
+            console.error('[Rework API] Supabase items insert error:', itemsError);
             throw itemsError;
           }
         }
@@ -618,7 +618,7 @@ export async function POST(request: Request) {
 
         // Graceful schema fallback if columns like material_requests or blocked_info are not yet present in Supabase table
         if (caseUpdateError && typeof caseUpdateError.message === 'string' && caseUpdateError.message.includes('schema cache')) {
-          console.warn('⚠️ Supabase schema cache missing column on update, retrying with core columns only:', caseUpdateError.message);
+          console.warn('[Rework API] Supabase schema cache missing column on update, retrying with core columns only:', caseUpdateError.message);
           const fallbackPayload = { ...updatePayload };
           delete fallbackPayload.material_requests;
           delete fallbackPayload.blocked_info;
@@ -764,7 +764,7 @@ export async function POST(request: Request) {
 
         if (itemsRes.error) {
           if (itemsRes.error.code === 'PGRST205') {
-            console.warn('⚠️ Table rework_master_items not found, defaulting to empty.');
+            console.warn('[Rework API] Table rework_master_items not found, defaulting to empty.');
             itemsRes.data = [];
             (itemsRes as { error: unknown }).error = null;
           } else {
@@ -774,7 +774,7 @@ export async function POST(request: Request) {
         
         if (defectsRes.error) {
           if (defectsRes.error.code === 'PGRST205') {
-            console.warn('⚠️ Table rework_master_defects not found, defaulting to empty.');
+            console.warn('[Rework API] Table rework_master_defects not found, defaulting to empty.');
             defectsRes.data = [];
             (defectsRes as { error: unknown }).error = null;
           } else {
@@ -809,7 +809,7 @@ export async function POST(request: Request) {
         const trimmedName = (itemName || '').trim();
 
         if (!trimmedNum) {
-          console.log('⚠️ Skipping saveItemMaster: itemNumber is empty.');
+          console.log('[Rework API] Skipping saveItemMaster: itemNumber is empty.');
           return NextResponse.json(
             { success: true, message: 'ข้ามการบันทึก Item Master เนื่องจากไม่มี Item Number', data: null },
             { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
@@ -1054,7 +1054,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (error: unknown) {
-    console.error('❌ Rework API Error:', error);
+    console.error('[Rework API] Error:', error);
     if (error instanceof AuthError) {
       return NextResponse.json(
         { success: false, error: error.message, statusCode: error.status },

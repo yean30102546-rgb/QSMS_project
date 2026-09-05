@@ -3,7 +3,7 @@
  * Contains functions for interacting with the backend
  */
 
-import { getCurrentUser, isAuthenticated } from './auth';
+import { getCurrentUser, isAuthenticated, restoreSession } from './auth';
 import { compressImage } from '@/src/utils/imageCompressionUtils';
 import { uploadImageToCloudinary } from './imageUploadService';
 
@@ -174,9 +174,15 @@ function parseTokenPayload(token: string): Record<string, unknown> | null {
 }
 
 async function apiFetch<T>(payload: Record<string, unknown>): Promise<ApiResponse<T>> {
-  // Verify user is authenticated
+  // Verify user is authenticated, attempt session restoration if needed
   if (!isAuthenticated()) {
-    throw new Error('Authentication required. Please login again.');
+    const restored = await restoreSession();
+    if (!restored || !isAuthenticated()) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth-required'));
+      }
+      throw new Error('Authentication required. Please login again.');
+    }
   }
 
   try {
@@ -203,6 +209,9 @@ async function apiFetch<T>(payload: Record<string, unknown>): Promise<ApiRespons
     if (!response.ok) {
       // Handle 401 Unauthorized
       if (response.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth-required'));
+        }
         throw new Error('Session expired. Please login again.');
       }
 
@@ -286,7 +295,7 @@ export async function insertCase(
     // Use custom Case ID if provided, otherwise fallback to auto-generated timestamp ID
     const caseId = customCaseId || undefined;
 
-    console.log('📦 Sending case to API:', {
+    console.log('[API] Sending case to API:', {
       source,
       caseId,
       caseName,
@@ -327,9 +336,9 @@ export async function insertCase(
     });
 
     if (result.success) {
-      console.log('✓ Case inserted successfully:', result.data);
+      console.log('[API] Case inserted successfully:', result.data);
     } else {
-      console.error('✗ Case insertion failed:', result.error);
+      console.error('[API] Case insertion failed:', result.error);
       if (allUploadedUrls.length > 0) {
         fetch('/api/cloudinary/rollback', {
           method: 'POST',
@@ -482,7 +491,13 @@ export async function fetchAllCases(): Promise<ApiResponse<ReworkCase[]>> {
       error: result.error,
     };
   } catch (error) {
-    console.error('Fetch Error:', error);
+    const isAuthErr = error instanceof Error && (
+      error.message.includes('Authentication required') || 
+      error.message.includes('Session expired')
+    );
+    if (!isAuthErr) {
+      console.error('Fetch Error:', error);
+    }
     return {
       success: false,
       data: [],

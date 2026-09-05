@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     // Auth Check - Securing the entire API Boundary
     const auth = await requireServerAuth(body);
 
-    console.log(`🏗️ Drawings API Action: ${action} | User: ${auth.email}`);
+    console.log(`[Drawings API] ️ Drawings API Action: ${action} | User: ${auth.email}`);
 
     switch (action) {
 
@@ -196,7 +196,7 @@ General rules:
         let lastError: any = null;
 
         for (const currentModel of modelsToTry) {
-          console.log(`🤖 Parsing drawing PDF using ${currentModel}...`);
+          console.log(`[Drawings API] Parsing drawing PDF using ${currentModel}...`);
           try {
             response = await ai.models.generateContent({
               model: currentModel,
@@ -204,18 +204,18 @@ General rules:
               config
             });
             if (response?.text) {
-              console.log(`✅ Gemini OCR succeeded with model: ${currentModel}`);
+              console.log(`[Drawings API] Gemini OCR succeeded with model: ${currentModel}`);
               globalRef.requestLogs!.push({ timestamp: Date.now(), model: currentModel, tokens: response.usageMetadata?.totalTokenCount || 0 });
               break;
             }
           } catch (err: unknown) {
             const errMsg = err instanceof Error ? err.message : String(err);
-            console.warn(`⚠️ Gemini API Error (${currentModel}): ${errMsg}`);
+            console.warn(`[Drawings API] ️ Gemini API Error (${currentModel}): ${errMsg}`);
             lastError = err;
 
             const isRetryableError = errMsg.includes('503') || errMsg.includes('UNAVAILABLE') || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('404') || errMsg.includes('NOT_FOUND');
             if (isRetryableError && currentModel !== modelsToTry[modelsToTry.length - 1]) {
-              console.warn(`🔄 Model ${currentModel} failed (Demand/Limit/Not Found). Falling back to next model...`);
+              console.warn(`[Drawings API] Model ${currentModel} failed (Demand/Limit/Not Found). Falling back to next model...`);
               await new Promise(res => setTimeout(res, 600));
               continue;
             } else {
@@ -226,7 +226,7 @@ General rules:
 
         if (!response || !response.text) {
           const errMsg = lastError instanceof Error ? lastError.message : String(lastError);
-          console.error(`❌ All Gemini model fallbacks failed for ${requestedModel}:`, errMsg);
+          console.error(`[Drawings API] All Gemini model fallbacks failed for ${requestedModel}:`, errMsg);
 
           if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
             return NextResponse.json({
@@ -306,7 +306,7 @@ General rules:
         const r2_key = `${type}/${drawing_number}_rev${revision}_${Date.now()}.pdf`;
 
         // Upload to Supabase Storage in RAG project
-        console.log(`☁️ Uploading to Supabase Storage (RAG Project): ${r2_key}`);
+        console.log(`[Drawings API] ️ Uploading to Supabase Storage (RAG Project): ${r2_key}`);
 
         const { error: uploadError } = await ragSupabaseServer
           .storage
@@ -317,12 +317,12 @@ General rules:
           });
 
         if (uploadError) {
-          console.error('❌ Error uploading to storage:', uploadError);
+          console.error('[Drawings API] Error uploading to storage:', uploadError);
           throw uploadError;
         }
 
         // Update existing drawing to inactive
-        console.log(`🔄 Updating old drawings to inactive...`);
+        console.log(`[Drawings API] Updating old drawings to inactive...`);
         const { error: updateError } = await ragSupabaseServer
           .from('engineering_drawings')
           .update({ is_active: false })
@@ -330,13 +330,13 @@ General rules:
           .eq('type', type);
 
         if (updateError) {
-          console.error('❌ Error updating old drawings:', updateError);
+          console.error('[Drawings API] Error updating old drawings:', updateError);
           await ragSupabaseServer.storage.from('drawings').remove([r2_key]);
           throw updateError;
         }
 
         // Insert new drawing
-        console.log(`💾 Inserting new drawing record...`);
+        console.log(`[Drawings API] Inserting new drawing record...`);
         const { data: newDoc, error: insertError } = await ragSupabaseServer
           .from('engineering_drawings')
           .insert([{
@@ -363,7 +363,7 @@ General rules:
           .single();
 
         if (insertError) {
-          console.error('❌ Error inserting new drawing:', insertError);
+          console.error('[Drawings API] Error inserting new drawing:', insertError);
           // Rollback storage
           await ragSupabaseServer.storage.from('drawings').remove([r2_key]);
           // Revert update (set is_active=true)
@@ -395,7 +395,7 @@ General rules:
           return NextResponse.json({ success: false, error: 'Missing document id' }, { status: 400 });
         }
 
-        console.log(`📝 Updating drawing metadata for ID: ${id}...`);
+        console.log(`[Drawings API] Updating drawing metadata for ID: ${id}...`);
 
         const updateData: any = {
           drawing_number,
@@ -434,7 +434,7 @@ General rules:
           .single();
 
         if (updateError) {
-          console.error('❌ Error updating drawing:', updateError);
+          console.error('[Drawings API] Error updating drawing:', updateError);
           throw updateError;
         }
 
@@ -447,7 +447,7 @@ General rules:
           return NextResponse.json({ success: false, error: 'Missing r2_key' }, { status: 400 });
         }
 
-        console.log(`🔗 Generating pre-signed URL for: ${r2_key}`);
+        console.log(`[Drawings API] Generating pre-signed URL for: ${r2_key}`);
 
         const options: { download?: string | boolean } = {};
         if (!preview) {
@@ -460,7 +460,7 @@ General rules:
           .createSignedUrl(r2_key, 3600, options);
 
         if (error || !data) {
-          console.error('❌ Error generating signed url:', error);
+          console.error('[Drawings API] Error generating signed url:', error);
           throw error;
         }
 
@@ -487,7 +487,7 @@ General rules:
           .eq('is_active', true);
 
         if (error) {
-          console.error('❌ Error checking duplicates:', error);
+          console.error('[Drawings API] Error checking duplicates:', error);
           throw error;
         }
 
@@ -549,7 +549,7 @@ General rules:
         const { data, error, count } = await query;
 
         if (error) {
-          console.error('❌ Error fetching drawings:', error);
+          console.error('[Drawings API] Error fetching drawings:', error);
           throw error;
         }
         return NextResponse.json({ success: true, data: data || [], total: count || 0, page, pageSize });
@@ -562,7 +562,7 @@ General rules:
           .eq('is_active', true);
 
         if (error) {
-          console.error('❌ Error fetching overview stats:', error);
+          console.error('[Drawings API] Error fetching overview stats:', error);
           throw error;
         }
 
@@ -663,7 +663,7 @@ General rules:
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('❌ Error fetching drawing history:', error);
+          console.error('[Drawings API] Error fetching drawing history:', error);
           throw error;
         }
         return NextResponse.json({ success: true, data: data || [] });
@@ -676,7 +676,7 @@ General rules:
     if (error && error.name === 'AuthError') {
       return NextResponse.json({ success: false, error: error.message }, { status: error.status || 401 });
     }
-    console.error('❌ Drawings API Handler Error:', error);
+    console.error('[Drawings API] Handler Error:', error);
     const errMsg = error instanceof Error ? error.message : 'Internal Server Error';
     return NextResponse.json({ success: false, error: errMsg }, { status: 500 });
   }

@@ -4,7 +4,7 @@
 @theme {
   --font-sans: var(--font-prompt), "Prompt", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-thai: var(--font-prompt), "Prompt", sans-serif;
-  --font-mono: var(--font-prompt), "Prompt", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   
   /* Modern Enterprise Soft Pastel Jasmine / Slate / White Brand Palette */
   --color-jasmine-50: #fefdf5;
@@ -63,8 +63,16 @@
 }
 
 @layer base {
-  html, body, input, select, textarea, button, optgroup, code, kbd, samp, pre {
+  html, body, input, select, textarea, button, optgroup {
     font-family: var(--font-prompt), "Prompt", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  
+  code, kbd, samp, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 

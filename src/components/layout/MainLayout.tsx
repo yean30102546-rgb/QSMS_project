@@ -335,7 +335,7 @@ export function MainLayout({
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-slate-800 truncate leading-tight mb-0.5">{userName || 'User'}</p>
-              <span className="inline-flex rounded px-1.5 py-0.2 bg-[#FEF3C7] text-[10px] font-semibold text-[#92400E] border border-[#FDE68A]">
+              <span className="inline-flex rounded px-1.5 py-0.5 bg-[#FEF3C7] text-[11px] font-semibold text-[#92400E] border border-[#FDE68A]">
                 {String(userRole || 'Admin')}
               </span>
             </div>
