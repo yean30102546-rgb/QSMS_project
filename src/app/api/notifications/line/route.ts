@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
             continue;
           }
 
-          const isSaved = await LineNotificationService.registerGroupChannel(
+          const saveResult = await LineNotificationService.registerGroupChannel(
             channelKey,
             targetId,
             event.source.type === 'group' ? 'LINE Group' : 'Direct Chat',
@@ -106,13 +106,13 @@ export async function POST(req: NextRequest) {
           );
 
           if (replyToken) {
-            const replyMsg = isSaved
+            const replyMsg = saveResult.success
               ? `✅ ลงทะเบียนช่องทางแจ้งเตือนสำเร็จ!\n\n` +
                 `🏷️ แผนก/ช่องทาง: ${channelKey}\n` +
                 `🆔 Target ID: ${targetId}\n` +
                 `🕒 บันทึกเวลา: ${new Date().toLocaleTimeString('th-TH')}\n\n` +
                 `ระบบ QSMS จะส่งแจ้งเตือนเคส Rework เข้าห้องนี้โดยอัตโนมัติ`
-              : `❌ เกิดข้อผิดพลาดในการบันทึกข้อมูลลงฐานข้อมูล กรุณาลองใหม่อีกครั้ง`;
+              : `⚠️ ไม่สามารถบันทึกลงฐานข้อมูลได้\n(สาเหตุ: ${saveResult.error || 'Database unavailable'})\n\n💡 หากเพิ่ง Restore Supabase กรุณารอประมาณ 1-2 นาที แล้วพิมพ์ #reg ${channelKey} ใหม่อีกครั้ง`;
 
             await LineNotificationService.replyMessage(replyToken, [{ type: 'text', text: replyMsg }]);
           }

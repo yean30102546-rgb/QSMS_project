@@ -95,23 +95,28 @@ export class LineNotificationService {
   /**
    * Register or update a group notification channel
    */
-  static async registerGroupChannel(channelKey: string, groupId: string, groupName: string = '', registeredBy: string = ''): Promise<boolean> {
-    const normalizedKey = channelKey.toUpperCase().trim();
-    const { error } = await supabaseServer
-      .from('line_notification_channels')
-      .upsert({
-        channel_key: normalizedKey,
-        group_id: groupId,
-        group_name: groupName,
-        registered_by: registeredBy,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'channel_key' });
+  static async registerGroupChannel(channelKey: string, groupId: string, groupName: string = '', registeredBy: string = ''): Promise<{ success: boolean; error?: string }> {
+    try {
+      const normalizedKey = channelKey.toUpperCase().trim();
+      const { error } = await supabaseServer
+        .from('line_notification_channels')
+        .upsert({
+          channel_key: normalizedKey,
+          group_id: groupId,
+          group_name: groupName,
+          registered_by: registeredBy,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'channel_key' });
 
-    if (error) {
-      console.error('[LINE] Error upserting channel:', error);
-      return false;
+      if (error) {
+        console.error('[LINE] Error upserting channel:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.error('[LINE] Exception upserting channel:', err);
+      return { success: false, error: err.message || 'Database unavailable' };
     }
-    return true;
   }
 
   /**
