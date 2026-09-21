@@ -48,4 +48,35 @@ describe('LineNotificationService', () => {
     expect(flex.contents.header.contents[0].contents[0].color).toBe('#38BDF8'); // Cyan for RT
     expect(flex.contents.header.contents[0].contents[1].color).toBe('#10B981'); // Emerald for Completed
   });
+
+  it('builds a valid Material Shortage Flex Message', () => {
+    const flex = LineNotificationService.buildShortageAlertFlexMessage({
+      caseId: 'RW-2026-005',
+      caseName: 'รอจัดส่งกล่องและน้ำมันเพิ่ม',
+      missingBoxes: 50,
+      missingGallons: 0,
+      missingOil: 120,
+      reporter: 'SFC Line 3',
+    });
+
+    expect(flex.type).toBe('flex');
+    expect(flex.altText).toContain('RW-2026-005');
+    expect(flex.altText).toContain('ขาดกล่อง: 50 กล่อง');
+    expect(flex.altText).toContain('ขาดน้ำมัน: 120 ลิตร');
+    expect(flex.contents.header.backgroundColor).toBe('#1E1014'); // Urgent dark rose
+  });
+
+  it('builds a valid Case Completed Flex Message', () => {
+    const flex = LineNotificationService.buildCompletedAlertFlexMessage({
+      caseId: 'RW-2026-005',
+      caseName: 'งานแก้ไขแกลลอนรั่วเสร็จสิ้น',
+      totalBoxes: 500,
+      qcInspector: 'QSMS Inspector A',
+    });
+
+    expect(flex.type).toBe('flex');
+    expect(flex.altText).toContain('RW-2026-005');
+    expect(flex.altText).toContain('เสร็จสมบูรณ์');
+    expect(flex.contents.header.backgroundColor).toBe('#071A12'); // Success dark emerald
+  });
 });

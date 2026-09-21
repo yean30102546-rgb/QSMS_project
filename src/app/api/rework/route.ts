@@ -4,6 +4,7 @@ import { promisify } from 'util';
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { assertPermission, AuthError, generateToken, requireServerAuth } from '../../../lib/serverAuth';
 import { generateCaseId } from '../../../utils/helpers';
+import { LineNotificationService } from '../../../services/lineNotificationService';
 
 const scryptAsync = promisify(crypto.scrypt);
 
@@ -471,6 +472,20 @@ export async function POST(request: Request) {
           }
         }
 
+        // Asynchronously notify LINE group of new case
+        const totalItemAmount = (caseData.items || []).reduce(
+          (sum: number, item: { amount?: number | string }) => sum + (parseFloat(String(item.amount || 0)) || 0),
+          0
+        );
+        LineNotificationService.notifyNewCase({
+          caseId: finalCaseId,
+          caseName: caseData.caseName || caseData.name,
+          source: caseData.source,
+          itemsCount: caseData.items?.length || 0,
+          totalAmount: totalItemAmount,
+          reporter: auth.profile || auth.email || 'QSMS Operator',
+        }).catch((err: unknown) => console.error('[LINE Notify New Case Error]', err));
+
         return NextResponse.json(
           { success: true, data: { caseId: finalCaseId } },
           { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
@@ -642,6 +657,39 @@ export async function POST(request: Request) {
           performed_by: performedBy || auth.profile || auth.email || 'System',
           timestamp: getBangkokISOString()
         }]);
+
+        // 5. Asynchronous LINE Notifications
+        // A. Material Shortage Alert
+        if (
+          (typeof updates.missingBoxes === 'number' && updates.missingBoxes > 0) ||
+          (typeof updates.missingGallons === 'number' && updates.missingGallons > 0) ||
+          (typeof updates.missingOil === 'number' && updates.missingOil > 0)
+        ) {
+          LineNotificationService.notifyMaterialShortage({
+            caseId,
+            caseName: String(updates.caseName || existingCase.case_name || caseId),
+            missingBoxes: updates.missingBoxes,
+            missingGallons: updates.missingGallons,
+            missingOil: updates.missingOil,
+            reporter: performedBy || auth.profile || auth.email || 'Operator',
+          }).catch((err: unknown) => console.error('[LINE Notify Shortage Error]', err));
+        }
+
+        // B. Completion & QC Verification Alert
+        const finalStatus = status || updates.status || existingCase.status;
+        if (finalStatus === 'Completed' && existingCase.status !== 'Completed') {
+          const itemsList = updates.items || body.items || [];
+          const totalCompletedBoxes = itemsList.reduce(
+            (sum: number, it: { completedBoxes?: number | string }) => sum + (parseFloat(String(it.completedBoxes || 0)) || 0),
+            0
+          );
+          LineNotificationService.notifyCaseCompleted({
+            caseId,
+            caseName: String(updates.caseName || existingCase.case_name || caseId),
+            totalBoxes: totalCompletedBoxes,
+            qcInspector: performedBy || auth.profile || auth.email || 'QSMS Officer',
+          }).catch((err: unknown) => console.error('[LINE Notify Completion Error]', err));
+        }
 
         return NextResponse.json(
           {
