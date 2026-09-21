@@ -20,6 +20,7 @@ interface ReworkAppProps {
   user: User | null;
   onLogout: () => void;
   onBackToPortal: () => void;
+  initialCaseId?: string;
 }
 
 function TabFallback() {
@@ -34,7 +35,7 @@ function TabFallback() {
   );
 }
 
-function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
+function ReworkAppContent({ user, onLogout, onBackToPortal, initialCaseId }: ReworkAppProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overall');
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
@@ -66,6 +67,7 @@ function ReworkAppContent({ user, onLogout, onBackToPortal }: ReworkAppProps) {
                 userRole={user?.role || ''}
                 userName={user?.name || ''}
                 onFocusModeChange={setIsFocusMode}
+                initialCaseId={initialCaseId}
               />
             </motion.div>
           )}

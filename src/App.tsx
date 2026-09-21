@@ -37,6 +37,7 @@ function AuthWrapper() {
   const [isRagOpen, setIsRagOpen] = useState(false);
   const [isRagPillDragging, setIsRagPillDragging] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [deepLinkCaseId, setDeepLinkCaseId] = useState<string | null>(null);
 
   const setCurrentView = (view: AppView) => {
     _setCurrentView(view);
@@ -55,9 +56,19 @@ function AuthWrapper() {
       setAppUser(currentUser);
 
       if (typeof window !== 'undefined') {
+        // Read deep link ?case= parameter from URL
+        const params = new URLSearchParams(window.location.search);
+        const caseParam = params.get('case');
+        if (caseParam) {
+          setDeepLinkCaseId(caseParam);
+        }
+
         const savedView = sessionStorage.getItem('currentView') as AppView | null;
         if (authenticated) {
-          if (savedView && savedView !== 'login') {
+          if (caseParam) {
+            // Deep link → go straight to rework module
+            setCurrentView('rework');
+          } else if (savedView && savedView !== 'login') {
             if (savedView === 'storage' && currentUser?.role?.toUpperCase() === 'OPERATOR') {
               setCurrentView('portal');
             } else {
@@ -67,7 +78,11 @@ function AuthWrapper() {
             setCurrentView('portal');
           }
         } else {
-          if (savedView && savedView !== 'portal') {
+          if (caseParam) {
+            // Not logged in + deep link → redirect to login then restore
+            setRedirectAfterLogin('rework');
+            setCurrentView('login');
+          } else if (savedView && savedView !== 'portal') {
             if (savedView !== 'login') {
               setRedirectAfterLogin(savedView);
             }
@@ -244,7 +259,7 @@ function AuthWrapper() {
   } else if (currentView === 'admin') {
     content = <AdminMonitorApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else {
-    content = <ReworkApp user={appUser} onLogout={handleLogout} onBackToPortal={() => setCurrentView('portal')} />;
+    content = <ReworkApp user={appUser} onLogout={handleLogout} onBackToPortal={() => setCurrentView('portal')} initialCaseId={deepLinkCaseId ?? undefined} />;
   }
 
   return (

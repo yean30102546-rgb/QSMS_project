@@ -16,11 +16,13 @@ interface OverallTabProps {
   userRole?: string;
   userName?: string;
   onFocusModeChange?: (isFocus: boolean) => void;
+  initialCaseId?: string;
 }
 
 export function OverallTab({
   userRole = 'Admin',
   onFocusModeChange,
+  initialCaseId,
 }: OverallTabProps) {
   const { showToast, showAlert } = useNotification();
   const {
@@ -38,12 +40,27 @@ export function OverallTab({
   const [selectedCase, setSelectedCase] = useState<ReworkCase | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
+  const deepLinkHandledRef = React.useRef(false);
 
   React.useEffect(() => {
     if (onFocusModeChange) {
       onFocusModeChange(activeView === 'update');
     }
   }, [activeView, onFocusModeChange]);
+
+  // Deep link: auto-open case when cases finish loading (runs once)
+  React.useEffect(() => {
+    if (!initialCaseId || deepLinkHandledRef.current || isLoadingCases || cases.length === 0) return;
+    const found = cases.find((c) => c.id === initialCaseId);
+    if (found) {
+      deepLinkHandledRef.current = true;
+      setSelectedCase(found);
+      setActiveView('update');
+    } else {
+      // Case not found — mark handled to avoid infinite loop
+      deepLinkHandledRef.current = true;
+    }
+  }, [initialCaseId, cases, isLoadingCases]);
 
   const {
     activeFilterCount,

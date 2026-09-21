@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, QrCode, ScanLine, RotateCcw, AlertTriangle, Save, ClipboardList, Factory, Package, Send, Lightbulb, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, Clock, Plus, Trash2, HelpCircle, X, Copy, Search, Tag, FileSpreadsheet, RotateCcw, AlertTriangle, Save, ClipboardList, Factory, Package, Send, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { parseOrExcelFile, findOrMatch, type OrItemInfo } from '@/src/utils/orExcelParser';
 import { useForm, useFieldArray, FormProvider, Controller, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -142,17 +142,11 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
   const [expandedResponsibleSelection, setExpandedResponsibleSelection] = useState<number | null>(null);
   const [isRestoring, setIsRestoring] = useState(true);
 
-  // Phase 4: Local Draft & Quick Scanner states
+  // Phase 4: Local Draft states
   const [draftNotice, setDraftNotice] = useState<{
     savedAt: string;
     itemCount: number;
   } | null>(null);
-  const [scannerModal, setScannerModal] = useState<{
-    itemIndex: number;
-    itemId: string;
-    field: 'itemNumber' | 'itemCode';
-  } | null>(null);
-  const [scannerInputVal, setScannerInputVal] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1080,20 +1074,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 60001234A"
                               disabled={isSaving}
-                              className={`w-full rounded-md border pl-3 pr-16 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
+                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
                             />
                             <div className="absolute right-1.5 flex items-center gap-1">
-                              <button
-                                type="button"
-                                title="สแกนบาร์โค้ด / Quick Scan"
-                                onClick={() => {
-                                  setScannerModal({ itemIndex: idx, itemId: item.id, field: 'itemNumber' });
-                                  setScannerInputVal(item.itemNumber || '');
-                                }}
-                                className="p-1 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
-                              >
-                                <ScanLine size={15} />
-                              </button>
                               <button
                                 type="button"
                                 onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
@@ -1132,20 +1115,9 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 40001234"
                               disabled={isSaving}
-                              className={`w-full rounded-md border pl-3 pr-16 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
+                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
                             />
                             <div className="absolute right-1.5 flex items-center gap-1">
-                              <button
-                                type="button"
-                                title="สแกนบาร์โค้ด / Quick Scan"
-                                onClick={() => {
-                                  setScannerModal({ itemIndex: idx, itemId: item.id, field: 'itemCode' });
-                                  setScannerInputVal(item.itemCode || '');
-                                }}
-                                className="p-1 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
-                              >
-                                <ScanLine size={15} />
-                              </button>
                               <button
                                 type="button"
                                 onClick={() => triggerDebouncedVerification(item.id, idx, 'itemCode', item.itemCode)}
@@ -1436,95 +1408,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
         </div>
       <ConflictModal isOpen={isConflictModalOpen} onClose={() => setIsConflictModalOpen(false)} />
 
-      {/* Barcode & QR Code Scanner Quick Dialog */}
-      <AnimatePresence>
-        {scannerModal && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2 text-slate-900">
-                  <div className="p-2 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
-                    <ScanLine size={18} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold leading-tight">
-                      {scannerModal.field === 'itemNumber' ? 'สแกนหมายเลขบาร์โค้ด (Item Number)' : 'สแกนรหัสสินค้า (Item Code)'}
-                    </h4>
-                    <p className="text-xs text-slate-500">สำหรับรายการที่ {scannerModal.itemIndex + 1}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setScannerModal(null)}
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700">
-                  ยิงบาร์โค้ดจากปืนสแกน หรือพิมพ์รหัสที่นี่:
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    type="text"
-                    autoFocus
-                    value={scannerInputVal}
-                    onChange={(e) => setScannerInputVal(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const val = scannerInputVal.trim();
-                        if (val) {
-                          setValue(`items.${scannerModal.itemIndex}.${scannerModal.field}`, val, { shouldDirty: true });
-                          triggerDebouncedVerification(scannerModal.itemId, scannerModal.itemIndex, scannerModal.field, val);
-                        }
-                        setScannerModal(null);
-                      }
-                    }}
-                    placeholder={scannerModal.field === 'itemNumber' ? 'เช่น 61653013A700A' : 'เช่น 40001234'}
-                    className="w-full text-sm font-mono font-bold tracking-wider px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                  <Lightbulb size={12} className="text-amber-500 shrink-0" />
-                  <span>สามารถใช้เครื่องสแกนบาร์โค้ดแบบ USB หรือบลูทูธยิงเข้าช่องนี้ได้โดยตรง</span>
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setScannerModal(null)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer min-h-[40px]"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const val = scannerInputVal.trim();
-                    if (val) {
-                      setValue(`items.${scannerModal.itemIndex}.${scannerModal.field}`, val, { shouldDirty: true });
-                      triggerDebouncedVerification(scannerModal.itemId, scannerModal.itemIndex, scannerModal.field, val);
-                    }
-                    setScannerModal(null);
-                  }}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs min-h-[40px]"
-                >
-                  ตกลงและตรวจสอบสินค้า
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </FormProvider>
   );
 }
