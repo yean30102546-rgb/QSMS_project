@@ -14,31 +14,16 @@ ReworkApp.tsx
 └── Tab: Dashboard              → Analytics: Total, Pending, Completion Rate, Defect Chart, Workload by Source
 ```
 
-### Mobile-First Card Layout (`CaseListTable.tsx`)
-- **การจัดสัดส่วนบนหน้าจอมือถือ (iPhone / iOS Safari)**:
-  - ยกเลิก 3 คอลัมน์แนวนอนแบบเดิมเพื่อป้องกันข้อความตัดบรรทัดหลายชั้น
-  - ส่วนหัวการ์ด: รหัสเคส (`RW012-2026` / `RT012-2026`) พร้อมป้ายเตือนงานค้าง 7 วัน / เกิน 30 วัน / ขาดไฟล์ OR / รอของ
-  - ส่วนเนื้อหา: ชื่อสินค้าแสดงผลเต็มความกว้าง (Full-width)
-  - ส่วนล่าง: แสดงวันที่, แหล่งที่มา (SFC/Customer), ลูกค้า, ยอดผลิตรวม, หลอด Progress Bar, สาเหตุ และป้ายสถานะ (Status Pill) จัดเข้ามุมอย่างสวยงาม
-- **Bottom Clearance & Floating FAB**:
-  - `OverallTab.tsx` กำหนด Padding ด้านล่าง `pb-28 sm:pb-8` เพื่อให้เลื่อนดูรายการเคสล่างสุดและแถบ Pagination ได้สะดวก
-  - ปุ่ม **DocAI Assistant** ถูกปรับเป็น Floating Action Button (FAB Icon) กะทัดรัดที่มุมขวาล่าง (`bottom-20 right-4 sm:bottom-6 sm:right-6`) ไม่บดบัง Pagination
+### Apple Pro Minimal Industrial Redesign (`CaseListTable.tsx`, `CaseUpdateView.tsx`, `AddCaseTab.tsx`)
+- **Apple Parchment Canvas**: เปลี่ยนพื้นหลังหลักเป็นโทนเทานวลตา `#F5F5F7` พร้อมการ์ดสีขาวบริสุทธิ์ `#FFFFFF` ขอบบาง 1px Hairline (`#E5E5E7`)
+- **Action Blue Accent**: ใช้สี `#0071E3` เป็นปุ่มแอ็กชันหลักจุดเดียว ตัดสีนีออนและเงา Glow หนาเตอะออกทั้งหมด
+- **Apple Inset Cards (`CaseListTable.tsx`)**: เน้น 3 ข้อมูลหลัก (รหัสเคส, ชื่อสินค้า, หลอดความคืบหน้ายอดกล่องเสร็จ/รวม) ซ่อนชิปย่อยเพื่อลด Cognitive Overload
+- **Apple Segmented 3 Tabs (`CaseUpdateView.tsx`)**: ตัดแถบ Sidebar แนวดิ่งขนาด 280px ออก แล้วแทนที่ด้วยแถบ Segmented Capsule 3 แท็บด้านบน:
+  1. `ภาพรวม & ยอดกล่อง`: อัปเดตยอดกล่องเสร็จ, รายงานวัสดุขาด (กล่อง/แกลลอน/น้ำมัน) และปัญหาหน้างาน (Defend)
+  2. `รายการสินค้า & รูปภาพ`: รายการสินค้าแบบ Accordion พร้อมภาพหลักฐาน
+  3. `ตรวจ QC & เอกสาร`: ตรวจปล่อยผ่าน 100%, ใบเบิกภาชนะ และส่งออก Excel
+- **Clean Form Initiation (`AddCaseTab.tsx`)**: ตัดแถบ 5 ขั้นตอนที่ซ้ำซ้อนออก และใช้ Segmented Capsule สลับระหว่างเคส RW (โรงงาน) และ RT (ลูกค้า) อย่างเรียบง่าย
 
-### Case Update View, 4-Block Architecture & Accordion Queue Flow (`CaseUpdateView.tsx`)
-- **Responsive 2-Tier Header**: แยกแถบย้อนกลับและชื่อเคส (แถวบน) กับแถบปุ่มส่งออก Excel, ลบเคส และบันทึกร่าง (แถวล่าง) ป้องกันปุ่มซ้อนทับกันบนมือถือ
-- **AddCaseTab 4-Block Layout Parity**: แบบฟอร์มไอเทมใน Step 1 จัดระเบียบเป็น 4 บล็อกชัดเจน:
-  - **Block 1 (ข้อมูลสินค้าหลัก)**: 3 คอลัมน์สมดุล (ลูกค้า, รหัสสูตร, รหัสสินค้า) + ชื่อรายการเต็มความกว้าง
-  - **Block 2 (แผงไฮไลท์ข้อมูลการผลิต)**: Sub-panel ไฮไลท์โทนเทาอ่อน 5 คอลัมน์ (หมายเลขล็อต, วันที่ผลิตแกลลอน, Mold, Line, จำนวนกล่อง * เน้นสี Indigo)
-  - **Block 3 (สาเหตุที่พบ & ผู้รับผิดชอบ)**: 2 ช่องคู่ (สาเหตุหลัก+ย่อย และ ผู้รับผิดชอบ+แผนกย่อย) + ช่องอาการเสียเต็มความกว้าง
-  - **Block 4 (รูปภาพหลักฐาน & ปุ่มบันทึกรายไอเทม)**: รูปภาพพรีวิวพร้อมปุ่ม Lightbox + ปุ่ม `[💾 บันทึกรายการนี้ ➔ ย้ายลงล่าง]`
-- **Focus Ring Uniformity**: ช่องตัวเลขและอินพุตทุกช่องมีสไตล์โฟกัสขอบเรืองแสงสีม่วงคราม Indigo ละมุนตาเป็นมาตรฐานเดียวกัน (`focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20`) และซ่อน spinner ลูกศรตัวเลข
-- **Accordion Lifecycle & Auto-Expand Queue**:
-  - เมื่อเปิดเข้ามา ระบบจะเปิดเฉพาะการ์ดแรกที่ยังทำไม่เสร็จ (First Incomplete Item) ส่วนรายการที่เสร็จแล้วจะพับเก็บเป็นค่าเริ่มต้น
-  - **Per-Item Save Flow (`handleSaveSingleItem`)**: เมื่อกดบันทึกรายการ ระบบจะอัปโหลดรูปของไอเทมนั้น บันทึกลง Supabase พับการ์ด ย้ายรายการลงไปล่างสุด และเปิดการ์ดถัดไปที่ยังค้างอยู่ให้อัตโนมัติ
-- **Item Header Badges**: หัวการ์ดไอเทมแสดงสถานะความสมบูรณ์ (`🟢 ✓ ข้อมูลสมบูรณ์`, `🟡 ⚠️ อัปเดตแล้ว`, `⚪ ⏳ รอตรวจสอบ`) พร้อมระบุจำนวนกล่อง สาเหตุ และผู้รับผิดชอบ
-- **Floating Save Progress Island & Top Stripe**:
-  - แถบเส้นแสงเรืองแสง 3px บนสุดของจอ (Top Edge Glowing Stripe)
-  - กล่อง Dynamic Island ลอยกลางจอด้านล่าง (`fixed bottom-6 left-1/2`) แสดงสถานะการบันทึกแบบ Real-time พร้อม % และไอคอนเคลื่อนไหว ไม่ทำให้ปุ่ม Header กระตุกหายไป
 
 
 ## 3. Data Schema & Dynamic Auto-Status Lifecycle
