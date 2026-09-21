@@ -933,7 +933,7 @@ export function CaseUpdateView({
       )}
 
       {/* 1. TOP ZEN FOCUS HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200 bg-white shrink-0 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-[#E5E5E7] bg-white shrink-0 gap-3">
         {/* Left Side: Back button + Breadcrumb + Case ID + Status Badge */}
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -1021,149 +1021,67 @@ export function CaseUpdateView({
           >
             <span>บันทึกร่าง</span>
           </button>
+          <button
+            type="button"
+            onClick={() => handleSave(false)}
+            disabled={isSaving}
+            className="whitespace-nowrap shrink-0 px-4 py-1.5 text-xs font-medium text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-full transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
+          >
+            {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+            <span>บันทึกเสร็จสิ้น</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. MAIN 2-COLUMN WORKSPACE: LEFT WORKFLOW STEPPER SIDEBAR + RIGHT FORM VIEWPORT */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left Workflow Stepper Navigation (Vertical on Desktop, Horizontal Tab Slider on Mobile) */}
-        <aside className="w-full md:w-64 lg:w-72 border-b md:border-b-0 md:border-r border-slate-200/90 bg-white shrink-0 overflow-y-auto p-3 sm:p-4 pb-20 md:pb-24 flex flex-col justify-between select-none">
-          <div>
-            <div className="hidden md:flex items-center justify-between px-1 mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ขั้นตอนการทำงาน</span>
-              <span className="text-[10px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">4 ขั้นตอน</span>
-            </div>
+      {/* 2. APPLE SEGMENTED 3-TAB WORKSPACE NAVIGATION */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-white border-b border-[#E5E5E7] shrink-0 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center p-1 bg-[#E5E5EA] rounded-full border border-[#E5E5E7] gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveStep('repair')}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              activeStep === 'repair' || activeStep === 'issuing'
+                ? 'bg-white text-[#1D1D1F] shadow-xs'
+                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+            }`}
+          >
+            1. ภาพรวม & ยอดกล่อง
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveStep('items')}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              activeStep === 'items'
+                ? 'bg-white text-[#1D1D1F] shadow-xs'
+                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+            }`}
+          >
+            2. รายการสินค้า & รูปภาพ ({editedItems.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveStep('analysis')}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              activeStep === 'analysis'
+                ? 'bg-white text-[#1D1D1F] shadow-xs'
+                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+            }`}
+          >
+            3. ตรวจ QC & เอกสาร
+          </button>
+        </div>
 
-            <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-1 md:pb-0 scrollbar-hide">
-              {[
-                {
-                  id: 'items' as const,
-                  stepNum: '1',
-                  icon: FileText,
-                  title: '1. ข้อมูลสินค้า & รูปภาพ',
-                  subtitle: 'Item Breakdown & Evidence',
-                  roleLabel: 'QSMS / WPK',
-                  badgeText: `${editedItems.filter(it => calculateItemStatus(it).status === 'complete').length}/${editedItems.length} ครบ`,
-                  badgeComplete: editedItems.length > 0 && editedItems.every(i => calculateItemStatus(i).status === 'complete'),
-                  isActive: activeStep === 'items',
-                  canEdit: canEditItems,
-                },
-                {
-                  id: 'analysis' as const,
-                  stepNum: '2',
-                  icon: Wrench,
-                  title: '2. QSMS วิเคราะห์ & ภาชนะ',
-                  subtitle: 'Analysis & Requisition',
-                  roleLabel: 'QSMS Only',
-                  badgeText: caseStatus === 'Pending Analysis' ? 'รอวิเคราะห์' : 'วิเคราะห์แล้ว',
-                  badgeComplete: caseStatus !== 'Pending Analysis' && caseStatus !== 'Pending',
-                  isActive: activeStep === 'analysis',
-                  canEdit: canEditAnalysis,
-                },
-                {
-                  id: 'issuing' as const,
-                  stepNum: '3',
-                  icon: Truck,
-                  title: '3. WPK คลังเบิกจ่ายภาชนะ',
-                  subtitle: 'Warehouse Issuing',
-                  roleLabel: 'WPK Only',
-                  badgeText: missingBoxes === 0 && missingGallons === 0 && missingOil === 0 ? 'เบิกครบ' : 'รอเบิกของ',
-                  badgeComplete: caseStatus === 'In-Progress' || caseStatus === 'Blocked' || caseStatus === 'Completed',
-                  isActive: activeStep === 'issuing',
-                  canEdit: canEditIssuing,
-                },
-                {
-                  id: 'repair' as const,
-                  stepNum: '4',
-                  icon: CheckCheck,
-                  title: '4. PDF ซ่อม & Defend',
-                  subtitle: 'Repair & Closure',
-                  roleLabel: 'PDF Only',
-                  badgeText: caseStatus === 'Completed' ? 'เสร็จสิ้น' : 'กำลังซ่อม',
-                  badgeComplete: caseStatus === 'Completed',
-                  isActive: activeStep === 'repair',
-                  canEdit: canEditRepair,
-                },
-              ].map((step) => {
-                return (
-                  <button
-                    key={step.id}
-                    type="button"
-                    onClick={() => setActiveStep(step.id)}
-                    className={`w-full shrink-0 md:shrink flex items-start gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer select-none min-w-[200px] md:min-w-0 ${
-                      step.isActive
-                        ? 'bg-[#FEF9E7] text-[#92400E] border-[#FDE68A] shadow-2xs ring-1 ring-[#FDE68A]/60'
-                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 font-mono mt-0.5 ${
-                      step.badgeComplete
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : step.isActive
-                          ? 'bg-[#FDE68A] text-[#78350F] border border-[#FCD34D]'
-                          : 'bg-slate-100 text-slate-600 border border-slate-200'
-                    }`}>
-                      {step.badgeComplete ? <Check size={12} strokeWidth={3} /> : step.stepNum}
-                    </div>
+        <div className="hidden sm:flex items-center gap-3 text-xs text-[#86868B] font-mono tabular-nums">
+          <span>รวม {editedItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)} กล่อง</span>
+          <span>•</span>
+          <span>เสร็จ {globalCompleted} กล่อง</span>
+        </div>
+      </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className={`text-xs font-bold truncate leading-tight ${step.isActive ? 'text-[#92400E]' : 'text-slate-800'}`}>
-                          {step.title}
-                        </p>
-                      </div>
-                      <p className={`text-[11px] truncate mt-0.5 ${step.isActive ? 'text-[#B45309] font-medium' : 'text-slate-500'}`}>
-                        {step.subtitle}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <span className={`text-[11px] px-2 py-0.5 rounded font-semibold border ${
-                          step.badgeComplete
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : step.isActive
-                              ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
-                              : 'bg-slate-50 text-slate-600 border-slate-200/80'
-                        }`}>
-                          {step.badgeText}
-                        </span>
-                        <span className={`text-[11px] px-2 py-0.5 rounded font-semibold border ${
-                          step.canEdit
-                            ? 'bg-amber-50 text-amber-900 border-amber-200'
-                            : 'bg-slate-50 text-slate-600 border-slate-200/60'
-                        }`}>
-                          {step.canEdit ? 'แก้ไข' : 'ดู'}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Quick Case Summary on Bottom Left (Desktop Only) */}
-          <div className="hidden md:block mt-6 pt-4 pb-6 border-t border-slate-200/80">
-            <div className="rounded-xl bg-slate-50/90 border border-slate-200/80 p-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                <span>จำนวนสินค้า</span>
-                <span className="font-bold font-mono text-slate-800">{editedItems.length} รายการ</span>
-              </div>
-              <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                <span>ยอดกล่องรวม</span>
-                <span className="font-bold font-mono text-slate-800">
-                  {editedItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)} กล่อง
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                <span>สถานะเคส</span>
-                <StatusBadge status={caseStatus} />
-              </div>
-            </div>
-          </div>
-        </aside>
-
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* 3. STEP CONTENT WORKSPACE PANELS */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 bg-slate-50/60">
-          <div className="max-w-5xl mx-auto space-y-6 pb-32">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 bg-[#F5F5F7]">
+          <div className="max-w-4xl mx-auto space-y-6 pb-28">
 
             {/* ========================================================================= */}
             {/* STEP 1 PANEL: รายการสินค้า & รูปภาพหลักฐาน (ITEMS & EVIDENCE) */}

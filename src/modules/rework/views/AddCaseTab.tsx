@@ -578,126 +578,40 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           )}
         </AnimatePresence>
 
-        {/* Step Indicator Banner */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-amber-500 text-slate-950 font-bold text-xs shadow-xs">
-                1
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 leading-tight">Step 1: เปิดเคสแจ้งเรื่อง (Case Initiation)</h2>
-                <p className="text-xs text-slate-500">กรอกข้อมูลเบื้องต้นเพื่อสร้าง Case ID อัตโนมัติและส่งเคสเข้าสู่สถานะ <strong className="text-amber-700 font-semibold">"รอวิเคราะห์"</strong></p>
-              </div>
+        {/* Apple Case Initiation Header Card */}
+        <div className="rounded-2xl border border-[#E5E5E7] bg-white p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-[#1D1D1F] tracking-tight">เปิดเคสใหม่ (Case Initiation)</h2>
+              <p className="text-xs text-[#86868B] mt-0.5">สร้าง Case ID อัตโนมัติและส่งต่อข้อมูลเข้าสู่ระบบ Rework</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                <ClipboardList size={13} className="text-slate-500" />
-                <span>Rework Entry Form</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Department / Workflow Switcher (WFG / RW vs CS / RT) */}
-          <div className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-2.5">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-xs font-bold text-slate-700">
-                สายงานที่เปิดเคส (Case Origin):
-              </span>
-              <span className="text-[11px] text-slate-500 font-medium inline-flex items-center gap-1.5">
-                {caseMode === 'RW' ? (
-                  <>
-                    <Factory size={12} className="text-amber-600 shrink-0" />
-                    <span>สายโรงงาน WFG &rarr; สร้างเคส RW</span>
-                  </>
-                ) : (
-                  <>
-                    <Package size={12} className="text-blue-600 shrink-0" />
-                    <span>สายลูกค้ารับคืน CS &rarr; สร้างเคส RT</span>
-                  </>
-                )}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Apple Segmented Switcher: RW vs RT */}
+            <div className="flex items-center p-1 bg-[#E5E5EA] rounded-full border border-[#E5E5E7] gap-1 self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => handleSwitchMode('RW')}
-                className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
                   caseMode === 'RW'
-                    ? 'bg-amber-50/80 border-amber-300 ring-2 ring-amber-400/20 text-slate-900 shadow-2xs'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-white text-[#1D1D1F] shadow-xs'
+                    : 'text-[#6E6E73] hover:text-[#1D1D1F]'
                 }`}
               >
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-bold text-sm font-mono ${
-                  caseMode === 'RW' ? 'bg-amber-500 text-slate-950 shadow-2xs' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  RW
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-bold text-slate-900">งานโรงงาน (RW)</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-200">
-                      คลัง WFG
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                    พบปัญหาในไลน์ผลิต/คลังสินค้า SFC (เอกสารแนบไม่บังคับ)
-                  </p>
-                </div>
+                <Factory size={13} className="text-amber-700" />
+                <span>งานโรงงาน (RW)</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => handleSwitchMode('RT')}
-                className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
                   caseMode === 'RT'
-                    ? 'bg-sky-50/80 border-sky-300 ring-2 ring-sky-400/20 text-slate-900 shadow-2xs'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-white text-[#1D1D1F] shadow-xs'
+                    : 'text-[#6E6E73] hover:text-[#1D1D1F]'
                 }`}
               >
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-bold text-sm font-mono ${
-                  caseMode === 'RT' ? 'bg-sky-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  RT
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-bold text-slate-900">งานรับคืนลูกค้า (RT)</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-900 border border-sky-200">
-                      แผนก CS
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                    สินค้าตีกลับจากลูกค้าภายนอก (บังคับเลือกลูกค้าและแนบเอกสารเคลม)
-                  </p>
-                </div>
+                <Package size={13} className="text-[#0071E3]" />
+                <span>รับคืนลูกค้า (RT)</span>
               </button>
-            </div>
-          </div>
-
-          {/* Workflow Steps Preview */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-medium text-slate-500 pt-1 border-t border-slate-100">
-            <div className="flex items-center gap-1.5 text-amber-800 font-bold">
-              <span className="h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-200" />
-              1. เปิดเคส
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-              2. วิเคราะห์ & ขอของ
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-              3. เบิกจ่ายของ
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-              4. ซ่อมงาน
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-              5. ปิดงานสมบูรณ์
             </div>
           </div>
         </div>
@@ -1074,7 +988,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 60001234A"
                               disabled={isSaving}
-                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
+                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20'}`}
                             />
                             <div className="absolute right-1.5 flex items-center gap-1">
                               <button
@@ -1372,7 +1286,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     type="button"
                     onClick={handleAddItem}
                     disabled={isSaving}
-                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 bg-white py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 cursor-pointer transition-colors shadow-2xs"
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-[#E5E5E7] bg-white py-2 text-xs sm:text-sm font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] shadow-xs hover:border-slate-400 disabled:opacity-50 cursor-pointer transition-colors shadow-2xs"
                   >
                     <Plus size={16} /> [ + ] เพิ่มรายการสินค้า
                   </button>
@@ -1380,7 +1294,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     type="button"
                     onClick={handleSubmit(onSubmit)}
                     disabled={isSaving || isSaveDisabled(formItems)}
-                    className="flex h-11 flex-[2] items-center justify-center gap-2 rounded-md bg-amber-500 py-2 text-xs sm:text-sm font-bold text-slate-950 hover:bg-amber-600 active:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
+                    className="flex h-11 flex-[2] items-center justify-center gap-2 rounded-full bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#0062C4] py-2 text-xs sm:text-sm font-medium text-white shadow-xs disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
                   >
                     <Send size={15} />
                     <span>เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์</span>

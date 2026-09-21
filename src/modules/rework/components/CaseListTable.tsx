@@ -163,9 +163,6 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
   const itemNameDisplay = multipleItems 
     ? `${firstItem?.itemName || 'รอระบุสินค้า'} (+${itemsList.length - 1} รายการ)` 
     : firstItem?.itemName || 'รอระบุสินค้า';
-  
-  const uniqueReasons = Array.from(new Set(itemsList.map(i => i.reason).filter(Boolean)));
-  const reasonsDisplay = uniqueReasons.length > 0 ? uniqueReasons.join(', ') : 'ไม่ระบุ';
 
   // Derive correct display prefix based on source
   const correctPrefix = caseItem.source === 'Customer' ? 'RT' : 'RW';
@@ -173,117 +170,71 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
     ? correctPrefix + caseItem.id.substring(2)
     : caseItem.id;
 
-  const originDept = correctPrefix === 'RT' ? 'CS' : 'WFG';
   const primaryCustomer = caseItem.items?.[0]?.customerName || caseItem.customerName || (correctPrefix === 'RT' ? 'ลูกค้า' : 'SFC');
-  const hasMultipleCustomers = new Set(itemsList.map(i => i.customerName).filter(Boolean)).size > 1;
-  const customerDisplay = `${primaryCustomer}${hasMultipleCustomers ? ' (+หลายลูกค้า)' : ''}`;
 
   return (
     <div
       onClick={onClick}
-      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:px-4 sm:py-3 rounded-xl border border-slate-200/90 bg-white hover:border-amber-300 hover:bg-[#FEFDF5]/50 transition-all duration-150 shadow-2xs hover:shadow-xs cursor-pointer"
+      className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-[#E5E5E7] bg-white hover:border-[#0071E3]/40 hover:bg-[#FAFBFD] transition-all duration-150 cursor-pointer shadow-xs"
     >
-      {/* Left & Info Section */}
+      {/* Left Section: Core Identifiers & Part Name */}
       <div className="flex-1 min-w-0">
-        {/* Top line: Status Pill + Case ID + Unified Route Badge + Case Name */}
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
-
-          <span className={`px-2 py-0.5 rounded-md text-xs font-bold font-mono tabular-nums border shrink-0 ${
+        {/* Header row: Case ID Pill + Customer + Date */}
+        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono tracking-tight ${
             correctPrefix === 'RT' 
-              ? 'bg-sky-50 text-sky-900 border-sky-200/90' 
-              : 'bg-amber-50 text-amber-900 border-amber-200/90'
+              ? 'bg-sky-50 text-[#0071E3] border border-sky-100' 
+              : 'bg-amber-50 text-amber-900 border border-amber-100'
           }`}>
             {displayId}
           </span>
 
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100/90 text-slate-700 border border-slate-200/80 shrink-0">
-            {correctPrefix === 'RT' ? (
-              <Package size={11} className="shrink-0 text-sky-700" />
-            ) : (
-              <Factory size={11} className="shrink-0 text-amber-700" />
-            )}
-            <span className={correctPrefix === 'RT' ? 'text-sky-700 font-bold' : 'text-amber-800 font-bold'}>
-              {originDept}
-            </span>
-            <span className="text-slate-400">→</span>
-            <span className="truncate max-w-[130px]">{customerDisplay}</span>
+          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-[#F5F5F7] text-[#6E6E73]">
+            {primaryCustomer}
           </span>
 
-          {caseItem.caseName && caseItem.caseName !== displayId && (
-            <span className="inline-flex items-center rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 border border-slate-200/70 truncate max-w-[120px]">
-              {caseItem.caseName}
-            </span>
-          )}
-        </div>
+          <span className="text-xs text-[#86868B] font-medium">
+            {formatThaiDateShort(caseItem.date)}
+          </span>
 
-        {/* Item Title */}
-        <h4 className="mt-1.5 text-sm font-bold text-slate-800 leading-snug line-clamp-1 group-hover:text-amber-900 transition-colors">
-          {itemNameDisplay}
-        </h4>
-
-        {/* Metadata Details */}
-        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
-          <div className="flex items-center gap-1 text-slate-500 font-medium">
-            <Calendar size={12} className="shrink-0 text-slate-400" />
-            <span>{formatThaiDateShort(caseItem.date)}</span>
-          </div>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-400 font-mono tabular-nums">{formatTimestamp(caseItem.timestamp || caseItem.date)}</span>
-          
-          {uniqueReasons.length > 0 && (
-            <>
-              <span className="text-slate-300">•</span>
-              <span className="text-slate-600">
-                สาเหตุ: <span className="font-medium text-slate-700">{reasonsDisplay}</span>
-              </span>
-            </>
-          )}
-
-          {caseItem.items.every(i => i.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
-            <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
-              <AlertCircle size={10} />
-              ขาดไฟล์ OR
-            </span>
-          )}
-          {(caseItem.missingBoxes! > 0 || caseItem.missingGallons! > 0 || caseItem.missingOil! > 0) && (
-            <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200" title={`ขาดกล่อง: ${caseItem.missingBoxes || 0}, ขาดแกลลอน: ${caseItem.missingGallons || 0}, ขาดน้ำมัน: ${caseItem.missingOil || 0} ลิตร`}>
-              <AlertCircle size={10} />
-              รอของ ({[
-                caseItem.missingBoxes ? `กล่อง ${caseItem.missingBoxes}` : '',
-                caseItem.missingGallons ? `แกลลอน ${caseItem.missingGallons}` : '',
-                caseItem.missingOil ? `น้ำมัน ${caseItem.missingOil}L` : ''
-              ].filter(Boolean).join(', ')})
-            </span>
-          )}
-          {deadlineStatus === 'warning' && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200" title="งานค้างเกิน 7 วัน">
-              <Clock size={10} />
-              ค้าง 7 วัน
-            </span>
-          )}
+          {/* Urgent warnings only */}
           {deadlineStatus === 'danger' && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200" title="งานค้างเกิน 30 วัน">
-              <AlertCircle size={10} />
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+              <AlertCircle size={11} />
               เกิน 30 วัน
             </span>
           )}
+          {(caseItem.missingBoxes! > 0 || caseItem.missingGallons! > 0 || caseItem.missingOil! > 0) && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+              <AlertCircle size={11} />
+              รอของ
+            </span>
+          )}
         </div>
+
+        {/* Primary Part Name */}
+        <h4 className="text-sm sm:text-base font-semibold text-[#1D1D1F] tracking-tight leading-snug line-clamp-1 group-hover:text-[#0071E3] transition-colors">
+          {itemNameDisplay}
+        </h4>
       </div>
 
-      {/* Right: Quantity & Progress Bar */}
-      <div className="shrink-0 sm:w-56 pt-2.5 sm:pt-0 border-t border-slate-100 sm:border-0 flex flex-col justify-center">
-        <div className="flex items-baseline justify-between mb-1.5">
-          <span className="text-xs font-bold text-slate-800 font-mono tabular-nums">
-            {totalAmount} กล่อง
+      {/* Right Section: Progress & Status Pill */}
+      <div className="shrink-0 sm:w-64 pt-2.5 sm:pt-0 border-t border-[#F5F5F7] sm:border-0 flex flex-col justify-center">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-medium text-[#6E6E73] font-mono tabular-nums">
+            {totalCompleted}/{totalAmount} กล่อง
           </span>
-          <span className="text-[11px] font-mono tabular-nums text-slate-500">
-            เสร็จ {totalCompleted}/{totalAmount} <span className="font-semibold text-slate-700">({progressPercent}%)</span>
-          </span>
+          <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
         </div>
-        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+
+        {/* Clean Apple Progress Track */}
+        <div className="w-full bg-[#E5E5E7] rounded-full h-1.5 overflow-hidden">
           <div 
-            className={`h-full rounded-full transition-all duration-300 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-[#F5C754]'}`}
+            className={`h-full rounded-full transition-all duration-300 ${
+              progressPercent === 100 
+                ? 'bg-emerald-500' 
+                : 'bg-[#0071E3]'
+            }`}
             style={{ width: `${progressPercent}%` }} 
           />
         </div>
@@ -298,23 +249,13 @@ interface StatusPillProps {
 }
 
 function StatusPill({ status, deadlineStatus }: StatusPillProps) {
-  let pendingStyle = 'bg-[#FEF3C7]/80 text-[#92400E] border-[#FDE68A]';
-  
-  if (status === 'Pending') {
-    if (deadlineStatus === 'warning') {
-      pendingStyle = 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]';
-    } else if (deadlineStatus === 'danger') {
-      pendingStyle = 'bg-[#FFE4E6] text-[#9F1239] border-[#FECDD3]';
-    }
-  }
-
   const styles: Record<ReworkCase['status'], string> = {
-    'Pending Analysis': 'bg-[#FEF9E7] text-[#92400E] border-[#FDE68A]',
-    'Awaiting Materials': 'bg-[#FFEDD5] text-[#9A3412] border-[#FED7AA]',
-    Pending: pendingStyle,
-    'In-Progress': 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD]',
-    Blocked: 'bg-[#FFE4E6] text-[#9F1239] border-[#FECDD3]',
-    Completed: 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]',
+    'Pending Analysis': 'bg-amber-50 text-amber-800 border-amber-200',
+    'Awaiting Materials': 'bg-orange-50 text-orange-800 border-orange-200',
+    Pending: 'bg-[#F5F5F7] text-[#1D1D1F] border-[#E5E5E7]',
+    'In-Progress': 'bg-sky-50 text-[#0071E3] border-sky-200',
+    Blocked: 'bg-rose-50 text-rose-800 border-rose-200',
+    Completed: 'bg-emerald-50 text-emerald-800 border-emerald-200',
   };
 
   const thaiLabels: Record<ReworkCase['status'], string> = {
@@ -323,16 +264,21 @@ function StatusPill({ status, deadlineStatus }: StatusPillProps) {
     Pending: 'รอดำเนินการ',
     'In-Progress': 'กำลังดำเนินการ',
     Blocked: 'ติดปัญหา',
-    Completed: 'เสร็จสิ้น',
+    Completed: 'เสร็จสิ้น 100%',
   };
 
   return (
     <span 
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold shrink-0 ${styles[status]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0 ${styles[status]}`}
     >
-      {status === 'Pending' && deadlineStatus === 'danger' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse" />}
-      {status === 'Pending' && deadlineStatus === 'warning' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-pulse" />}
+      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+        status === 'Completed' ? 'bg-emerald-500' :
+        status === 'In-Progress' ? 'bg-[#0071E3]' :
+        status === 'Blocked' ? 'bg-rose-500' :
+        'bg-amber-500'
+      }`} />
       {thaiLabels[status]}
     </span>
   );
 }
+

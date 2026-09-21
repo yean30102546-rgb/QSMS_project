@@ -119,7 +119,7 @@ const flexMessage = {
           action: {
             type: 'uri',
             label: 'เปิดดูรายละเอียดเคสในระบบ',
-            uri: 'https://yean30102546-rgb.github.io/QSMS_project/',
+            uri: `${process.env.NEXT_PUBLIC_APP_URL || 'https://qsms-project.vercel.app'}?case=RW-2026-001`,
           },
           style: 'primary',
           color: '#10B981',

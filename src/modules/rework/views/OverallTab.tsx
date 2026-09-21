@@ -176,18 +176,18 @@ export function OverallTab({
         }`}
         aria-hidden={activeView === 'update'}
       >
-        <div className="flex-shrink-0 border-b border-slate-200 bg-white px-0 py-4 sm:py-5 md:py-6 shadow-xs">
+        <div className="flex-shrink-0 border-b border-[#E5E5E7] bg-white px-0 py-4 sm:py-5 md:py-6">
           <div className="px-4 sm:px-6 md:px-8 lg:px-10">
             <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="mb-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <p className="mb-1 text-xs font-semibold text-[#86868B] uppercase tracking-wider">
                   {new Date().toLocaleDateString('th-TH', {
                     weekday: 'long',
                     month: 'short',
                     day: 'numeric',
                   })}
                 </p>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                <h1 className="text-xl font-bold tracking-tight text-[#1D1D1F] sm:text-2xl">
                   สวัสดี {
                     userRole.toLowerCase() === 'admin' ? 'ผู้ดูแลระบบ' :
                     userRole.toLowerCase() === 'qsms' ? 'แผนก QSMS' :
@@ -201,9 +201,9 @@ export function OverallTab({
                   <button
                     onClick={loadCases}
                     disabled={isLoadingCases}
-                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 active:scale-95 shadow-xs cursor-pointer"
+                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-[#E5E5E7] bg-white text-[#1D1D1F] transition-colors hover:bg-[#F5F5F7] disabled:opacity-50 active:scale-95 cursor-pointer"
                   >
-                    <RefreshCw size={15} className={isLoadingCases ? 'animate-spin' : ''} />
+                    <RefreshCw size={14} className={isLoadingCases ? 'animate-spin text-[#0071E3]' : ''} />
                   </button>
                 </Tooltip>
               </div>
@@ -223,7 +223,7 @@ export function OverallTab({
                 variant="progress"
               />
               <StatCard
-                label="เสร็จสิ้น"
+                label="เสร็จสิ้น 100%"
                 value={stats.completed.toString()}
                 trend={`${Math.round(stats.completionRate || 0)}%`}
                 variant="completed"
@@ -232,42 +232,42 @@ export function OverallTab({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide bg-slate-100/60 pb-24 sm:pb-6">
+        <div className="flex-1 overflow-y-auto scrollbar-hide bg-[#F5F5F7] pb-24 sm:pb-6">
           <div className="px-4 py-4 sm:px-6 sm:py-5 md:px-8 lg:px-10">
             <div className="space-y-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold tracking-tight text-slate-800 md:text-base">
+                    <h3 className="text-sm font-semibold tracking-tight text-[#1D1D1F] md:text-base">
                       รายการงาน Rework ทั้งหมด
                     </h3>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-200 text-slate-700">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#E5E5EA] text-[#1D1D1F]">
                       {filteredCases.length} เคส
                     </span>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="relative w-full sm:w-60">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#86868B]" size={14} />
                       <input
                         type="text"
                         placeholder="ค้นหารหัสเคส, สินค้า, ลูกค้า..."
-                        className="w-full appearance-none rounded-md border border-slate-300 bg-white py-1.5 pl-8.5 pr-3 text-xs font-medium text-slate-900 transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-xs"
+                        className="w-full appearance-none rounded-full border border-[#E5E5E7] bg-white py-1.5 pl-8.5 pr-3 text-xs font-medium text-[#1D1D1F] transition-colors placeholder:text-[#86868B] focus:border-[#0071E3] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
                     <button
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-xs font-semibold transition-colors shadow-2xs cursor-pointer ${
+                      className={`flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors cursor-pointer ${
                         showFilters || hasActiveFilters
-                          ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
-                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                          ? 'bg-[#0071E3] text-white border border-[#0071E3]'
+                          : 'border border-[#E5E5E7] bg-white text-[#1D1D1F] hover:bg-[#F5F5F7]'
                       }`}
                     >
                       <SlidersHorizontal size={13} />
                       <span>ตัวกรอง</span>
                       {activeFilterCount > 0 && (
-                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FDE68A] text-[10px] font-bold text-[#78350F]">
+                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#0071E3]">
                           {activeFilterCount}
                         </span>
                       )}
@@ -276,14 +276,14 @@ export function OverallTab({
                 </div>
 
                 {/* Department / Stream Quick Filter Buttons */}
-                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 w-fit">
+                <div className="flex flex-wrap items-center gap-1 p-1 bg-[#E5E5EA] rounded-full border border-[#E5E5E7] w-fit">
                   <button
                     type="button"
                     onClick={() => setSourceFilter([])}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
                       sourceFilter.length === 0
-                        ? 'bg-white text-slate-900 shadow-2xs border border-slate-200'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs'
+                        : 'text-[#6E6E73] hover:text-[#1D1D1F]'
                     }`}
                   >
                     ทุกสายงาน ({cases.length})
@@ -291,26 +291,26 @@ export function OverallTab({
                   <button
                     type="button"
                     onClick={() => setSourceFilter(['SFC'])}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
                       sourceFilter.length === 1 && sourceFilter.includes('SFC')
-                        ? 'bg-amber-500 text-slate-950 shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs'
+                        : 'text-[#6E6E73] hover:text-[#1D1D1F]'
                     }`}
                   >
-                    <Factory size={13} className="shrink-0" />
-                    <span>งานโรงงาน RW (WFG: {rwCount})</span>
+                    <Factory size={13} className="shrink-0 text-amber-700" />
+                    <span>โรงงาน RW ({rwCount})</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSourceFilter(['Customer'])}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
                       sourceFilter.length === 1 && sourceFilter.includes('Customer')
-                        ? 'bg-sky-600 text-white shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs'
+                        : 'text-[#6E6E73] hover:text-[#1D1D1F]'
                     }`}
                   >
-                    <Package size={13} className="shrink-0" />
-                    <span>งานลูกค้ารับคืน RT (CS: {rtCount})</span>
+                    <Package size={13} className="shrink-0 text-[#0071E3]" />
+                    <span>รับคืนลูกค้า RT ({rtCount})</span>
                   </button>
                 </div>
 
@@ -751,29 +751,29 @@ interface StatCardProps {
 
 function StatCard({ label, value, trend, variant = 'total' }: StatCardProps) {
   const dotColor =
-    variant === 'total' ? 'bg-slate-400' :
-    variant === 'pending' ? 'bg-amber-400' :
-    variant === 'progress' ? 'bg-sky-400' :
-    'bg-emerald-400';
+    variant === 'total' ? 'bg-[#86868B]' :
+    variant === 'pending' ? 'bg-amber-500' :
+    variant === 'progress' ? 'bg-[#0071E3]' :
+    'bg-emerald-500';
 
   const badgeStyle =
-    variant === 'total' ? 'bg-slate-100 text-slate-700 border-slate-200' :
-    variant === 'pending' ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]' :
-    variant === 'progress' ? 'bg-sky-50 text-sky-700 border-sky-200' :
-    'bg-emerald-50 text-emerald-700 border-emerald-200';
+    variant === 'total' ? 'bg-[#F5F5F7] text-[#1D1D1F] border-[#E5E5E7]' :
+    variant === 'pending' ? 'bg-amber-50 text-amber-900 border-amber-200' :
+    variant === 'progress' ? 'bg-sky-50 text-[#0071E3] border-sky-200' :
+    'bg-emerald-50 text-emerald-800 border-emerald-200';
 
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-xs">
-      <div className="flex items-center justify-between gap-1 mb-1.5">
-        <p className="text-[11px] font-semibold tracking-wide text-slate-500 truncate">
+    <div className="rounded-2xl border border-[#E5E5E7] bg-white p-4 shadow-xs transition-all hover:border-[#0071E3]/30">
+      <div className="flex items-center justify-between gap-1 mb-2">
+        <p className="text-xs font-medium tracking-tight text-[#86868B] truncate">
           {label}
         </p>
         <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
       </div>
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-slate-900">{value}</h3>
+        <h3 className="text-2xl sm:text-3xl font-bold font-mono tabular-nums tracking-tight text-[#1D1D1F]">{value}</h3>
         {trend && (
-          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold font-mono border ${badgeStyle}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold font-mono border ${badgeStyle}`}>
             {trend}
           </span>
         )}
@@ -781,3 +781,4 @@ function StatCard({ label, value, trend, variant = 'total' }: StatCardProps) {
     </div>
   );
 }
+
