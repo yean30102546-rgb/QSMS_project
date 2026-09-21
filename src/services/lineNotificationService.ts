@@ -248,7 +248,7 @@ export class LineNotificationService {
               action: {
                 type: 'uri',
                 label: 'เปิดดูรายละเอียดเคส',
-                uri: params.webUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://qsms-rework.vercel.app'}?case=${params.caseId}`,
+                uri: params.webUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://qsms-project.vercel.app'}?case=${params.caseId}`,
               },
               style: 'primary',
               color: '#10B981',
@@ -395,7 +395,7 @@ export class LineNotificationService {
               action: {
                 type: 'uri',
                 label: 'จัดเตรียมวัสดุและอัปเดตงาน',
-                uri: params.webUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://qsms-rework.vercel.app'}?case=${params.caseId}`,
+                uri: params.webUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://qsms-project.vercel.app'}?case=${params.caseId}`,
               },
               style: 'primary',
               color: '#F43F5E',
@@ -518,7 +518,7 @@ export class LineNotificationService {
               action: {
                 type: 'uri',
                 label: 'ดูสรุปและดาวน์โหลด Excel รายงาน',
-                uri: params.webUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://qsms-rework.vercel.app'}?case=${params.caseId}`,
+                uri: params.webUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://qsms-project.vercel.app'}?case=${params.caseId}`,
               },
               style: 'primary',
               color: '#10B981',
