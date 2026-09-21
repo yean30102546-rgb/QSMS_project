@@ -174,7 +174,6 @@ export class LineNotificationService {
                   size: 'xs',
                   weight: 'bold',
                   color: primaryColor,
-                  letterSpacing: '2px',
                 },
                 {
                   type: 'text',
