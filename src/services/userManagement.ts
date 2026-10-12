@@ -27,7 +27,6 @@ export interface UserUpdateRequest {
   id: string;
   name?: string;
   role?: UserRole | string;
-  employee_id?: string;
   password?: string;
 }
 
@@ -111,7 +110,6 @@ export async function createUser(userData: UserCreateRequest): Promise<{ success
     password: userData.password,
     name: userData.name,
     role: userData.role,
-    employee_id: userData.employee_id,
   });
 
   return res;

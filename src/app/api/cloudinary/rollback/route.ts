@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
+import { AuthError, requireServerAuth } from '../../../../lib/serverAuth';
 
 // Configure Cloudinary from existing env variables
 cloudinary.config({
@@ -36,6 +37,7 @@ function extractPublicId(url: string): string | null {
 
 export async function POST(request: Request) {
   try {
+    await requireServerAuth();
     const body = await request.json();
     const { urls } = body;
 
@@ -67,7 +69,10 @@ export async function POST(request: Request) {
       { success: true, results },
       { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
     );
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     console.error('[Cloudinary Rollback] Error during rollback:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error during rollback' },

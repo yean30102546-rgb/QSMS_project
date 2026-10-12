@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/src/lib/supabaseServer';
 import type { FeedbackSubmission } from '@/src/types/feedback';
+import { assertPermission, AuthError, requireServerAuth } from '@/src/lib/serverAuth';
 
 export async function POST(request: Request) {
   try {
@@ -71,6 +72,8 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
+    const auth = await requireServerAuth();
+    assertPermission(auth, 'view_feedback');
     const { data, error } = await supabaseServer
       .from('system_feedback')
       .select('*')
@@ -83,6 +86,9 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: data || [] });
   } catch (err: unknown) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: err.status });
+    }
     return NextResponse.json({ success: true, data: [] });
   }
 }

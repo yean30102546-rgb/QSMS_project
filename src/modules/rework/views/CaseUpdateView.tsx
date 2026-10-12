@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, Save, FileText, ExternalLink, PenTool, Trash2, Plus, 
   ChevronDown, AlertCircle, Camera, CheckCircle2, Image as ImageIcon, X,
   Package, Wrench, Edit3, Check, HelpCircle, Tag, FileSpreadsheet, Download, 
   Loader2, Shield, Eye, Clock, ChevronRight, Truck, CheckCheck, AlertTriangle,
-  Sparkles, Printer, Award, Send, Layers
+  Sparkles, Printer, Award, Send, Layers, ClipboardCheck
 } from 'lucide-react';
 import { ReworkCase, ReworkItem, updateCase, CUSTOMER_OPTIONS, MaterialRequestItem } from '@/src/services/api';
 import { getCurrentUser } from '@/src/services/auth';
@@ -27,6 +27,12 @@ import { useExportReport } from '@/src/hooks/useExportReport';
 import { ExportTemplate } from '@/src/modules/drawings/components/ExportTemplate';
 import { RequisitionSlipModal } from '@/src/modules/rework/components/RequisitionSlipModal';
 import { DrawingPreviewDrawer } from '@/src/modules/rework/components/DrawingPreviewDrawer';
+import { WorkflowStepperBar, WorkflowStep } from './case-update/WorkflowStepperBar';
+import { CaseUpdateHeader } from './case-update/CaseUpdateHeader';
+import { Step2AnalysisPanel } from './case-update/Step2AnalysisPanel';
+import { Step3IssuingPanel } from './case-update/Step3IssuingPanel';
+import { Step4RepairPanel } from './case-update/Step4RepairPanel';
+import { MobileTechnicianQuickBar } from './case-update/MobileTechnicianQuickBar';
 
 const LEAK_SUBTYPES = [
   'รั่วซึม', 'รั่วซีลฟอยล์', 'รั่วตามด', 'รั่วรอยลากแกลลอน',
@@ -162,13 +168,12 @@ export function calculateItemStatus(
   const missing: string[] = [];
   const activePhotos = (item.imageUrls || []).filter(u => !deletedUrls.includes(u)).length + stagedFilesCount;
   
-  if (!item.itemCode?.trim()) missing.push('รหัสสินค้า');
-  if (!item.itemNumber?.trim()) missing.push('รหัสสูตร');
+  if (!item.itemCode?.trim() && !item.itemNumber?.trim()) missing.push('รหัส/สูตรสินค้า');
   if (!item.amount || Number(item.amount) <= 0) missing.push('จำนวนกล่อง');
-  if (!item.batchNo?.trim()) missing.push('หมายเลขล็อต');
-  if (!item.gallonDate?.trim() && !item.packagingDate?.trim()) missing.push('วันที่ผลิต');
   if (!item.reason?.trim()) missing.push('สาเหตุหลัก');
-  if (!item.responsible?.trim()) missing.push('ผู้รับผิดชอบ');
+  if (!item.reasonSubtype?.trim()) missing.push('สาเหตุย่อย');
+  if (!item.responsible?.trim()) missing.push('ผู้รับผิดชอบหลัก');
+  if (!item.responsibleSubtype?.trim()) missing.push('ผู้รับผิดชอบย่อย');
   if (activePhotos === 0) missing.push('รูปภาพหลักฐาน');
   
   if (missing.length === 0) {
@@ -178,7 +183,9 @@ export function calculateItemStatus(
   const hasSomeProgress = Boolean(
     item.batchNo?.trim() || 
     item.reason?.trim() || 
+    item.reasonSubtype?.trim() ||
     item.responsible?.trim() || 
+    item.responsibleSubtype?.trim() ||
     activePhotos > 0 ||
     item.details?.trim() ||
     item.gallonDate?.trim() ||
@@ -187,14 +194,15 @@ export function calculateItemStatus(
     item.line?.trim()
   );
   
+  const missingText = missing.join(', ');
   if (hasSomeProgress) {
-    return { status: 'partial', label: 'อัปเดตแล้ว', missingFields: missing };
+    return { status: 'partial', label: `ยังไม่ครบ (ขาด: ${missingText})`, missingFields: missing };
   }
   
-  return { status: 'pending', label: 'รอตรวจสอบ', missingFields: missing };
+  return { status: 'pending', label: `รอตรวจสอบ (ขาด: ${missingText})`, missingFields: missing };
 }
 
-type WorkflowStep = 'items' | 'analysis' | 'issuing' | 'repair';
+// WorkflowStep is imported from ./case-update/WorkflowStepperBar
 
 interface CaseUpdateViewProps {
   caseData: ReworkCase;
@@ -246,6 +254,26 @@ export function CaseUpdateView({
   const totalNewPhotos = Object.values(newImages).reduce((acc, files) => acc + files.length, 0);
   const hasUnsavedPhotos = totalNewPhotos > 0 || deletedItemIds.length > 0;
 
+  const getItemStagedCount = (it: ReworkItem, idx: number) => {
+    const k = it.id || it.uid || `idx-${idx}`;
+    const files = newImages[k] || (it.id ? newImages[it.id] : undefined) || newImages[`idx-${idx}`] || newImages[idx.toString()] || [];
+    return files.length;
+  };
+
+  const itemsCompletion = useMemo(() => {
+    let completed = 0;
+    const details = editedItems.map((item, idx) => {
+      const stagedCount = getItemStagedCount(item, idx);
+      const stat = calculateItemStatus(item, stagedCount, deletedItemIds);
+      if (stat.status === 'complete') completed++;
+      const itemKey = item.id || item.uid || `idx-${idx}`;
+      return { item, index: idx, itemKey, stat };
+    });
+    const total = editedItems.length;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 100;
+    return { completed, total, percent, details };
+  }, [editedItems, newImages, deletedItemIds]);
+
   // Requisition Slip & Drawing Drawer Modals
   const [isRequisitionModalOpen, setIsRequisitionModalOpen] = useState<boolean>(false);
   const [drawingDrawerQuery, setDrawingDrawerQuery] = useState<{ query: string; title?: string } | null>(null);
@@ -280,7 +308,11 @@ export function CaseUpdateView({
   const [receivedHandshake, setReceivedHandshake] = useState<{
     receivedBy?: string;
     receivedAt?: string;
-  } | null>((caseData as unknown as { materialReceivedInfo?: { receivedBy?: string; receivedAt?: string } })?.materialReceivedInfo || null);
+    isPartial?: boolean;
+    status?: 'complete' | 'partial';
+    missingSummary?: string;
+    note?: string;
+  } | null>((caseData as unknown as { materialReceivedInfo?: { receivedBy?: string; receivedAt?: string; isPartial?: boolean; status?: 'complete' | 'partial'; missingSummary?: string; note?: string } })?.materialReceivedInfo || null);
 
   const [qcSignoff, setQcSignoff] = useState<{
     approvedBy?: string;
@@ -362,19 +394,15 @@ export function CaseUpdateView({
       setMissingOil(caseData.missingOil || 0);
       setResolutionMethod(caseData.resolutionMethod || '');
       setIsDefendBlocked(caseData.status === 'Blocked');
-      setReceivedHandshake((caseData as unknown as { materialReceivedInfo?: { receivedBy?: string; receivedAt?: string } })?.materialReceivedInfo || null);
+      setReceivedHandshake((caseData as unknown as { materialReceivedInfo?: { receivedBy?: string; receivedAt?: string; isPartial?: boolean; status?: 'complete' | 'partial'; missingSummary?: string; note?: string } })?.materialReceivedInfo || null);
       setQcSignoff((caseData as unknown as { qcApprovalInfo?: { approvedBy?: string; approvedAt?: string; qcNotes?: string } })?.qcApprovalInfo || null);
 
-      // Smart default tab
+      // Smart default tab based on Case Status Lifecycle
       if (caseData.status === 'Pending Analysis' || caseData.status === 'Pending') {
         setActiveStep('items');
-      } else if (userRole === 'WPK' && caseData.status === 'Awaiting Materials') {
-        setActiveStep('issuing');
-      } else if (userRole === 'PDF' && (caseData.status === 'In-Progress' || caseData.status === 'Blocked' || caseData.status === 'Completed')) {
-        setActiveStep('repair');
       } else if (caseData.status === 'Awaiting Materials') {
         setActiveStep('issuing');
-      } else if (caseData.status === 'In-Progress' || caseData.status === 'Blocked') {
+      } else if (caseData.status === 'In-Progress' || caseData.status === 'Blocked' || caseData.status === 'Completed') {
         setActiveStep('repair');
       } else {
         setActiveStep('items');
@@ -386,6 +414,63 @@ export function CaseUpdateView({
   const totalBoxes = editedItems.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
   const globalCompleted = editedItems.reduce((acc, item) => acc + (Number(item.completedBoxes) || 0), 0);
   const completionPercentage = totalBoxes > 0 ? Math.round((globalCompleted / totalBoxes) * 100) : 0;
+
+  // Derived Shortage & Single Source of Truth from materialRequests
+  const derivedShortage = useMemo(() => {
+    let boxes = 0;
+    let gallons = 0;
+    let oil = 0;
+    const shortageList: { id: string; name: string; missingQty: number; unit: string; requestedQty: number; issuedQty: number }[] = [];
+
+    materialRequests.forEach(m => {
+      const requested = Number(m.requestedQty) || 0;
+      const issued = m.status === 'unavailable' ? 0 : (Number(m.issuedQty) || 0);
+      const diff = Math.max(0, requested - issued);
+
+      if (m.status === 'unavailable' || diff > 0) {
+        const missingAmt = m.status === 'unavailable' ? requested : diff;
+        shortageList.push({
+          id: m.id,
+          name: m.materialName,
+          missingQty: missingAmt,
+          unit: m.unit,
+          requestedQty: requested,
+          issuedQty: issued
+        });
+
+        const nameLower = (m.materialName || '').toLowerCase();
+        const unitLower = (m.unit || '').toLowerCase();
+        if (nameLower.includes('กล่อง') || unitLower.includes('กล่อง')) {
+          boxes += missingAmt;
+        } else if (nameLower.includes('แกลลอน') || unitLower.includes('ใบ') || unitLower.includes('แกลลอน')) {
+          gallons += missingAmt;
+        } else if (nameLower.includes('น้ำมัน') || unitLower.includes('ลิตร')) {
+          oil += missingAmt;
+        }
+      }
+    });
+
+    const isAllFulfilled = materialRequests.length > 0 && shortageList.length === 0 && materialRequests.every(m => m.status === 'fulfilled');
+    const hasShortage = shortageList.length > 0;
+    const summaryText = shortageList.map(s => `${s.name} (ขาด ${s.missingQty} ${s.unit})`).join(', ');
+
+    return {
+      boxes,
+      gallons,
+      oil,
+      shortageList,
+      isAllFulfilled,
+      hasShortage,
+      summaryText
+    };
+  }, [materialRequests]);
+
+  // Keep missing boxes/gallons/oil synced with derivedShortage in background
+  useEffect(() => {
+    setMissingBoxes(derivedShortage.boxes);
+    setMissingGallons(derivedShortage.gallons);
+    setMissingOil(derivedShortage.oil);
+  }, [derivedShortage.boxes, derivedShortage.gallons, derivedShortage.oil]);
 
   // Material helpers
   const handleAddPresetMaterial = (name: string, unit: string) => {
@@ -572,7 +657,12 @@ export function CaseUpdateView({
 
       setCaseStatus('In-Progress');
       finishSaving();
-      showToast('บันทึกการเบิกจ่ายสำเร็จ: เปลี่ยนสถานะเป็น "กำลังซ่อม" ส่งงานให้ PDF แล้ว', 'success');
+      showToast(
+        derivedShortage.hasShortage
+          ? 'บันทึกการเบิกจ่าย (มีของขาด): ส่งงานให้ PDF ซ่อมต่อแล้ว'
+          : 'บันทึกการเบิกจ่ายสำเร็จ: เปลี่ยนสถานะเป็น "กำลังซ่อม" ส่งงานให้ PDF แล้ว',
+        derivedShortage.hasShortage ? 'warning' : 'success'
+      );
       setActiveStep('repair');
       onSaveSuccess?.();
     } catch (error) {
@@ -581,13 +671,16 @@ export function CaseUpdateView({
     }
   };
 
-  // Step 3 Handshake: PDF / Operator Confirm Material Receipt
-  const handleConfirmMaterialReceipt = async () => {
+  // Step 3 Handshake: PDF / Operator Confirm Material Receipt (Full vs Partial)
+  const handleConfirmMaterialReceipt = async (isPartial: boolean = false) => {
     startSaving();
     try {
       const receiptInfo = {
         receivedBy: currentUser?.name || 'PDF Technician',
-        receivedAt: new Date().toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        receivedAt: new Date().toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        isPartial,
+        status: (isPartial ? 'partial' : 'complete') as 'complete' | 'partial',
+        missingSummary: isPartial ? derivedShortage.summaryText : undefined
       };
       const updates: Record<string, unknown> = {
         materialReceivedInfo: receiptInfo
@@ -595,11 +688,65 @@ export function CaseUpdateView({
       await updateCase(caseData.id, updates as Partial<ReworkCase>);
       setReceivedHandshake(receiptInfo);
       finishSaving();
-      showToast('ยืนยันตรวจนับและรับมอบชิ้นส่วนครบชุดหน้างานเรียบร้อยแล้ว', 'success');
+      if (isPartial) {
+        showToast('บันทึกการรับมอบบางส่วน (เริ่มซ่อมเท่าที่มี) เรียบร้อยแล้ว', 'warning');
+      } else if (receivedHandshake?.isPartial) {
+        showToast('ตรวจรับชิ้นส่วนส่วนที่เหลือครบชุด 100% เรียบร้อยแล้ว', 'success');
+      } else {
+        showToast('ยืนยันตรวจนับและรับมอบชิ้นส่วนครบชุดหน้างานเรียบร้อยแล้ว', 'success');
+      }
       onSaveSuccess?.();
     } catch (err) {
       failSaving();
       showAlert('ไม่สามารถบันทึกการรับมอบได้', 'error');
+    }
+  };
+
+  const handleReportShortageBlockage = async () => {
+    startSaving();
+    try {
+      const defaultReason = derivedShortage.boxes > 0 || derivedShortage.gallons > 0 ? 'waiting_container' : 'waiting_oil';
+      const missingDesc = derivedShortage.summaryText ? `วัสดุขาดจากการเบิกจ่าย: ${derivedShortage.summaryText}` : 'วัสดุขาด ไม่สามารถเริ่มงานซ่อมได้';
+      setDefendCategory(defaultReason);
+      setDefendNotes(missingDesc);
+      setIsDefendBlocked(true);
+
+      const receiptInfo = {
+        receivedBy: currentUser?.name || 'PDF Technician',
+        receivedAt: new Date().toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        isPartial: true,
+        status: 'partial' as const,
+        missingSummary: derivedShortage.summaryText
+      };
+      setReceivedHandshake(receiptInfo);
+
+      const updates: Partial<ReworkCase> & Record<string, unknown> = {
+        status: 'Blocked',
+        materialReceivedInfo: receiptInfo,
+        items: editedItems,
+        missingBoxes: derivedShortage.boxes,
+        missingGallons: derivedShortage.gallons,
+        missingOil: derivedShortage.oil,
+        materialRequests,
+        blockedInfo: {
+          isBlocked: true,
+          reasonCategory: defaultReason,
+          reasonDetail: missingDesc,
+          blockedAt: new Date().toISOString(),
+          reportedBy: currentUser?.name || 'PDF Technician',
+          reportedByRole: userRole
+        }
+      };
+
+      await updateCase(caseData.id, updates as Partial<ReworkCase>);
+      setCaseStatus('Blocked');
+      finishSaving();
+      showToast('บันทึกสถานะติดปัญหา (Defend Mode): วัสดุไม่พอซ่อม เรียบร้อยแล้ว', 'warning');
+      setActiveStep('repair');
+      onSaveSuccess?.();
+    } catch (err) {
+      failSaving();
+      showAlert('ไม่สามารถบันทึกสถานะติดปัญหาได้', 'error');
     }
   };
 
@@ -751,7 +898,7 @@ export function CaseUpdateView({
         const targetExpandIdx = nextIncompleteIdx >= 0 ? nextIncompleteIdx : 0;
         const nextExpandedMap: Record<string, boolean> = {};
         finalItems.forEach((it: ReworkItem, i: number) => {
-          const k = it.id || (it as any).uid || `idx-${i}`;
+          const k = it.id || it.uid || `idx-${i}`;
           nextExpandedMap[k] = (i === targetExpandIdx);
         });
         setExpandedItemIds(nextExpandedMap);
@@ -821,7 +968,7 @@ export function CaseUpdateView({
     const targetItem = editedItems[index];
     if (!targetItem) return;
 
-    const itemKey = targetItem.id || (targetItem as any).uid || `idx-${index}`;
+    const itemKey = targetItem.id || targetItem.uid || `idx-${index}`;
     const stagedFiles = newImages[itemKey] || 
                         (targetItem.id ? newImages[targetItem.id] : undefined) || 
                         newImages[`idx-${index}`] || 
@@ -833,18 +980,17 @@ export function CaseUpdateView({
       setSavingItemIndex(index);
       startSaving();
 
-      // 1. Move target item to bottom
-      const remainingItems = editedItems.filter((_, i) => i !== index);
+      // 1. Keep order fixed in-place (Do not move item to bottom)
       const updatedTargetItem: ReworkItem = {
         ...targetItem,
         itemSequence: targetItem.itemSequence ?? (index + 1),
         amount: Math.max(1, Number(targetItem.amount) || 1)
       };
-      const reorderedItems = [...remainingItems, updatedTargetItem];
+      const updatedItems = editedItems.map((it, i) => (i === index ? updatedTargetItem : it));
 
       // 2. Prepare payload for updateCase
       const updates: Partial<ReworkCase> & Record<string, unknown> = {
-        items: reorderedItems,
+        items: updatedItems,
         materialRequests,
         missingBoxes,
         missingGallons,
@@ -860,10 +1006,10 @@ export function CaseUpdateView({
       }
 
       const res = await updateCase(caseData.id, updates);
-      let finalItems: ReworkItem[] = reorderedItems;
+      let finalItems: ReworkItem[] = updatedItems;
       if (res.success && (res.data as ReworkCase)?.items) {
         const dbItems = (res.data as ReworkCase).items;
-        finalItems = reorderedItems.map(localItem => {
+        finalItems = updatedItems.map(localItem => {
           const matched = dbItems.find(dbItem => (dbItem.id && dbItem.id === localItem.id) || (dbItem.uid && dbItem.uid === localItem.uid));
           if (matched) {
             return {
@@ -891,23 +1037,47 @@ export function CaseUpdateView({
         setDeletedItemIds(prev => prev.filter(url => !itemDeletedUrls.includes(url)));
       }
 
-      // Auto-expand the next incomplete item in the new list (or top item)
-      const nextIncompleteIdx = finalItems.findIndex((it: ReworkItem) => calculateItemStatus(it, 0, []).status !== 'complete');
-      const targetExpandIdx = nextIncompleteIdx >= 0 ? nextIncompleteIdx : 0;
-      const nextExpandedMap: Record<string, boolean> = {};
+      // Auto-expand next incomplete item starting after current index (or wrap around)
+      let nextTargetIdx = -1;
+      for (let offset = 1; offset < finalItems.length; offset++) {
+        const checkIdx = (index + offset) % finalItems.length;
+        if (calculateItemStatus(finalItems[checkIdx], 0, []).status !== 'complete') {
+          nextTargetIdx = checkIdx;
+          break;
+        }
+      }
 
-      finalItems.forEach((it: ReworkItem, i: number) => {
-        const k = it.id || (it as any).uid || `idx-${i}`;
-        nextExpandedMap[k] = (i === targetExpandIdx);
-      });
+      const nextExpandedMap: Record<string, boolean> = {};
+      if (nextTargetIdx >= 0) {
+        finalItems.forEach((it: ReworkItem, i: number) => {
+          const k = it.id || it.uid || `idx-${i}`;
+          nextExpandedMap[k] = (i === nextTargetIdx);
+        });
+      } else {
+        // If all items are complete, collapse all to show clean summary
+        finalItems.forEach((it: ReworkItem, i: number) => {
+          const k = it.id || it.uid || `idx-${i}`;
+          nextExpandedMap[k] = false;
+        });
+      }
       setExpandedItemIds(nextExpandedMap);
 
       const statusInfo = calculateItemStatus(updatedTargetItem, 0, []);
       finishSaving();
-      showToast(
-        `บันทึกรายการที่ ${updatedTargetItem.itemSequence || (index + 1)} แล้ว ➔ ย้ายลงล่าง และเปิดรายการถัดไปให้อัตโนมัติ`,
-        'success'
-      );
+      const currentSeq = updatedTargetItem.itemSequence || (index + 1);
+      const nextSeq = nextTargetIdx >= 0 ? (finalItems[nextTargetIdx].itemSequence || (nextTargetIdx + 1)) : null;
+
+      if (statusInfo.status === 'complete') {
+        showToast(
+          `บันทึกรายการที่ ${currentSeq} แล้ว (ข้อมูลสมบูรณ์)${nextSeq ? ` ➔ เปิดรายการที่ ${nextSeq}` : ' • ครบทุกรายการแล้ว'}`,
+          'success'
+        );
+      } else {
+        showToast(
+          `บันทึกรายการที่ ${currentSeq} แล้ว (ยังขาด: ${statusInfo.missingFields.join(', ')})${nextSeq ? ` ➔ ตรวจสอบรายการที่ ${nextSeq}` : ''}`,
+          'info'
+        );
+      }
       onSaveSuccess?.();
     } catch (error) {
       console.error('Failed to save single item:', error);
@@ -933,150 +1103,39 @@ export function CaseUpdateView({
       )}
 
       {/* 1. TOP ZEN FOCUS HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-[#E5E5E7] bg-white shrink-0 gap-3">
-        {/* Left Side: Back button + Breadcrumb + Case ID + Status Badge */}
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition-all shrink-0 cursor-pointer shadow-2xs border border-slate-200"
-            title="ย้อนกลับไปหน้าภาพรวมเคส (ESC)"
-          >
-            <ArrowLeft size={14} />
-            <span>กลับหน้าภาพรวมเคส</span>
-          </button>
-          
-          <div className="hidden sm:block h-6 w-px bg-slate-200" />
+      <CaseUpdateHeader
+        caseData={caseData}
+        caseStatus={caseStatus}
+        editedItems={editedItems}
+        missingBoxes={missingBoxes}
+        missingGallons={missingGallons}
+        missingOil={missingOil}
+        resolutionMethod={resolutionMethod}
+        isSaving={isSaving}
+        isExporting={isExporting}
+        isAdmin={isAdmin}
+        onBack={onBack}
+        onDelete={onDelete ? () => onDelete(caseData.id) : undefined}
+        handleDeleteCaseClick={handleDeleteCaseClick}
+        handleSave={handleSave}
+        exportExcel={exportExcel}
+      />
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={onBack}
-                className="text-xs font-semibold text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
-                title="คลิกเพื่อกลับหน้าภาพรวมเคส"
-              >
-                ภาพรวมเคส (Overall) /
-              </button>
-              <h1 className="text-sm sm:text-base font-bold text-slate-900 font-mono truncate">
-                {caseData.id}
-              </h1>
-              <StatusBadge status={caseStatus} />
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 font-mono">
-              <span className="font-semibold text-slate-700">{caseData.id}</span>
-              <CopyButton text={caseData.id} size={11} />
-              <span className="text-slate-300">•</span>
-              <span className="text-slate-500">{caseData.customerName || caseData.source}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: Action Buttons Toolbar */}
-        <div className="flex items-center justify-end gap-2 overflow-x-auto scrollbar-hide">
-          <button
-            type="button"
-            onClick={() => caseData && exportExcel({
-              ...caseData,
-              status: caseStatus,
-              items: editedItems,
-              missingBoxes,
-              missingGallons,
-              missingOil,
-              resolutionMethod
-            })}
-            disabled={isExporting || !caseData}
-            title="ส่งออกรายงาน Rework เป็นไฟล์ Excel พร้อมรูปภาพ"
-            className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
-          >
-            {isExporting ? (
-              <>
-                <Loader2 size={13} className="animate-spin text-emerald-600" />
-                <span>กำลังส่งออก...</span>
-              </>
-            ) : (
-              <>
-                <FileSpreadsheet size={13} className="text-emerald-600" />
-                <span>ส่งออก Excel</span>
-              </>
-            )}
-          </button>
-
-          {onDelete && isAdmin && (
-            <button
-              type="button"
-              onClick={handleDeleteCaseClick}
-              disabled={isSaving}
-              className="whitespace-nowrap shrink-0 px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-all border border-red-200 flex items-center gap-1 cursor-pointer"
-            >
-              <Trash2 size={12} /> <span>ลบเคส</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => handleSave(true)}
-            disabled={isSaving}
-            className="whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-all cursor-pointer disabled:opacity-50"
-          >
-            <span>บันทึกร่าง</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSave(false)}
-            disabled={isSaving}
-            className="whitespace-nowrap shrink-0 px-4 py-1.5 text-xs font-medium text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-full transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
-          >
-            {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-            <span>บันทึกเสร็จสิ้น</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. APPLE SEGMENTED 3-TAB WORKSPACE NAVIGATION */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-white border-b border-[#E5E5E7] shrink-0 overflow-x-auto scrollbar-hide">
-        <div className="flex items-center p-1 bg-[#E5E5EA] rounded-full border border-[#E5E5E7] gap-1">
-          <button
-            type="button"
-            onClick={() => setActiveStep('repair')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-              activeStep === 'repair' || activeStep === 'issuing'
-                ? 'bg-white text-[#1D1D1F] shadow-xs'
-                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-            }`}
-          >
-            1. ภาพรวม & ยอดกล่อง
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveStep('items')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-              activeStep === 'items'
-                ? 'bg-white text-[#1D1D1F] shadow-xs'
-                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-            }`}
-          >
-            2. รายการสินค้า & รูปภาพ ({editedItems.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveStep('analysis')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-              activeStep === 'analysis'
-                ? 'bg-white text-[#1D1D1F] shadow-xs'
-                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-            }`}
-          >
-            3. ตรวจ QC & เอกสาร
-          </button>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-3 text-xs text-[#86868B] font-mono tabular-nums">
-          <span>รวม {editedItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)} กล่อง</span>
-          <span>•</span>
-          <span>เสร็จ {globalCompleted} กล่อง</span>
-        </div>
-      </div>
+      {/* 2. 4-STEP PIPELINE WORKSPACE NAVIGATION */}
+      <WorkflowStepperBar
+        activeStep={activeStep}
+        setActiveStep={setActiveStep}
+        editedItems={editedItems}
+        completedItemsCount={itemsCompletion.completed}
+        globalCompleted={globalCompleted}
+        totalBoxes={totalBoxes}
+        resolutionMethod={resolutionMethod}
+        hasShortage={derivedShortage.hasShortage}
+        receivedHandshake={receivedHandshake}
+        isDefendBlocked={isDefendBlocked}
+        qcSignoff={qcSignoff}
+        userRole={userRole}
+      />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 3. STEP CONTENT WORKSPACE PANELS */}
@@ -1092,7 +1151,7 @@ export function CaseUpdateView({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-bold text-slate-900">Step 1: ข้อมูลสินค้าและรูปภาพหลักฐาน</h2>
+                    <h2 className="text-sm font-bold text-slate-900">Step 1: บันทึกข้อมูลสินค้า (SFC/ผู้แจ้ง)</h2>
                     <span className={`px-2.5 py-0.5 rounded text-xs font-medium border ${
                       canEditItems ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
@@ -1118,88 +1177,160 @@ export function CaseUpdateView({
                     }}
                     className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>ถัดไป: QSMS วิเคราะห์ ➔</span>
+                    <span>ถัดไป: วิเคราะห์และออกใบเบิก (QSMS) ➔</span>
                   </button>
                 </div>
               </div>
 
               {/* Items List */}
               <div className="space-y-3">
-                {/* Header Toolbar: Count + Status + Accordion Toggle + Add Item */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      รายการสินค้าในเคส ({editedItems.length} รายการ)
-                    </h3>
-                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle2 size={11} />
-                      <span>{editedItems.filter(it => calculateItemStatus(it).status === 'complete').length}/{editedItems.length} ข้อมูลสมบูรณ์</span>
-                    </span>
-                  </div>
+                {/* ── Case Items Completion Checklist Banner ── */}
+                <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3.5 sm:p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        itemsCompletion.percent === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {itemsCompletion.percent === 100 ? <CheckCircle2 size={18} /> : <ClipboardCheck size={18} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                            เช็กลิสต์ความสมบูรณ์ของรายการสินค้า
+                          </h3>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                            itemsCompletion.percent === 100
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-amber-50 text-amber-900 border-amber-300'
+                          }`}>
+                            {itemsCompletion.percent === 100 ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />}
+                            <span>{itemsCompletion.completed}/{itemsCompletion.total} รายการ ({itemsCompletion.percent}%)</span>
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {itemsCompletion.percent === 100
+                            ? 'ทุกรายการมีข้อมูลและรูปภาพหลักฐานครบถ้วนแล้ว พร้อมสำหรับการวิเคราะห์'
+                            : 'คลิกที่รายการด้านล่างเพื่อตรวจสอบและกรอกข้อมูล/แนบรูปภาพที่ยังขาด'}
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const allOpen: Record<string, boolean> = {};
-                        editedItems.forEach((it, idx) => {
-                          const k = it.id || (it as any).uid || `idx-${idx}`;
-                          allOpen[k] = true;
-                        });
-                        setExpandedItemIds(allOpen);
-                      }}
-                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                    >
-                      ขยายทั้งหมด
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const allClosed: Record<string, boolean> = {};
-                        editedItems.forEach((it, idx) => {
-                          const k = it.id || (it as any).uid || `idx-${idx}`;
-                          allClosed[k] = false;
-                        });
-                        setExpandedItemIds(allClosed);
-                      }}
-                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                    >
-                      พับทั้งหมด
-                    </button>
-                    {canEditItems && (
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                       <button
                         type="button"
                         onClick={() => {
-                          const newItem: ReworkItem = {
-                            id: `item-${Date.now()}`,
-                            itemNumber: '',
-                            itemCode: '',
-                            itemName: '',
-                            amount: 1,
-                            completedBoxes: 0,
-                            reason: '',
-                            reasonSubtype: '',
-                            responsible: '',
-                            responsibleSubtype: '',
-                            details: '',
-                            imageUrls: []
-                          };
-                          setEditedItems(prev => [newItem, ...prev]);
-                          const newKey = newItem.id;
-                          setExpandedItemIds(prev => ({ ...prev, [newKey]: true }));
-                          showToast('+ เพิ่มแถวสินค้าใหม่เรียบร้อย', 'info');
+                          const allOpen: Record<string, boolean> = {};
+                          editedItems.forEach((it, idx) => {
+                            const k = it.id || it.uid || `idx-${idx}`;
+                            allOpen[k] = true;
+                          });
+                          setExpandedItemIds(allOpen);
                         }}
-                        className="px-3 py-1.5 text-xs font-bold text-slate-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 transition-all flex items-center gap-1 cursor-pointer ml-1 shadow-2xs"
+                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
                       >
-                        <Plus size={13} /> <span>เพิ่มรายการสินค้า</span>
+                        ขยายทั้งหมด
                       </button>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allClosed: Record<string, boolean> = {};
+                          editedItems.forEach((it, idx) => {
+                            const k = it.id || it.uid || `idx-${idx}`;
+                            allClosed[k] = false;
+                          });
+                          setExpandedItemIds(allClosed);
+                        }}
+                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                      >
+                        พับทั้งหมด
+                      </button>
+                      {canEditItems && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newItem: ReworkItem = {
+                              id: `item-${Date.now()}`,
+                              itemNumber: '',
+                              itemCode: '',
+                              itemName: '',
+                              amount: 1,
+                              completedBoxes: 0,
+                              reason: '',
+                              reasonSubtype: '',
+                              responsible: '',
+                              responsibleSubtype: '',
+                              details: '',
+                              imageUrls: []
+                            };
+                            setEditedItems(prev => [newItem, ...prev]);
+                            const newKey = newItem.id;
+                            setExpandedItemIds(prev => ({ ...prev, [newKey]: true }));
+                            showToast('+ เพิ่มแถวสินค้าใหม่เรียบร้อย', 'info');
+                          }}
+                          className="min-h-9 px-3 py-1.5 text-xs font-bold text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Plus size={13} /> <span>เพิ่มสินค้า</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progress Bar Track */}
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 rounded-full ${
+                        itemsCompletion.percent === 100 ? 'bg-emerald-500' : 'bg-amber-500'
+                      }`}
+                      style={{ width: `${itemsCompletion.percent}%` }}
+                    />
+                  </div>
+
+                  {/* Interactive Item Checklist Chips */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {itemsCompletion.details.map(({ item, index, itemKey, stat }) => {
+                      const isComplete = stat.status === 'complete';
+                      return (
+                        <button
+                          key={itemKey}
+                          type="button"
+                          onClick={() => {
+                            setExpandedItemIds(prev => ({ ...prev, [itemKey]: true }));
+                            setTimeout(() => {
+                              const el = document.getElementById(`rework-item-${itemKey}`);
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 50);
+                          }}
+                          className={`group text-left px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-2 cursor-pointer ${
+                            isComplete 
+                              ? 'bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-200 text-emerald-950'
+                              : 'bg-amber-50/80 hover:bg-amber-100 border-amber-300/80 text-amber-950 shadow-2xs'
+                          }`}
+                          title={isComplete ? 'คลิกเพื่อเปิดรายการนี้' : `คลิกเพื่อไปแก้ไข: ขาด ${stat.missingFields.join(', ')}`}
+                        >
+                          <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
+                            isComplete ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
+                          }`}>
+                            {isComplete ? '✓' : '!'}
+                          </span>
+                          <span className="text-xs font-semibold truncate max-w-[140px] sm:max-w-[200px]">
+                            #{item.itemSequence ?? (index + 1)} {item.itemName || 'ยังไม่ระบุชื่อ'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                            isComplete 
+                              ? 'bg-emerald-200/60 text-emerald-800' 
+                              : 'bg-amber-200/70 text-amber-900'
+                          }`}>
+                            {isComplete ? 'สมบูรณ์' : `ขาด: ${stat.missingFields.slice(0, 2).join(', ')}${stat.missingFields.length > 2 ? '...' : ''}`}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
                 {/* Items Accordion Cards */}
                 {editedItems.map((item, index) => {
-                  const itemIdStr = item.id || (item as any).uid || `idx-${index}`;
+                  const itemIdStr = item.id || item.uid || `idx-${index}`;
                   const isExpanded = expandedItemIds[itemIdStr] ?? false;
 
                   const stagedFiles = newImages[itemIdStr] || 
@@ -1225,9 +1356,9 @@ export function CaseUpdateView({
                   const responsibleSubtypes = getResponsibleSubdivisionOptions(item.responsible || '');
 
                   return (
-                    <div key={itemIdStr} className={`rounded-xl border transition-all overflow-hidden ${
+                    <div key={itemIdStr} id={`rework-item-${itemIdStr}`} className={`rounded-xl border transition-all overflow-hidden ${
                       isExpanded 
-                        ? 'border-amber-300/90 shadow-xs ring-1 ring-amber-300/20' 
+                        ? 'border-slate-300 shadow-xs ring-1 ring-slate-300/40' 
                         : 'border-slate-200 shadow-2xs hover:border-slate-300'
                     }`}>
                       {/* ── Item Summary Bar (Clickable Accordion Header) ── */}
@@ -1240,40 +1371,35 @@ export function CaseUpdateView({
                         }}
                         className={`p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b transition-colors cursor-pointer select-none ${
                           isExpanded 
-                            ? 'bg-gradient-to-r from-amber-50/95 via-[#FEF9E7] to-amber-50/60 border-amber-200/90' 
-                            : 'bg-slate-50/80 hover:bg-[#FEFDF5] border-slate-100'
+                            ? 'bg-slate-100/90 border-slate-200' 
+                            : 'bg-slate-50/80 hover:bg-slate-100/60 border-slate-100'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold shrink-0 font-mono transition-colors ${
                             isExpanded 
-                              ? 'bg-amber-500 text-slate-950 font-black shadow-2xs' 
-                              : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                              ? 'bg-slate-900 text-white font-bold shadow-2xs' 
+                              : 'bg-slate-200 text-slate-700 border border-slate-300'
                           }`}>
                             {item.itemSequence ?? (index + 1)}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className={`text-xs sm:text-sm font-bold truncate transition-colors ${
-                                isExpanded ? 'text-amber-950' : 'text-slate-900'
-                              }`}>
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate transition-colors">
                                 {item.itemName || 'ยังไม่ระบุชื่อสินค้า'}
                               </h4>
                               {/* Status Badge */}
                               {itemStat.status === 'complete' ? (
-                                <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1 shrink-0">
-                                <CheckCircle2 size={11} /> ข้อมูลสมบูรณ์
-                              </span>
-                              ) : itemStat.status === 'partial' ? (
-                                <span 
-                                  className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1 shrink-0" 
-                                  title={`ยังขาด: ${itemStat.missingFields.join(', ')}`}
-                                >
-                                  <AlertCircle size={11} /> อัปเดตแล้ว
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1 shrink-0">
+                                  <CheckCircle2 size={11} className="text-emerald-600" /> ข้อมูลสมบูรณ์
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1 shrink-0">
-                                  <Clock size={11} /> รอตรวจสอบ
+                                <span 
+                                  className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1 shrink-0 max-w-full" 
+                                  title={`ยังขาด: ${itemStat.missingFields.join(', ')}`}
+                                >
+                                  <AlertCircle size={11} className="text-amber-600 shrink-0" />
+                                  <span className="truncate">ยังไม่ครบ (ขาด: {itemStat.missingFields.join(', ')})</span>
                                 </span>
                               )}
                             </div>
@@ -1308,10 +1434,10 @@ export function CaseUpdateView({
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(index)}
-                              className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors cursor-pointer ml-1"
+                              className="min-h-11 min-w-11 inline-flex items-center justify-center text-slate-500 hover:text-rose-700 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer ml-1"
                               title="ลบรายการนี้"
                             >
-                              <Trash2 size={13} />
+                              <Trash2 size={15} />
                             </button>
                           )}
 
@@ -1540,7 +1666,14 @@ export function CaseUpdateView({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {/* สาเหตุที่พบ */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-600">สาเหตุที่พบ (Optional)</label>
+                                <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                                  <span>สาเหตุที่พบ <span className="text-amber-600 font-bold">*</span></span>
+                                  {(!item.reason || !item.reasonSubtype) && (
+                                    <span className="text-[10px] text-amber-600 font-medium">
+                                      {item.reason ? '⚠️ ต้องเลือกประเภทย่อย' : '⚠️ ต้องระบุสาเหตุ'}
+                                    </span>
+                                  )}
+                                </label>
                                 <div className="grid grid-cols-2 gap-2">
                                   <Select
                                     value={item.reason || ''}
@@ -1588,7 +1721,14 @@ export function CaseUpdateView({
 
                               {/* ผู้รับผิดชอบ */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-600">ผู้รับผิดชอบ (Optional)</label>
+                                <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                                  <span>ผู้รับผิดชอบ <span className="text-amber-600 font-bold">*</span></span>
+                                  {(!item.responsible || !item.responsibleSubtype) && (
+                                    <span className="text-[10px] text-amber-600 font-medium">
+                                      {item.responsible ? '⚠️ ต้องระบุแผนก/ผู้ผลิต' : '⚠️ ต้องระบุผู้รับผิดชอบ'}
+                                    </span>
+                                  )}
+                                </label>
                                 <div className="grid grid-cols-2 gap-2">
                                   <Select
                                     value={item.responsible || ''}
@@ -1675,15 +1815,20 @@ export function CaseUpdateView({
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                   <Camera size={14} className="text-slate-500" />
-                                  <span>รูปภาพหลักฐานความเสียหาย ({(item.imageUrls || []).filter(u => !deletedItemIds.includes(u)).length + stagedFiles.length} ภาพ)</span>
+                                  <span>รูปภาพหลักฐานความเสียหาย <span className="text-amber-600 font-bold">*</span> ({(item.imageUrls || []).filter(u => !deletedItemIds.includes(u)).length + stagedFiles.length} ภาพ)</span>
                                 </span>
 
-                                {stagedFiles.length > 0 && (
+                                {((item.imageUrls || []).filter(u => !deletedItemIds.includes(u)).length + stagedFiles.length === 0) ? (
+                                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <AlertCircle size={10} className="text-amber-600" />
+                                    <span>⚠️ ยังไม่ได้แนบรูปถ่ายหลักฐาน</span>
+                                  </span>
+                                ) : stagedFiles.length > 0 ? (
                                   <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                     <span>{stagedFiles.length} รูปใหม่รอการบันทึก</span>
                                   </span>
-                                )}
+                                ) : null}
                               </div>
 
                               <div className="flex flex-wrap gap-2.5 items-center">
@@ -1754,8 +1899,8 @@ export function CaseUpdateView({
 
                                 {/* 3. Add Photo Button */}
                                 {canEditItems && (
-                                  <label className="w-16 h-16 rounded-md border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/50 flex flex-col items-center justify-center text-slate-400 hover:text-amber-700 transition-colors cursor-pointer shrink-0">
-                                    <span className="text-[9px] font-bold mt-0.5">+ เพิ่มรูป</span>
+                                  <label className="w-16 h-16 rounded-lg border-2 border-dashed border-slate-300 hover:border-slate-800 bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center text-slate-500 hover:text-slate-900 transition-colors cursor-pointer shrink-0">
+                                    <span className="text-[10px] font-bold mt-0.5">+ เพิ่มรูป</span>
                                     <input
                                       type="file"
                                       multiple
@@ -1790,16 +1935,16 @@ export function CaseUpdateView({
                                   type="button"
                                   disabled={savingItemIndex !== null}
                                   onClick={() => handleSaveSingleItem(index)}
-                                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
+                                  className="min-h-11 px-4 py-2 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-semibold rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                                 >
                                   {savingItemIndex === index ? (
                                     <>
-                                      <Loader2 size={13} className="animate-spin text-slate-800" />
+                                      <Loader2 size={13} className="animate-spin text-white" />
                                       <span>กำลังบันทึก...</span>
                                     </>
                                   ) : (
                                     <>
-                                      <Check size={13} strokeWidth={2.5} className="text-slate-900" />
+                                      <Check size={13} strokeWidth={2.5} className="text-white" />
                                       <span>บันทึกรายการนี้</span>
                                     </>
                                   )}
@@ -1820,1168 +1965,104 @@ export function CaseUpdateView({
           {/* STEP 2 PANEL: QSMS วิเคราะห์ & ระบุภาชนะ (ANALYSIS & REQUISITION) */}
           {/* ========================================================================= */}
           {activeStep === 'analysis' && (
-            <div className="space-y-5">
-              {/* Step Header Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-bold text-slate-900">Step 2: ผลการวิเคราะห์และระบุภาชนะที่ต้องใช้</h2>
-                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border ${
-                      canEditAnalysis ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}>
-                      {canEditAnalysis ? 'โหมดวิเคราะห์ & ขอเบิก (QSMS / Admin)' : 'โหมดดูผลวิเคราะห์ (Preview Only)'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {canEditAnalysis
-                      ? 'ระบุสาเหตุข้อบกพร่อง แนวทางแก้ไข และกำหนดรายการภาชนะที่ต้องใช้ส่งต่อให้คลัง (WPK)'
-                      : 'ผลการวิเคราะห์จากแผนก QSMS (เฉพาะ QSMS/Admin จึงจะสามารถแก้ไขส่วนนี้ได้)'}
-                  </p>
-                </div>
-
-                {canEditAnalysis && (
-                  <button
-                    type="button"
-                    onClick={handleQSMSHandover}
-                    disabled={isSaving}
-                    className="h-9 px-4 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
-                  >
-                    <Send size={13} />
-                    <span>บันทึกผล & ส่งขอเบิกภาชนะ</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Analysis Textarea */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <FileText size={13} className="text-amber-700" />
-                    <span>ผลการวิเคราะห์สาเหตุและแนวทางแก้ไข (Analysis & Resolution Notes)</span>
-                  </h3>
-                </div>
-
-                {canEditAnalysis && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
-                    <span className="text-[11px] font-medium text-slate-500 shrink-0">ข้อความแนะนำ:</span>
-                    {[
-                      'เปลี่ยนแกลลอนใหม่และรันซีลซ้ำ',
-                      'เช็ดทำความสะอาดและเปลี่ยนกล่องใหม่',
-                      'เปลี่ยนฝาและตรวจเช็กแรงบิด'
-                    ].map((templateText) => (
-                      <button
-                        key={templateText}
-                        type="button"
-                        onClick={() => setResolutionMethod(prev => prev ? `${prev} | ${templateText}` : templateText)}
-                        className="px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:text-amber-900 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-md transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        + {templateText}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <textarea
-                  rows={3}
-                  value={resolutionMethod}
-                  disabled={!canEditAnalysis}
-                  onChange={(e) => setResolutionMethod(e.target.value)}
-                  placeholder="ระบุผลการวิเคราะห์สาเหตุ เช่น ซีลฟอยล์ไม่สนิทจากความร้อนตก และแนวทางการแก้ไข เช่น ให้เปลี่ยนแกลลอนใหม่และรันซีลซ้ำ..."
-                  className="w-full text-xs font-medium rounded-lg border border-slate-300 bg-white p-3 text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500 leading-relaxed"
-                />
-              </div>
-
-              {/* Container & Material Requisition Table */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                      <span>รายการภาชนะและวัสดุที่ต้องใช้ (Container & Material Requisition)</span>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 shrink-0">
-                        {materialRequests.length} รายการ
-                      </span>
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">ระบุรายการและจำนวนภาชนะเพื่อให้แผนกคลัง (WPK) ดำเนินการเบิกจ่าย</p>
-                  </div>
-                </div>
-
-                {canEditAnalysis && (
-                  <div className="rounded-xl bg-slate-50/90 border border-slate-200/80 p-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 shrink-0">
-                      <span>เพิ่มด่วน:</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5 w-full flex-wrap sm:flex-nowrap">
-                      {[
-                        { name: 'กล่องใหม่', unit: 'กล่อง' },
-                        { name: 'แกลลอน 1L', unit: 'ใบ' },
-                        { name: 'แกลลอน 4L', unit: 'ใบ' },
-                        { name: 'แกลลอน 5L', unit: 'ใบ' },
-                        { name: 'ฝาแกลลอน', unit: 'ชิ้น' },
-                        { name: 'สติกเกอร์/ฉลาก', unit: 'แผ่น' },
-                        { name: 'ถัง 200L', unit: 'ถัง' },
-                      ].map((preset) => (
-                        <button
-                          key={preset.name}
-                          type="button"
-                          onClick={() => handleAddPresetMaterial(preset.name, preset.unit)}
-                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-amber-50 hover:text-amber-900 hover:border-amber-300 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer shrink-0 whitespace-nowrap"
-                        >
-                          + {preset.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {materialRequests.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-                    <Package size={26} className="text-slate-400 mx-auto mb-1.5" />
-                    <p className="text-xs font-semibold text-slate-600">ยังไม่มีการระบุภาชนะหรือวัสดุที่ต้องใช้</p>
-                    {canEditAnalysis && (
-                      <div className="mt-3 flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setIsAddingCustomMaterial(true)}
-                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Plus size={13} />
-                          <span>เพิ่มรายการวัสดุแบบกำหนดเอง</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-700 font-bold">
-                        <tr>
-                          <th className="py-2.5 px-3">#</th>
-                          <th className="py-2.5 px-3">รายการภาชนะ / วัสดุ</th>
-                          <th className="py-2.5 px-3 text-center">จำนวนที่ขอ (QSMS)</th>
-                          <th className="py-2.5 px-3 text-center">หน่วยนับ</th>
-                          <th className="py-2.5 px-3 text-center">สถานะ</th>
-                          {canEditAnalysis && <th className="py-2.5 px-3 text-right">จัดการ</th>}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {materialRequests.map((mat, idx) => (
-                          <tr key={mat.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="py-2 px-3 font-mono text-slate-400">{idx + 1}</td>
-                            <td className="py-2 px-3 font-semibold text-slate-800">{mat.materialName}</td>
-                            <td className="py-2 px-3 text-center">
-                              {canEditAnalysis ? (
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={mat.requestedQty}
-                                  onChange={(e) => handleMaterialQtyChange(mat.id, Number(e.target.value) || 0)}
-                                  className="w-18 h-8 text-center border border-slate-300 bg-white rounded-md py-1 px-2 font-mono font-bold text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
-                                />
-                              ) : (
-                                <span className="font-mono font-bold text-slate-900">{mat.requestedQty}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-3 text-center text-slate-500">{mat.unit}</td>
-                            <td className="py-2 px-3 text-center">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
-                                mat.status === 'fulfilled' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                                mat.status === 'partial' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                                mat.status === 'unavailable' ? 'bg-rose-50 text-rose-800 border-rose-200' :
-                                'bg-slate-100 text-slate-600 border-slate-200'
-                              }`}>
-                                {mat.status === 'fulfilled' ? 'เบิกจ่ายครบแล้ว' :
-                                 mat.status === 'partial' ? 'เบิกจ่ายบางส่วน' :
-                                 mat.status === 'unavailable' ? 'ของขาด' :
-                                 'รอคลังเบิกจ่าย'}
-                              </span>
-                            </td>
-                            {canEditAnalysis && (
-                              <td className="py-2 px-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveMaterial(mat.id)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="ลบรายการนี้"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {canEditAnalysis && (
-                      <div className="p-3 bg-slate-50/70 border-t border-slate-200/80 flex items-center justify-between">
-                        <button
-                          type="button"
-                          onClick={() => setIsAddingCustomMaterial(!isAddingCustomMaterial)}
-                          className="text-xs font-semibold text-amber-800 hover:text-amber-900 flex items-center gap-1 cursor-pointer"
-                        >
-                          <Plus size={13} />
-                          <span>{isAddingCustomMaterial ? 'ยกเลิก' : '+ เพิ่มรายการวัสดุอื่นๆ แบบกำหนดเอง'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Custom Material Input Form */}
-                {isAddingCustomMaterial && canEditAnalysis && (
-                  <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/30 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">ชื่อภาชนะ / วัสดุ *</label>
-                      <input
-                        type="text"
-                        value={customMaterialName}
-                        onChange={(e) => setCustomMaterialName(e.target.value)}
-                        placeholder="เช่น ฝาซีลกันปลอม, ฟิล์มหด ฯลฯ"
-                        className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-3 bg-white shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">จำนวนที่ขอ *</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={customMaterialQty}
-                        onChange={(e) => setCustomMaterialQty(Number(e.target.value) || 1)}
-                        className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-3 bg-white shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                      />
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={handleCustomMaterialAdd}
-                        className="w-full h-8.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs cursor-pointer"
-                      >
-                        บันทึกเข้าตาราง
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Step2AnalysisPanel
+              canEditAnalysis={canEditAnalysis}
+              resolutionMethod={resolutionMethod}
+              setResolutionMethod={setResolutionMethod}
+              materialRequests={materialRequests}
+              setMaterialRequests={setMaterialRequests}
+              handleQSMSHandover={handleQSMSHandover}
+              handleRemoveMaterial={handleRemoveMaterial}
+              isAddingCustomMaterial={isAddingCustomMaterial}
+              setIsAddingCustomMaterial={setIsAddingCustomMaterial}
+              customMaterialName={customMaterialName}
+              setCustomMaterialName={setCustomMaterialName}
+              customMaterialQty={customMaterialQty}
+              setCustomMaterialQty={setCustomMaterialQty}
+              customMaterialUnit={customMaterialUnit}
+              setCustomMaterialUnit={setCustomMaterialUnit}
+              handleCustomMaterialAdd={handleCustomMaterialAdd}
+              handleAddPresetMaterial={handleAddPresetMaterial}
+              handleMaterialQtyChange={handleMaterialQtyChange}
+              isSaving={isSaving}
+            />
           )}
 
           {/* ========================================================================= */}
           {/* STEP 3 PANEL: WPK คลังเบิกจ่ายภาชนะ (WAREHOUSE ISSUING) */}
           {/* ========================================================================= */}
           {activeStep === 'issuing' && (
-            <div className="space-y-5">
-              {/* Step Header Banner */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-sm font-bold text-slate-900 leading-snug">
-                      Step 3: คลังบันทึกการเบิกจ่ายภาชนะ (WPK Fulfillment)
-                    </h2>
-                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border shrink-0 whitespace-nowrap ${
-                      canEditIssuing ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}>
-                      {canEditIssuing ? 'โหมดเบิกจ่ายของ (WPK / Admin)' : 'โหมดดูการเบิกจ่าย (Preview Only)'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {canEditIssuing
-                      ? 'ตรวจสอบรายการที่ QSMS ขอ และบันทึกยอดเบิกได้จริงเพื่อส่งมอบงานให้ PDF ซ่อม'
-                      : 'รายการเบิกจ่ายของแผนกคลัง (เฉพาะแผนก WPK/Admin จึงจะสามารถบันทึกยอดเบิกได้)'}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsRequisitionModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-all cursor-pointer shadow-2xs shrink-0"
-                    title="เปิดใบขอเบิกภาชนะขนาด A5 สำหรับพิมพ์หรือดาวน์โหลด"
-                  >
-                    <Printer size={13} className="text-slate-500" />
-                    <span>พิมพ์ใบเบิกภาชนะ</span>
-                  </button>
-
-                  {canEditIssuing && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleFulfillAllMaterials}
-                        disabled={materialRequests.length === 0}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg border border-slate-200/80 transition-all cursor-pointer shrink-0"
-                      >
-                        <Check size={12} className="text-slate-600" />
-                        <span>เบิกครบตามยอดทั้งหมด</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleWPKHandover}
-                        disabled={isSaving}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all shadow-xs cursor-pointer shrink-0"
-                      >
-                        <Truck size={13} />
-                        <span>จ่ายของครบ & ส่งให้ PDF ซ่อม ➔</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* 1. Case Items Production Reference for Warehouse */}
-              <div className="bg-slate-50/70 rounded-lg border border-slate-200/80 p-3.5 space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/60 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Layers size={14} className="text-amber-600 shrink-0" />
-                    <h3 className="text-xs font-bold text-slate-800">
-                      รายการสินค้าในเคสที่ต้องจัดเตรียม ({editedItems.length} รายการ / รวม {totalBoxes} กล่อง)
-                    </h3>
-                  </div>
-                  <span className="text-[11px] text-slate-500 font-normal">
-                    ใช้อ้างอิงชนิดแกลลอนและบรรจุภัณฑ์ที่ต้องจัดเตรียม
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-0.5">
-                  {editedItems.map((item, idx) => (
-                    <div key={item.id || idx} className="p-2.5 rounded-md bg-white border border-slate-200/90 shadow-2xs text-xs space-y-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-mono font-bold text-slate-900 text-[11px] truncate">
-                          #{idx + 1} {item.itemNumber || item.itemCode || 'ไม่ระบุรหัส'}
-                        </span>
-                        <span className="font-mono font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[11px] shrink-0">
-                          {item.amount || 0} กล่อง
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 line-clamp-1">{item.itemName || 'ไม่ระบุชื่อสินค้า'}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 pt-0.5 flex-wrap">
-                        {item.batchNo && <span>Lot: <strong className="font-mono text-slate-700">{item.batchNo}</strong></span>}
-                        {item.gallonDate && <span>วันที่แกลลอน: <strong className="font-mono text-slate-700">{convertYMDToDMY(item.gallonDate)}</strong></span>}
-                        {item.reason && <span className="text-rose-700 font-medium">({item.reason})</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 2. Warehouse Issuing Table */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-bold text-slate-900">ตารางเบิกจ่ายภาชนะและวัสดุ</h3>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
-                      {materialRequests.length} รายการ
-                    </span>
-                    {materialRequests.length > 0 && (
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border inline-flex items-center gap-1 ${
-                        materialRequests.every(m => m.status === 'fulfilled')
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                          : 'bg-amber-50 text-amber-800 border-amber-200'
-                      }`}>
-                        {materialRequests.every(m => m.status === 'fulfilled') ? (
-                          <>
-                            <CheckCircle2 size={11} className="text-emerald-700" />
-                            <span>เบิกครบทุกรายการแล้ว</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock size={11} className="text-amber-700" />
-                            <span>เบิกจ่ายแล้ว {materialRequests.filter(m => m.status === 'fulfilled').length}/{materialRequests.length} รายการ</span>
-                          </>
-                        )}
-                      </span>
-                    )}
-                  </div>
-
-                  {canEditIssuing && (
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingWPKMaterial(!isAddingWPKMaterial)}
-                      className="text-xs font-semibold text-amber-800 hover:text-amber-900 inline-flex items-center gap-1 cursor-pointer self-start sm:self-auto"
-                    >
-                      <Plus size={13} />
-                      <span>{isAddingWPKMaterial ? 'ปิดฟอร์มเพิ่ม' : '+ เพิ่มรายการเบิกด่วน'}</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Inline WPK Quick Add Form */}
-                {isAddingWPKMaterial && canEditIssuing && (
-                  <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-2.5">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <Sparkles size={13} className="text-amber-600" />
-                        <span>เพิ่มรายการเบิกจ่ายด่วน (WPK Direct Add)</span>
-                      </span>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <span className="text-[10px] text-slate-500 mr-1">ทางลัด:</span>
-                        {['กล่องใหม่', 'แกลลอนใหม่', 'ฝาใหม่', 'สติ๊กเกอร์', 'ฟิล์มยืด'].map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => {
-                              setWpkMaterialName(preset);
-                              if (preset.includes('กล่อง')) setWpkMaterialUnit('กล่อง');
-                              else if (preset.includes('แกลลอน')) setWpkMaterialUnit('ใบ');
-                              else if (preset.includes('ฝา')) setWpkMaterialUnit('ฝา');
-                              else if (preset.includes('สติ๊กเกอร์')) setWpkMaterialUnit('แผ่น');
-                              else setWpkMaterialUnit('ม้วน');
-                            }}
-                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-white text-slate-700 border border-slate-200 hover:border-amber-400 hover:text-amber-900 transition-colors cursor-pointer"
-                          >
-                            +{preset}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-end">
-                      <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">ชื่อภาชนะ / วัสดุ *</label>
-                        <input
-                          type="text"
-                          value={wpkMaterialName}
-                          onChange={(e) => setWpkMaterialName(e.target.value)}
-                          placeholder="เช่น กล่องบรรจุภัณฑ์ใหม่, แกลลอนใหม่"
-                          className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-3 bg-white shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">จำนวนที่เบิก *</label>
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            min="1"
-                            value={wpkMaterialQty}
-                            onChange={(e) => setWpkMaterialQty(Number(e.target.value) || 1)}
-                            className="w-full h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-2.5 bg-white shadow-2xs font-mono font-bold text-center focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                          />
-                          <input
-                            type="text"
-                            value={wpkMaterialUnit}
-                            onChange={(e) => setWpkMaterialUnit(e.target.value)}
-                            placeholder="หน่วย"
-                            className="w-16 h-8.5 text-xs border border-slate-300 rounded-lg py-1.5 px-2 bg-white text-center shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <button
-                          type="button"
-                          onClick={handleWPKAddCustomMaterial}
-                          className="w-full h-8.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1"
-                        >
-                          <Plus size={13} />
-                          <span>เพิ่มเข้าตาราง</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {materialRequests.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-                    <Package size={26} className="text-slate-400 mx-auto mb-1.5" />
-                    <p className="text-xs font-semibold text-slate-600">QSMS ยังไม่ได้ระบุรายการขอเบิกภาชนะใน Step 2</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      สามารถจัดเตรียมตามยอดสินค้าในเคสด้านบน หรือเพิ่มรายการเบิกด่วนได้ทันที
-                    </p>
-                    <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-                      {canEditIssuing && (
-                        <button
-                          type="button"
-                          onClick={() => setIsAddingWPKMaterial(true)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-200 transition-colors cursor-pointer"
-                        >
-                          <Plus size={12} />
-                          <span>+ เพิ่มรายการเบิกด่วน</span>
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setActiveStep('analysis')}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 bg-white hover:bg-slate-50 rounded-md border border-slate-200 transition-colors cursor-pointer"
-                      >
-                        <span>ไปยัง Step 2 (วิเคราะห์ & ภาชนะ)</span>
-                        <ChevronRight size={12} />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
-                        <tr>
-                          <th className="py-2.5 px-3">#</th>
-                          <th className="py-2.5 px-3">รายการภาชนะ / วัสดุ</th>
-                          <th className="py-2.5 px-3 text-center">ยอดที่ QSMS ขอ</th>
-                          <th className="py-2.5 px-3 text-center">ยอดเบิกได้จริง (WPK)</th>
-                          <th className="py-2.5 px-3 text-center">หน่วยนับ</th>
-                          <th className="py-2.5 px-3 text-center">สถานะ</th>
-                          {canEditIssuing && <th className="py-2.5 px-3 text-center">การดำเนินการ</th>}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {materialRequests.map((mat, idx) => (
-                          <tr key={mat.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="py-2 px-3 font-mono text-slate-400">{idx + 1}</td>
-                            <td className="py-2 px-3 font-semibold text-slate-800">{mat.materialName}</td>
-                            <td className="py-2 px-3 text-center font-mono font-bold text-slate-600">{mat.requestedQty}</td>
-                            <td className="py-2 px-3 text-center">
-                              {canEditIssuing ? (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={mat.issuedQty ?? 0}
-                                  onChange={(e) => handleMaterialIssuedQtyChange(mat.id, Number(e.target.value) || 0)}
-                                  className="w-20 h-8 text-center border border-slate-300 bg-white rounded-md py-1 px-2.5 font-mono font-bold text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
-                                />
-                              ) : (
-                                <span className="font-mono font-bold text-slate-900">{mat.issuedQty ?? '-'}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-3 text-center text-slate-500">{mat.unit}</td>
-                            <td className="py-2 px-3 text-center">
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${
-                                mat.status === 'fulfilled' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                                mat.status === 'partial' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                                mat.status === 'unavailable' ? 'bg-rose-50 text-rose-800 border-rose-200' :
-                                'bg-slate-100 text-slate-600 border-slate-200'
-                              }`}>
-                                {mat.status === 'fulfilled' ? (
-                                  <>
-                                    <CheckCircle2 size={11} className="text-emerald-700" />
-                                    <span>เบิกจ่ายครบแล้ว</span>
-                                  </>
-                                ) : mat.status === 'partial' ? (
-                                  <>
-                                    <Clock size={11} className="text-amber-700" />
-                                    <span>เบิกจ่ายบางส่วน</span>
-                                  </>
-                                ) : mat.status === 'unavailable' ? (
-                                  <>
-                                    <AlertCircle size={11} className="text-rose-700" />
-                                    <span>ของขาด</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Clock size={11} className="text-slate-500" />
-                                    <span>รอคลังเบิกจ่าย</span>
-                                  </>
-                                )}
-                              </span>
-                            </td>
-                            {canEditIssuing && (
-                              <td className="py-2 px-3 text-center">
-                                <div className="inline-flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleMaterialSetFulfilled(mat.id)}
-                                    title="ระบุเบิกครบตามยอดที่ขอ"
-                                    className="px-2 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition-colors cursor-pointer"
-                                  >
-                                    ครบ
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleMaterialSetUnavailable(mat.id)}
-                                    title="ระบุของขาด"
-                                    className="px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded transition-colors cursor-pointer"
-                                  >
-                                    ของขาด
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveMaterialWPK(mat.id)}
-                                    title="ลบรายการนี้"
-                                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* 3. Material Shortage Card */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <AlertCircle size={14} className="text-amber-600" />
-                    <h3 className="text-xs font-bold text-slate-800">
-                      บันทึกวัสดุที่ขาด (Material Shortage Record)
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {(missingBoxes > 0 || missingGallons > 0 || missingOil > 0) ? (
-                      <>
-                        <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                          <AlertCircle size={11} />
-                          <span>มีรายการวัสดุขาดที่ต้องติดตาม</span>
-                        </span>
-                        {canEditIssuing && (
-                          <button
-                            type="button"
-                            onClick={() => { setMissingBoxes(0); setMissingGallons(0); setMissingOil(0); }}
-                            className="text-[11px] text-slate-400 hover:text-slate-600 underline cursor-pointer"
-                          >
-                            ล้างค่าเป็น 0
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                        <CheckCircle2 size={11} />
-                        <span>วัสดุพร้อมครบ ไม่มีรายการขาด</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">ขาดกล่อง (ใบ)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={missingBoxes || ''}
-                      disabled={!canEditIssuing}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setMissingBoxes(Number(e.target.value) || 0)}
-                      className={`w-full h-9 text-xs font-mono font-bold tracking-tight rounded-md px-3 py-1.5 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:ring-2 ${
-                        missingBoxes > 0 
-                          ? 'border-2 border-amber-400 bg-amber-50/30 text-amber-950 focus:border-amber-500 focus:ring-amber-500/20' 
-                          : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
-                      }`}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">ขาดแกลลอน (ใบ)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={missingGallons || ''}
-                      disabled={!canEditIssuing}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setMissingGallons(Number(e.target.value) || 0)}
-                      className={`w-full h-9 text-xs font-mono font-bold tracking-tight rounded-md px-3 py-1.5 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:ring-2 ${
-                        missingGallons > 0 
-                          ? 'border-2 border-amber-400 bg-amber-50/30 text-amber-950 focus:border-amber-500 focus:ring-amber-500/20' 
-                          : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
-                      }`}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">ขาดน้ำมัน (ลิตร)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={missingOil || ''}
-                      disabled={!canEditIssuing}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setMissingOil(Number(e.target.value) || 0)}
-                      className={`w-full h-9 text-xs font-mono font-bold tracking-tight rounded-md px-3 py-1.5 shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:ring-2 ${
-                        missingOil > 0 
-                          ? 'border-2 border-amber-400 bg-amber-50/30 text-amber-950 focus:border-amber-500 focus:ring-amber-500/20' 
-                          : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
-                      }`}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  ข้อมูลวัสดุที่ขาดจะถูกบันทึกเพื่อแจ้งให้ฝ่ายจัดซื้อ/หน้างานทราบ และจะถูกล้างค่าอัตโนมัติเมื่อเคสซ่อมเสร็จสมบูรณ์
-                </p>
-              </div>
-
-              {/* 4. Material Receipt & Handshake Card */}
-              <div className={`p-4 rounded-xl border transition-all ${
-                receivedHandshake
-                  ? 'bg-emerald-50/70 border-emerald-200 shadow-xs'
-                  : 'bg-slate-50/80 border-slate-200 shadow-2xs'
-              }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center border font-bold text-sm shrink-0 ${
-                      receivedHandshake
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-white text-slate-500 border-slate-200'
-                    }`}>
-                      {receivedHandshake ? <Check size={16} className="text-emerald-700" /> : <Package size={16} />}
-                    </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                        <span>สถานะการรับมอบชิ้นส่วนหน้างาน (Material Handshake Receipt)</span>
-                        {receivedHandshake ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 inline-flex items-center gap-1">
-                            <CheckCircle2 size={11} className="text-emerald-700" />
-                            <span>รับมอบเรียบร้อย</span>
-                          </span>
-                        ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium border border-slate-200 inline-flex items-center gap-1">
-                            <Clock size={11} className="text-slate-500" />
-                            <span>รอฝ่ายซ่อม (PDF) ยืนยันตรวจรับ</span>
-                          </span>
-                        )}
-                      </h4>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {receivedHandshake
-                          ? `ยืนยันตรวจรับชิ้นส่วนครบชุดแล้ว โดย ${receivedHandshake.receivedBy} เมื่อ ${receivedHandshake.receivedAt}`
-                          : (canEditRepair || userRole === 'ADMIN' || userRole === 'PDF')
-                            ? 'ฝ่ายซ่อม (PDF) หรือผู้รับมอบหน้างานต้องตรวจนับและยืนยันการรับมอบเมื่อของมาถึง'
-                            : 'คลัง (WPK) ส่งมอบของเรียบร้อยแล้ว ช่างซ่อม (PDF) จะเป็นผู้ตรวจนับและกดยืนยันการรับมอบหน้างาน'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {!receivedHandshake && (canEditRepair || userRole === 'ADMIN' || userRole === 'PDF') && (
-                    <button
-                      type="button"
-                      onClick={handleConfirmMaterialReceipt}
-                      disabled={isSaving}
-                      className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
-                    >
-                      <CheckCircle2 size={14} />
-                      <span>ยืนยันตรวจรับชิ้นส่วนครบชุด</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+            <Step3IssuingPanel
+              canEditIssuing={canEditIssuing}
+              canEditRepair={canEditRepair}
+              userRole={userRole}
+              materialRequests={materialRequests}
+              derivedShortage={derivedShortage}
+              receivedHandshake={receivedHandshake}
+              isSaving={isSaving}
+              setIsRequisitionModalOpen={setIsRequisitionModalOpen}
+              handleFulfillAllMaterials={handleFulfillAllMaterials}
+              handleWPKHandover={handleWPKHandover}
+              handleMaterialIssuedQtyChange={handleMaterialIssuedQtyChange}
+              handleMaterialSetFulfilled={handleMaterialSetFulfilled}
+              handleMaterialSetUnavailable={handleMaterialSetUnavailable}
+              handleRemoveMaterialWPK={handleRemoveMaterialWPK}
+              isAddingWPKMaterial={isAddingWPKMaterial}
+              setIsAddingWPKMaterial={setIsAddingWPKMaterial}
+              wpkMaterialName={wpkMaterialName}
+              setWpkMaterialName={setWpkMaterialName}
+              wpkMaterialQty={wpkMaterialQty}
+              setWpkMaterialQty={setWpkMaterialQty}
+              wpkMaterialUnit={wpkMaterialUnit}
+              setWpkMaterialUnit={setWpkMaterialUnit}
+              handleWPKAddCustomMaterial={handleWPKAddCustomMaterial}
+              handleConfirmMaterialReceipt={handleConfirmMaterialReceipt}
+              handleReportShortageBlockage={handleReportShortageBlockage}
+            />
           )}
 
           {/* ========================================================================= */}
           {/* STEP 4 PANEL: PDF ซ่อมงาน & DEFEND MODE (REPAIR & DEFEND) */}
           {/* ========================================================================= */}
           {activeStep === 'repair' && (
-            <div className="space-y-5">
-              {/* Step Header Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-sm font-bold text-slate-900">Step 4: ช่างซ่อมบันทึกความคืบหน้า & Defend</h2>
-                    <span className={`px-2.5 py-0.5 rounded text-xs font-medium border shrink-0 ${
-                      canEditRepair ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}>
-                      {canEditRepair ? 'โหมดซ่อม & Defend (PDF / Admin)' : 'โหมดดูความคืบหน้า (Preview Only)'}
-                    </span>
-                    {caseStatus === 'Blocked' && (
-                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300 inline-flex items-center gap-1 shrink-0">
-                        <AlertTriangle size={11} />
-                        <span>ติดปัญหา (Blocked)</span>
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {canEditRepair
-                      ? 'บันทึกยอดกล่องที่ซ่อมเสร็จจริง หรือบันทึกปัญหา Defend กรณีติดอุปสรรคหน้างาน'
-                      : 'ความคืบหน้างานซ่อมของแผนก PDF (เฉพาะแผนก PDF/Admin จึงจะสามารถบันทึกยอดซ่อมได้)'}
-                  </p>
-                </div>
-
-                {canEditRepair && (
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-                    <button
-                      type="button"
-                      onClick={() => handlePDFSave(false, false)}
-                      disabled={isSaving}
-                      className="h-9 px-3.5 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-2xs transition-all cursor-pointer"
-                    >
-                      <Save size={13} className="text-slate-500" />
-                      <span>บันทึกความคืบหน้า</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePDFSave(true, false)}
-                      disabled={isSaving || globalCompleted < totalBoxes}
-                      className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <CheckCheck size={14} />
-                      <span>ปิดเคส 100% (Completed)</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* 1. Overall Progress Gauge Card */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <CheckCircle2 size={16} className={completionPercentage >= 100 ? 'text-emerald-600' : 'text-amber-600'} />
-                      <span>ความคืบหน้าการซ่อมรวม (Overall Progress)</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      ยอดเสร็จ: <strong className="text-slate-900 font-mono text-sm">{globalCompleted}</strong> จากทั้งหมด <strong className="font-mono text-slate-700">{totalBoxes}</strong> กล่อง ({completionPercentage}%)
-                    </p>
-                  </div>
-
-                  {canEditRepair && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[11px] font-medium text-slate-500 mr-1 hidden sm:inline">ระบุยอดรวม:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max={totalBoxes}
-                          value={globalCompleted || ''}
-                          onFocus={(e) => e.target.select()}
-                          onChange={(e) => handleGlobalProgressChange(Number(e.target.value) || 0)}
-                          placeholder="0"
-                          className="w-24 h-9 text-xs font-mono font-bold tracking-tight text-center border border-slate-300 rounded-md py-1.5 px-2 bg-white text-slate-900 shadow-2xs focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                        />
-                        <span className="text-xs text-slate-500 font-medium">/ {totalBoxes} กล่อง</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleGlobalProgressChange(totalBoxes)}
-                        className="h-9 px-3.5 text-xs font-bold text-slate-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 transition-colors cursor-pointer shadow-2xs shrink-0"
-                      >
-                        เสร็จทั้งหมด
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      completionPercentage >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
-                    }`}
-                    style={{ width: `${Math.min(100, completionPercentage)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* 2. Granular Item-by-Item Repair Progress Breakdown */}
-              <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <Layers size={14} className="text-amber-600 shrink-0" />
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                      บันทึกความคืบหน้ารายการสินค้า ({editedItems.length} รายการ)
-                    </h3>
-                  </div>
-                  <span className="text-[11px] text-slate-500 font-normal">
-                    สามารถระบุยอดเสร็จแยกตามรายการสินค้า หรือปรับยอดรวมด้านบนได้
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
-                      <tr>
-                        <th className="py-2.5 px-3">#</th>
-                        <th className="py-2.5 px-3">รายการสินค้า / รหัสสินค้า</th>
-                        <th className="py-2.5 px-3 text-center">ยอดทั้งหมด (ลัง)</th>
-                        <th className="py-2.5 px-3 text-center">ซ่อมเสร็จแล้ว (ลัง)</th>
-                        <th className="py-2.5 px-3 text-center">ความคืบหน้า</th>
-                        {canEditRepair && <th className="py-2.5 px-3 text-center">การดำเนินการ</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {editedItems.map((item, idx) => {
-                        const amount = Number(item.amount) || 0;
-                        const completed = Number(item.completedBoxes) || 0;
-                        const percent = amount > 0 ? Math.round((completed / amount) * 100) : 0;
-                        const isDone = completed >= amount && amount > 0;
-
-                        return (
-                          <tr key={item.id || idx} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="py-2.5 px-3 font-mono text-slate-400 font-bold">{idx + 1}</td>
-                            <td className="py-2.5 px-3">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono font-bold text-slate-900">{item.itemNumber || item.itemCode || '-'}</span>
-                                {item.itemCode && item.itemNumber && (
-                                  <span className="font-mono text-[10px] text-slate-500">({item.itemCode})</span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-slate-600 truncate mt-0.5">{item.itemName || 'ไม่ระบุชื่อสินค้า'}</div>
-                              <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                                {item.batchNo && <span>Lot: <strong className="text-slate-600 font-mono">{item.batchNo}</strong></span>}
-                                {item.reason && <span className="text-rose-600 font-medium">({item.reason})</span>}
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-700">
-                              {amount}
-                            </td>
-                            <td className="py-2.5 px-3 text-center">
-                              {canEditRepair ? (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max={amount}
-                                  value={item.completedBoxes ?? 0}
-                                  onFocus={(e) => e.target.select()}
-                                  onChange={(e) => handleItemProgressChange(idx, Number(e.target.value) || 0)}
-                                  className={`w-20 h-8 text-center font-mono font-bold text-xs rounded-md shadow-2xs focus:outline-none focus:ring-2 ${
-                                    isDone 
-                                      ? 'border-2 border-emerald-400 bg-emerald-50/40 text-emerald-900 focus:border-emerald-500 focus:ring-emerald-500/20' 
-                                      : 'border border-slate-300 bg-white text-slate-900 focus:border-amber-500 focus:ring-amber-500/20'
-                                  }`}
-                                />
-                              ) : (
-                                <span className="font-mono font-bold text-slate-900">{completed}</span>
-                              )}
-                            </td>
-                            <td className="py-2.5 px-3 text-center">
-                              <div className="flex flex-col items-center gap-1 min-w-[90px]">
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                  isDone ? 'bg-emerald-100 text-emerald-800' : completed > 0 ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                  {isDone ? '100% ครบ' : `${percent}%`}
-                                </span>
-                                <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full ${isDone ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                                    style={{ width: `${Math.min(100, percent)}%` }}
-                                  />
-                                </div>
-                              </div>
-                            </td>
-                            {canEditRepair && (
-                              <td className="py-2.5 px-3 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => handleItemProgressChange(idx, amount)}
-                                  disabled={isDone}
-                                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-all cursor-pointer ${
-                                    isDone 
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 opacity-80 cursor-default'
-                                      : 'bg-white text-slate-700 border-slate-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-900 shadow-2xs'
-                                  }`}
-                                >
-                                  {isDone ? 'ครบแล้ว' : 'เสร็จครบ'}
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* 3. PDF Defend Mode Card */}
-              <div className={`bg-white rounded-lg border shadow-xs space-y-3 p-4 transition-all ${
-                caseStatus === 'Blocked' ? 'border-rose-300 ring-1 ring-rose-300/30' : 'border-slate-200'
-              }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                      <Shield size={16} className="text-rose-600" />
-                      <span>PDF Defend Mode (รายงานอุปสรรค & ข้อแก้ต่างหน้างาน)</span>
-                      {caseStatus === 'Blocked' && (
-                        <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                          <AlertTriangle size={11} />
-                          <span>ติดสถานะ Defend Case</span>
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      ระบุเหตุผลที่งานยังไม่เสร็จสิ้น เพื่อชี้แจงความรับผิดชอบอย่างโปร่งใส
-                    </p>
-                  </div>
-
-                  {canEditRepair && (
-                    <div className="flex items-center gap-2">
-                      {caseStatus === 'Blocked' && (
-                        <button
-                          type="button"
-                          onClick={() => handlePDFSave(false, false)}
-                          disabled={isSaving}
-                          className="px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                        >
-                          <CheckCircle2 size={13} />
-                          <span>ปลดล็อคสถานะ Defend & ทำงานต่อ</span>
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handlePDFSave(false, true)}
-                        disabled={isSaving}
-                        className="px-3 py-1.5 text-xs font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shadow-2xs"
-                      >
-                        <AlertTriangle size={13} />
-                        <span>บันทึกสถานะติดปัญหา (Defend Case)</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">หมวดหมู่ปัญหา (Defend Category)</label>
-                    <Select
-                      value={defendCategory}
-                      disabled={!canEditRepair}
-                      onValueChange={setDefendCategory}
-                    >
-                      <SelectTrigger className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:text-slate-400 transition-colors">
-                        <SelectValue placeholder="เลือกหมวดหมู่ปัญหา" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-md p-1 z-[100]">
-                        <SelectItem value="waiting_oil">รอน้ำมัน (Waiting for Oil)</SelectItem>
-                        <SelectItem value="waiting_container">รอภาชนะจาก WPK (Waiting for Containers)</SelectItem>
-                        <SelectItem value="waiting_label">รอฉลากจาก Supplier (Waiting for Labels)</SelectItem>
-                        <SelectItem value="waiting_lab">รอผลตรวจแล็บ QSMS (Waiting for Lab)</SelectItem>
-                        <SelectItem value="waiting_machine">เครื่องจักรขัดข้อง (Machine Breakdown)</SelectItem>
-                        <SelectItem value="other">อื่นๆ (Other)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-slate-700">บันทึกข้อแก้ต่าง / อุปสรรค (Defend Notes)</label>
-                      {canEditRepair && (
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                          <span>ทางลัด:</span>
-                          <button
-                            type="button"
-                            onClick={() => setDefendNotes('รอน้ำมันล็อตพิเศษจากคลัง กำลังรอจัดส่ง')}
-                            className="text-amber-800 hover:underline cursor-pointer"
-                          >
-                            +รอน้ำมัน
-                          </button>
-                          <span>•</span>
-                          <button
-                            type="button"
-                            onClick={() => setDefendNotes('รอเปลี่ยนแกลลอนใหม่จาก Supplier')}
-                            className="text-amber-800 hover:underline cursor-pointer"
-                          >
-                            +รอแกลลอน
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <textarea
-                      rows={2}
-                      value={defendNotes}
-                      disabled={!canEditRepair}
-                      onChange={(e) => setDefendNotes(e.target.value)}
-                      placeholder="ระบุรายละเอียด เช่น รอน้ำมันล็อตพิเศษจากคลัง แจ้งเรื่องไปเมื่อ 10:00 น. กำลังรอการจัดส่ง..."
-                      className="w-full text-xs font-medium bg-white border border-slate-300 rounded-md p-2.5 disabled:bg-slate-100 disabled:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 4. QC Verification Gate & Final Sign-Off Card */}
-              <div className={`rounded-xl border p-5 transition-all ${
-                qcSignoff
-                  ? 'border-emerald-300 bg-emerald-50/40 shadow-xs'
-                  : 'border-slate-200 bg-white shadow-xs'
-              }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-lg shrink-0 ${
-                      qcSignoff
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-amber-50 text-amber-800 border-amber-300'
-                    }`}>
-                      <Award className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                        <span>QC Verification Gate (การตรวจรับคุณภาพและปิดเคสอย่างเป็นทางการ)</span>
-                        {qcSignoff ? (
-                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 inline-flex items-center gap-1">
-                            <CheckCircle2 size={11} className="text-emerald-700" />
-                            <span>QC Approved</span>
-                          </span>
-                        ) : globalCompleted >= totalBoxes && totalBoxes > 0 ? (
-                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold border border-amber-200 inline-flex items-center gap-1">
-                            <Clock size={11} className="text-amber-700" />
-                            <span>พร้อมตรวจรับ QC</span>
-                          </span>
-                        ) : (
-                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium border border-slate-200">
-                            รอซ่อมเสร็จ 100%
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {qcSignoff
-                          ? `เคสนี้ได้รับการตรวจรับและลงนามปิดเคสเรียบร้อยแล้ว โดย ${qcSignoff.approvedBy} เมื่อ ${qcSignoff.approvedAt}`
-                          : 'เมื่อยอดซ่อมเสร็จ 100% เจ้าหน้าที่ QSMS หรือ Admin สามารถตรวจสอบและลงนามรับรองผลเพื่อปิดเคส'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* QC Action for Admin / QSMS */}
-                  {!qcSignoff && (userRole === 'ADMIN' || userRole === 'QSMS') && globalCompleted >= totalBoxes && totalBoxes > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleQCSignoff}
-                      disabled={isSaving}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 min-h-[40px]"
-                    >
-                      <CheckCheck size={16} />
-                      <span>ลงนามตรวจรับ QC & ปิดเคส</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Inspection Details / Input */}
-                {qcSignoff ? (
-                  <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-xs space-y-1">
-                    <div className="font-bold text-emerald-900 flex items-center justify-between">
-                      <span>ผลการตรวจรับ QC:</span>
-                      <span className="font-normal text-slate-500 text-[11px]">{qcSignoff.approvedAt}</span>
-                    </div>
-                    <p className="text-emerald-800 font-medium">{qcSignoff.qcNotes || 'ตรวจรับงาน Rework ผ่านเกณฑ์คุณภาพมาตรฐาน 100%'}</p>
-                    <p className="text-[11px] text-emerald-700 pt-1">ผู้ลงนามอนุมัติ: <strong>{qcSignoff.approvedBy}</strong></p>
-                  </div>
-                ) : (
-                  (userRole === 'ADMIN' || userRole === 'QSMS') && (
-                    <div className="mt-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-semibold text-slate-700">
-                          บันทึกผลการตรวจสอบของ QC (QC Inspection Notes):
-                        </label>
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                          <span>ทางลัด:</span>
-                          <button
-                            type="button"
-                            onClick={() => setQcNotesInput('ตรวจสอบสภาพกล่อง แกลลอน และรอยรั่วซึมแล้ว อยู่ในเกณฑ์มาตรฐาน 100%')}
-                            className="text-amber-800 hover:underline cursor-pointer"
-                          >
-                            +ผ่านเกณฑ์ 100%
-                          </button>
-                          <span>•</span>
-                          <button
-                            type="button"
-                            onClick={() => setQcNotesInput('สุ่มตรวจรอยต่อและแรงบิดฝา ผ่านเกณฑ์มาตรฐาน QSMS พร้อมส่งเข้าคลัง')}
-                            className="text-amber-800 hover:underline cursor-pointer"
-                          >
-                            +สุ่มตรวจผ่าน
-                          </button>
-                        </div>
-                      </div>
-                      <textarea
-                        rows={2}
-                        value={qcNotesInput}
-                        onChange={(e) => setQcNotesInput(e.target.value)}
-                        placeholder="ระบุข้อคิดเห็น QC เช่น ตรวจสอบสภาพกล่อง แกลลอน และรอยรั่วซึมแล้ว อยู่ในเกณฑ์มาตรฐาน พร้อมส่งเข้าคลัง..."
-                        className="w-full text-xs font-medium bg-white border border-slate-300 rounded-md p-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
-                      />
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
+            <Step4RepairPanel
+              canEditRepair={canEditRepair}
+              userRole={userRole}
+              isAdmin={isAdmin}
+              caseStatus={caseStatus}
+              isDefendBlocked={isDefendBlocked}
+              setIsDefendBlocked={setIsDefendBlocked}
+              defendCategory={defendCategory}
+              setDefendCategory={setDefendCategory}
+              defendNotes={defendNotes}
+              setDefendNotes={setDefendNotes}
+              handlePDFSave={handlePDFSave}
+              isSaving={isSaving}
+              editedItems={editedItems}
+              handleItemProgressChange={handleItemProgressChange}
+              globalCompleted={globalCompleted}
+              totalBoxes={totalBoxes}
+              qcSignoff={qcSignoff}
+              qcNotesInput={qcNotesInput}
+              setQcNotesInput={setQcNotesInput}
+              handleQCSignoff={handleQCSignoff}
+            />
           )}
 
         </div>
       </div>
     </div>
+
+      {/* 4. MOBILE TECHNICIAN QUICK ACTION BAR (PDF / REPAIR STAGE) */}
+      <MobileTechnicianQuickBar
+        canEditRepair={canEditRepair}
+        totalBoxes={totalBoxes}
+        globalCompleted={globalCompleted}
+        isSaving={isSaving}
+        editedItems={editedItems}
+        handleItemProgressChange={handleItemProgressChange}
+        handlePDFSave={handlePDFSave}
+      />
 
       {/* Export Overlay */}
       <AnimatePresence>
@@ -2989,9 +2070,9 @@ export function CaseUpdateView({
           <div className="fixed inset-0 z-[120] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-8">
             <div className="bg-white rounded-xl p-8 shadow-2xl flex flex-col items-center gap-5 max-w-sm w-full text-center border border-slate-200">
               <div className="relative">
-                <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+                <div className="w-16 h-16 border-4 border-slate-900/20 border-t-slate-900 rounded-full animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Download size={20} className="text-amber-600 animate-pulse" />
+                  <Download size={20} className="text-slate-800 animate-pulse" />
                 </div>
               </div>
               <div>
@@ -3077,7 +2158,7 @@ export function CaseUpdateView({
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/95 text-slate-800 border border-slate-200 shadow-xl backdrop-blur-md min-w-[260px] sm:min-w-[300px]">
               {isComplete ? (
                 <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
-                  <CheckCircle2 size={16} className="animate-bounce" />
+                  <CheckCircle2 size={16} className="text-emerald-700" />
                 </div>
               ) : (
                 <div className="w-7 h-7 rounded-lg bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center justify-center shrink-0">

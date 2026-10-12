@@ -62,12 +62,11 @@ test.describe('Rework Portal - Case Update', () => {
       }
     });
 
-    // Bootstrapping view state via sessionStorage before app mounts
-    await page.goto('/');
-    await page.evaluate(() => {
+    // Set the initial view before the client app hydrates.
+    await page.addInitScript(() => {
       sessionStorage.setItem('currentView', 'rework');
     });
-    await page.reload();
+    await page.goto('/');
   });
 
   test('should allow admin to edit case name and source', async ({ page }) => {
@@ -78,15 +77,10 @@ test.describe('Rework Portal - Case Update', () => {
 
     // 2. Expect Case Update View to open
     await expect(page.locator('text=RT084-2026').first()).toBeVisible();
-    await expect(page.locator('text=ความคืบหน้าการทำงานรวม')).toBeVisible();
-
-    // 3. Handle save action
-    page.on('dialog', async dialog => {
-      await dialog.accept();
-    });
+    await expect(page.getByRole('button', { name: /1\. บันทึกข้อมูลสินค้า/i })).toBeVisible();
 
     // 4. Click save button in update view
-    const saveButton = page.getByRole('button', { name: /บันทึกและเสร็จสิ้น/i });
+    const saveButton = page.getByRole('button', { name: /บันทึกเสร็จสิ้น/i });
     await expect(saveButton).toBeVisible();
     await saveButton.click();
 

@@ -226,8 +226,8 @@ export function MainLayout({
           <div
             onMouseDown={handleMouseDown}
             onDoubleClick={handleDoubleClick}
-            className={`absolute top-0 right-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-50 hidden md:flex items-center justify-center group hover:bg-amber-500/10 transition-colors ${
-              isResizing ? 'bg-amber-500/20' : ''
+            className={`absolute top-0 right-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-50 hidden md:flex items-center justify-center group hover:bg-slate-200/60 transition-colors ${
+              isResizing ? 'bg-slate-300' : ''
             }`}
             title="คลิกลากเพื่อปรับขนาด (Double-click เพื่อคืนค่า 260px, ลากต่ำกว่า 180px เพื่อยุบ)"
           >
@@ -235,8 +235,8 @@ export function MainLayout({
             <div
               className={`w-1 h-8 rounded-full transition-all duration-150 ${
                 isResizing
-                  ? 'bg-amber-500 scale-y-125'
-                  : 'bg-slate-300 opacity-0 group-hover:opacity-100 group-hover:bg-amber-500'
+                  ? 'bg-slate-600 scale-y-125'
+                  : 'bg-slate-300 opacity-0 group-hover:opacity-100 group-hover:bg-slate-500'
               }`}
             />
           </div>
@@ -248,7 +248,7 @@ export function MainLayout({
           whileHover={{ scale: 1.01 }}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 flex items-center justify-center overflow-hidden rounded-lg bg-[#FEF3C7] text-[#92400E] font-bold p-1 border border-[#FDE68A]">
+            <div className="w-9 h-9 flex items-center justify-center overflow-hidden rounded-lg bg-slate-900 text-white font-bold p-1 border border-slate-800">
               <img src="/img/logo.png" alt="QSMS" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
             <div>
@@ -319,7 +319,7 @@ export function MainLayout({
               closeSidebar();
             }}
             label="DocAI Assistant"
-            icon={<Bot size={16} className="text-[#D97706]" />}
+            icon={<Bot size={16} className="text-slate-500" />}
           />
         </nav>
 
@@ -330,12 +330,12 @@ export function MainLayout({
             title="คลิกเพื่อดูสิทธิ์การใช้งาน"
           >
             {/* User Avatar Circle */}
-            <div className="w-7 h-7 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-bold flex items-center justify-center text-xs uppercase">
+            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-bold flex items-center justify-center text-xs uppercase">
               {userName ? userName.charAt(0) : 'U'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-slate-800 truncate leading-tight mb-0.5">{userName || 'User'}</p>
-              <span className="inline-flex rounded px-1.5 py-0.5 bg-[#FEF3C7] text-[11px] font-semibold text-[#92400E] border border-[#FDE68A]">
+              <span className="inline-flex rounded px-1.5 py-0.5 bg-slate-100 text-[11px] font-medium text-slate-700 border border-slate-200">
                 {String(userRole || 'Admin')}
               </span>
             </div>
@@ -343,7 +343,7 @@ export function MainLayout({
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700 cursor-pointer"
+            className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
           >
             <LogOut size={15} />
             <span>ออกจากระบบ</span>
@@ -356,7 +356,7 @@ export function MainLayout({
         {!isFocusMode && (
           <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 flex items-center justify-center rounded bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-bold text-xs">
+              <div className="w-7 h-7 flex items-center justify-center rounded bg-slate-900 text-white border border-slate-800 font-bold text-xs">
                 Q
               </div>
               <span className="text-sm font-bold text-slate-900">QSMS Rework</span>
@@ -365,7 +365,7 @@ export function MainLayout({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsPermissionsModalOpen(true)}
-                className="inline-flex rounded-md bg-[#FEF3C7] px-2.5 py-0.5 text-[10px] font-semibold text-[#92400E] border border-[#FDE68A]"
+                className="inline-flex rounded-md bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200"
                 title="สิทธิ์การใช้งาน"
               >
                 {String(userRole || 'Admin')}
@@ -411,11 +411,11 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
       }}
       className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
         active
-          ? 'bg-[#FEF9E7] text-[#92400E] font-semibold border border-[#FDE68A]/80 shadow-2xs'
+          ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/90 shadow-2xs'
           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
       }`}
     >
-      {icon && <span className={`shrink-0 transition-colors ${active ? 'text-[#D97706]' : 'text-slate-400'}`}>{icon}</span>}
+      {icon && <span className={`shrink-0 transition-colors ${active ? 'text-slate-900' : 'text-slate-400'}`}>{icon}</span>}
       <span className="whitespace-nowrap leading-normal">{label}</span>
     </button>
   );

@@ -114,6 +114,10 @@ export interface ReworkCase {
   materialReceivedInfo?: {
     receivedBy?: string;
     receivedAt?: string;
+    isPartial?: boolean;
+    status?: 'complete' | 'partial';
+    missingSummary?: string;
+    note?: string;
   };
   qcApprovalInfo?: {
     approvedBy?: string;

@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNotification } from '@/src/contexts/NotificationContext';
 import { AlertCircle, AlertTriangle, Info, HelpCircle } from 'lucide-react';
 
 export const AlertModal: React.FC = () => {
   const { alert, closeAlert } = useNotification();
+
+  useEffect(() => {
+    if (!alert) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (alert.type === 'confirm') {
+          alert.onCancel?.();
+          closeAlert();
+        } else if (alert.type !== 'error') {
+          closeAlert();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [alert, closeAlert]);
 
   return (
     <AnimatePresence>
@@ -23,6 +39,10 @@ export const AlertModal: React.FC = () => {
 
           {/* Modal */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="alert-modal-title"
+            aria-describedby="alert-modal-desc"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -44,14 +64,14 @@ export const AlertModal: React.FC = () => {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+                <h3 id="alert-modal-title" className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
                   {alert.type === 'error' ? 'เกิดข้อผิดพลาด' :
                    alert.type === 'warning' ? 'คำเตือน' :
                    alert.type === 'confirm' ? 'ยืนยันการดำเนินการ' : 'ข้อมูล'}
                 </h3>
 
                 {/* Message */}
-                <p className="text-zinc-600 dark:text-zinc-400">
+                <p id="alert-modal-desc" className="text-zinc-600 dark:text-zinc-400">
                   {alert.message}
                 </p>
               </div>

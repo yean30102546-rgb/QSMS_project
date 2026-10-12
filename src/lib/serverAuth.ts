@@ -13,6 +13,9 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
   ADMIN: [
     'manage_users',
     'manage_masters',
+    'manage_rag',
+    'manage_integrations',
+    'view_feedback',
     'view_dashboard',
     'view_overall',
     'create_case',
@@ -29,6 +32,9 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'export_data',
   ],
   QSMS: [
+    'manage_rag',
+    'manage_integrations',
+    'view_feedback',
     'view_dashboard',
     'view_overall',
     'create_case',

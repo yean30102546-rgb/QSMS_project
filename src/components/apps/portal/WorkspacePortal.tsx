@@ -142,13 +142,13 @@ export function WorkspacePortal({
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col px-4 py-6 md:px-8 lg:px-10">
         <header className="mb-6 flex items-center justify-between rounded-xl bg-white px-5 py-3.5 shadow-xs border border-slate-200 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500 text-slate-950 font-bold shadow-xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white font-bold shadow-xs">
               <LayoutGrid size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-semibold text-slate-900 tracking-tight">QSMS Operations Portal</h1>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                   Enterprise
                 </span>
               </div>
@@ -171,7 +171,7 @@ export function WorkspacePortal({
               className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
               title="ส่งความคิดเห็นหรือรายงานปัญหาการใช้งานระบบ"
             >
-              <MessageSquarePlus size={15} className="text-amber-600" />
+              <MessageSquarePlus size={15} className="text-slate-600" />
               <span className="hidden sm:inline">ข้อเสนอแนะ & ฟีดแบ็ค</span>
               <span className="sm:hidden">ฟีดแบ็ค</span>
             </motion.button>
@@ -182,7 +182,7 @@ export function WorkspacePortal({
                 whileTap={{ scale: 0.99 }}
                 type="button"
                 onClick={onLogin}
-                className="rounded-lg bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#FDE68A] px-4 py-1.5 text-xs sm:text-sm font-medium text-[#92400E] shadow-2xs transition-colors"
+                className="rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-900 px-4 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-xs transition-colors"
               >
                 เข้าสู่ระบบ
               </motion.button>
@@ -207,8 +207,8 @@ export function WorkspacePortal({
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="rounded-xl bg-white p-6 shadow-xs border border-slate-200/90 md:p-8"
           >
-            <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium text-[#92400E] bg-[#FEF9E7] px-2.5 py-1 rounded-md border border-[#FDE68A]">
-              <ShieldCheck size={14} className="text-amber-600" />
+            <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+              <ShieldCheck size={14} className="text-slate-600" />
               <span>QSMS Operations Control Center</span>
             </div>
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
@@ -266,7 +266,7 @@ export function WorkspacePortal({
               </div>
               <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
                 <div className="flex items-center gap-1.5 text-slate-700 mb-1">
-                  <Clock3 size={14} className="text-amber-600" />
+                  <Clock3 size={14} className="text-slate-500" />
                   <span className="text-xs font-medium">สถานะระบบ</span>
                 </div>
                 <p className="text-xs text-slate-500">Rework Module พร้อมใช้งานปกติ ข้อมูลอัปเดตแบบเรียลไทม์</p>
@@ -289,16 +289,18 @@ export function WorkspacePortal({
               {/* Header: Subtitle + Live Contextual Badge */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#92400E]">
-                    <Activity size={14} className="text-amber-600" />
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <Activity size={14} className="text-slate-600" />
                     <span>โมดูลปฏิบัติการหลัก (Core Operation)</span>
                   </div>
                   <h3 className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-900">
                     QSMS Rework Management
                   </h3>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FEF3C7] px-3 py-1 text-xs font-medium text-[#92400E] border border-[#FDE68A]">
-                  <span className="inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200">
+                  <span className={`inline-flex rounded-full h-2 w-2 ${
+                    reworkStats.hasData && reworkStats.inProgress > 0 ? 'bg-sky-500' : 'bg-emerald-500'
+                  }`} />
                   {reworkStats.hasData && reworkStats.inProgress > 0
                     ? `กำลังทำ ${reworkStats.inProgress} เคส`
                     : 'ระบบพร้อมทำงาน'}
@@ -311,7 +313,7 @@ export function WorkspacePortal({
                   <span className="text-slate-600 flex items-center gap-1.5">
                     ความคืบหน้ารวม ({reworkStats.hasData ? `${reworkStats.completed}/${reworkStats.total}` : '--/--'} เคส)
                   </span>
-                  <span className="text-[#92400E] font-semibold text-sm font-mono tabular-nums">
+                  <span className="text-slate-900 font-semibold text-sm font-mono tabular-nums">
                     {reworkStats.hasData ? `${reworkStats.completionRate}%` : '--%'}
                   </span>
                 </div>
@@ -367,17 +369,17 @@ export function WorkspacePortal({
                     whileTap={{ scale: 0.99 }}
                     type="button"
                     onClick={() => handleDirectFilterJump('Pending')}
-                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-amber-50 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100/80 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer"
                     title="คลิกเพื่อดูกลุ่มเคสรอดำเนินการทันที"
                   >
-                    <span className="text-[11px] font-medium text-amber-800 flex items-center justify-center gap-1">
+                    <span className="text-[11px] font-medium text-slate-700 flex items-center justify-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                       รอดำเนินการ
                     </span>
-                    <span className="text-xl md:text-2xl font-semibold text-slate-800 font-mono tabular-nums">
+                    <span className="text-xl md:text-2xl font-semibold text-slate-900 font-mono tabular-nums">
                       {reworkStats.hasData ? reworkStats.pending : '--'}
                     </span>
-                    <span className="text-[9px] text-amber-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+                    <span className="text-[9px] text-slate-500 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
                       <span>กรองกลุ่มนี้</span>
                       <ArrowUpRight size={10} />
                     </span>
@@ -388,17 +390,17 @@ export function WorkspacePortal({
                     whileTap={{ scale: 0.99 }}
                     type="button"
                     onClick={() => handleDirectFilterJump('In-Progress')}
-                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-sky-50 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer border-x border-slate-200"
+                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100/80 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer border-x border-slate-200"
                     title="คลิกเพื่อดูกลุ่มเคสที่กำลังทำทันที"
                   >
-                    <span className="text-[11px] font-medium text-sky-800 flex items-center justify-center gap-1">
+                    <span className="text-[11px] font-medium text-slate-700 flex items-center justify-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
                       กำลังทำ
                     </span>
-                    <span className="text-xl md:text-2xl font-semibold text-slate-800 font-mono tabular-nums">
+                    <span className="text-xl md:text-2xl font-semibold text-slate-900 font-mono tabular-nums">
                       {reworkStats.hasData ? reworkStats.inProgress : '--'}
                     </span>
-                    <span className="text-[9px] text-sky-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+                    <span className="text-[9px] text-slate-500 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
                       <span>กรองกลุ่มนี้</span>
                       <ArrowUpRight size={10} />
                     </span>
@@ -409,17 +411,17 @@ export function WorkspacePortal({
                     whileTap={{ scale: 0.99 }}
                     type="button"
                     onClick={() => handleDirectFilterJump('Completed')}
-                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-emerald-50 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100/80 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer"
                     title="คลิกเพื่อดูกลุ่มเคสที่เสร็จสิ้นแล้วทันที"
                   >
-                    <span className="text-[11px] font-medium text-emerald-800 flex items-center justify-center gap-1">
+                    <span className="text-[11px] font-medium text-slate-700 flex items-center justify-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       เสร็จสิ้น
                     </span>
-                    <span className="text-xl md:text-2xl font-semibold text-slate-800 font-mono tabular-nums">
+                    <span className="text-xl md:text-2xl font-semibold text-slate-900 font-mono tabular-nums">
                       {reworkStats.hasData ? reworkStats.completed : '--'}
                     </span>
-                    <span className="text-[9px] text-emerald-700 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+                    <span className="text-[9px] text-slate-500 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
                       <span>กรองกลุ่มนี้</span>
                       <ArrowUpRight size={10} />
                     </span>
@@ -458,7 +460,7 @@ export function WorkspacePortal({
                 whileTap={{ scale: 0.99 }}
                 type="button"
                 onClick={() => onOpenApp('rework')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A] px-6 py-2.5 text-sm font-medium shadow-2xs transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white border border-slate-900 px-6 py-2.5 text-sm font-semibold shadow-xs transition-colors"
               >
                 <span>เปิดใช้งาน Rework</span>
                 <ArrowRight size={16} />
@@ -480,7 +482,7 @@ export function WorkspacePortal({
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-medium text-[#92400E]">
+                      <p className="text-xs font-medium text-slate-500">
                         Engineering Vault
                       </p>
                       <h3 className="mt-0.5 text-xl font-semibold tracking-tight text-slate-900">
@@ -517,14 +519,14 @@ export function WorkspacePortal({
                     <div className="space-y-1 pt-1.5 border-t border-slate-200">
                       <div className="flex justify-between text-[11px] font-medium text-slate-600">
                         <span>Master Coverage</span>
-                        <span className="font-semibold text-[#92400E] font-mono tabular-nums">
+                        <span className="font-semibold text-slate-900 font-mono tabular-nums">
                           {storageStats.hasData ? `${storageStats.coverageRate}%` : '--%'}
                         </span>
                       </div>
                       <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-200">
                         {storageStats.hasData && (
                           <div
-                            className="h-full bg-amber-400 transition-all duration-500"
+                            className="h-full bg-slate-800 transition-all duration-500"
                             style={{ width: `${storageStats.coverageRate}%` }}
                           />
                         )}
@@ -561,8 +563,9 @@ export function WorkspacePortal({
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-[#92400E]">AI Assistant</span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-[#FEF3C7] px-1.5 py-0.5 text-[10px] font-medium text-[#92400E] border border-[#FDE68A]">
+                    <span className="text-xs font-medium text-slate-500">AI Assistant</span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Online
                     </span>
                   </div>
@@ -580,7 +583,7 @@ export function WorkspacePortal({
                     whileTap={{ scale: 0.99 }}
                     type="button"
                     onClick={onOpenRag}
-                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] px-3 py-1.5 text-xs font-medium transition-colors border border-[#FDE68A]"
+                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold transition-colors border border-slate-900 shadow-xs"
                   >
                     <span>ถาม AI Assistant</span>
                     <ArrowRight size={13} />

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, BarChart3, Bot, X, RotateCw, Eye, Clock } from 'lucide-react';
+import { Send, UploadCloud, FileText, CheckCircle2, AlertCircle, Trash2, HelpCircle, BarChart3, Bot, X, RotateCw, Eye, Clock, FolderOpen, ExternalLink } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { User } from '../../services/auth';
 import { useNotification } from '@/src/contexts/NotificationContext';
@@ -481,7 +481,44 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
         }
       }
 
-      // 3. Render Interactive Quick Action Cards for Drawing & Item mentions
+      // 3. Render Interactive Case Evidence Card
+      const caseActionRegex = /\[(.*?)\]\(action:case:([a-zA-Z0-9_\-]+)\)/;
+      const directActionRegex = /action:case:([a-zA-Z0-9_\-]+)/;
+      const caseActionMatch = caseActionRegex.exec(line) || directActionRegex.exec(line);
+
+      if (caseActionMatch) {
+        const caseId = caseActionMatch[2] || caseActionMatch[1];
+        const label = (caseActionMatch[2] && caseActionMatch[1]) ? caseActionMatch[1].replace(/^[🔍📄\s]+/, '').trim() : `เปิดดูเคส ${caseId}`;
+
+        return (
+          <div key={idx} className="my-2.5 rounded-xl border border-blue-200/90 bg-blue-50/70 dark:bg-blue-950/30 dark:border-blue-800/60 p-3 shadow-xs">
+            <div className="flex items-center justify-between gap-2.5 flex-wrap">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 text-white shadow-xs shrink-0">
+                  <FolderOpen size={16} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 block uppercase tracking-wider">เคสในระบบ QSMS</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 font-mono truncate block">{caseId}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-rework-case', { detail: { caseId } }));
+                  onOpenChange(false);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-lg shadow-xs transition-all cursor-pointer"
+              >
+                <Eye size={13} />
+                <span>{label || 'เปิดดูเคสนี้'}</span>
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // 4. Render Interactive Quick Action Cards for Drawing & Item mentions
       if (line.includes('DrawingNo:') || line.includes('ItemCode:')) {
         const fileLinkRegex = /\[📄?\s*(.*?)\]\((.*?\/api\/drawings.*?)\)/g;
         const fileMatch = fileLinkRegex.exec(line);
@@ -528,7 +565,43 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
         );
       }
 
-      return <p key={idx} className="leading-relaxed mb-1.5">{line}</p>;
+      // 5. Parse inline markdown links safely for standard text lines
+      const renderInlineLinks = (content: string) => {
+        const linkRegex = /\[(.*?)\]\((https?:\/\/[^\s\)]+|\/api\/[^\s\)]+)\)/g;
+        const parts: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        while ((match = linkRegex.exec(content)) !== null) {
+          if (match.index > lastIndex) {
+            parts.push(content.substring(lastIndex, match.index));
+          }
+          const linkLabel = match[1];
+          const linkHref = match[2];
+          parts.push(
+            <a
+              key={match.index}
+              href={linkHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold underline decoration-blue-300 dark:decoration-blue-700 transition-colors mx-1"
+            >
+              <FileText size={12} className="inline shrink-0" />
+              <span>{linkLabel}</span>
+              <ExternalLink size={10} className="inline opacity-70" />
+            </a>
+          );
+          lastIndex = linkRegex.lastIndex;
+        }
+
+        if (lastIndex < content.length) {
+          parts.push(content.substring(lastIndex));
+        }
+
+        return parts.length > 0 ? parts : content;
+      };
+
+      return <p key={idx} className="leading-relaxed mb-1.5">{renderInlineLinks(line)}</p>;
     });
   };
 

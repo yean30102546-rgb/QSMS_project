@@ -90,7 +90,6 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
   const [formName, setFormName] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>(UserRole.PDF);
-  const [formEmployeeId, setFormEmployeeId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadData = async (silent = false) => {
@@ -130,8 +129,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
     return users.filter(u => {
       const matchesSearch =
         u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (u.employee_id && u.employee_id.toLowerCase().includes(searchQuery.toLowerCase()));
+        u.name.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesRole = roleFilter === 'all' || u.role?.toUpperCase() === roleFilter.toUpperCase();
 
@@ -144,7 +142,6 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
     setFormName('');
     setFormPassword('');
     setFormRole(UserRole.PDF);
-    setFormEmployeeId('');
     setIsAddUserModalOpen(true);
   };
 
@@ -152,7 +149,6 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
     setSelectedUser(u);
     setFormName(u.name);
     setFormRole((u.role as UserRole) || UserRole.PDF);
-    setFormEmployeeId(u.employee_id || '');
     setIsEditUserModalOpen(true);
   };
 
@@ -176,7 +172,6 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
         name: formName.trim(),
         password: formPassword,
         role: formRole,
-        employee_id: formEmployeeId.trim() || undefined,
       });
 
       if (res.success) {
@@ -201,7 +196,6 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
         id: selectedUser.id,
         name: formName.trim(),
         role: formRole,
-        employee_id: formEmployeeId.trim() || undefined,
       });
 
       if (res.success) {
@@ -263,6 +257,8 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"><Shield size={12} /> Admin</span>;
       case 'QSMS':
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200"><ShieldCheck size={12} /> QSMS (QC)</span>;
+      case 'WFG':
+        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-700 border border-cyan-200"><Package size={12} /> WFG (คลังสินค้าสำเร็จรูป)</span>;
       case 'WPK':
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200"><Package size={12} /> WPK (คลัง)</span>;
       case 'PDF':
@@ -430,7 +426,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="ค้นหาชื่อผู้ใช้, ชื่อ-นามสกุล, รหัสพนักงาน..."
+                    placeholder="ค้นหาชื่อผู้ใช้ หรือชื่อ-นามสกุล..."
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
                   />
                 </div>
@@ -446,6 +442,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                         <SelectItem value="all" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">ทุกแผนก / ทุก Role</SelectItem>
                         <SelectItem value="ADMIN" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">Admin (ผู้ดูแลระบบ)</SelectItem>
                         <SelectItem value="QSMS" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">QSMS (ฝ่ายคุณภาพ)</SelectItem>
+                        <SelectItem value="WFG" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WFG (คลังสินค้าสำเร็จรูป)</SelectItem>
                         <SelectItem value="WPK" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WPK (คลัง/บรรจุภัณฑ์)</SelectItem>
                         <SelectItem value="PDF" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">PDF (ฝ่ายซ่อม)</SelectItem>
                       </SelectContent>
@@ -460,8 +457,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                   <table className="w-full text-left text-xs">
                     <thead className="border-b border-slate-100 bg-slate-50/75 text-slate-600 font-bold uppercase tracking-wider">
                       <tr>
-                        <th className="py-3 px-4">ชื่อผู้ใช้ & พนักงาน</th>
-                        <th className="py-3 px-4">รหัสพนักงาน</th>
+                        <th className="py-3 px-4">ชื่อผู้ใช้ & ชื่อพนักงาน</th>
                         <th className="py-3 px-4">บทบาท (Role / แผนก)</th>
                         <th className="py-3 px-4">วันที่สร้างบัญชี</th>
                         <th className="py-3 px-4 text-right">การจัดการ</th>
@@ -470,7 +466,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                     <tbody className="divide-y divide-slate-100">
                       {filteredUsers.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-400 font-medium">
+                          <td colSpan={4} className="py-8 text-center text-slate-400 font-medium">
                             ไม่พบบัญชีผู้ใช้งานที่ตรงกับเงื่อนไข
                           </td>
                         </tr>
@@ -487,9 +483,6 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                                   <div className="text-[11px] text-slate-400 font-mono">@{u.username}</div>
                                 </div>
                               </div>
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-slate-600">
-                              {u.employee_id || '-'}
                             </td>
                             <td className="py-3.5 px-4">
                               {getRoleBadge(u.role)}
@@ -738,7 +731,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">บทบาท (Role) *</label>
                     <Select value={formRole} onValueChange={(val) => setFormRole(val as UserRole)}>
@@ -748,22 +741,13 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                       <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl p-1 z-[100]">
                         <SelectItem value={UserRole.ADMIN} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">Admin (ผู้ดูแลระบบ)</SelectItem>
                         <SelectItem value={UserRole.QSMS} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">QSMS (ฝ่ายคุณภาพ)</SelectItem>
+                        <SelectItem value={UserRole.WFG} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WFG (คลังสินค้าสำเร็จรูป)</SelectItem>
                         <SelectItem value={UserRole.WPK} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WPK (คลัง/บรรจุภัณฑ์)</SelectItem>
                         <SelectItem value={UserRole.PDF} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">PDF (ฝ่ายซ่อม)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">รหัสพนักงาน</label>
-                    <input
-                      type="text"
-                      value={formEmployeeId}
-                      onChange={(e) => setFormEmployeeId(e.target.value)}
-                      placeholder="เช่น EMP0123"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium focus:border-indigo-500 focus:bg-white focus:outline-none"
-                    />
-                  </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -826,7 +810,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">บทบาท (Role) *</label>
                     <Select value={formRole} onValueChange={(val) => setFormRole(val as UserRole)}>
@@ -836,21 +820,13 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                       <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl p-1 z-[100]">
                         <SelectItem value={UserRole.ADMIN} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">Admin (ผู้ดูแลระบบ)</SelectItem>
                         <SelectItem value={UserRole.QSMS} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">QSMS (ฝ่ายคุณภาพ)</SelectItem>
+                        <SelectItem value={UserRole.WFG} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WFG (คลังสินค้าสำเร็จรูป)</SelectItem>
                         <SelectItem value={UserRole.WPK} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WPK (คลัง/บรรจุภัณฑ์)</SelectItem>
                         <SelectItem value={UserRole.PDF} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">PDF (ฝ่ายซ่อม)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">รหัสพนักงาน</label>
-                    <input
-                      type="text"
-                      value={formEmployeeId}
-                      onChange={(e) => setFormEmployeeId(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium focus:border-indigo-500 focus:bg-white focus:outline-none"
-                    />
-                  </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

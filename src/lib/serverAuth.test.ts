@@ -55,11 +55,13 @@ describe('Server Auth Library', () => {
       const adminAuth = { email: 'admin@example.com', profile: 'ADMIN' };
       expect(() => assertPermission(adminAuth, 'manage_users')).not.toThrow();
       expect(() => assertPermission(adminAuth, 'delete_case')).not.toThrow();
+      expect(() => assertPermission(adminAuth, 'manage_rag')).not.toThrow();
 
       const qsmsAuth = { email: 'qsms@example.com', profile: 'QSMS' };
       expect(() => assertPermission(qsmsAuth, 'view_dashboard')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'edit_case')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'delete_case')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'manage_rag')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'export_data')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'fill_analysis')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'request_materials')).not.toThrow();
@@ -72,6 +74,7 @@ describe('Server Auth Library', () => {
       expect(() => assertPermission(wpkAuth, 'issue_materials')).not.toThrow();
       expect(() => assertPermission(wpkAuth, 'repair_case')).toThrow(AuthError);
       expect(() => assertPermission(wpkAuth, 'delete_case')).toThrow(AuthError);
+      expect(() => assertPermission(wpkAuth, 'manage_rag')).toThrow(AuthError);
     });
 
     it('should allow PDF to repair and block issues, but block manage_users and delete_case', () => {

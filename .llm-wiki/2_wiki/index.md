@@ -34,7 +34,7 @@
 - [[architecture/supabase-hybrid-migration.md]] - รูปแบบโครงสร้างการย้ายและประสานข้อมูลซิงค์ Supabase ร่วมกับ Google Sheets
 - [[architecture/cloudinary-storage.md]] - สรุปข้อจำกัด แบนด์วิดท์ และการคำนวณเครดิตของ Cloudinary (Free Tier)
 - [[architecture/prisma-orm.md]] - โครงสร้างและการทำ Migration ตารางฐานข้อมูลด้วย Prisma ORM
-- [[architecture/drawing-master-storage.md]] - ระบบจัดการไฟล์ Drawing ลูกค้าและ Master ภายใน รวมถึงการสกัดข้อมูลด้วย AI
+- [[architecture/drawing-master-storage.md]] - ระบบจัดการไฟล์ Drawing/Master, ชุดข้อมูล Ground Truth Benchmark 100 ฉบับ, และการสกัดข้อมูลด้วย AI OCR 11 ฟิลด์
 - [[architecture/rag-module-nextjs.md]] - สถาปัตยกรรม RAG สำหรับเก็บและค้นหาเอกสารความรู้ผ่าน Supabase pgvector และ Gemini
 - [[architecture/multimodal-rag.md]] - การออกแบบสถาปัตยกรรมประมวลผลข้อความและภาพหลายรูปแบบของโมดูล RAG
 - [[architecture/tech-stack-2026.md]] - สรุปรายการเทคโนโลยี ไลบรารี และไดอะแกรมความเชื่อมโยงของ Stack ปี 2026
@@ -74,6 +74,7 @@
 - [[lessons-learned/ui-libraries-resource.md]] - ข้อมูลระบบ Mantine UI Components, Hooks, Dates และ Combobox
 - [[lessons-learned/update-modal-layout-rework.md]] - การแก้ปัญหาเลื่อนจอพัง, ล็อกแถบเลื่อนฝั่งขวา และการถอนคลาส uppercase บน Tailwind
 - [[lessons-learned/case-update-view-ux-evolution.md]] - วิวัฒนาการแบบฟอร์ม 4 บล็อก, Focus Line และแผงโปรเกรสลอย (Floating Save Island)
+- [[lessons-learned/mobile-multi-ratio-responsive-hardening.md]] - การปรับแต่ง Responsive ให้รองรับสมาร์ตโฟนหลายอัตราส่วน (320px–430px) และลดข้อจำกัด Mobile Cards
 - [[lessons-learned/js-projects-resource.md]] - แคตตาล็อกไลบรารีและคู่มือพัฒนาของโปรเจกต์ JavaScript/TypeScript
 
 ## 📂 5. Backend Services (บริการหลังบ้าน)

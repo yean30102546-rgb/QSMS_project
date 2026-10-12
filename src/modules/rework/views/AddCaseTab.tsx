@@ -544,15 +544,15 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="rounded-lg border border-amber-300 bg-amber-50 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+              className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
             >
-              <div className="flex items-center gap-2.5 text-amber-900">
-                <div className="p-1.5 bg-amber-200/70 rounded-md text-amber-800">
+              <div className="flex items-center gap-2.5 text-slate-800">
+                <div className="p-1.5 bg-slate-200 rounded-md text-slate-700">
                   <Save size={16} />
                 </div>
                 <div>
                   <span className="font-bold">พบข้อมูลร่างในอุปกรณ์นี้</span>
-                  <span className="text-amber-800/80 ml-1.5">
+                  <span className="text-slate-500 ml-1.5">
                     ({draftNotice.itemCount} รายการ บันทึกล่าสุดเมื่อ {draftNotice.savedAt})
                   </span>
                 </div>
@@ -561,7 +561,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 <button
                   type="button"
                   onClick={handleRestoreLocalDraft}
-                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-md transition-colors shadow-2xs cursor-pointer flex items-center gap-1 text-xs min-h-[36px]"
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-md transition-colors shadow-2xs cursor-pointer flex items-center gap-1 text-xs min-h-[36px]"
                 >
                   <RotateCcw size={13} />
                   <span>กู้คืนข้อมูลร่าง</span>
@@ -569,7 +569,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                 <button
                   type="button"
                   onClick={handleDiscardLocalDraft}
-                  className="px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium rounded-md transition-colors cursor-pointer text-xs min-h-[36px]"
+                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium rounded-md transition-colors cursor-pointer text-xs min-h-[36px]"
                 >
                   <span>ล้างทิ้ง</span>
                 </button>
@@ -578,38 +578,40 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
           )}
         </AnimatePresence>
 
-        {/* Apple Case Initiation Header Card */}
-        <div className="rounded-2xl border border-[#E5E5E7] bg-white p-5 shadow-xs">
+        {/* Case Initiation Header Card */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-[#1D1D1F] tracking-tight">เปิดเคสใหม่ (Case Initiation)</h2>
-              <p className="text-xs text-[#86868B] mt-0.5">สร้าง Case ID อัตโนมัติและส่งต่อข้อมูลเข้าสู่ระบบ Rework</p>
+              <h2 className="text-base font-bold text-slate-900 tracking-tight">เปิดเคสใหม่ (Case Initiation)</h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">สร้าง Case ID อัตโนมัติและส่งต่อข้อมูลเข้าสู่ระบบ Rework</p>
             </div>
 
-            {/* Apple Segmented Switcher: RW vs RT */}
-            <div className="flex items-center p-1 bg-[#E5E5EA] rounded-full border border-[#E5E5E7] gap-1 self-start sm:self-auto">
+            {/* Segmented Switcher: RW vs RT */}
+            <div className="flex max-w-full items-center overflow-x-auto p-1 bg-slate-100 rounded-xl border border-slate-200 gap-1 self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => handleSwitchMode('RW')}
-                className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                aria-pressed={caseMode === 'RW'}
+                className={`flex min-h-11 shrink-0 items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800 ${
                   caseMode === 'RW'
-                    ? 'bg-white text-[#1D1D1F] shadow-xs'
-                    : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Factory size={13} className="text-amber-700" />
+                <Factory size={13} className="text-slate-700" />
                 <span>งานโรงงาน (RW)</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSwitchMode('RT')}
-                className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                aria-pressed={caseMode === 'RT'}
+                className={`flex min-h-11 shrink-0 items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800 ${
                   caseMode === 'RT'
-                    ? 'bg-white text-[#1D1D1F] shadow-xs'
-                    : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Package size={13} className="text-[#0071E3]" />
+                <Package size={13} className="text-sky-700" />
                 <span>รับคืนลูกค้า (RT)</span>
               </button>
             </div>
@@ -618,7 +620,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
         <div className="space-y-5">
           {/* Main Case Info Card */}
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs space-y-5">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-stretch">
               
               {/* Customer Selection Block */}
@@ -627,12 +629,12 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-700">แหล่งที่มาของงาน (Source)</label>
-                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+                      <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                         ภายในโรงงาน
                       </span>
                     </div>
                     <div className="flex items-center gap-2.5 p-2.5 bg-white border border-slate-200 rounded-lg">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-800 font-bold text-xs">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs">
                         SFC
                       </div>
                       <div>
@@ -690,7 +692,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     <div className={`flex h-9 w-9 items-center justify-center rounded-lg font-mono font-bold text-sm shadow-2xs shrink-0 ${
                       caseMode === 'RT' 
                         ? 'bg-sky-100 text-sky-800 border border-sky-200' 
-                        : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                        : 'bg-slate-900 text-white border border-slate-800'
                     }`}>
                       {caseMode === 'RT' ? 'RT' : 'RW'}
                     </div>
@@ -705,7 +707,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                   </div>
 
                   <div className="shrink-0">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse shrink-0" />
                       รอวิเคราะห์
                     </span>
@@ -721,7 +723,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
             {/* Reference Files Section (OR, Excel, PDF, Initial Photos) */}
             <div className={`border-t border-slate-100 pt-5 space-y-3 rounded-2xl p-4 transition-all ${
               isCustomerCase && orFiles.length === 0
-                ? 'bg-amber-50/60 border border-amber-200'
+                ? 'bg-slate-50 border border-slate-200'
                 : 'bg-transparent'
             }`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
@@ -772,7 +774,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     }}
                     className={`block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold cursor-pointer ${
                       isCustomerCase && orFiles.length === 0
-                        ? 'file:bg-amber-600 file:text-white hover:file:bg-amber-700'
+                        ? 'file:bg-slate-900 file:text-white hover:file:bg-slate-800'
                         : 'file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200'
                     }`}
                   />
@@ -801,14 +803,14 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
             {formItems.length > 0 && formItems.every(item => item.customerName === 'OR') && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mt-6 border-t border-slate-100 pt-6">
-                <div className="rounded-2xl bg-amber-50 p-6 border border-amber-100">
+                <div className="rounded-xl bg-slate-50 p-5 border border-slate-200">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                    <div className="p-2 bg-slate-200 rounded-lg text-slate-700">
                       <HelpCircle size={20} />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-amber-900">เอกสารสำหรับ OR (Optional)</h4>
-                      <p className="text-xs text-amber-700/80">แนบไฟล์ Excel, PDF หรือ PNG (สูงสุด 2 ไฟล์)</p>
+                      <h4 className="text-sm font-bold text-slate-900">เอกสารสำหรับ OR (Optional)</h4>
+                      <p className="text-xs text-slate-500">แนบไฟล์ Excel, PDF หรือ PNG (สูงสุด 2 ไฟล์)</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-4">
@@ -822,18 +824,18 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                           const files = Array.from(e.target.files || []);
                           handleOrFileUpload(files.slice(0, 2));
                         }}
-                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
+                        className="block w-full text-xs sm:text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer"
                       />
                     </div>
                     {orFiles.length > 0 && (
                       <div className="flex gap-2 items-center">
                         {orFiles.map((file, i) => (
-                          <div key={i} className="px-3 py-1 bg-white border border-amber-200 rounded-lg text-xs font-medium text-amber-800 flex items-center gap-2">
+                          <div key={i} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 flex items-center gap-2">
                             {file.name}
                             <button onClick={() => {
                               const remaining = orFiles.filter((_, idx) => idx !== i);
                               handleOrFileUpload(remaining);
-                            }} className="text-amber-400 hover:text-amber-600">
+                            }} className="text-slate-400 hover:text-slate-600">
                               <X size={14} />
                             </button>
                           </div>
@@ -842,14 +844,14 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     )}
                   </div>
                   {isParsingOr && (
-                    <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-amber-700">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" /> กำลังสกัดคอลัมน์ QIR จาก Sheet 2...
+                    <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-700">
+                      <span className="w-2 h-2 rounded-full bg-slate-900 animate-ping" /> กำลังสกัดคอลัมน์ QIR จาก Sheet 2...
                     </div>
                   )}
                   {orItemsList.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-amber-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
-                        <FileSpreadsheet size={16} className="text-amber-600" />
+                    <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
+                        <FileSpreadsheet size={16} className="text-slate-700" />
                         <span>พบรายการใน Sheet 2 ทั้งหมด {orItemsList.length} รายการ</span>
                       </div>
                       <button
@@ -870,7 +872,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                           setValue('items', generatedItems);
                           showToast(`ดึงรายการสินค้า ${generatedItems.length} รายการจากไฟล์ OR สำเร็จ!`, 'success');
                         }}
-                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-medium transition-all shadow-xs active:scale-95 cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium transition-all shadow-xs active:scale-95 cursor-pointer"
                       >
                         <FileSpreadsheet size={14} /> ดึงรายการสินค้าทั้งหมดจากไฟล์ OR ({orItemsList.length} รายการ)
                       </button>
@@ -911,7 +913,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     >
                       <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-3">
                         <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-mono text-xs font-bold">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-900 text-white font-mono text-xs font-bold">
                             {idx + 1}
                           </span>
                           รายการที่ {idx + 1}
@@ -988,7 +990,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 60001234A"
                               disabled={isSaving}
-                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20'}`}
+                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemNumber' ? 'border-slate-900 bg-white ring-2 ring-slate-900/10' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10'}`}
                             />
                             <div className="absolute right-1.5 flex items-center gap-1">
                               <button
@@ -1029,7 +1031,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               })}
                               placeholder="เช่น 40001234"
                               disabled={isSaving}
-                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-amber-500 bg-white ring-2 ring-amber-500/20' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'}`}
+                              className={`w-full rounded-md border pl-3 pr-10 py-2 text-xs sm:text-sm font-mono font-semibold transition-colors placeholder:text-slate-400 placeholder:font-normal disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none ${item.lastActiveField === 'itemCode' ? 'border-slate-900 bg-white ring-2 ring-slate-900/10' : 'border-slate-300 bg-white text-slate-900 shadow-2xs focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10'}`}
                             />
                             <div className="absolute right-1.5 flex items-center gap-1">
                               <button
@@ -1155,15 +1157,15 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
 
                       {(item.reason === 'เปื้อน' || item.reason?.startsWith('เปื้อน')) && formItems.some((i, iidx) => (i.reason === 'รั่ว' || i.reason?.startsWith('รั่ว')) && iidx !== idx) && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mb-5 overflow-hidden">
-                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 transition-all">
+                          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 transition-all">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-8 w-8 items-center justify-center rounded bg-amber-100 text-amber-700">
+                                <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-200 text-slate-700">
                                   <HelpCircle size={18} />
                                 </div>
                                 <div>
-                                  <p className="text-xs font-bold text-amber-900">ระบุความเชื่อมโยง (Cross-Item Link)</p>
-                                  <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-amber-800">
+                                  <p className="text-xs font-bold text-slate-900">ระบุความเชื่อมโยง (Cross-Item Link)</p>
+                                  <label className="mt-0.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700">
                                     <input
                                       type="checkbox"
                                       checked={!!item.linkedSourceId}
@@ -1174,7 +1176,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                                           if (leaks.length === 1) setValue(`items.${idx}.linkedSourceId`, leaks[0].id);
                                         }
                                       }}
-                                      className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                                     />
                                     สาเหตุมาจากไอเทมที่รั่วในเคสนี้
                                   </label>
@@ -1184,10 +1186,10 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                               <AnimatePresence>
                                 {item.linkedSourceId && (
                                   <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-amber-900">ไอเทมต้นเหตุ *</label>
+                                    <label className="text-xs font-semibold text-slate-700">ไอเทมต้นเหตุ *</label>
                                     <select
                                       {...register(`items.${idx}.linkedSourceId`)}
-                                      className="min-w-[200px] rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-2xs focus:border-amber-500 focus:outline-none"
+                                      className="min-w-[200px] rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-none"
                                     >
                                       <option value="">-- เลือกรายการ --</option>
                                       {formItems.filter((i, iidx) => (i.reason === 'รั่ว' || i.reason?.startsWith('รั่ว')) && iidx !== idx).map(leak => (
@@ -1211,7 +1213,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                             rows={3}
                             {...register(`items.${idx}.details`)}
                             placeholder="ระบุรายละเอียดเพิ่มเติม..."
-                            className="w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm text-slate-900 transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                            className="w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm text-slate-900 transition-colors focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 focus:outline-none"
                           />
                         </div>
 
@@ -1286,7 +1288,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     type="button"
                     onClick={handleAddItem}
                     disabled={isSaving}
-                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-[#E5E5E7] bg-white py-2 text-xs sm:text-sm font-medium text-[#1D1D1F] hover:bg-[#F5F5F7] shadow-xs hover:border-slate-400 disabled:opacity-50 cursor-pointer transition-colors shadow-2xs"
+                    className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs hover:border-slate-400 disabled:opacity-50 cursor-pointer transition-colors"
                   >
                     <Plus size={16} /> [ + ] เพิ่มรายการสินค้า
                   </button>
@@ -1294,7 +1296,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                     type="button"
                     onClick={handleSubmit(onSubmit)}
                     disabled={isSaving || isSaveDisabled(formItems)}
-                    className="flex h-11 flex-[2] items-center justify-center gap-2 rounded-full bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#0062C4] py-2 text-xs sm:text-sm font-medium text-white shadow-xs disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
+                    className="flex min-h-11 flex-[2] items-center justify-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 active:bg-slate-950 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     <Send size={15} />
                     <span>เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์</span>
@@ -1343,7 +1345,7 @@ const InputField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<
           onFocus?.(e);
         }}
         {...props}
-        className={`block w-full h-[42px] rounded-md border border-slate-300 bg-white px-3 text-xs sm:text-sm font-medium text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500 ${className || ''}`}
+        className={`block w-full h-[42px] rounded-md border border-slate-300 bg-white px-3 text-xs sm:text-sm font-medium text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500 ${className || ''}`}
       />
     </div>
   );

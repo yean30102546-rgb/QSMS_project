@@ -97,11 +97,11 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
     }
   });
 
-  it('renders Step 1 WPK Case Initiation with auto case ID and advanced item entry', () => {
+  it('renders the case initiation form with auto case ID and item entry', () => {
     render(<AddCaseTab onOpenTutorial={vi.fn()} />);
 
-    expect(screen.getByText(/Step 1: เปิดเคสแจ้งเรื่อง/i)).toBeInTheDocument();
-    expect(screen.getByText(/Rework Entry Form/i)).toBeInTheDocument();
+    expect(screen.getByText(/เปิดเคสใหม่ \(Case Initiation\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/สร้าง Case ID อัตโนมัติและส่งต่อข้อมูลเข้าสู่ระบบ Rework/i)).toBeInTheDocument();
     expect(screen.queryByText(/⚡ WPK Fast Ticket/i)).not.toBeInTheDocument();
 
     expect(screen.getByText(/รหัสเคสอัตโนมัติ:/i)).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
     expect(screen.getAllByText(/รายการที่/i).length).toBe(3);
   });
 
-  it('renders 4-Stage Stepper, defaults to Step 1 on Pending Analysis, and provides Back to Overall UI', () => {
+  it('renders the current three-tab workspace, opens item details for Pending Analysis, and provides Back to Overall', () => {
     mockCurrentUser.mockReturnValue({ name: 'QSMS Officer', role: 'QSMS' });
     const mockOnBack = vi.fn();
 
@@ -181,11 +181,11 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
       />
     );
 
-    // 4-Stage Stepper Header buttons
-    expect(screen.getAllByText(/1\. ข้อมูลสินค้า & รูปภาพ/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/2\. QSMS วิเคราะห์ & ภาชนะ/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/3\. WPK คลังเบิกจ่ายภาชนะ/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/4\. PDF ซ่อม & Defend/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /1\. บันทึกข้อมูลสินค้า/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /1\. บันทึกข้อมูลสินค้า/i })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('button', { name: /2\. วิเคราะห์และออกใบเบิก/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /3\. จัดเตรียมและจ่ายวัสดุ/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /4\. ซ่อมแซมและตรวจรับ/i })).toBeInTheDocument();
 
     // Back to Overall UI
     const backBtn = screen.getByRole('button', { name: /กลับหน้าภาพรวมเคส/i });
@@ -194,11 +194,11 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
     expect(mockOnBack).toHaveBeenCalledTimes(1);
 
     // Auto-opened on Step 1 because status is 'Pending Analysis'
-    expect(screen.getByText(/Step 1: ข้อมูลสินค้าและรูปภาพหลักฐาน/i)).toBeInTheDocument();
+    expect(screen.getByText(/Step 1: บันทึกข้อมูลสินค้า/i)).toBeInTheDocument();
 
-    // When clicking Step 2 tab, QSMS sees edit mode
-    fireEvent.click(screen.getAllByText(/2\. QSMS วิเคราะห์ & ภาชนะ/i)[0]);
-    expect(screen.getByText(/Step 2: ผลการวิเคราะห์และระบุภาชนะที่ต้องใช้/i)).toBeInTheDocument();
+    // The second step opens the QSMS analysis panel.
+    fireEvent.click(screen.getByRole('button', { name: /2\. วิเคราะห์และออกใบเบิก/i }));
+    expect(screen.getByText(/Step 2: วิเคราะห์และออกใบเบิก/i)).toBeInTheDocument();
     expect(screen.getByText(/โหมดวิเคราะห์ & ขอเบิก \(QSMS \/ Admin\)/i)).toBeInTheDocument();
     expect(screen.getByText(/บันทึกผล & ส่งขอเบิกภาชนะ/i)).toBeInTheDocument();
   });
@@ -237,10 +237,8 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
       />
     );
 
-    // Click to Step 3 tab
-    fireEvent.click(screen.getAllByText(/คลังเบิกจ่ายภาชนะ/i)[0]);
-
-    // QSMS sees Preview Only mode for Step 3
+    // Awaiting Materials opens the warehouse panel automatically for the user.
+    expect(screen.getByText(/Step 3: จัดเตรียมและจ่ายวัสดุ/i)).toBeInTheDocument();
     expect(screen.getByText(/โหมดดูการเบิกจ่าย \(Preview Only\)/i)).toBeInTheDocument();
     // Handover button should not be present for QSMS
     expect(screen.queryByText(/จ่ายของครบ & ส่งให้ PDF ซ่อม/i)).not.toBeInTheDocument();
@@ -281,8 +279,9 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
     );
 
     // WPK sees Edit mode for Step 3
+    // WPK sees Edit mode for Step 3, with dynamic handover button showing shortage when issuedQty < requestedQty
     expect(screen.getByText(/โหมดเบิกจ่ายของ \(WPK \/ Admin\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/จ่ายของครบ & ส่งให้ PDF ซ่อม/i)).toBeInTheDocument();
+    expect(screen.getByText(/ส่งมอบงาน \(มีของขาด\)/i)).toBeInTheDocument();
   });
 
   it('allows opening RW case immediately without reference attachments', async () => {
@@ -299,7 +298,7 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
     );
   });
 
-  it('moves saved item to bottom of queue and auto-expands next item while preserving original sequence number', async () => {
+  it('saves item in-place, preserves sequence number, and auto-advances to next incomplete item', async () => {
     mockCurrentUser.mockReturnValue({ name: 'QSMS Officer', role: 'QSMS' });
 
     const mockCase: ReworkCase = {
@@ -355,11 +354,11 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
     expect(saveSingleItemBtn).toBeInTheDocument();
     fireEvent.click(saveSingleItemBtn);
 
-    // After save: toast shows item sequence was saved and moved to bottom
+    // After save: toast shows item sequence was saved in-place with missing status and auto-advances
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith(
-        expect.stringContaining('บันทึกรายการที่ 1 แล้ว ➔ ย้ายลงล่าง และเปิดรายการถัดไปให้อัตโนมัติ'),
-        'success'
+        expect.stringContaining('บันทึกรายการที่ 1 แล้ว (ยังขาด: ผู้รับผิดชอบย่อย, รูปภาพหลักฐาน) ➔ ตรวจสอบรายการที่ 2'),
+        'info'
       );
     });
   });
@@ -556,9 +555,8 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
       />
     );
 
-    // Click step 3
-    fireEvent.click(screen.getAllByText(/คลังเบิกจ่ายภาชนะ/i)[0]);
-
+    // Awaiting Materials opens the warehouse panel automatically.
+    expect(screen.getByText(/Step 3: จัดเตรียมและจ่ายวัสดุ/i)).toBeInTheDocument();
     const handshakeBtn = screen.getByRole('button', { name: /ยืนยันตรวจรับชิ้นส่วนครบชุด/i });
     expect(handshakeBtn).toBeInTheDocument();
 
@@ -567,6 +565,166 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
       expect(mockShowToast).toHaveBeenCalledWith(
         expect.stringContaining('ยืนยันตรวจนับและรับมอบชิ้นส่วนครบชุดหน้างานเรียบร้อยแล้ว'),
         'success'
+      );
+    });
+  });
+
+  it('handles material shortage with partial handshake or defect defend blockage when materials are unavailable', async () => {
+    mockCurrentUser.mockReturnValue({ name: 'PDF Tech Officer', role: 'PDF' });
+
+    const mockCase: ReworkCase = {
+      id: 'RW-2026-002',
+      date: '2026-08-26',
+      source: 'SFC',
+      caseName: 'เคสของขาด',
+      status: 'Awaiting Materials',
+      items: [],
+      materialRequests: [
+        { id: 'm-1', materialName: 'กล่องใหม่', requestedQty: 10, issuedQty: 5, unit: 'กล่อง', status: 'partial' },
+        { id: 'm-2', materialName: 'แกลลอน 1L', requestedQty: 4, issuedQty: 0, unit: 'ใบ', status: 'unavailable' }
+      ]
+    };
+
+    render(
+      <CaseUpdateView
+        caseData={mockCase}
+        onBack={vi.fn()}
+        onSuccess={vi.fn()}
+        onDelete={vi.fn()}
+        isAdmin={false}
+        isOperator={false}
+      />
+    );
+
+    // Full handshake button should NOT be present when materials are lacking
+    expect(screen.queryByRole('button', { name: /^ยืนยันตรวจรับชิ้นส่วนครบชุด$/i })).not.toBeInTheDocument();
+
+    // Partial and Blockage buttons must be visible
+    const partialBtn = screen.getByRole('button', { name: /รับมอบบางส่วน \(เริ่มซ่อมเท่าที่มี\)/i });
+    const defendBtn = screen.getByRole('button', { name: /ของไม่พอซ่อม - แจ้งติดปัญหา/i });
+    expect(partialBtn).toBeInTheDocument();
+    expect(defendBtn).toBeInTheDocument();
+
+    // Verify derived shortage summary is displayed
+    expect(screen.getByText(/พบวัสดุขาด 2 รายการ/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/ขาด 5 กล่อง/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/ขาด 4 ใบ/i).length).toBeGreaterThanOrEqual(1);
+
+    // Test partial handshake click
+    fireEvent.click(partialBtn);
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.stringContaining('บันทึกการรับมอบบางส่วน'),
+        'warning'
+      );
+    });
+  });
+
+  it('allows PDF to confirm full receipt of remainder when previous receipt was partial and remaining materials are now fulfilled', async () => {
+    mockCurrentUser.mockReturnValue({ name: 'PDF Tech Officer', role: 'PDF' });
+
+    const mockCase: ReworkCase = {
+      id: 'RW-2026-003',
+      date: '2026-08-26',
+      source: 'SFC',
+      caseName: 'เคสรอรับส่วนที่เหลือ',
+      status: 'Awaiting Materials',
+      items: [],
+      materialReceivedInfo: {
+        receivedBy: 'PDF Tech Officer',
+        receivedAt: '2026-08-26 10:00 น.',
+        isPartial: true,
+        status: 'partial',
+        missingSummary: 'ขาด 5 กล่อง'
+      },
+      materialRequests: [
+        { id: 'm-1', materialName: 'กล่องใหม่', requestedQty: 10, issuedQty: 10, unit: 'กล่อง', status: 'fulfilled' }
+      ]
+    };
+
+    render(
+      <CaseUpdateView
+        caseData={mockCase}
+        onBack={vi.fn()}
+        onSuccess={vi.fn()}
+        onDelete={vi.fn()}
+        isAdmin={false}
+        isOperator={false}
+      />
+    );
+
+    // Initial state: shows partial status and remainder prompt
+    expect(screen.getByText(/คลังจ่ายส่วนที่เหลือครบแล้ว • รอตรวจรับ/i)).toBeInTheDocument();
+    expect(screen.getByText(/ยืนยันรับมอบบางส่วนแล้ว/i)).toBeInTheDocument();
+    expect(screen.getByText(/คลังได้จัดส่งชิ้นส่วนส่วนที่เหลือครบถ้วนแล้ว/i)).toBeInTheDocument();
+
+    // The remainder button should be rendered
+    const remainderBtn = screen.getByRole('button', { name: /ยืนยันรับมอบส่วนที่เหลือครบชุด ➔/i });
+    expect(remainderBtn).toBeInTheDocument();
+
+    // Clicking remainder confirmation button
+    fireEvent.click(remainderBtn);
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.stringContaining('ตรวจรับชิ้นส่วนส่วนที่เหลือครบชุด 100% เรียบร้อยแล้ว'),
+        'success'
+      );
+    });
+
+    // Verify status badge flips to complete
+    await waitFor(() => {
+      expect(screen.getByText(/รับมอบครบชุดเรียบร้อย/i)).toBeInTheDocument();
+    });
+  });
+
+  it('allows PDF to update partial receipt or report Defend Mode blockage while materials remain lacking', async () => {
+    mockCurrentUser.mockReturnValue({ name: 'PDF Tech Officer', role: 'PDF' });
+
+    const mockCase: ReworkCase = {
+      id: 'RW-2026-004',
+      date: '2026-08-26',
+      source: 'SFC',
+      caseName: 'เคสของยังขาดต่อเนื่อง',
+      status: 'Awaiting Materials',
+      items: [],
+      materialReceivedInfo: {
+        receivedBy: 'PDF Tech Officer',
+        receivedAt: '2026-08-26 10:00 น.',
+        isPartial: true,
+        status: 'partial',
+        missingSummary: 'ขาด 5 กล่อง'
+      },
+      materialRequests: [
+        { id: 'm-1', materialName: 'กล่องใหม่', requestedQty: 10, issuedQty: 5, unit: 'กล่อง', status: 'partial' }
+      ]
+    };
+
+    render(
+      <CaseUpdateView
+        caseData={mockCase}
+        onBack={vi.fn()}
+        onSuccess={vi.fn()}
+        onDelete={vi.fn()}
+        isAdmin={false}
+        isOperator={false}
+      />
+    );
+
+    // Both action buttons should be available for ongoing partial state
+    const updateBtn = screen.getByRole('button', { name: /อัปเดตบันทึกรับมอบ/i });
+    const defendBtn = screen.getByRole('button', { name: /ของไม่พอซ่อม - แจ้งติดปัญหา/i });
+    expect(updateBtn).toBeInTheDocument();
+    expect(defendBtn).toBeInTheDocument();
+
+    // Remainder 100% button should NOT be shown yet because shortage remains
+    expect(screen.queryByRole('button', { name: /ยืนยันรับมอบส่วนที่เหลือครบชุด ➔/i })).not.toBeInTheDocument();
+
+    // Clicking update receipt
+    fireEvent.click(updateBtn);
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.stringContaining('บันทึกการรับมอบบางส่วน'),
+        'warning'
       );
     });
   });
@@ -597,8 +755,8 @@ describe('4-Stage Stepper Workflow & Role-Based Authorization', () => {
       />
     );
 
-    // Click step 4
-    fireEvent.click(screen.getAllByText(/PDF ซ่อม & Defend/i)[0]);
+    // In-Progress cases open the repair panel automatically.
+    expect(screen.getByText(/Step 4: ซ่อมแซมและตรวจรับ/i)).toBeInTheDocument();
 
     expect(screen.getByText(/QC Verification Gate/i)).toBeInTheDocument();
     const qcSignoffBtn = screen.getByRole('button', { name: /ลงนามตรวจรับ QC & ปิดเคส/i });

@@ -431,7 +431,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
         <p className="mt-3 text-xs font-semibold text-slate-500">กำลังโหลดข้อมูลแดชบอร์ด &amp; สถิติ...</p>
       </div>
     );
@@ -441,10 +441,10 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
     <div className="space-y-6 pb-12">
 
       {/* ===== 1. BOTTLENECK RADAR BANNER ===== */}
-      <div className="rounded-xl border border-[#FDE68A] bg-gradient-to-r from-[#FEF9E7] via-white to-[#FEFDF5] p-4 sm:p-5 shadow-2xs">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white border border-slate-800 flex items-center justify-center shrink-0 shadow-xs">
               <BarChart3 size={20} />
             </div>
             <div>
@@ -471,14 +471,16 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all border cursor-pointer ${
                 showFilters || hasActiveFilters
-                  ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A] shadow-2xs'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
               <SlidersHorizontal size={14} />
               <span>ตัวกรองแดชบอร์ด</span>
               {activeFilterCount > 0 && (
-                <span className="bg-[#92400E] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-1">
+                <span className={`text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-1 ${
+                  showFilters || hasActiveFilters ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'
+                }`}>
                   {activeFilterCount}
                 </span>
               )}
@@ -498,7 +500,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                 onClick={() => setDepartmentQueueFilter(isSelected ? null : q.key)}
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer relative ${
                   isSelected
-                    ? 'bg-[#FEF3C7] border-[#F5C754] ring-2 ring-[#F5C754]/30 shadow-2xs'
+                    ? 'bg-slate-100 border-slate-900 ring-2 ring-slate-900/10 shadow-xs'
                     : isBottleneck
                     ? 'bg-rose-50/70 border-rose-200 hover:bg-rose-50'
                     : 'bg-white border-slate-200 hover:bg-slate-50'
@@ -535,7 +537,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal size={15} className="text-[#92400E]" />
+                  <SlidersHorizontal size={15} className="text-slate-700" />
                   <h3 className="text-xs font-semibold text-slate-800">ตัวกรองข้อมูลเชิงลึก (Deep Filters)</h3>
                 </div>
                 <button
@@ -567,7 +569,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                           onClick={() => toggleArrayFilter(statusFilter, key, setStatusFilter)}
                           className={`px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                             isActive
-                              ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
@@ -589,7 +591,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                         onClick={() => toggleArrayFilter(responsibleFilter, resp, setResponsibleFilter)}
                         className={`px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                           responsibleFilter.includes(resp)
-                            ? 'bg-sky-50 text-sky-800 border-sky-200'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                         }`}
                       >
@@ -610,7 +612,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                         onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)}
                         className={`px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                           reasonFilter.includes(r)
-                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                         }`}
                       >
@@ -630,14 +632,14 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                       type="date"
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
                     />
                     <span className="text-slate-400 text-xs">-</span>
                     <input
                       type="date"
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -668,15 +670,15 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
           <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex items-center gap-2 flex-wrap text-xs">
             <span className="font-semibold text-slate-500 uppercase tracking-wider text-[11px]">ตัวกรองที่เลือก:</span>
             {statusFilter.map(s => (
-              <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-xs font-medium">
+              <span key={`t-s-${s}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">
                 {s === 'Pending Analysis' ? 'รอวิเคราะห์ (QSMS)' : s === 'Awaiting Materials' ? 'รอเบิกภาชนะ (WPK)' : s === 'Pending' ? 'รอดำเนินการ' : s === 'In-Progress' ? 'กำลังซ่อม (PDF)' : s === 'Blocked' ? 'ติดปัญหา Defend' : 'เสร็จสิ้น 100%'}
-                <button type="button" onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-amber-900 text-[#92400E] ml-0.5 cursor-pointer"><X size={11} /></button>
+                <button type="button" onClick={() => toggleArrayFilter(statusFilter, s, setStatusFilter)} className="hover:text-slate-900 text-slate-500 ml-0.5 cursor-pointer"><X size={11} /></button>
               </span>
             ))}
             {reasonFilter.map(r => (
-              <span key={`t-r-${r}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium">
+              <span key={`t-r-${r}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">
                 {r}
-                <button type="button" onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)} className="hover:text-amber-900 text-amber-800 ml-0.5 cursor-pointer"><X size={11} /></button>
+                <button type="button" onClick={() => toggleArrayFilter(reasonFilter, r, setReasonFilter)} className="hover:text-slate-900 text-slate-500 ml-0.5 cursor-pointer"><X size={11} /></button>
               </span>
             ))}
             {responsibleFilter.map(resp => (
@@ -686,9 +688,9 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               </span>
             ))}
             {customerFilter.map(c => (
-              <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 text-xs font-medium">
+              <span key={`t-c-${c}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">
                 {c}
-                <button type="button" onClick={() => toggleArrayFilter(customerFilter, c, setCustomerFilter)} className="hover:text-indigo-900 text-indigo-800 ml-0.5 cursor-pointer"><X size={11} /></button>
+                <button type="button" onClick={() => toggleArrayFilter(customerFilter, c, setCustomerFilter)} className="hover:text-slate-900 text-slate-500 ml-0.5 cursor-pointer"><X size={11} /></button>
               </span>
             ))}
             {(dateFrom || dateTo) && (
@@ -714,34 +716,34 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
         <MetricCard
           label="รอ QSMS วิเคราะห์"
           value={stats.pendingAnalysis.toString()}
-          icon={<ShieldCheck size={18} className="text-[#92400E]" />}
+          icon={<ShieldCheck size={18} className="text-slate-700" />}
           subtext={`${stats.boxesPendingAnalysis.toLocaleString()} กล่องรอสเปก`}
           highlight={stats.pendingAnalysis > 0 ? 'amber' : undefined}
         />
         <MetricCard
           label="รอ WPK เบิกภาชนะ"
           value={stats.awaitingMaterials.toString()}
-          icon={<Truck size={18} className="text-orange-700" />}
+          icon={<Truck size={18} className="text-slate-700" />}
           subtext={`${stats.boxesAwaitingMaterials.toLocaleString()} กล่องรอเบิก`}
           highlight={stats.awaitingMaterials > 0 ? 'orange' : undefined}
         />
         <MetricCard
           label="กำลังดำเนินการซ่อม"
           value={stats.inProgress.toString()}
-          icon={<Wrench size={18} className="text-sky-700" />}
+          icon={<Wrench size={18} className="text-slate-700" />}
           subtext={`ค้างซ่อม ${stats.remainingBoxes.toLocaleString()} กล่อง`}
         />
         <MetricCard
           label="ติดปัญหา Defend"
           value={stats.blocked.toString()}
-          icon={<AlertTriangle size={18} className="text-rose-700" />}
+          icon={<AlertTriangle size={18} className="text-rose-600" />}
           subtext={stats.blocked > 0 ? `ขาดกล่อง ${stats.missingBoxesTotal} / แกลลอน ${stats.missingGallonsTotal}` : 'ไม่มีปัญหาติดขัด'}
           highlight={stats.blocked > 0 ? 'rose' : undefined}
         />
         <MetricCard
           label="เสร็จสมบูรณ์ 100%"
           value={stats.completed.toString()}
-          icon={<CheckCircle2 size={18} className="text-emerald-700" />}
+          icon={<CheckCircle2 size={18} className="text-emerald-600" />}
           subtext={`สำเร็จ ${stats.completionRate}%`}
           highlight="emerald"
         />
@@ -769,7 +771,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
               )}
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Layers size={16} className="text-[#92400E]" />
+                  <Layers size={16} className="text-slate-700" />
                   {selectedMainReason 
                     ? `เจาะลึกสาเหตุย่อย: ${selectedMainReason}` 
                     : selectedMainResponsible 
@@ -792,7 +794,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                     type="button"
                     onClick={() => setAnalysisDimension('reason')}
                     className={`px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                      analysisDimension === 'reason' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      analysisDimension === 'reason' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     ตามสาเหตุ
@@ -801,7 +803,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                     type="button"
                     onClick={() => setAnalysisDimension('responsible')}
                     className={`px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                      analysisDimension === 'responsible' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      analysisDimension === 'responsible' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     ตามฝ่าย
@@ -814,7 +816,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   type="button"
                   onClick={() => setViewMode('units')}
                   className={`px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                    viewMode === 'units' ? 'bg-[#FEF3C7] text-[#92400E] shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+                    viewMode === 'units' ? 'bg-slate-900 text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   จำนวนกล่อง
@@ -823,7 +825,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                   type="button"
                   onClick={() => setViewMode('defects')}
                   className={`px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                    viewMode === 'defects' ? 'bg-[#FEF3C7] text-[#92400E] shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+                    viewMode === 'defects' ? 'bg-slate-900 text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   ความถี่เคส
@@ -862,7 +864,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                           <div className="flex items-center gap-1.5 font-medium text-slate-800">
                             <span>{item.name}</span>
                             {isMainView && (
-                              <ArrowRight size={12} className="text-[#92400E] opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <ArrowRight size={12} className="text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity" />
                             )}
                           </div>
                           <span className="font-semibold font-mono text-slate-900">
@@ -877,7 +879,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
                             className={`h-full rounded-full ${
                               analysisDimension === 'responsible'
                                 ? 'bg-sky-500'
-                                : 'bg-[#F5C754]'
+                                : 'bg-slate-800'
                             }`} 
                           />
                         </div>
@@ -905,7 +907,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
           {/* Workload Origin */}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
             <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-              <Boxes size={14} className="text-[#92400E]" /> แหล่งที่มาของเคส (Origin Source)
+              <Boxes size={14} className="text-slate-700" /> แหล่งที่มาของเคส (Origin Source)
             </h4>
             <div className="space-y-3">
               {sourceEntries.length > 0 ? (
@@ -946,7 +948,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
         <div className="border-b border-slate-100 pb-3 mb-4">
           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-            <TrendingUp size={16} className="text-[#92400E]" />
+            <TrendingUp size={16} className="text-slate-700" />
             สัดส่วนขั้นตอนการทำงานทั้งระบบ (Full Stage Distribution)
           </h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -976,10 +978,10 @@ function MetricCard({
   highlight?: 'amber' | 'orange' | 'rose' | 'emerald';
 }) {
   const borderClasses = {
-    amber: 'border-amber-300 bg-[#FEFDF5]',
-    orange: 'border-orange-300 bg-orange-50/40',
-    rose: 'border-rose-300 bg-rose-50/40',
-    emerald: 'border-emerald-300 bg-emerald-50/40',
+    amber: 'border-slate-200 bg-white shadow-xs',
+    orange: 'border-slate-200 bg-white shadow-xs',
+    rose: 'border-rose-200 bg-rose-50/30',
+    emerald: 'border-emerald-200 bg-emerald-50/30',
   };
 
   return (
@@ -1152,7 +1154,7 @@ function StatusDistributionSection({
                   <span className="text-2xl font-bold font-mono text-slate-900 block leading-none mb-1">
                     {total}
                   </span>
-                  <span className="text-[10px] font-semibold text-[#92400E] uppercase tracking-wider">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                     QSMS REWORK
                   </span>
                 </motion.div>
@@ -1314,7 +1316,7 @@ function TrendAnalysisSection({ stats, viewMode }: { stats: { trendByDate: Recor
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
         <div>
           <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-            <TrendingUp size={16} className="text-[#92400E]" />
+            <TrendingUp size={16} className="text-slate-700" />
             แนวโน้มการเกิดงาน Rework รายวัน (Time-Series)
           </h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5">สถิติตามวันที่เปิดเคสเทียบกับยอดปิดงานเสร็จ</p>
@@ -1327,8 +1329,8 @@ function TrendAnalysisSection({ stats, viewMode }: { stats: { trendByDate: Recor
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25}/>
-                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#0f172a" stopOpacity={0.15}/>
+                  <stop offset="95%" stopColor="#0f172a" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
@@ -1350,7 +1352,7 @@ function TrendAnalysisSection({ stats, viewMode }: { stats: { trendByDate: Recor
               <Area 
                 type="monotone" 
                 dataKey={viewMode === 'units' ? 'units' : 'defects'} 
-                stroke="#f59e0b" 
+                stroke="#0f172a" 
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#colorValue)" 

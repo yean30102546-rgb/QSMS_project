@@ -54,6 +54,7 @@ const DEFAULT_LIMITS = { rpm: 15, tpm: 1000000, rpd: 1500 };
 
 export async function GET(request: Request) {
   try {
+    await requireServerAuth();
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const key = searchParams.get('key') || searchParams.get('r2_key');
@@ -71,10 +72,17 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: false, error: 'Method Not Allowed or Invalid Action' }, { status: 405 });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const status = err instanceof AuthError ? err.status : 500;
+    const message = err instanceof Error ? err.message : 'Internal Server Error';
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }
+
+export const isDrawingEditor = (profile?: string): boolean => {
+  const norm = (profile || '').toUpperCase();
+  return norm === 'ADMIN' || norm === 'QSMS';
+};
 
 export async function POST(request: Request) {
   try {
@@ -104,6 +112,12 @@ export async function POST(request: Request) {
     switch (action) {
 
       case 'parse_drawing': {
+        if (!isDrawingEditor(auth.profile)) {
+          return NextResponse.json({
+            success: false,
+            error: 'คุณไม่มีสิทธิ์ใช้งาน AI สกัดข้อมูลแบบแปลน (เฉพาะบทบาท ADMIN หรือ QSMS เท่านั้น)'
+          }, { status: 403 });
+        }
         const { base64Data, aiModel } = body;
         if (!base64Data) {
           return NextResponse.json({ success: false, error: 'Missing base64Data' }, { status: 400 });
@@ -269,6 +283,12 @@ General rules:
       }
 
       case 'get_api_usage': {
+        if (!isDrawingEditor(auth.profile)) {
+          return NextResponse.json({
+            success: false,
+            error: 'คุณไม่มีสิทธิ์เข้าถึงข้อมูล API Usage'
+          }, { status: 403 });
+        }
         const { model } = body;
         const targetModel = model || 'gemini-3.1-flash';
 
@@ -293,6 +313,12 @@ General rules:
 
 
       case 'save_drawing': {
+        if (!isDrawingEditor(auth.profile)) {
+          return NextResponse.json({
+            success: false,
+            error: 'คุณไม่มีสิทธิ์อัปโหลด Master Drawing (เฉพาะบทบาท ADMIN หรือ QSMS เท่านั้น)'
+          }, { status: 403 });
+        }
         const { drawing_number, revision, part_name, customer_name, item_code, item_number, issue_date, package_size, oil_group, pallet_type, boxes_per_pallet, shelf_life, file_name, type } = body;
 
         // Either base64Data (old way) or fileBuffer (new way via FormData)
@@ -375,6 +401,12 @@ General rules:
       }
 
       case 'update_drawing': {
+        if (!isDrawingEditor(auth.profile)) {
+          return NextResponse.json({
+            success: false,
+            error: 'คุณไม่มีสิทธิ์แก้ไขข้อมูล Master Drawing (เฉพาะบทบาท ADMIN หรือ QSMS เท่านั้น)'
+          }, { status: 403 });
+        }
         const {
           id,
           drawing_number,

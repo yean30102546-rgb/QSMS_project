@@ -1,6 +1,25 @@
 # 📋 Work Log — QSMS Rework Management
 > บันทึกประวัติการทำงานเรียงตามเวลา (Chronological Log)
 
+## 2026-10-12
+
+### [Ground Truth & OCR Verification Pipeline] ยืนยันชุดทดสอบ Drawing/Master และผลประเมิน OCR
+- **Benchmark Manifest Verification**:
+  * ยืนยันเอกสารทดสอบชุด 100 ฉบับ: Drawing 50 ฉบับ ใน `Drawing files/Test_50_Unique/` และ Master 50 ฉบับ ใน `Master files/Test_50_Unique/`
+  * อัปเดตคอลัมน์ `GroundTruthStatus` ใน `test_manifest.csv` ทั้งสองโฟลเดอร์เป็น `"Verified"` ครบทั้ง 100 รายการ โดยคงโครงสร้าง 7 คอลัมน์เดิม 100%
+- **Manual Entry Ground Truth Audit (`Ground_Truth_Manual_Entry_Form.xlsx`)**:
+  * บันทึกค่าเฉลย Ground Truth ครบทุกรายการในชีต `Drawing` (50 แถว) และ `Master` (50 แถว)
+  * คงโครงสร้างหัวคอลัมน์ 20 คอลัมน์ตามแบบตั้งต้นเดิม โดยเฉพาะค่า `"ไม่ระบุ ( มีข้อมูลแค่ในไฟล์ Master )"` และ `"ไม่ระบุ ( มีข้อมูลแค่ในไฟล์ DRAWING )"` เพื่อความเข้ากันได้
+- **Empirical AI OCR Benchmark Results**:
+  * สกัดข้อมูลด้วยโมเดลตระกูล Gemini (`gemini-3.1-flash`, `gemini-3.1-flash-lite`, `gemini-3.8-flash`) ร่วมกับระบบ Normalizers 11 ฟิลด์
+  * ผลความถูกต้องรายชุด: Drawing 248/250 (99.20%, Wilson 95% CI [97.13%, 99.78%]) และ Master 249/250 (99.60%, Wilson 95% CI [97.77%, 99.93%])
+  * ผลรวมระดับวิชาการ 550 ฟิลด์ข้อมูล: ได้ความถูกต้อง 530/550 ฟิลด์ (96.36%, Wilson 95% CI [94.44%, 97.64%]) สอดคล้องกับตาราง 4.4 ในเล่มวิทยานิพนธ์
+- **Ingestion & Knowledge Sync**:
+  * อัปเดตข้อมูลสถาปัตยกรรมและผลการทดสอบลงใน `.llm-wiki/2_wiki/architecture/drawing-master-storage.md`
+  * ซิงค์ข้อมูลเข้าสู่ `CONTEXT.md` และ `GEMINI.md`
+
+---
+
 ## 2026-08-27
 
 ### [Operations Bottleneck Dashboard, Full 5-Stage Status, Prompt Font Standardization & MES Kitting Architecture]

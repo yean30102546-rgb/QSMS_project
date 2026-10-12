@@ -4,8 +4,11 @@
 ## 1. Summary & Current Implementation
 ระบบการบันทึกข้อมูลสินค้า (Item Master) ทำงานผ่าน API Route `/api/rework` (Action: `saveItemMaster`) โดยจะบันทึกหรืออัปเดตลงตาราง `rework_master_items` ใน Supabase 
 
-ระบบปรับปรุงล่าสุดใช้แนวคิด **Flexible Auto Fill & Smart Master Upsert** ดังนี้:
-1. **Debounce 600ms** บนฟิลด์ `ItemNumber` และ `ItemCode` เมื่อผู้ใช้พิมพ์หยุด ระบบจะเรียก API ไปหาคู่ของฟิลด์ที่เหลือ + ชื่อสินค้าในฐานข้อมูล Master และเติมให้อัตโนมัติ โดยอ้างอิงตามระดับความสำคัญ (Priority): ตรวจสอบ `Item Number` ก่อนเป็นอันดับแรก หากไม่พบจึงค้นจาก `Item Code`
+ระบบปรับปรุงล่าสุดใช้แนวคิด **Manual Trigger via Search Button & Smart Master Upsert** ดังนี้:
+1. **Manual Search Trigger (ไอคอนแว่นขยาย / Enter)**:
+   - `[Updated Note 2026-10-05]`: ยกเลิกการ Debounce 600ms ค้นหาอัตโนมัติขณะพิมพ์ เพื่อป้องกัน race condition ข้อมูลเด้งทับ และลดภาระ API
+   - ผู้ใช้กรอก `Item Number` หรือ `Item Code` จากนั้นคลิก **ไอคอนแว่นขยาย (`<Search size={15} />`)** หรือกดปุ่ม `Enter` ระบบจึงจะสั่งค้นหาผ่าน `triggerDebouncedVerification`
+   - การพิมพ์ในช่องจะรีเซ็ตสถานะเป็น `idle` เสมอ
 2. **Inline Badges** แสดงสถานะการตรวจสอบรายสินค้าเป็นสีสันสดใสโดยตรงบนหน้าจอหลัก:
    - `พบในระบบ` (สีเขียว)
    - `สินค้าใหม่` (สีเหลือง)

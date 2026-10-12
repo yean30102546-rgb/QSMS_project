@@ -2,12 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Authentication & Access Control Portal Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Bootstrap view state to login
-    await page.goto('/');
-    await page.evaluate(() => {
-      sessionStorage.setItem('currentView', 'login');
+    await page.route('**/api/auth/me', async route => {
+      await route.fulfill({ status: 401, json: { success: false, error: 'Unauthenticated' } });
     });
-    await page.reload();
+    // Set the initial view before the client app hydrates.
+    await page.addInitScript(() => {
+      window.sessionStorage.setItem('currentView', 'login');
+    });
+    await page.goto('/');
   });
 
   test('should display login view and reject invalid credentials with error message', async ({ page }) => {
@@ -22,53 +24,26 @@ test.describe('Authentication & Access Control Portal Flow', () => {
       });
     });
 
-    await expect(page.locator('text=One login for Rework').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeVisible();
 
     // Fill invalid credentials
-    const usernameInput = page.locator('input[placeholder="Username"]');
-    const passwordInput = page.locator('input[placeholder="Password"]');
+    const usernameInput = page.locator('input[placeholder="ระบุชื่อผู้ใช้งาน"]');
+    const passwordInput = page.locator('input[placeholder="ระบุรหัสผ่าน"]');
     await usernameInput.fill('nonexistent_user');
     await passwordInput.fill('WrongPass123!');
 
     // Submit
-    const submitBtn = page.getByRole('button', { name: /เข้าสู่ระบบ/i }).last();
+    const submitBtn = page.getByRole('button', { name: /เข้าสู่ระบบ/i });
     await submitBtn.click();
 
     // Verify error message toast/card
     await expect(page.locator('text=รหัสผ่านหรือชื่อผู้ใช้ไม่ถูกต้อง')).toBeVisible();
   });
 
-  test('should allow user to navigate to register view and enforce password strength checks', async ({ page }) => {
-    await expect(page.locator('text=One login for Rework').first()).toBeVisible();
-
-    // Click "สร้างบัญชีใหม่" button to open Register view
-    const registerBtn = page.getByRole('button', { name: /สร้างบัญชีใหม่/i });
-    await expect(registerBtn).toBeVisible();
-    await registerBtn.click();
-
-    // Verify Register View title
-    await expect(page.locator('text=สร้างบัญชีใหม่').first()).toBeVisible();
-
-    // Fill username, name & employee_id
-    const usernameInput = page.locator('input[placeholder="Username (สำหรับใช้ล็อกอิน)"]');
-    const nameInput = page.locator('input[placeholder="ชื่อ-นามสกุลจริง"]');
-    const employeeIdInput = page.locator('input[placeholder*="รหัสพนักงาน"]');
-    const passwordInput = page.locator('input[placeholder="รหัสผ่าน"]');
-
-    await usernameInput.fill('new_operator');
-    await nameInput.fill('Somchai Newuser');
-    await employeeIdInput.fill('EMP1002');
-
-    // Fill weak password first
-    await passwordInput.fill('weak');
-
-    // Submit button should be disabled due to password strength policy
-    const confirmBtn = page.getByRole('button', { name: /ยืนยันสร้างบัญชี/i });
-    await expect(confirmBtn).toBeDisabled();
-
-    // Fill valid strong password
-    await passwordInput.fill('StrongPass123!');
-    await expect(confirmBtn).toBeEnabled();
+  test('does not expose self-registration on the login screen', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeVisible();
+    await expect(page.getByText(/ระบบนี้ไม่อนุญาตให้ลงทะเบียนด้วยตนเอง/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /สร้างบัญชีใหม่/i })).toHaveCount(0);
   });
 
   test('should allow user to navigate to forgot password view and progress through 2-step reset flow', async ({ page }) => {
@@ -86,7 +61,7 @@ test.describe('Authentication & Access Control Portal Flow', () => {
       }
     });
 
-    await expect(page.locator('text=One login for Rework').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeVisible();
 
     // Click "ลืมรหัสผ่าน?"
     const forgotBtn = page.getByRole('button', { name: /ลืมรหัสผ่าน\?/i });
@@ -95,13 +70,13 @@ test.describe('Authentication & Access Control Portal Flow', () => {
 
     // Step 1: Verify Identity
     await expect(page.locator('text=ยืนยันตัวตน').first()).toBeVisible();
-    await page.locator('input[placeholder*="Username"]').fill('qsms_operator');
+    await page.locator('input[placeholder="Username (ชื่อผู้ใช้งาน)"]').fill('qsms_operator');
     await page.locator('input[placeholder*="รหัสพนักงาน"]').fill('EMP1002');
     await page.getByRole('button', { name: /ยืนยันตัวตน/i }).click();
 
     // Step 2: Set New Password
     await expect(page.locator('text=ตั้งรหัสผ่านใหม่').first()).toBeVisible();
-    await page.locator('input[placeholder*="อย่างน้อย 8 ตัวอักษร"]').fill('SecureP@ss2026');
+    await page.locator('input[placeholder="รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)"]').fill('SecureP@ss2026');
     await page.locator('input[placeholder="ยืนยันรหัสผ่านใหม่"]').fill('SecureP@ss2026');
 
     const updateBtn = page.getByRole('button', { name: /อัปเดตรหัสผ่านใหม่/i });

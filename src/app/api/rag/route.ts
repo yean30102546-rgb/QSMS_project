@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { ragSupabaseServer } from '../../../lib/ragSupabaseServer';
+import { assertPermission, AuthError, requireServerAuth } from '../../../lib/serverAuth';
 import { GoogleGenAI, Type } from '@google/genai';
 import { MarkdownTextSplitter } from '@langchain/textsplitters';
 import * as XLSX from 'xlsx';
+import { normalizeCaseQuery } from './caseNormalizer';
 
 interface DocumentChunk {
   content: string;
@@ -18,6 +20,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action } = body;
+
+    const auth = await requireServerAuth(body);
+    if (['delete_document', 'bulk_delete_documents', 'ingest'].includes(action)) {
+      assertPermission(auth, 'manage_rag');
+    }
 
     console.log(`[RAG API] RAG API Action: ${action}`);
 
@@ -288,7 +295,7 @@ export async function POST(request: Request) {
                   model: 'text-embedding-004',
                   contents: chunk
                 });
-                const rawResp = embedResponse as any;
+                const rawResp = embedResponse as { embedding?: { values?: number[] }; embeddings?: { values?: number[] }[] };
                 const embeddingValues = rawResp.embedding?.values || rawResp.embeddings?.[0]?.values;
                 if (!embeddingValues || embeddingValues.length !== 768) {
                   throw new Error(`Invalid Gemini embedding size: ${embeddingValues?.length}`);
@@ -420,7 +427,7 @@ export async function POST(request: Request) {
                 model: 'text-embedding-004',
                 contents: q
               });
-              const rawResp = embedResponse as any;
+              const rawResp = embedResponse as { embedding?: { values?: number[] }; embeddings?: { values?: number[] }[] };
               return rawResp.embedding?.values || rawResp.embeddings?.[0]?.values;
             });
             
@@ -554,6 +561,12 @@ Instructions:
 5. DO NOT use markdown asterisks (* or **) for text formatting (like bolding or bullet points). Use plain text, numbers, or dashes (-) instead.
 6. Suggestion Chips: At the very end of your response, you MUST append a hidden JSON block containing 3 suggested follow-up questions relevant to the topic. Format exactly like this: \`\`\`json\n{"suggested_questions": ["Question 1?", "Question 2?", "Question 3?"]}\n\`\`\`
 7. File Attachments: If System Data contains drawing/master PDF file links [📄 filename](url), include them cleanly in your answer so users can view the attached document.
+8. Anti-Hallucination & Strict Grounding:
+- คุณต้องตอบโดยอ้างอิงจาก Retrieved Context หรือ [System Data] เท่านั้น
+- ห้ามคิดค้นหรือเดาข้อมูลสินค้า, สเปกบรรจุภัณฑ์, อาการเสีย, หรือสร้างลิงก์ URL สมมติ (เช่น https://qsms.internal/... หรือชื่อไฟล์ที่ไม่มีอยู่จริงในระบบ) โดยเด็ดขาด
+- หากใน [System Data] ระบุว่า "ไม่พบเคส" หรือไม่พบข้อมูลสินค้า ให้แจ้งผู้ใช้ตามความจริงอย่างสุภาพว่าไม่พบข้อมูลในระบบ QSMS พร้อมระบุคำค้นหาที่ใช้ และแนะนำรูปแบบเลขเคสที่ถูกต้อง (เช่น RW-2026-xxx หรือ RT-2026-xxx) โดยห้ามเดาหรือสร้างข้อมูลเท็จขึ้นมาแทน
+9. Case Action Links & Navigation:
+- เมื่อตอบข้อมูลเกี่ยวกับเคส Rework จริงที่ได้รับจาก [System Data] คุณต้องแนบ Action Link รูปแบบ [🔍 เปิดดูเคส <CaseID>](action:case:<CaseID>) ไว้ในคำตอบเสมอ เพื่อให้ผู้ใช้สามารถคลิกเปิดหน้าเคสในระบบได้ทันที
 `;
 
         console.log('[RAG API] Requesting streaming response from Gemini chat model (using gemini-3.1-flash-lite)...');
@@ -565,6 +578,108 @@ Instructions:
         }));
 
         let functionResponseContext = '';
+
+        // Helper to query and format case context using real Supabase columns
+        const buildCaseResponseContext = async (caseQuery: string): Promise<string> => {
+          const norm = normalizeCaseQuery(caseQuery);
+          const patterns = new Set<string>();
+
+          // 1. Direct contains (case-insensitive substring)
+          if (norm.token) {
+            patterns.add(`id.ilike.%${norm.token}%`);
+            patterns.add(`case_name.ilike.%${norm.token}%`);
+          }
+          if (norm.noSpace && norm.noSpace !== norm.token) {
+            patterns.add(`id.ilike.%${norm.noSpace}%`);
+            patterns.add(`case_name.ilike.%${norm.noSpace}%`);
+          }
+
+          // 2. Structured patterns (supports RT-2026-001, RW888-2026, RT 001)
+          if (norm.prefix && norm.paddedSeq) {
+            patterns.add(`id.ilike.${norm.prefix}-%-${norm.paddedSeq}`);
+            patterns.add(`id.ilike.${norm.prefix}${norm.paddedSeq}-%`);
+            patterns.add(`case_name.ilike.${norm.prefix}-%-${norm.paddedSeq}`);
+            patterns.add(`case_name.ilike.${norm.prefix}${norm.paddedSeq}-%`);
+            if (norm.year) {
+              patterns.add(`id.ilike.${norm.prefix}-${norm.year}-${norm.paddedSeq}`);
+              patterns.add(`case_name.ilike.${norm.prefix}-${norm.year}-${norm.paddedSeq}`);
+            }
+          } else if (norm.paddedSeq) {
+            patterns.add(`id.ilike.%-%-${norm.paddedSeq}`);
+            patterns.add(`case_name.ilike.%-%-${norm.paddedSeq}`);
+          }
+
+          const orClause = Array.from(patterns).join(',');
+          console.log(`[RAG API] Searching rework_cases for '${caseQuery}', OR filter: ${orClause}`);
+
+          interface MatchedCaseRow {
+            id: string;
+            case_name?: string | null;
+            source?: string | null;
+            customer_name?: string | null;
+            status?: string | null;
+            submission_date?: string | null;
+            created_at?: string | null;
+            items?: Array<{
+              item_code: string;
+              item_number?: string | null;
+              item_name?: string | null;
+              amount?: number | null;
+              completed_boxes?: number | null;
+              reason?: string | null;
+              reason_subtype?: string | null;
+              responsible?: string | null;
+            }> | null;
+          }
+
+          const { data: matchedCases, error: queryErr } = await supabaseServer
+            .from('rework_cases')
+            .select('id, case_name, source, customer_name, status, submission_date, created_at, items:rework_items(item_code, item_number, item_name, amount, completed_boxes, reason, reason_subtype, responsible)')
+            .eq('is_deleted', false)
+            .or(orClause)
+            .limit(5);
+
+          if (queryErr) {
+            console.error('[RAG API] Error querying rework_cases:', queryErr);
+            return `\n\n[System Data - ผลการค้นหาเคส Rework]: เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลเคส\n`;
+          }
+
+          if (matchedCases && matchedCases.length > 0) {
+            const casesStr = (matchedCases as MatchedCaseRow[]).map(c => {
+              const itemList = (c.items && c.items.length > 0)
+                ? c.items.map((it, idx) =>
+                    `    ${idx + 1}. รหัสสินค้า: ${it.item_code} | ชื่อ: ${it.item_name || 'N/A'} | จำนวน: ${it.amount || 0} กล่อง (ซ่อมเสร็จ: ${it.completed_boxes || 0}) | ปัญหา: ${it.reason || 'N/A'}${it.reason_subtype ? ' (' + it.reason_subtype + ')' : ''} | แผนก: ${it.responsible || '-'}`
+                  ).join('\n')
+                : '    (ไม่มีรายการสินค้า)';
+
+              return `- รหัสเคส: ${c.id} (ชื่อเคส: ${c.case_name || c.id})
+  - แหล่งที่มา: ${c.source || 'N/A'} ${c.customer_name ? `(ลูกค้า: ${c.customer_name})` : ''}
+  - วันที่เปิดเคส: ${c.submission_date || c.created_at || 'N/A'}
+  - สถานะปัจจุบัน: ${c.status || 'N/A'}
+  - จำนวนรายการสินค้า: ${(c.items || []).length} รายการ
+  - รายการสินค้าในเคส:
+${itemList}
+  - Action Link: [🔍 เปิดดูเคส ${c.id}](action:case:${c.id})`;
+            }).join('\n\n');
+
+            return `\n\n[System Data - ข้อมูลเคสจริงจากฐานข้อมูลระบบ QSMS สำหรับ '${caseQuery}']:\n${casesStr}\n`;
+          }
+
+          // If not found in active cases, check if it was soft-deleted
+          const { data: deletedCases } = await supabaseServer
+            .from('rework_cases')
+            .select('id, case_name')
+            .eq('is_deleted', true)
+            .or(orClause)
+            .limit(3);
+
+          if (deletedCases && deletedCases.length > 0) {
+            const delList = deletedCases.map(d => d.id).join(', ');
+            return `\n\n[System Data - ผลการค้นหาเคส Rework]: พบรหัสเคส '${delList}' ในระบบ แต่เคสดังกล่าวอยู่ในสถานะ "ถูกลบออกจากระบบแล้ว (Deleted)"\n(คำแนะนำสำหรับ AI: ชี้แจงผู้ใช้ว่าพบเคส ${delList} ในฐานข้อมูลจริงแต่เคสนี้ถูกลบออกจากระบบแล้ว จึงไม่มีข้อมูลสินค้าที่ดำเนินการอยู่ และแนะนำให้ค้นหาเคสที่ยังเปิดใช้งานอยู่ เช่น RW-2026-002 ถึง RW-2026-009 หรือ RT-2026-001 โดยห้ามแต่งข้อมูลสินค้าขึ้นมาเองเด็ดขาด)\n`;
+          }
+
+          return `\n\n[System Data - ผลการค้นหาเคส Rework]: ไม่พบเคสที่ตรงกับรหัส '${caseQuery}' ในฐานข้อมูลระบบ QSMS (ตรวจสอบทั้งรหัสตรงและรูปแบบใกล้เคียงแล้วไม่พบ)\n(คำแนะนำสำหรับ AI: แจ้งผู้ใช้ตามความจริงว่าไม่พบเคส '${caseQuery}' ในระบบ และห้ามแต่งข้อมูลสินค้าหรือชื่อเคสขึ้นมาเองเด็ดขาด ให้แนะนำผู้ใช้ตรวจสอบเลขเคส เช่น รูปแบบ RW-2026-xxx หรือ RT-2026-xxx)\n`;
+        };
         try {
           // Pre-flight Agentic Tool Check across All Modules
           console.log('[RAG API] Checking if query requires system data tools across modules...');
@@ -577,6 +692,20 @@ Instructions:
             config: {
               tools: [{
                 functionDeclarations: [
+                  {
+                    name: 'search_rework_case',
+                    description: 'Search and inspect a specific rework case by its case ID, case number, or reference (e.g. RW-2026-001, RT-2026-001, RW001, 001, RT002, RW888). Returns real case status, source, defect summaries, and all rework items within the case.',
+                    parameters: {
+                      type: Type.OBJECT,
+                      properties: {
+                        caseQuery: {
+                          type: Type.STRING,
+                          description: 'The case ID, case number, or reference to search for (e.g. RW001, RW-2026-001, 001, RT002, RW888)'
+                        }
+                      },
+                      required: ['caseQuery']
+                    }
+                  },
                   {
                     name: 'query_rework_analytics',
                     description: 'Fetch real-time statistics and details about rework cases, defects (leak/รั่ว or stain/เปื้อน), box counts, case status (Pending, In-Progress, Completed), and resolution progress from the operational database.'
@@ -634,7 +763,14 @@ Instructions:
           if (toolResponse.functionCalls && toolResponse.functionCalls.length > 0) {
             const call = toolResponse.functionCalls[0];
             
-            if (call.name === 'query_rework_analytics' || call.name === 'get_rework_statistics') {
+            if (call.name === 'search_rework_case') {
+              console.log('[RAG API] Model requested search_rework_case tool. Executing query...');
+              const args = call.args as Record<string, unknown> | undefined;
+              const caseQuery = typeof args?.caseQuery === 'string' ? args.caseQuery : '';
+              if (caseQuery) {
+                functionResponseContext = await buildCaseResponseContext(caseQuery);
+              }
+            } else if (call.name === 'query_rework_analytics' || call.name === 'get_rework_statistics') {
               console.log('[RAG API] Model requested rework analytics tool. Executing query...');
               const { data: statsData, error: statsError } = await supabaseServer.from('rework_items').select('reason, amount, completed_boxes');
               const { data: casesData, error: casesError } = await supabaseServer.from('rework_cases').select('status');
@@ -644,14 +780,16 @@ Instructions:
                 const leaks = statsData.filter(d => d.reason === 'รั่ว').length;
                 const stains = statsData.filter(d => d.reason === 'เปื้อน').length;
                 
-                let pending = 0, inProgress = 0, completed = 0;
+                let pendingAnalysis = 0, awaitingMaterials = 0, inProgress = 0, blocked = 0, completed = 0;
                 if (!casesError && casesData) {
-                  pending = casesData.filter(c => c.status === 'Pending').length;
+                  pendingAnalysis = casesData.filter(c => c.status === 'Pending Analysis' || c.status === 'Pending').length;
+                  awaitingMaterials = casesData.filter(c => c.status === 'Awaiting Materials').length;
                   inProgress = casesData.filter(c => c.status === 'In-Progress').length;
+                  blocked = casesData.filter(c => c.status === 'Blocked').length;
                   completed = casesData.filter(c => c.status === 'Completed').length;
                 }
 
-                functionResponseContext = `\n\n[System Data - Real-Time Rework Analytics]:\n- Total Rework Items: ${total}\n- Defect Breakdown: Leak (รั่ว): ${leaks}, Stain (เปื้อน): ${stains}\n- Case Status Breakdown: Pending: ${pending}, In-Progress: ${inProgress}, Completed: ${completed}\n`;
+                functionResponseContext = `\n\n[System Data - Real-Time Rework Analytics]:\n- Total Rework Items: ${total}\n- Defect Breakdown: Leak (รั่ว): ${leaks}, Stain (เปื้อน): ${stains}\n- Case Status Breakdown: รอวิเคราะห์ (Pending Analysis): ${pendingAnalysis}, รอเบิกวัสดุ (Awaiting Materials): ${awaitingMaterials}, กำลังซ่อม (In-Progress): ${inProgress}, ติดปัญหา (Blocked): ${blocked}, เสร็จสิ้น (Completed): ${completed}\n`;
                 console.log(`[RAG API] Analytics tool executed. Total items: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
               } else {
                 console.error('Failed to fetch rework analytics:', statsError);
@@ -661,14 +799,14 @@ Instructions:
               const args = call.args as Record<string, unknown> | undefined;
               const keyword = typeof args?.keyword === 'string' ? args.keyword.trim() : '';
 
-              let query = supabaseServer.from('item_master').select('*').limit(5);
+              let query = supabaseServer.from('rework_master_items').select('item_code, item_number, item_name').limit(5);
               if (keyword) {
                 query = query.or(`item_code.ilike.%${keyword}%,item_number.ilike.%${keyword}%,item_name.ilike.%${keyword}%`);
               }
 
               const { data: itemsData, error: itemsError } = await query;
               if (!itemsError && itemsData && itemsData.length > 0) {
-                const itemStr = itemsData.map(i => `- ItemCode: ${i.item_code}, ItemNo: ${i.item_number || 'N/A'}, Name: ${i.item_name || 'N/A'}, OilGroup: ${i.oil_group || 'N/A'}, PalletType: ${i.pallet_type || 'N/A'}, Boxes/Pallet: ${i.boxes_per_pallet || 'N/A'}, ShelfLife: ${i.shelf_life || 'N/A'}`).join('\n');
+                const itemStr = itemsData.map(i => `- ItemCode: ${i.item_code}, ItemNo: ${i.item_number || 'N/A'}, Name: ${i.item_name || 'N/A'}`).join('\n');
                 functionResponseContext = `\n\n[System Data - Central Item Master (${keyword || 'All'})]:\n${itemStr}\n`;
                 console.log(`[RAG API] Item master lookup executed. Found ${itemsData.length} items.`);
               } else {
@@ -679,18 +817,18 @@ Instructions:
               const args = call.args as Record<string, unknown> | undefined;
               const searchQuery = typeof args?.query === 'string' ? args.query.trim() : '';
 
-              let query = supabaseServer.from('engineering_drawings').select('doc_type, drawing_number, revision, customer_name, item_code, item_number, part_name, oil_group, pallet_type, boxes_per_pallet, issue_date, package_size, r2_key, file_name').order('created_at', { ascending: false }).limit(5);
+              let query = ragSupabaseServer.from('rag_documents').select('id, filename, file_type, created_at').order('created_at', { ascending: false }).limit(5);
               if (searchQuery) {
-                query = query.or(`drawing_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,part_name.ilike.%${searchQuery}%,item_code.ilike.%${searchQuery}%`);
+                query = query.ilike('filename', `%${searchQuery}%`);
               }
 
               const { data: drawData, error: drawError } = await query;
               if (!drawError && drawData && drawData.length > 0) {
-                const drawStr = drawData.map(d => `- Type: ${d.doc_type}, DrawingNo: ${d.drawing_number}, Rev: ${d.revision || 'N/A'}, Customer: ${d.customer_name || 'N/A'}, Part: ${d.part_name || 'N/A'}, ItemCode: ${d.item_code || 'N/A'}, Boxes/Pallet: ${d.boxes_per_pallet || 'N/A'}, File: [📄 ${d.file_name || d.drawing_number + '.pdf'}](/api/drawings?action=view&key=${d.r2_key || ''})`).join('\n');
-                functionResponseContext = `\n\n[System Data - Engineering Drawings & Master Sheets (${searchQuery || 'Recent'})]:\n${drawStr}\n`;
-                console.log(`[RAG API] Drawing search executed. Found ${drawData.length} records.`);
+                const drawStr = drawData.map(d => `- Document: [📄 ${d.filename}] (Type: ${d.file_type || 'PDF'}, Date: ${d.created_at})`).join('\n');
+                functionResponseContext = `\n\n[System Data - Engineering Documents & Drawing PDFs (${searchQuery || 'Recent'})]:\n${drawStr}\n`;
+                console.log(`[RAG API] Drawing/Document search executed. Found ${drawData.length} records.`);
               } else {
-                functionResponseContext = `\n\n[System Data - Engineering Drawings]: No drawings found matching '${searchQuery}'.\n`;
+                functionResponseContext = `\n\n[System Data - Engineering Documents]: No documents found matching '${searchQuery}'.\n`;
               }
             } else if (call.name === 'search_rework_history') {
               console.log('[RAG API] Model requested search_rework_history tool. Executing query...');
@@ -732,6 +870,16 @@ Instructions:
           }
         } catch (e) {
           console.error('Tool check failed, proceeding normally', e);
+        }
+
+        // Proactive Case Lookup Fallback: If no tool was invoked by model, but user query contains a case pattern (e.g. RW888, RW001, RT-2026-001)
+        if (!functionResponseContext) {
+          const casePatternMatch = message.match(/(?:RW|RT)[-\s]?\d+(?:[-\s]?\d+)*/i) || message.match(/\b\d{3}\b/);
+          if (casePatternMatch) {
+            const detectedCaseQuery = casePatternMatch[0];
+            console.log(`[RAG API] Proactive case pattern detected: '${detectedCaseQuery}'. Searching database...`);
+            functionResponseContext = await buildCaseResponseContext(detectedCaseQuery);
+          }
         }
 
         try {
@@ -819,6 +967,13 @@ Instructions:
         return NextResponse.json({ success: false, error: `Invalid action: ${action}` }, { status: 400 });
     }
   } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
+
     console.error('[RAG API] Handler Error:', error);
 
     let errMsg = error instanceof Error ? error.message : 'Internal Server Error';

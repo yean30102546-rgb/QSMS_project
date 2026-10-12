@@ -42,25 +42,20 @@ test.describe('Rework Portal - Case Initiation', () => {
       }
     });
 
-    // Bootstrapping view state via sessionStorage before app mounts
-    await page.goto('/');
-    await page.evaluate(() => {
+    // Set the initial view before the client app hydrates.
+    await page.addInitScript(() => {
       sessionStorage.setItem('currentView', 'rework');
     });
-    await page.reload();
+    await page.goto('/');
   });
 
   test('should be able to navigate to add case tab and fill basic info', async ({ page }) => {
     // Go to Add Case Tab
-    await page.getByRole('button', { name: /เพิ่มงานใหม่/i }).click();
+    await page.getByRole('button', { name: /เปิดเคสใหม่ \(Add Case\)/i }).click();
 
     // Ensure we are in the Add Case Form
-    await expect(page.locator('text=บันทึกงาน Rework ใหม่')).toBeVisible();
-
-    // Fill Case ID
-    const caseInput = page.locator('input[placeholder="012"]');
-    await caseInput.fill('999');
-    await expect(caseInput).toHaveValue('999');
+    await expect(page.getByRole('heading', { name: /เปิดเคสใหม่ \(Case Initiation\)/i })).toBeVisible();
+    await expect(page.getByText(/รหัสเคสอัตโนมัติ:/i)).toBeVisible();
 
     // Fill Item Name using click + pressSequentially for react-hook-form compatibility
     const itemNameInput = page.getByRole('textbox', { name: /ชื่อรายการ/i }).first();
@@ -69,7 +64,7 @@ test.describe('Rework Portal - Case Initiation', () => {
     await expect(itemNameInput).toHaveValue('Test Product');
 
     // Try submitting disabled form
-    const submitBtn = page.getByRole('button', { name: /บันทึกข้อมูลเข้าสู่ระบบ/i });
+    const submitBtn = page.getByRole('button', { name: /เปิดเคสใหม่และส่งต่อให้ QSMS วิเคราะห์/i });
     await expect(submitBtn).toBeDisabled();
   });
 });

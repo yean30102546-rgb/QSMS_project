@@ -17,9 +17,10 @@ interface DocumentRecord {
 interface GapAnalysisProps {
   refreshKey: number;
   onUploadMaster: (data: Record<string, unknown>) => void;
+  canEdit?: boolean;
 }
 
-export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
+export function GapAnalysis({ refreshKey, onUploadMaster, canEdit = true }: GapAnalysisProps) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useNotification();
@@ -50,15 +51,29 @@ export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
   };
 
   const gaps = documents.filter(doc => doc.type === 'drawing').filter(drawing => {
-    const drawingCode = drawing.item_code;
-    
-    // Only analyze drawings that have a valid numeric item_code
-    // (Documents without item_code are considered 'incomplete_code' in DocumentList, not 'missing_master')
-    if (!drawingCode || !/^\d+$/.test(drawingCode)) return false;
-    
-    return !documents.some(master => {
-      return master.type === 'master' && master.item_code === drawingCode;
-    });
+    const drawingCode = drawing.item_code?.trim();
+    const drawingNum = drawing.drawing_number?.trim().toLowerCase();
+
+    // 1. Check if matched by item_code
+    if (drawingCode && /^\d+$/.test(drawingCode)) {
+      const hasMasterByCode = documents.some(
+        master => master.type === 'master' && master.item_code?.trim() === drawingCode
+      );
+      if (hasMasterByCode) return false;
+    }
+
+    // 2. Check if matched by drawing_number fallback
+    if (drawingNum) {
+      const hasMasterByDocNo = documents.some(
+        master => master.type === 'master' && master.drawing_number?.trim().toLowerCase() === drawingNum
+      );
+      if (hasMasterByDocNo) return false;
+    }
+
+    // If it has neither item_code nor drawing_number, it is incomplete data, not a missing master gap
+    if (!drawingCode && !drawingNum) return false;
+
+    return true;
   });
 
   const handleExportExcel = async () => {
@@ -119,14 +134,14 @@ export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="shrink-0 mb-6 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/20 p-4 flex gap-4 justify-between items-start">
-        <div className="flex gap-4">
+      <div className="shrink-0 mb-4 sm:mb-6 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/20 p-3.5 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center">
+        <div className="flex gap-3 sm:gap-4">
           <div className="flex-shrink-0 mt-0.5">
             <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Missing Master Documents ({gaps.length})</h3>
-            <p className="text-sm text-amber-700 dark:text-amber-400/80 mt-1">
+            <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400/80 mt-1">
               The following customer drawings do not have a corresponding internal Master file in the system. Please create and upload a Master file to ensure production alignment.
             </p>
           </div>
@@ -135,7 +150,7 @@ export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
         {gaps.length > 0 && (
           <button
             onClick={handleExportExcel}
-            className="flex-shrink-0 flex items-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 px-3 py-1.5 text-sm font-medium text-white transition-all shadow-sm active:scale-95"
+            className="w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium text-white transition-all shadow-sm active:scale-95"
           >
             <Download className="h-4 w-4" />
             <span>Export Report</span>
@@ -145,7 +160,82 @@ export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
 
       <div className="bg-white dark:bg-[#1c1c1e] rounded-xl shadow-sm border border-slate-200 dark:border-white/10 flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className="overflow-x-auto overflow-y-auto flex-1">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+          {/* Mobile Gap Cards (md:hidden) */}
+          <div className="md:hidden p-3 space-y-3">
+            {gaps.length === 0 ? (
+              <div className="py-12 text-center">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mb-2">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">All Clear!</h3>
+                <p className="mt-1 text-xs text-slate-500">Every customer drawing has a matched master file.</p>
+              </div>
+            ) : (
+              gaps.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="p-3.5 bg-white dark:bg-[#252528] rounded-xl border border-rose-200 dark:border-rose-500/20 bg-rose-50/10 dark:bg-rose-950/10 space-y-2.5 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
+                          {doc.drawing_number}
+                        </span>
+                        <span className="inline-flex items-center rounded bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 font-mono">
+                          Rev.{doc.revision}
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 truncate block mt-0.5">
+                        {doc.customer_name}
+                      </span>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 shrink-0">
+                      <AlertTriangle className="h-3 w-3" />
+                      Missing Master
+                    </span>
+                  </div>
+
+                  <div className="text-xs font-medium text-slate-800 dark:text-slate-200 line-clamp-2">
+                    {doc.part_name}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-white/5 text-[11px]">
+                    <div className="text-slate-500 dark:text-slate-400">
+                      {doc.item_code ? (
+                        <span>Code: <strong className="font-mono text-slate-700 dark:text-slate-200">{doc.item_code}</strong></span>
+                      ) : (
+                        <span>Doc: <strong className="font-mono text-slate-700 dark:text-slate-200">{doc.drawing_number}</strong></span>
+                      )}
+                    </div>
+
+                    {canEdit && (
+                      <button
+                        onClick={() => onUploadMaster({
+                          type: 'master',
+                          drawing_number: doc.drawing_number,
+                          revision: doc.revision,
+                          part_name: doc.part_name,
+                          customer_name: doc.customer_name,
+                          item_code: doc.item_code || ''
+                        })}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 active:scale-95 transition-all"
+                      >
+                        <Upload className="h-3 w-3" />
+                        <span>Upload Master</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View (hidden md:table) */}
+          <table className="hidden md:table w-full text-left text-sm text-slate-600 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-6 py-4">Customer Drawing</th>
@@ -174,20 +264,22 @@ export function GapAnalysis({ refreshKey, onUploadMaster }: GapAnalysisProps) {
                         <AlertTriangle className="h-3.5 w-3.5" />
                         Master Missing
                       </span>
-                      <button
-                        onClick={() => onUploadMaster({
-                          type: 'master',
-                          drawing_number: doc.drawing_number,
-                          revision: doc.revision,
-                          part_name: doc.part_name,
-                          customer_name: doc.customer_name,
-                          item_code: doc.item_code || ''
-                        })}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 transition-colors"
-                      >
-                        <Upload className="h-3 w-3" />
-                        Upload Master
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => onUploadMaster({
+                            type: 'master',
+                            drawing_number: doc.drawing_number,
+                            revision: doc.revision,
+                            part_name: doc.part_name,
+                            customer_name: doc.customer_name,
+                            item_code: doc.item_code || ''
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 transition-colors"
+                        >
+                          <Upload className="h-3 w-3" />
+                          Upload Master
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

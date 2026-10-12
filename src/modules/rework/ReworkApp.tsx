@@ -82,7 +82,7 @@ function ReworkAppContent({ user, onLogout, onBackToPortal, initialCaseId }: Rew
               style={{ willChange: 'opacity, transform' }}
               className="flex-1 overflow-x-hidden overflow-y-auto"
             >
-              <div className="p-8 md:p-10 lg:p-12">
+              <div className="p-3 sm:p-6 md:p-10 lg:p-12">
                 <AddCaseTab />
               </div>
             </motion.div>
@@ -98,7 +98,7 @@ function ReworkAppContent({ user, onLogout, onBackToPortal, initialCaseId }: Rew
               style={{ willChange: 'opacity, transform' }}
               className="flex-1 overflow-x-hidden overflow-y-auto"
             >
-              <div className="p-8 md:p-10 lg:p-12">
+              <div className="p-3 sm:p-6 md:p-10 lg:p-12">
                 <DashboardTab />
               </div>
             </motion.div>

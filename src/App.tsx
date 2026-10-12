@@ -16,6 +16,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ToastContainer } from '@/src/components/shared/Toast';
 import { AlertModal } from '@/src/components/shared/AlertModal';
 import { FeedbackModal } from '@/src/components/shared/FeedbackModal';
+import { OfflineBanner } from '@/src/components/shared/OfflineBanner';
 import { Bot } from 'lucide-react';
 
 const WorkspacePortal = dynamic(() => import('./components/apps/portal/WorkspacePortal').then(mod => mod.WorkspacePortal), { ssr: false });
@@ -116,14 +117,24 @@ function AuthWrapper() {
       setAppUser(null);
       setCurrentView('login');
     };
+    const handleOpenReworkCase = (e: Event) => {
+      const customEvent = e as CustomEvent<{ caseId?: string }>;
+      if (customEvent.detail?.caseId) {
+        setDeepLinkCaseId(customEvent.detail.caseId);
+        setCurrentView('rework');
+        setIsRagOpen(false);
+      }
+    };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('open-feedback-modal', handleOpenFeedback);
     window.addEventListener('auth-required', handleAuthRequired);
+    window.addEventListener('open-rework-case', handleOpenReworkCase);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('open-feedback-modal', handleOpenFeedback);
       window.removeEventListener('auth-required', handleAuthRequired);
+      window.removeEventListener('open-rework-case', handleOpenReworkCase);
     };
   }, []);
 
@@ -334,10 +345,10 @@ function AuthWrapper() {
               setIsRagOpen(true);
             }
           }}
-          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[99] flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:border-[#FDE68A] text-slate-800 font-medium text-xs group cursor-grab active:cursor-grabbing select-none touch-none transition-colors duration-150"
+          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[99] flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:border-slate-300 text-slate-800 font-medium text-xs group cursor-grab active:cursor-grabbing select-none touch-none transition-colors duration-150"
           title="คลิกซ้ายค้างเพื่อย้ายตำแหน่ง | กดเพื่อใช้ DocAI Assistant (Ctrl+K)"
         >
-          <div className="relative flex items-center justify-center w-5 h-5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-bold">
+          <div className="relative flex items-center justify-center w-5 h-5 rounded-md bg-slate-900 text-white border border-slate-800 font-bold">
             <Bot size={13} />
           </div>
           <span className="hidden sm:inline font-sans text-xs text-slate-700 font-medium">DocAI Assistant</span>
@@ -365,7 +376,7 @@ function AuthWrapper() {
               className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 text-center shadow-lg max-w-xs w-[85%]"
             >
               <div className="flex justify-center mb-4">
-                <div className="h-8 w-8 rounded-full border-3 border-amber-500 border-t-transparent animate-spin" />
+                <div className="h-8 w-8 rounded-full border-3 border-slate-900 border-t-transparent animate-spin" />
               </div>
 
               <h3 className="text-sm font-bold text-slate-900 font-sans">
@@ -386,6 +397,7 @@ function AuthWrapper() {
 export default function App() {
   return (
     <NotificationProvider>
+      <OfflineBanner />
       <AuthWrapper />
       <ToastContainer />
       <AlertModal />

@@ -25,3 +25,4 @@ env
 test_omml.docx
 test-results/
 .playwright-artifacts-*/
+*.inspect.ndjson

@@ -232,3 +232,17 @@ An industrial engineering workflow model for RT/RW material requisitions:
 2. **Consolidated BOM**: QSMS defines the exact required containers and parts upon defect analysis.
 3. **Single-Batch Delivery**: WPK fulfills the entire kit in one single run.
 4. **Digital Handshake Sign-off**: PDF verifies and signs off in the system before repair begins, establishing clear accountability and eliminating finger-pointing.
+
+### Ground Truth Benchmark Datasets
+A pair of verified golden test sets (100 PDF documents in total) used for evaluating the accuracy of the multimodal AI OCR pipeline:
+- **Customer Drawing Benchmark**: 50 unique engineering drawing PDFs stored in `Drawing files/Test_50_Unique/` with an accompanying `test_manifest.csv`.
+- **Internal Master Benchmark**: 50 unique internal specification sheets stored in `Master files/Test_50_Unique/` with an accompanying `test_manifest.csv`.
+All documents are audited, cataloged by SHA-256 hashes, verified against production Item Master records, and recorded in [`Ground_Truth_Manual_Entry_Form.xlsx`](file:///c:/Workplace/QSMS_project/Ground_Truth_Manual_Entry_Form.xlsx).
+
+### Test Manifest & Verification Lifecycle
+The manifest schema (`test_manifest.csv`) tracking benchmark files with 7 standardized columns:
+`Type`, `DocumentId`, `Revision`, `FileName`, `SHA256`, `SelectionBasis`, `GroundTruthStatus`.
+Upon verification, the status transitions from `"Not prepared"` to `"Verified"`.
+
+### Field-Level Normalizers & Cascade Fallback
+A resilient OCR post-processing layer implemented in `src/app/api/drawings/normalizers.ts` normalizing 11 metadata fields (`drawing_number`, `revision`, `document_type`, `part_name`, `customer_name`, `item_code`, `item_number`, `package_size`, `oil_group`, `boxes_per_pallet`, `shelf_life`). The extraction engine utilizes a model cascade (`gemini-3.1-flash` ➔ `gemini-3.1-flash-lite` ➔ `gemini-3.8-flash`) achieving 96.36% overall accuracy with a 95% Wilson Score confidence interval of [94.44%, 97.64%].

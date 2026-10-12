@@ -36,6 +36,7 @@ interface DocumentRecord {
   r2_key: string;
   file_name: string;
   type: 'drawing' | 'master';
+  is_active?: boolean;
   created_at: string;
   created_by: string;
 }
@@ -49,6 +50,9 @@ interface LinkMapItem {
   drawing: DocumentRecord | null;
   master: DocumentRecord | null;
   status: 'complete' | 'missing_master' | 'missing_drawing' | 'incomplete_code';
+  matchedBy?: 'item_code' | 'drawing_number';
+  allDrawings?: DocumentRecord[];
+  allMasters?: DocumentRecord[];
 }
 function renderPackageSize(doc: DocumentRecord) {
   if (doc.package_details) {
@@ -135,10 +139,20 @@ function TableSkeleton({ cols = 7, rows = 5 }: { cols?: number; rows?: number })
   );
 }
 
-export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string, refreshKey: number }) {
+export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { searchQuery: string; refreshKey: number; canEdit?: boolean }) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'drawing' | 'master' | 'link'>('drawing');
+  const [isXlScreen, setIsXlScreen] = useState(true);
+
+  useEffect(() => {
+    const checkWidth = () => {
+      setIsXlScreen(window.innerWidth >= 1280);
+    };
+    checkWidth();
+    window.addEventListener('resize', checkWidth);
+    return () => window.removeEventListener('resize', checkWidth);
+  }, []);
   
   // Pagination & Server State
   const [page, setPage] = useState(1);
@@ -481,23 +495,29 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
   };
 
 
-  // 3. Compute Link Overview map (Primary Match by item_code, with fallback to part_name embedded codes)
+  // 3. Compute Link Overview map (Primary Match by item_code, with fallback to drawing_number)
   const linkMapItems: LinkMapItem[] = [];
   const processedDocIds = new Set<string>();
 
+  // Helper to pick primary active document
+  const pickPrimaryDoc = (docs: DocumentRecord[]) => {
+    if (docs.length === 0) return null;
+    return docs.find(d => d.is_active !== false) || docs[0];
+  };
+
+  // Stage 1: Group by item_code
   const itemCodes = Array.from(new Set(
     documents
-      .map(d => d.item_code)
-      .filter((code): code is string => !!code && /^\d+$/.test(code))
+      .map(d => d.item_code?.trim())
+      .filter((code): code is string => !!code && code.length > 0)
   ));
 
   for (const code of itemCodes) {
-    const matchingDrawings = documents.filter(d => d.type === 'drawing' && d.item_code === code);
-    const matchingMasters = documents.filter(d => d.type === 'master' && d.item_code === code);
+    const matchingDrawings = documents.filter(d => d.type === 'drawing' && d.item_code?.trim() === code);
+    const matchingMasters = documents.filter(d => d.type === 'master' && d.item_code?.trim() === code);
 
-    // If multiple exist, we take the first for the overview summary
-    const drawing = matchingDrawings[0] || null;
-    const master = matchingMasters[0] || null;
+    const drawing = pickPrimaryDoc(matchingDrawings);
+    const master = pickPrimaryDoc(matchingMasters);
 
     if (!drawing && !master) continue;
     
@@ -514,30 +534,79 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
     else if (!drawing && master) status = 'missing_drawing';
 
     linkMapItems.push({
-      key: code,
+      key: `code_${code}`,
       item_code: code,
       item_number: itemNumber,
       part_name: partName,
       customer_name: customerName,
       drawing,
       master,
-      status
+      status,
+      matchedBy: 'item_code',
+      allDrawings: matchingDrawings,
+      allMasters: matchingMasters
     });
   }
 
-  // Handle remaining standalone documents (Documents missing Item Code or not processed)
+  // Stage 2: Fallback Match by drawing_number (for documents not yet matched by item_code)
+  const remainingForFallback = documents.filter(d => !processedDocIds.has(d.id));
+  const distinctDrawingNums = Array.from(new Set(
+    remainingForFallback
+      .map(d => d.drawing_number?.trim().toLowerCase())
+      .filter((num): num is string => !!num && num.length > 0)
+  ));
+
+  for (const docNum of distinctDrawingNums) {
+    const matchingDrawings = remainingForFallback.filter(
+      d => d.type === 'drawing' && d.drawing_number?.trim().toLowerCase() === docNum
+    );
+    const matchingMasters = remainingForFallback.filter(
+      d => d.type === 'master' && d.drawing_number?.trim().toLowerCase() === docNum
+    );
+
+    // Only create a fallback link if BOTH a drawing and a master exist with this doc number
+    if (matchingDrawings.length > 0 && matchingMasters.length > 0) {
+      const drawing = pickPrimaryDoc(matchingDrawings);
+      const master = pickPrimaryDoc(matchingMasters);
+
+      matchingDrawings.forEach(d => processedDocIds.add(d.id));
+      matchingMasters.forEach(d => processedDocIds.add(d.id));
+
+      const partName = drawing?.part_name || master?.part_name || '';
+      const customerName = drawing?.customer_name || master?.customer_name || 'ENEOS';
+      const itemNumber = master?.item_number || null;
+
+      linkMapItems.push({
+        key: `dwg_${docNum}`,
+        item_code: drawing?.item_code || master?.item_code || null,
+        item_number: itemNumber,
+        part_name: partName,
+        customer_name: customerName,
+        drawing,
+        master,
+        status: 'complete',
+        matchedBy: 'drawing_number',
+        allDrawings: matchingDrawings,
+        allMasters: matchingMasters
+      });
+    }
+  }
+
+  // Stage 3: Remaining standalone documents (Documents missing code or match)
   const remainingDocs = documents.filter(d => !processedDocIds.has(d.id));
   for (const doc of remainingDocs) {
     const isDrawing = doc.type === 'drawing';
     linkMapItems.push({
-      key: doc.id,
+      key: `standalone_${doc.id}`,
       item_code: doc.item_code || null,
       item_number: doc.item_number || null,
       part_name: doc.part_name || '',
       customer_name: doc.customer_name || 'ENEOS',
       drawing: isDrawing ? doc : null,
       master: isDrawing ? null : doc,
-      status: 'incomplete_code'
+      status: 'incomplete_code',
+      allDrawings: isDrawing ? [doc] : [],
+      allMasters: isDrawing ? [] : [doc]
     });
   }
 
@@ -565,37 +634,43 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
   return (
     <div className="w-full h-full bg-white dark:bg-[#1c1c1e] rounded-xl shadow-sm border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col min-h-0">
       {/* Tab Selectors & Filter Trigger */}
-      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 bg-slate-50/50 dark:bg-white/5 shrink-0">
-        <div className="flex flex-wrap -mb-px">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-3 sm:px-6 bg-slate-50/50 dark:bg-white/5 shrink-0 gap-2 overflow-hidden">
+        <div className="flex items-center overflow-x-auto scrollbar-hide flex-nowrap -mb-px min-w-0 max-w-full">
           <button
             onClick={() => handleTabChange('drawing')}
-            className={`flex items-center gap-2 py-4 px-4 text-sm font-semibold border-b-2 transition-all -mb-px whitespace-nowrap ${activeTab === 'drawing'
+            className={`flex items-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-2.5 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-all -mb-px whitespace-nowrap shrink-0 ${activeTab === 'drawing'
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400'
               }`}
           >
-            <FileText className="w-4 h-4" />
-            Customer Drawings {drawingCount !== null ? `(${drawingCount})` : ''}
+            <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">Customer Drawings</span>
+            <span className="sm:hidden">Drawings</span>
+            {drawingCount !== null ? ` (${drawingCount})` : ''}
           </button>
           <button
             onClick={() => handleTabChange('master')}
-            className={`flex items-center gap-2 py-4 px-4 text-sm font-semibold border-b-2 transition-all -mb-px whitespace-nowrap ${activeTab === 'master'
+            className={`flex items-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-2.5 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-all -mb-px whitespace-nowrap shrink-0 ${activeTab === 'master'
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400'
               }`}
           >
-            <Layers className="w-4 h-4" />
-            Master Specifications {masterCount !== null ? `(${masterCount})` : ''}
+            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">Master Specifications</span>
+            <span className="sm:hidden">Master Sheets</span>
+            {masterCount !== null ? ` (${masterCount})` : ''}
           </button>
           <button
             onClick={() => handleTabChange('link')}
-            className={`flex items-center gap-2 py-4 px-4 text-sm font-semibold border-b-2 transition-all -mb-px whitespace-nowrap ${activeTab === 'link'
+            className={`flex items-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-2.5 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-all -mb-px whitespace-nowrap shrink-0 ${activeTab === 'link'
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400'
               }`}
           >
-            <Link className="w-4 h-4" />
-            Link Overview {activeTab === 'link' && loading ? '( ... )' : linkCount !== null ? `(${linkCount})` : ''}
+            <Link className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">Link Overview</span>
+            <span className="sm:hidden">Links</span>
+            {activeTab === 'link' && loading ? ' ( ... )' : linkCount !== null ? ` (${linkCount})` : ''}
           </button>
         </div>
 
@@ -755,7 +830,7 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
 
       {/* Active Filter Badges */}
       {activeFiltersCount > 0 && (
-        <div className="px-6 py-2.5 bg-slate-50/30 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 flex flex-wrap gap-2 items-center">
+        <div className="px-3 sm:px-6 py-2 sm:py-2.5 bg-slate-50/30 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 flex flex-wrap gap-2 items-center">
           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mr-1">Active Filters:</span>
           {customerFilter.length > 0 && (
             <span className="flex items-center gap-1 bg-white dark:bg-[#2c2c2e] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 px-2 py-0.5 rounded-full text-xs shadow-sm">
@@ -799,227 +874,413 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
       {/* Master-Detail Split Workspace Wrapper */}
       <div ref={containerRef} className={`flex flex-col xl:flex-row items-stretch flex-1 overflow-hidden border-t border-slate-200 dark:border-white/10 ${selectedInspectionDoc ? 'divide-x-0 xl:divide-x divide-slate-200 dark:divide-white/10' : ''}`}>
         <div 
-          className={`transition-all duration-300 min-w-0 h-full flex flex-col ${!isDraggingSplitter ? 'ease-in-out' : ''}`}
-          style={{ width: selectedInspectionDoc ? `${splitRatio}%` : '100%' }}
+          className={`transition-all duration-300 min-w-0 h-full flex flex-col ${!isDraggingSplitter ? 'ease-in-out' : ''} ${!isXlScreen && selectedInspectionDoc ? 'hidden' : ''}`}
+          style={{ width: isXlScreen && selectedInspectionDoc ? `${splitRatio}%` : '100%' }}
         >
           <div className="flex-1 overflow-y-auto overflow-x-auto">
             {/* Drawings Tab UI */}
             {activeTab === 'drawing' && (
-              <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
-                  <tr>
-                    <th className="px-6 py-4">Drawing No.</th>
-                    <th className="px-6 py-4">Part Name</th>
-                    <th className="px-6 py-4">Customer</th>
-                    <th className="px-6 py-4">Item Code</th>
-                    <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Issue Date</th>
-                    <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Package Size</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+              <>
+                {/* Mobile Card View (md:hidden) */}
+                <div className="md:hidden p-3 space-y-3">
                   {loading ? (
-                    <TableSkeleton cols={7} rows={pageSize > 20 ? 8 : pageSize} />
+                    <div className="py-12 text-center text-slate-500 text-xs">กำลังโหลดแบบแปลน...</div>
                   ) : filteredDrawings.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                        No drawings found.
-                      </td>
-                    </tr>
+                    <div className="py-12 text-center text-slate-500 text-xs">No drawings found.</div>
                   ) : (
                     filteredDrawings.map((doc) => (
-                      <tr 
-                        key={doc.id} 
+                      <div
+                        key={doc.id}
+                        id={`doc-card-${doc.id}`}
                         onClick={() => handleDocumentSelect(selectedInspectionDoc?.id === doc.id ? null : doc, 'view')}
-                        id={`doc-row-${doc.id}`}
-                        className={`cursor-pointer transition-colors ${
-                          selectedInspectionDoc?.id === doc.id 
-                            ? 'bg-blue-50/80 dark:bg-blue-900/30 border-l-4 border-l-blue-500 font-medium' 
-                            : 'hover:bg-slate-50/50 dark:hover:bg-white/5'
+                        className={`p-3.5 bg-white dark:bg-[#252528] rounded-xl border transition-all cursor-pointer space-y-2.5 shadow-xs ${
+                          selectedInspectionDoc?.id === doc.id
+                            ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/40 dark:bg-blue-900/20'
+                            : 'border-slate-200 dark:border-white/10 hover:border-slate-300'
                         }`}
                       >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
-                            <span className="font-mono tracking-tight">{doc.drawing_number}</span>
-                            <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-white/10 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 font-mono">
-                              Rev.{doc.revision}
-                            </span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono font-bold text-slate-900 dark:text-white text-sm tracking-tight truncate">
+                                  {doc.drawing_number}
+                                </span>
+                                <span className="inline-flex items-center rounded bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 font-mono">
+                                  Rev.{doc.revision}
+                                </span>
+                              </div>
+                              <span className="text-xs text-slate-500 dark:text-slate-400 truncate block mt-0.5">
+                                {doc.customer_name}
+                              </span>
+                            </div>
                           </div>
-                          
+
+                          <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+                            {canEdit && (
+                              <button
+                                onClick={() => handleDocumentSelect(doc, 'edit')}
+                                className="p-1.5 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                                title="แก้ไข"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handlePreview(doc)}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                              title="พรีวิว PDF"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDownload(doc)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                              title="ดาวน์โหลด"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="text-xs font-medium text-slate-800 dark:text-slate-200 line-clamp-2">
+                          {doc.part_name}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap pt-2 border-t border-slate-100 dark:border-white/5">
+                          {doc.item_code && (
+                            <span className="inline-flex items-center gap-1 font-mono font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded">
+                              <Tag className="h-3 w-3" />
+                              {doc.item_code}
+                            </span>
+                          )}
+                          <span>{renderPackageSize(doc)}</span>
+                          {doc.issue_date && <span>• {formatIssueDate(doc.issue_date)}</span>}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{doc.part_name}</td>
-                    <td className="px-6 py-4">{doc.customer_name}</td>
-                    <td className="px-6 py-4">
-                      {doc.item_code ? (
-                        <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium font-mono">
-                          <Tag className="h-3 w-3" />
-                          {doc.item_code}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>
-                      {formatIssueDate(doc.issue_date)}
-                    </td>
-                    <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>{renderPackageSize(doc)}</td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDocumentSelect(doc, 'edit'); }}
-                          className="p-2 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-lg transition-colors inline-flex"
-                          title="Edit Details"
+                    ))
+                  )}
+                </div>
+
+                {/* Desktop Table View (hidden md:table) */}
+                <table className="hidden md:table w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                  <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
+                    <tr>
+                      <th className="px-6 py-4">Drawing No.</th>
+                      <th className="px-6 py-4">Part Name</th>
+                      <th className="px-6 py-4">Customer</th>
+                      <th className="px-6 py-4">Item Code</th>
+                      <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Issue Date</th>
+                      <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Package Size</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                    {loading ? (
+                      <TableSkeleton cols={7} rows={pageSize > 20 ? 8 : pageSize} />
+                    ) : filteredDrawings.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                          No drawings found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredDrawings.map((doc) => (
+                        <tr 
+                          key={doc.id} 
+                          onClick={() => handleDocumentSelect(selectedInspectionDoc?.id === doc.id ? null : doc, 'view')}
+                          id={`doc-row-${doc.id}`}
+                          className={`cursor-pointer transition-colors ${
+                            selectedInspectionDoc?.id === doc.id 
+                              ? 'bg-blue-50/80 dark:bg-blue-900/30 border-l-4 border-l-blue-500 font-medium' 
+                              : 'hover:bg-slate-50/50 dark:hover:bg-white/5'
+                          }`}
                         >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        
-                        <button
-                          onClick={() => handlePreview(doc)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-lg transition-colors inline-flex"
-                          title="Preview PDF"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDownload(doc)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors inline-flex"
-                          title="Download"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        )}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                                <FileText className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                                  <span className="font-mono tracking-tight">{doc.drawing_number}</span>
+                                  <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-white/10 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 font-mono">
+                                    Rev.{doc.revision}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{doc.part_name}</td>
+                          <td className="px-6 py-4">{doc.customer_name}</td>
+                          <td className="px-6 py-4">
+                            {doc.item_code ? (
+                              <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium font-mono">
+                                <Tag className="h-3 w-3" />
+                                {doc.item_code}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">-</span>
+                            )}
+                          </td>
+                          <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>
+                            {formatIssueDate(doc.issue_date)}
+                          </td>
+                          <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>{renderPackageSize(doc)}</td>
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <div className="flex justify-end gap-1">
+                              {canEdit && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDocumentSelect(doc, 'edit'); }}
+                                  className="p-2 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-lg transition-colors inline-flex"
+                                  title="Edit Details"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                              )}
+                              
+                              <button
+                                onClick={() => handlePreview(doc)}
+                                className="p-2 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-lg transition-colors inline-flex"
+                                title="Preview PDF"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDownload(doc)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors inline-flex"
+                                title="Download"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </>
+            )}
 
         {/* Masters Tab UI */}
         {activeTab === 'master' && (
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
-              <tr>
-                <th className="px-6 py-4">Master Doc No.</th>
-                <th className="px-6 py-4">Part Name</th>
-                <th className="px-6 py-4">Identifiers</th>
-                <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Oil Group</th>
-                <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Packaging</th>
-                <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Shelf Life</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+          <>
+            {/* Mobile Card View (md:hidden) */}
+            <div className="md:hidden p-3 space-y-3">
               {loading ? (
-                <TableSkeleton cols={7} rows={pageSize > 20 ? 8 : pageSize} />
+                <div className="py-12 text-center text-slate-500 text-xs">กำลังโหลดเอกสาร Master...</div>
               ) : filteredMasters.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                    No masters found.
-                  </td>
-                </tr>
+                <div className="py-12 text-center text-slate-500 text-xs">No masters found.</div>
               ) : (
                 filteredMasters.map((doc) => (
-                  <tr 
-                    key={doc.id} 
+                  <div
+                    key={doc.id}
+                    id={`doc-card-${doc.id}`}
                     onClick={() => handleDocumentSelect(selectedInspectionDoc?.id === doc.id ? null : doc, 'view')}
-                        id={`doc-row-${doc.id}`}
-                    className={`cursor-pointer transition-colors ${
-                      selectedInspectionDoc?.id === doc.id 
-                        ? 'bg-blue-50/80 dark:bg-blue-900/30 border-l-4 border-l-blue-500 font-medium' 
-                        : 'hover:bg-slate-50/50 dark:hover:bg-white/5'
+                    className={`p-3.5 bg-white dark:bg-[#252528] rounded-xl border transition-all cursor-pointer space-y-2.5 shadow-xs ${
+                      selectedInspectionDoc?.id === doc.id
+                        ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-900/20'
+                        : 'border-slate-200 dark:border-white/10 hover:border-slate-300'
                     }`}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                          <Layers className="h-5 w-5" />
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                          <Layers className="h-4 w-4" />
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
-                            <span className="font-mono tracking-tight">{doc.drawing_number}</span>
-                            <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-white/10 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 font-mono">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-bold text-slate-900 dark:text-white text-sm tracking-tight truncate">
+                              {doc.drawing_number}
+                            </span>
+                            <span className="inline-flex items-center rounded bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 font-mono">
                               Rev.{doc.revision}
                             </span>
                           </div>
-                          
+                          <span className="text-xs text-slate-500 dark:text-slate-400 truncate block mt-0.5">
+                            {doc.customer_name || 'Internal Master'}
+                          </span>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white max-w-[250px]">{doc.part_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-1">
-                        {doc.item_code && (
-                          <div className="flex items-center gap-2" title="Customer Product Code">
-                            <span className="text-[10px] font-semibold text-blue-500/70 dark:text-blue-400/70 uppercase w-6 shrink-0">CUS</span>
-                            <span className="font-medium font-mono tabular-nums tracking-tight text-[13px] text-slate-800 dark:text-slate-200">{doc.item_code}</span>
-                          </div>
+
+                      <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+                        {canEdit && (
+                          <button
+                            onClick={() => handleDocumentSelect(doc, 'edit')}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                            title="แก้ไข"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
                         )}
-                        {doc.item_number && (
-                          <div className="flex items-center gap-2" title="Internal Factory Code">
-                            <span className="text-[10px] font-semibold text-emerald-500/70 dark:text-emerald-400/70 uppercase w-6 shrink-0">INT</span>
-                            <span className="font-medium font-mono tabular-nums tracking-tight text-[13px] text-slate-500 dark:text-slate-400">{doc.item_number}</span>
-                          </div>
-                        )}
-                        {!doc.item_code && !doc.item_number && (
-                          <span className="text-slate-400 italic text-xs">No Identifiers</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>{doc.oil_group || <span className="text-slate-400">-</span>}</td>
-                    <td className={`px-6 py-4 whitespace-nowrap transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-slate-700 dark:text-slate-300 font-medium">{doc.pallet_type || '-'}</span>
-                        {doc.boxes_per_pallet && <span className="text-[11px] text-slate-500">{doc.boxes_per_pallet}</span>}
-                      </div>
-                    </td>
-                    <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>{doc.shelf_life || <span className="text-slate-400">-</span>}</td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDocumentSelect(doc, 'edit'); }}
-                          className="p-2 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-lg transition-colors inline-flex"
-                          title="Edit Master Details"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
                         <button
                           onClick={() => handlePreview(doc)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-lg transition-colors inline-flex"
-                          title="Preview PDF"
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                          title="พรีวิว PDF"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDownload(doc)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors inline-flex"
-                          title="Download"
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="ดาวน์โหลด"
                         >
-                          <Download className="w-4 h-4" />
+                          <Download className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+
+                    <div className="text-xs font-medium text-slate-800 dark:text-slate-200 line-clamp-2">
+                      {doc.part_name}
+                    </div>
+
+                    {/* Identifiers */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {doc.item_code && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                          CUS: {doc.item_code}
+                        </span>
+                      )}
+                      {doc.item_number && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
+                          INT: {doc.item_number}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap pt-2 border-t border-slate-100 dark:border-white/5">
+                      {doc.oil_group && <span>Group: {doc.oil_group}</span>}
+                      {doc.pallet_type && <span>• {doc.pallet_type}</span>}
+                      {doc.boxes_per_pallet && <span>({doc.boxes_per_pallet})</span>}
+                      {doc.shelf_life && <span>• อายุ {doc.shelf_life}</span>}
+                    </div>
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Desktop Table View (hidden md:table) */}
+            <table className="hidden md:table w-full text-left text-sm text-slate-600 dark:text-slate-300">
+              <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
+                <tr>
+                  <th className="px-6 py-4">Master Doc No.</th>
+                  <th className="px-6 py-4">Part Name</th>
+                  <th className="px-6 py-4">Identifiers</th>
+                  <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Oil Group</th>
+                  <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Packaging</th>
+                  <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Shelf Life</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                {loading ? (
+                  <TableSkeleton cols={7} rows={pageSize > 20 ? 8 : pageSize} />
+                ) : filteredMasters.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                      No masters found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredMasters.map((doc) => (
+                    <tr 
+                      key={doc.id} 
+                      onClick={() => handleDocumentSelect(selectedInspectionDoc?.id === doc.id ? null : doc, 'view')}
+                          id={`doc-row-${doc.id}`}
+                      className={`cursor-pointer transition-colors ${
+                        selectedInspectionDoc?.id === doc.id 
+                          ? 'bg-blue-50/80 dark:bg-blue-900/30 border-l-4 border-l-blue-500 font-medium' 
+                          : 'hover:bg-slate-50/50 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <Layers className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                              <span className="font-mono tracking-tight">{doc.drawing_number}</span>
+                              <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-white/10 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 font-mono">
+                                Rev.{doc.revision}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white max-w-[250px]">{doc.part_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          {doc.item_code && (
+                            <div className="flex items-center gap-2" title="Customer Product Code">
+                              <span className="text-[10px] font-semibold text-blue-500/70 dark:text-blue-400/70 uppercase w-6 shrink-0">CUS</span>
+                              <span className="font-medium font-mono tabular-nums tracking-tight text-[13px] text-slate-800 dark:text-slate-200">{doc.item_code}</span>
+                            </div>
+                          )}
+                          {doc.item_number && (
+                            <div className="flex items-center gap-2" title="Internal Factory Code">
+                              <span className="text-[10px] font-semibold text-emerald-500/70 dark:text-emerald-400/70 uppercase w-6 shrink-0">INT</span>
+                              <span className="font-medium font-mono tabular-nums tracking-tight text-[13px] text-slate-500 dark:text-slate-400">{doc.item_number}</span>
+                            </div>
+                          )}
+                          {!doc.item_code && !doc.item_number && (
+                            <span className="text-slate-400 italic text-xs">No Identifiers</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>{doc.oil_group || <span className="text-slate-400">-</span>}</td>
+                      <td className={`px-6 py-4 whitespace-nowrap transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">{doc.pallet_type || '-'}</span>
+                          {doc.boxes_per_pallet && <span className="text-[11px] text-slate-500">{doc.boxes_per_pallet}</span>}
+                        </div>
+                      </td>
+                      <td className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>{doc.shelf_life || <span className="text-slate-400">-</span>}</td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <div className="flex justify-end gap-1">
+                          {canEdit && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDocumentSelect(doc, 'edit'); }}
+                              className="p-2 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-lg transition-colors inline-flex"
+                              title="Edit Master Details"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handlePreview(doc)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-lg transition-colors inline-flex"
+                            title="Preview PDF"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownload(doc)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors inline-flex"
+                            title="Download"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </>
         )}
 
         {/* Link Overview Tab UI */}
         {activeTab === 'link' && (
           <>
             {/* Summary Progress Bar */}
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-              <div className="flex items-center justify-between mb-3">
+            <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Link Coverage</span>
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   {linkStats.linked}/{linkStats.total} fully linked
@@ -1034,7 +1295,7 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-4 mt-2.5 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-2.5 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                 <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> {linkStats.linked} Linked</span>
                 <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" /> {linkStats.missingMaster} Missing Master</span>
                 <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" /> {linkStats.missingDrawing} Missing Drawing</span>
@@ -1042,7 +1303,7 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
             </div>
 
             {/* Filter Chips */}
-            <div className="px-6 py-3 border-b border-slate-100 dark:border-white/5 flex items-center gap-2 flex-wrap">
+            <div className="px-3 sm:px-6 py-2.5 sm:py-3 border-b border-slate-100 dark:border-white/5 flex items-center gap-2 flex-wrap">
               {[
                 { key: 'all' as const, label: 'All', count: linkStats.total },
                 { key: 'complete' as const, label: 'Linked', count: linkStats.linked },
@@ -1066,7 +1327,131 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
               ))}
             </div>
 
-            <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+            {/* Mobile Link Cards (md:hidden) */}
+            <div className="md:hidden p-3 space-y-3">
+              {loading ? (
+                <div className="py-12 text-center text-slate-500 text-xs">กำลังโหลดรายการเชื่อมโยง...</div>
+              ) : filteredLinks.length === 0 ? (
+                <div className="py-12 text-center text-slate-500 text-xs">No linked items found.</div>
+              ) : (
+                filteredLinks.map((item) => (
+                  <div
+                    key={item.key}
+                    className={`p-3.5 bg-white dark:bg-[#252528] rounded-xl border transition-all space-y-2.5 shadow-xs ${
+                      item.status === 'missing_master'
+                        ? 'border-amber-200 dark:border-amber-500/20 bg-amber-50/10 dark:bg-amber-950/10'
+                        : item.status === 'missing_drawing'
+                        ? 'border-red-200 dark:border-red-500/20 bg-red-50/10 dark:bg-red-950/10'
+                        : 'border-slate-200 dark:border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
+                          {item.part_name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {item.customer_name}
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="shrink-0">
+                        {item.status === 'complete' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/60">
+                            <CheckCircle2 className="w-3 h-3" /> Fully Linked
+                          </span>
+                        )}
+                        {item.status === 'missing_master' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200/60">
+                            <AlertTriangle className="w-3 h-3" /> Missing Master
+                          </span>
+                        )}
+                        {item.status === 'missing_drawing' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400 border border-red-200/60">
+                            <AlertCircle className="w-3 h-3" /> Missing Drawing
+                          </span>
+                        )}
+                        {item.status === 'incomplete_code' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 border border-purple-200/60">
+                            <AlertCircle className="w-3 h-3" /> Incomplete
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Identifiers */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {item.item_code && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                          CUS: {item.item_code}
+                        </span>
+                      )}
+                      {item.master?.item_number && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
+                          INT: {item.master.item_number}
+                        </span>
+                      )}
+                      {item.matchedBy === 'drawing_number' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded">
+                          DOC: {item.drawing?.drawing_number || item.master?.drawing_number}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Documents row */}
+                    <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-white/5">
+                      <div className="p-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
+                          <span>Drawing</span>
+                          {item.drawing && (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => handlePreview(item.drawing!)} className="text-indigo-600 p-0.5 hover:bg-slate-200 rounded" title="พรีวิว">
+                                <Eye className="w-3 h-3" />
+                              </button>
+                              <button onClick={() => handleDownload(item.drawing!)} className="text-blue-600 p-0.5 hover:bg-slate-200 rounded" title="ดาวน์โหลด">
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {item.drawing ? (
+                          <div className="font-mono text-slate-800 dark:text-slate-200 font-semibold truncate">
+                            {item.drawing.drawing_number} <span className="text-slate-500 font-normal">Rev.{item.drawing.revision}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">ไม่มี Drawing</span>
+                        )}
+                      </div>
+                      <div className="p-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
+                          <span>Master</span>
+                          {item.master && (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => handlePreview(item.master!)} className="text-indigo-600 p-0.5 hover:bg-slate-200 rounded" title="พรีวิว">
+                                <Eye className="w-3 h-3" />
+                              </button>
+                              <button onClick={() => handleDownload(item.master!)} className="text-blue-600 p-0.5 hover:bg-slate-200 rounded" title="ดาวน์โหลด">
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {item.master ? (
+                          <div className="font-mono text-slate-800 dark:text-slate-200 font-semibold truncate">
+                            {item.master.drawing_number} <span className="text-slate-500 font-normal">Rev.{item.master.revision}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">ไม่มี Master</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <table className="hidden md:table w-full text-left text-sm text-slate-600 dark:text-slate-300">
               <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="px-6 py-4">Identifiers</th>
@@ -1113,13 +1498,21 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
                             <span className="font-medium tabular-nums tracking-tight text-[13px] text-slate-800 dark:text-slate-200">{item.item_code}</span>
                           </div>
                         )}
+                        {item.matchedBy === 'drawing_number' && (
+                          <div className="flex items-center gap-2" title="Matched by Document Number">
+                            <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase w-6 shrink-0">DOC</span>
+                            <span className="font-mono tabular-nums tracking-tight text-[13px] text-purple-700 dark:text-purple-300 font-medium">
+                              {item.drawing?.drawing_number || item.master?.drawing_number}
+                            </span>
+                          </div>
+                        )}
                         {item.master?.item_number && (
                           <div className="flex items-center gap-2" title="Internal Factory Code">
                             <span className="text-[10px] font-semibold text-emerald-500/70 dark:text-emerald-400/70 uppercase w-6 shrink-0">INT</span>
                             <span className="font-medium tabular-nums tracking-tight text-[13px] text-slate-500 dark:text-slate-400">{item.master.item_number}</span>
                           </div>
                         )}
-                        {!item.item_code && !item.master?.item_number && (
+                        {!item.item_code && !item.master?.item_number && item.matchedBy !== 'drawing_number' && (
                           <span className="text-slate-400 italic text-xs">No Identifiers</span>
                         )}
                       </div>
@@ -1134,6 +1527,11 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
                               <FileText className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
                               <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{item.drawing.drawing_number}</span>
                               <span className="text-[10px] text-slate-500 shrink-0">Rev.{item.drawing.revision}</span>
+                              {item.allDrawings && item.allDrawings.length > 1 && (
+                                <span className="text-[9px] bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 px-1 rounded-full font-mono font-semibold" title={`${item.allDrawings.length} Revisions available`}>
+                                  +{item.allDrawings.length - 1}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <div className="inline-flex items-center justify-center w-[40px] h-[28px] rounded-md border border-dashed border-slate-200 dark:border-white/10">
@@ -1150,6 +1548,11 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
                               <Layers className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                               <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{item.master.drawing_number}</span>
                               <span className="text-[10px] text-slate-500 shrink-0">Rev.{item.master.revision}</span>
+                              {item.allMasters && item.allMasters.length > 1 && (
+                                <span className="text-[9px] bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 px-1 rounded-full font-mono font-semibold" title={`${item.allMasters.length} Revisions available`}>
+                                  +{item.allMasters.length - 1}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <div className="inline-flex items-center justify-center w-[40px] h-[28px] rounded-md border border-dashed border-slate-200 dark:border-white/10">
@@ -1162,7 +1565,8 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
                     <td className="px-6 py-4 whitespace-nowrap">
                       {item.status === 'complete' && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/20">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Fully Linked
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {item.matchedBy === 'drawing_number' ? 'Fully Linked (Doc No)' : 'Fully Linked'}
                         </span>
                       )}
                       {item.status === 'missing_master' && (
@@ -1235,60 +1639,68 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
 
       {/* Pagination Controls */}
       {activeTab !== 'link' && totalDocs > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-[#1c1c1e] shrink-0">
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3 sm:px-6 py-3 sm:py-4 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-[#1c1c1e] shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             <span>Show</span>
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="px-2 py-1 bg-slate-50 dark:bg-[#2c2c2e] border border-slate-200 dark:border-white/10 rounded-md outline-none text-slate-700 dark:text-slate-300 font-medium"
+              className="px-1.5 sm:px-2 py-1 bg-slate-50 dark:bg-[#2c2c2e] border border-slate-200 dark:border-white/10 rounded-md outline-none text-slate-700 dark:text-slate-300 font-medium text-xs sm:text-sm"
             >
               <option value={20}>20</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
-            <span>entries</span>
-            <span className="text-slate-300 dark:text-slate-700 mx-1">|</span>
+            <span className="hidden sm:inline">entries</span>
+            <span className="text-slate-300 dark:text-slate-700 mx-0.5 sm:mx-1">|</span>
             <span className="font-medium text-slate-700 dark:text-slate-300">
-              Showing {Math.min((page - 1) * pageSize + 1, totalDocs)}–{Math.min(page * pageSize, totalDocs)} of {totalDocs}
+              {Math.min((page - 1) * pageSize + 1, totalDocs)}–{Math.min(page * pageSize, totalDocs)} of {totalDocs}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
               className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1 transition-colors"
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Prev</span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Prev</span>
             </button>
 
-            {getPageNumbers(page, Math.ceil(totalDocs / pageSize)).map((p, idx) => (
-              p === 'ellipsis' ? (
-                <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 dark:text-slate-600 text-xs">...</span>
-              ) : (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all ${
-                    page === p
-                      ? 'bg-blue-600 text-white dark:bg-blue-500 shadow-sm'
-                      : 'border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
-                  }`}
-                >
-                  {p}
-                </button>
-              )
-            ))}
+            {/* Mobile compact indicator (sm:hidden) */}
+            <span className="sm:hidden px-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              {page} / {Math.max(1, Math.ceil(totalDocs / pageSize))}
+            </span>
+
+            {/* Desktop multi-button pagination (hidden sm:flex) */}
+            <div className="hidden sm:flex items-center gap-1">
+              {getPageNumbers(page, Math.ceil(totalDocs / pageSize)).map((p, idx) => (
+                p === 'ellipsis' ? (
+                  <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 dark:text-slate-600 text-xs">...</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all ${
+                      page === p
+                        ? 'bg-blue-600 text-white dark:bg-blue-500 shadow-sm'
+                        : 'border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              ))}
+            </div>
 
             <button
               onClick={() => setPage(page + 1)}
               disabled={page * pageSize >= totalDocs}
               className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1 transition-colors"
             >
-              <span>Next</span>
-              <ChevronRight className="w-4 h-4" />
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -1308,13 +1720,26 @@ export function DocumentList({ searchQuery, refreshKey }: { searchQuery: string,
         {/* Right Side Inspection Panel (Master-Detail Split Workspace) */}
         {selectedInspectionDoc && (
           <div 
-            className={`h-[750px] xl:h-[calc(100vh-160px)] sticky top-0 shrink-0 animate-in slide-in-from-right-4 duration-300 z-30 flex flex-col min-w-0 ${!isDraggingSplitter ? 'ease-in-out transition-all' : ''}`}
-            style={{ width: `${100 - splitRatio}%` }}
+            className={`w-full xl:w-auto h-full xl:h-[calc(100vh-160px)] sticky top-0 shrink-0 animate-in slide-in-from-right-4 duration-300 z-30 flex flex-col min-w-0 ${!isDraggingSplitter ? 'ease-in-out transition-all' : ''}`}
+            style={{ width: isXlScreen ? `${100 - splitRatio}%` : '100%' }}
           >
+            {!isXlScreen && (
+              <div className="px-4 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleDocumentSelect(null)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>กลับไปรายการเอกสารทั้งหมด</span>
+                </button>
+              </div>
+            )}
             <DocumentInspectionPanel
               document={selectedInspectionDoc}
               allDocuments={documents}
               initialMode={inspectionMode}
+              canEdit={canEdit}
               onClose={() => handleDocumentSelect(null)}
               onSaveDocument={handleSaveInspectionDocument}
               onSelectDocument={(d) => handleDocumentSelect(d as DocumentRecord, 'view')}

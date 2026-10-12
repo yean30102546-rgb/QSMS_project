@@ -1,27 +1,48 @@
-import { describe, it, expect } from 'vitest';
-import { POST } from './route';
+import { createHmac } from 'node:crypto';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import { POST } from './route';
+
+const payload = JSON.stringify({ destination: 'test-destination', events: [] });
+const secret = 'test-line-channel-secret';
+
+function makeRequest(signature?: string): NextRequest {
+  const headers = new Headers({ 'content-type': 'application/json' });
+  if (signature) headers.set('x-line-signature', signature);
+
+  return new NextRequest('http://localhost:3000/api/notifications/line', {
+    method: 'POST',
+    headers,
+    body: payload,
+  });
+}
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe('LINE Webhook Route Handler', () => {
-  it('returns HTTP 200 on LINE platform verification request (empty events array)', async () => {
-    const payload = JSON.stringify({
-      destination: 'Udfd1ad9ee3d4a9ba1642ca02640b5495',
-      events: [],
-    });
+  it('accepts a valid signature for an empty verification event', async () => {
+    vi.stubEnv('LINE_CHANNEL_SECRET', secret);
+    const signature = createHmac('sha256', secret).update(payload).digest('base64');
 
-    const req = new NextRequest('http://localhost:3000/api/notifications/line', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: payload,
-    });
+    const response = await POST(makeRequest(signature));
 
-    const res = await POST(req);
-    expect(res.status).toBe(200);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ success: true, processedEvents: 0 });
+  });
 
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.processedEvents).toBe(0);
+  it('rejects requests with an invalid signature', async () => {
+    vi.stubEnv('LINE_CHANNEL_SECRET', secret);
+
+    const response = await POST(makeRequest('invalid-signature'));
+
+    expect(response.status).toBe(401);
+  });
+
+  it('fails closed when the channel secret is not configured', async () => {
+    vi.stubEnv('LINE_CHANNEL_SECRET', '');
+
+    const response = await POST(makeRequest());
+
+    expect(response.status).toBe(503);
   });
 });

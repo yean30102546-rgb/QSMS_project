@@ -169,18 +169,18 @@ export function ForgotPassword({
         {/* Step Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
-            <span className={`h-2 w-2 rounded-full ${step === 'request' ? 'bg-blue-600' : 'bg-gray-300'}`} />
-            <span className={`h-2 w-2 rounded-full ${step === 'reset' ? 'bg-blue-600' : 'bg-gray-300'}`} />
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6e6e73] ml-1">
+            <span className={`h-2 w-2 rounded-full ${step === 'request' ? 'bg-slate-900' : 'bg-slate-300'}`} />
+            <span className={`h-2 w-2 rounded-full ${step === 'reset' ? 'bg-slate-900' : 'bg-slate-300'}`} />
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 ml-1">
               Step {step === 'request' ? '1 of 2' : '2 of 2'}
             </span>
           </div>
 
-          <h2 className="text-2xl font-semibold tracking-[-0.02em] text-[#1d1d1f] md:text-3xl">
+          <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900 md:text-3xl">
             {step === 'request' && 'ยืนยันตัวตน'}
             {step === 'reset' && 'ตั้งรหัสผ่านใหม่'}
           </h2>
-          <p className="mt-1.5 text-sm leading-6 text-[#5d5d63]">
+          <p className="mt-1.5 text-sm leading-6 text-slate-600">
             {step === 'request' && 'กรอกชื่อผู้ใช้งานและรหัสพนักงานของคุณเพื่อยืนยันสิทธิ์ในการตั้งรหัสผ่านใหม่'}
             {step === 'reset' && 'กำหนดรหัสผ่านใหม่ที่ปลอดภัยสำหรับบัญชีของคุณ'}
           </p>
@@ -198,7 +198,7 @@ export function ForgotPassword({
               className="space-y-4"
             >
               <div className="relative group">
-                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <UserCircle2 size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                 <input
                   type="text"
                   value={profile}
@@ -212,7 +212,7 @@ export function ForgotPassword({
               </div>
 
               <div className="relative group">
-                <ShieldCheck size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <ShieldCheck size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                 <input
                   type="text"
                   value={employeeId}
@@ -234,7 +234,7 @@ export function ForgotPassword({
               <button
                 type="submit"
                 disabled={!profile.trim() || !employeeId.trim() || cooldownTimer > 0 || isLoading}
-                className="apple-btn-primary mt-2 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold shadow-lg shadow-blue-600/20 disabled:opacity-55 disabled:cursor-not-allowed"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-3.5 text-sm font-semibold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 {isLoading ? (
                   <>
@@ -265,7 +265,7 @@ export function ForgotPassword({
               className="space-y-4"
             >
               <div className="relative group">
-                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={newPassword}
@@ -279,7 +279,7 @@ export function ForgotPassword({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7a7a80] hover:text-[#1d1d1f]"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
                 >
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
@@ -287,9 +287,9 @@ export function ForgotPassword({
 
               {/* Real-time Password Strength Meter */}
               {newPassword.length > 0 && (
-                <div className="rounded-2xl bg-white/60 p-3.5 border border-black/5 space-y-2">
+                <div className="rounded-2xl bg-white/60 p-3.5 border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-[#6e6e73] flex items-center gap-1">
+                    <span className="text-slate-600 flex items-center gap-1">
                       <ShieldCheck size={14} />
                       ระดับความปลอดภัย:
                     </span>
@@ -297,13 +297,13 @@ export function ForgotPassword({
                       {strength.label}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${strength.color}`}
                       style={{ width: `${(strength.score / 4) * 100}%` }}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px] text-[#6e6e73]">
+                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px] text-slate-500">
                     <span className={strength.hasMinLength ? 'text-emerald-600 font-medium' : ''}>• อย่างน้อย 8 ตัวอักษร</span>
                     <span className={strength.hasUpper ? 'text-emerald-600 font-medium' : ''}>• มีตัวพิมพ์ใหญ่ A-Z</span>
                     <span className={strength.hasNumber ? 'text-emerald-600 font-medium' : ''}>• มีตัวเลข 0-9</span>
@@ -313,7 +313,7 @@ export function ForgotPassword({
               )}
 
               <div className="relative group">
-                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a80] group-focus-within:text-blue-500 transition-colors" />
+                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
@@ -335,7 +335,7 @@ export function ForgotPassword({
               <button
                 type="submit"
                 disabled={!newPassword || !confirmPassword || newPassword !== confirmPassword || strength.score < 2 || isLoading}
-                className="apple-btn-primary mt-2 inline-flex w-full items-center justify-center gap-2 py-3.5 text-sm font-semibold shadow-lg shadow-blue-600/20 disabled:opacity-55 disabled:cursor-not-allowed"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-3.5 text-sm font-semibold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 {isLoading ? (
                   <>

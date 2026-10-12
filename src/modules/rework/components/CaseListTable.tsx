@@ -129,7 +129,7 @@ export function CaseListTable({
         {hasActiveFilters && (
           <button
             onClick={onClearFilters}
-            className="rounded-md bg-amber-500 px-4 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-amber-600 shadow-xs cursor-pointer"
+            className="min-h-11 inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 shadow-xs cursor-pointer"
           >
             ล้างตัวกรองทั้งหมด
           </button>
@@ -175,7 +175,7 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
   return (
     <div
       onClick={onClick}
-      className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-[#E5E5E7] bg-white hover:border-[#0071E3]/40 hover:bg-[#FAFBFD] transition-all duration-150 cursor-pointer shadow-xs"
+      className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50/70 transition-all duration-150 cursor-pointer shadow-xs"
     >
       {/* Left Section: Core Identifiers & Part Name */}
       <div className="flex-1 min-w-0">
@@ -183,29 +183,41 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
         <div className="flex flex-wrap items-center gap-2 mb-1.5">
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono tracking-tight ${
             correctPrefix === 'RT' 
-              ? 'bg-sky-50 text-[#0071E3] border border-sky-100' 
-              : 'bg-amber-50 text-amber-900 border border-amber-100'
+              ? 'bg-sky-50 text-sky-800 border border-sky-200' 
+              : 'bg-amber-50 text-amber-900 border border-amber-200'
           }`}>
             {displayId}
           </span>
 
-          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-[#F5F5F7] text-[#6E6E73]">
+          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
             {primaryCustomer}
           </span>
 
-          <span className="text-xs text-[#86868B] font-medium">
+          <span className="text-xs text-slate-500 font-medium">
             {formatThaiDateShort(caseItem.date)}
           </span>
 
           {/* Urgent warnings only */}
+          {deadlineStatus === 'warning' && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200" title="งานค้างเกิน 7 วัน">
+              <Clock size={11} />
+              ค้าง 7 วัน
+            </span>
+          )}
           {deadlineStatus === 'danger' && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
               <AlertCircle size={11} />
               เกิน 30 วัน
             </span>
           )}
+          {caseItem.items.length > 0 && caseItem.items.every(item => item.customerName === 'OR') && (!caseItem.orFilesUrls || caseItem.orFilesUrls.length === 0) && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+              <AlertCircle size={11} />
+              ขาดไฟล์ OR
+            </span>
+          )}
           {(caseItem.missingBoxes! > 0 || caseItem.missingGallons! > 0 || caseItem.missingOil! > 0) && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
               <AlertCircle size={11} />
               รอของ
             </span>
@@ -213,27 +225,27 @@ function CaseRow({ caseItem, onClick }: CaseRowProps) {
         </div>
 
         {/* Primary Part Name */}
-        <h4 className="text-sm sm:text-base font-semibold text-[#1D1D1F] tracking-tight leading-snug line-clamp-1 group-hover:text-[#0071E3] transition-colors">
+        <h4 className="text-base font-semibold text-slate-900 tracking-tight leading-snug line-clamp-2 group-hover:text-slate-950 transition-colors">
           {itemNameDisplay}
         </h4>
       </div>
 
       {/* Right Section: Progress & Status Pill */}
-      <div className="shrink-0 sm:w-64 pt-2.5 sm:pt-0 border-t border-[#F5F5F7] sm:border-0 flex flex-col justify-center">
+      <div className="shrink-0 sm:w-64 pt-2.5 sm:pt-0 border-t border-slate-100 sm:border-0 flex flex-col justify-center">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-medium text-[#6E6E73] font-mono tabular-nums">
+          <span className="text-sm font-medium text-slate-600 font-mono tabular-nums">
             {totalCompleted}/{totalAmount} กล่อง
           </span>
           <StatusPill status={caseItem.status} deadlineStatus={deadlineStatus} />
         </div>
 
-        {/* Clean Apple Progress Track */}
-        <div className="w-full bg-[#E5E5E7] rounded-full h-1.5 overflow-hidden">
+        {/* Clean Progress Track */}
+        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all duration-300 ${
               progressPercent === 100 
-                ? 'bg-emerald-500' 
-                : 'bg-[#0071E3]'
+                ? 'bg-emerald-600' 
+                : 'bg-slate-800'
             }`}
             style={{ width: `${progressPercent}%` }} 
           />
@@ -252,8 +264,8 @@ function StatusPill({ status, deadlineStatus }: StatusPillProps) {
   const styles: Record<ReworkCase['status'], string> = {
     'Pending Analysis': 'bg-amber-50 text-amber-800 border-amber-200',
     'Awaiting Materials': 'bg-orange-50 text-orange-800 border-orange-200',
-    Pending: 'bg-[#F5F5F7] text-[#1D1D1F] border-[#E5E5E7]',
-    'In-Progress': 'bg-sky-50 text-[#0071E3] border-sky-200',
+    Pending: 'bg-slate-100 text-slate-700 border-slate-200',
+    'In-Progress': 'bg-sky-50 text-sky-800 border-sky-200',
     Blocked: 'bg-rose-50 text-rose-800 border-rose-200',
     Completed: 'bg-emerald-50 text-emerald-800 border-emerald-200',
   };
@@ -269,11 +281,11 @@ function StatusPill({ status, deadlineStatus }: StatusPillProps) {
 
   return (
     <span 
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0 ${styles[status]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-sm font-medium shrink-0 ${styles[status]}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
         status === 'Completed' ? 'bg-emerald-500' :
-        status === 'In-Progress' ? 'bg-[#0071E3]' :
+        status === 'In-Progress' ? 'bg-sky-600' :
         status === 'Blocked' ? 'bg-rose-500' :
         'bg-amber-500'
       }`} />

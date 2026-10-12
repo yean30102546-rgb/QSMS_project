@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { LineNotificationService } from '../../../../services/lineNotificationService';
 import { supabaseServer } from '../../../../lib/supabaseServer';
+import { assertPermission, AuthError, requireServerAuth } from '../../../../lib/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
 function verifyLineSignature(body: string, signature: string | null, channelSecret: string): boolean {
-  if (!signature || !channelSecret) return true; // Bypass if secret not yet configured in local dev
+  if (!signature || !channelSecret) return false;
   try {
     const hash = crypto.createHmac('sha256', channelSecret).update(body).digest('base64');
-    return hash === signature;
+    const expected = Buffer.from(hash);
+    const received = Buffer.from(signature);
+    return expected.length === received.length && crypto.timingSafeEqual(expected, received);
   } catch (err) {
     console.error('[LINE Signature Error]', err);
     return false;
@@ -22,6 +25,8 @@ function verifyLineSignature(body: string, signature: string | null, channelSecr
  */
 export async function GET() {
   try {
+    const auth = await requireServerAuth();
+    assertPermission(auth, 'manage_integrations');
     const { data: channels, error } = await supabaseServer
       .from('line_notification_channels')
       .select('*')
@@ -33,8 +38,10 @@ export async function GET() {
       channels: channels || [],
       error: error ? error.message : null,
     });
-  } catch (err: any) {
-    return NextResponse.json({ status: 'error', message: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const status = err instanceof AuthError ? err.status : 500;
+    const message = err instanceof Error ? err.message : 'Internal Server Error';
+    return NextResponse.json({ status: 'error', message }, { status });
   }
 }
 
@@ -48,8 +55,11 @@ export async function POST(req: NextRequest) {
     const signature = req.headers.get('x-line-signature');
     const channelSecret = process.env.LINE_CHANNEL_SECRET || '';
 
-    // Verify signature if secret configured
-    if (channelSecret && !verifyLineSignature(rawBody, signature, channelSecret)) {
+    if (!channelSecret) {
+      return NextResponse.json({ error: 'Webhook signature verification is not configured' }, { status: 503 });
+    }
+
+    if (!verifyLineSignature(rawBody, signature, channelSecret)) {
       console.warn('[LINE Webhook] Invalid signature detected.');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
@@ -134,8 +144,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, processedEvents: events.length });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[LINE Webhook Error]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

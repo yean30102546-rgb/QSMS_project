@@ -7,6 +7,22 @@ import { promisify } from 'util';
 
 const scryptAsync = promisify(crypto.scrypt);
 
+// In-memory rate limiting map: username -> array of timestamps within last 15 mins
+const LOGIN_MAX_FAILED_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const loginRateLimitMap = new Map<string, number[]>();
+
+function recordFailedAttempt(username: string): void {
+  const now = Date.now();
+  const attempts = (loginRateLimitMap.get(username) || []).filter(ts => now - ts < LOGIN_WINDOW_MS);
+  attempts.push(now);
+  loginRateLimitMap.set(username, attempts);
+}
+
+function clearFailedAttempts(username: string): void {
+  loginRateLimitMap.delete(username);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -20,6 +36,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check rate limit: max 5 failed attempts per 15 minutes per username
+    const now = Date.now();
+    const failedAttempts = (loginRateLimitMap.get(profileClean) || []).filter(ts => now - ts < LOGIN_WINDOW_MS);
+    if (failedAttempts.length >= LOGIN_MAX_FAILED_ATTEMPTS) {
+      return NextResponse.json(
+        { success: false, error: 'คุณระบุรหัสผ่านผิดเกิน 5 ครั้ง กรุณารอ 15 นาทีแล้วลองใหม่อีกครั้ง' },
+        { status: 429, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    }
+
     // Query user from Supabase
     const { data: user, error: fetchError } = await supabaseServer
       .from('users')
@@ -28,6 +54,7 @@ export async function POST(request: Request) {
       .single();
 
     if (fetchError || !user) {
+      recordFailedAttempt(profileClean);
       return NextResponse.json(
         { success: false, error: 'รหัสผ่านหรือชื่อผู้ใช้ไม่ถูกต้อง' },
         { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
@@ -40,6 +67,7 @@ export async function POST(request: Request) {
     const verifyHash = hashBuffer.toString('hex');
 
     if (hash === verifyHash) {
+      clearFailedAttempts(profileClean);
       const role = user.role.toLowerCase();
       const token = await generateToken(profileClean, role);
 
@@ -71,6 +99,7 @@ export async function POST(request: Request) {
       );
     }
 
+    recordFailedAttempt(profileClean);
     return NextResponse.json(
       { success: false, error: 'รหัสผ่านหรือชื่อผู้ใช้ไม่ถูกต้อง' },
       { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } }

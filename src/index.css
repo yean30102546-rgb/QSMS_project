@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -32,10 +31,10 @@
   --color-amber-900: #78350f;
   --color-amber-950: #451a03;
 
-  --color-primary: #f5c754;
-  --color-primary-hover: #fcd34d;
-  --color-primary-light: #fef9e7;
-  --color-primary-dark: #92400e;
+  --color-primary: #0f172a;
+  --color-primary-hover: #1e293b;
+  --color-primary-light: #f1f5f9;
+  --color-primary-dark: #020617;
 
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
@@ -46,7 +45,7 @@
   --color-muted: #64748b;
   --color-border: #e2e8f0;
   --color-border-hover: #cbd5e1;
-  --color-accent: #f5c754;
+  --color-accent: #0f172a;
   
   /* Semantic Pastel Status Colors */
   --color-status-success: #10b981;
@@ -93,11 +92,11 @@
 @layer components {
   /* Enterprise Form Inputs */
   .enterprise-input {
-    @apply w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-colors;
+    @apply w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 transition-colors;
   }
   
   .enterprise-select {
-    @apply w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-colors;
+    @apply w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 transition-colors;
   }
 
   .enterprise-label {
@@ -106,7 +105,7 @@
 
   /* Enterprise Buttons */
   .enterprise-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#FEF3C7] hover:bg-[#FDE68A] active:bg-[#F5C754] text-[#92400E] border border-[#FDE68A] font-medium text-sm rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white border border-slate-900 font-medium text-sm rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .enterprise-btn-secondary {
@@ -132,15 +131,15 @@
   }
   
   .glass-input {
-    @apply bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-colors;
+    @apply bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 transition-colors;
   }
 
   .apple-btn-primary {
-    @apply bg-amber-500 text-slate-950 hover:bg-amber-600 font-medium px-4 py-2 rounded-md transition-colors;
+    @apply bg-slate-900 text-white hover:bg-slate-800 font-medium px-4 py-2 rounded-md transition-colors shadow-xs;
   }
 
   .apple-input {
-    @apply border border-slate-300 rounded-md bg-white text-slate-800 px-3 py-2 text-sm transition-colors outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20;
+    @apply border border-slate-300 rounded-md bg-white text-slate-800 px-3 py-2 text-sm transition-colors outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10;
   }
 
   .apple-button {
@@ -148,7 +147,7 @@
   }
 
   .apple-button-primary {
-    @apply bg-amber-500 text-slate-950 hover:bg-amber-600;
+    @apply bg-slate-900 text-white hover:bg-slate-800;
   }
 
   .glass-bg {

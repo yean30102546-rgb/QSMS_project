@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer } from '../../../../lib/supabaseServer';
+import { supabaseServer } from '@/src/lib/supabaseServer';
+import { assertPermission, AuthError, requireServerAuth } from '@/src/lib/serverAuth';
 import crypto from 'crypto';
 import { promisify } from 'util';
 
@@ -31,6 +32,9 @@ function validatePassword(password: string): string | null {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const auth = await requireServerAuth(body);
+    assertPermission(auth, 'manage_users');
+
     const { username, password, name, employee_id } = body;
 
     const usernameClean = (username || '').trim().toLowerCase();
@@ -112,6 +116,12 @@ export async function POST(request: Request) {
       { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
     );
   } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    }
     console.error('Register Error:', error);
     return NextResponse.json(
       { success: false, error: 'เกิดข้อผิดพลาดภายในระบบ' },

@@ -41,9 +41,10 @@
    - นำเข้าข้อมูลอ้างอิงจากเอกสาร RT/RW
    - **RT vs RW Document Gate**: เคส **RT (ลูกค้า)** บังคับต้องมีเอกสารแนบ (เช่น ใบส่งของ, ใบแจ้งเคลม, ไฟล์ Excel/PDF อ้างอิง) อย่างน้อย 1 ไฟล์ก่อนเปิดเคส ส่วนเคส **RW (SFC ภายใน)** สามารถเปิดเคสได้ทันทีโดยไม่ต้องแนบเอกสาร (เอกสารแนบเป็น Optional)
    - ระบบจะจ่าย **Case ID** (Hybrid Assignment) ซึ่งไม่สามารถซ้ำหรือแก้ไขได้ (Immutable) เช่น `RW-2026-001` (สำหรับ SFC) หรือ `RT-2026-001` (สำหรับ Customer)
-2. **Two-Way Autofill & Verification (ตรวจสอบสินค้า):**
-   - เมื่อกรอกรหัส Item Number หรือ Item Code ระบบจะสืบค้นข้อมูลจาก Item Master ทันที
-   - **Verification Lifecycle:** สถานะจะเปลี่ยนจาก `Idle` -> `Checking` -> `Verified` (พบข้อมูล) / `New` (สินค้าใหม่) / `Conflict` (ข้อมูลขัดแย้ง)
+2. **Item Autofill & Verification (ตรวจสอบสินค้าผ่านปุ่มแว่นขยาย):**
+   - **Manual Search via Magnifying Glass**: ปัจจุบันเปลี่ยนจากการค้นหาอัตโนมัติขณะพิมพ์ มาเป็นการกดปุ่มไอคอนแว่นขยาย (`<Search size={15} />`) ท้ายช่องอินพุต หรือกดปุ่ม `Enter` บนช่อง `Item Number` / `Item Code` เพื่อค้นหาข้อมูลจาก Master ป้องกันการยิง API ถี่เกินไปและป้องกันข้อมูลเด้งทับขณะพิมพ์
+   - **Verification Lifecycle:** เมื่อกดค้นหา สถานะจะเปลี่ยนจาก `idle` -> `checking` -> `verified` (พบข้อมูลและ Autofill ให้ทันที) / `new` (สินค้าใหม่) / `conflict` (ข้อมูลขัดแย้ง)
+   - **Cross-Item Check First:** ตรวจสอบข้อมูลในเคสเดียวกันก่อน หากพบรหัสตรงกันจะดึงข้อมูลมาเติมให้ทันทีก่อนสืบค้นฐานข้อมูลกลาง
    - **Rework Item Granular Fields:** นอกจากรหัสสินค้าแล้ว เคส Rework แต่ละรายการจะเก็บข้อมูลฟิลด์ล็อตเพิ่มเติม ได้แก่ หมายเลขล็อต (Batch No), วันที่ผลิตแกลลอน (gallonDate), เลขกล่อง (boxNumber / จำนวนกล่อง), หมายเลขแม่พิมพ์ (mold) และสายการผลิต (line)
    - **Zero-Value Restriction:** ระบบตรวจเช็คและล็อกไม่ให้ผู้ใช้งานระบุจำนวนสินค้า (`amount`) หรือจำนวนกล่อง (`boxNumber`) เป็น 0 เพื่อป้องกันข้อมูลผิดพลาดในระบบ
 3. **Cross-Item Linking & Document Validation (เงื่อนไขและประเภทงานเฉพาะ):**
@@ -54,9 +55,15 @@
 5. **Transaction & Evidence Integrity (ยืนยันรูปภาพ):**
    - ทุกรายการ rework ต้องมีรูปภาพหลักฐานอย่างน้อย 1 ภาพ (Evidence Integrity) โดยใช้การบีบอัดรูปภาพฝั่ง Client ก่อนอัปโหลด (target 300KB)
    - หากเกิดข้อผิดพลาดในการอัปโหลดรูป ระบบจะ Rollback ธุรกรรมทั้งหมดทันทีเพื่อป้องกันข้อมูลขยะ
-6. **Rework Updates (การอัปเดตงาน & จัดการสถานะ):**
-   - **Operator / Admin (QSMS):** อัปเดตยอดกล่องผลิตเสร็จ (Progress) ผ่าน Global/Item inputs พร้อมปุ่ม "สูงสุด" และบันทึกอุปสรรคหน้างาน/วัสดุที่ขาด (ขาดกล่อง, ขาดแกลลอน, ขาดน้ำมัน) ซึ่งจะล้างค่าอัตโนมัติเมื่อสถานะเปลี่ยนเป็น Completed
-   - **Dynamic Auto-Status Lifecycle:** สถานะของเคสจะถูกคำนวณอัตโนมัติจากยอดกล่องที่ทำเสร็จจริงเทียบกับยอดรวมทั้งหมด โดยไม่ต้องเลือกสถานะเอง (`Pending` [0%] -> `In-Progress` [>0%] -> `Completed` [100%])
+6. **Cross-Department Workflow & Status Lifecycle (วงจรสถานะและส่งมอบงานข้ามแผนก):**
+   - สถานะของเคสในปัจจุบันรองรับกระบวนการส่งมอบงาน 5-6 ขั้นตอนตามบทบาทผู้รับผิดชอบ ไม่ได้มีเพียง 3 สถานะแบบเดิม:
+     1. **`Pending Analysis` (รอวิเคราะห์):** สถานะเริ่มต้นเมื่อเปิดเคสใหม่ รอฝ่าย QSMS วิเคราะห์ปัญหาและระบุชิ้นส่วนที่ต้องใช้ (`materialRequests`)
+     2. **`Awaiting Materials` (รอเบิกของ / รอเบิกภาชนะ):** QSMS ส่งมอบงานต่อไปให้ฝ่ายคลัง/เบิกจ่าย (WPK) เตรียมและจ่ายวัสดุตามใบเบิก
+     3. **`In-Progress` (กำลังดำเนินการ / กำลังซ่อม):** WPK จ่ายวัสดุครบ หรือฝ่ายผลิต/ช่างซ่อม (PDF) ยืนยันรับมอบของ (Handshake) และเริ่มลงมือบันทึกยอดกล่องที่ซ่อมเสร็จ
+     4. **`Blocked` (ติดปัญหา / Defend Mode):** เกิดปัญหาอุปสรรคหน้างาน เช่น รอแกลลอน, รอน้ำมัน, รอผลแล็บ, หรือรอเครื่องจักร
+     5. **`Completed` (เสร็จสิ้น 100%):** ซ่อมเสร็จครบตามยอดกล่องทั้งหมด หรือผ่านการตรวจรับมาตรฐานคุณภาพ (QC Sign-off) โดย QSMS/Admin
+     6. **`Pending` (รอดำเนินการ):** สถานะ Legacy fallback สำหรับเคสรุ่นเก่า
+   - **Status Transitions:** เปลี่ยนตามการกด Handover ระหว่างสเต็ป (QSMS Handover ➔ WPK Handover ➔ PDF Confirm Receipt ➔ PDF Repair/Defend ➔ QC Sign-off) ควบคู่กับการคำนวณ Progress ยอดกล่อง
 7. **Excel Export with Images (การส่งออกไฟล์ข้อมูล):**
    - ระบบรองรับการ Export ตารางรายงานเคสออกมาเป็นไฟล์ Excel (.xlsx) ที่มีรูปหลักฐานฝังอยู่ด้านในโดยตรง (ผ่านไลบรารี `exceljs`) โดยปรับความสูงแถวเป็น 120px และตกแต่งสีหัวตารางสวยงาม
 8. **RAG Ingestion Pipeline (การนำเข้าคู่มือ):**
@@ -64,7 +71,7 @@
    - **RAG Bulk Deletion:** ผู้ดูแลสามารถเลือกเอกสารหลายรายการใน Checklist เพื่อสั่งลบเอกสารและข้อมูลเวกเตอร์ชิ้นส่วนที่เกี่ยวข้องพร้อมกันผ่าน API (`bulk_delete_documents`)
 9. **AI-Assisted Drawing & Master Parsing (การดึงข้อมูลแบบแปลนอัตโนมัติ):**
    - เมื่อผู้ใช้ทำการอัปโหลดไฟล์ PDF เข้าสู่ระบบในหน้าจอ Drawing/Master ระบบจะส่งไฟล์ Base64 ไปยังเซิร์ฟเวอร์
-   - Gemini AI จะทำหน้าที่ทำ OCR และวิเคราะห์เอกสารสแกนเพื่อแกะข้อมูลฟิลด์ต่าง ๆ โดยมีระบบ Fallback อัตโนมัติ (`gemini-3.1-flash` ➔ `gemini-3.1-flash-lite` ➔ `gemini-2.0-flash`) เพื่อรองรับ 503 high demand spikes
+   - Gemini AI จะทำหน้าที่ทำ OCR และวิเคราะห์เอกสารสแกนเพื่อแกะข้อมูลฟิลด์ต่าง ๆ โดยมีระบบ Cascade Fallback อัตโนมัติ (`gemini-3.1-flash` ➔ `gemini-3.1-flash-lite` ➔ `gemini-3.8-flash`) เพื่อรองรับ 503 High Demand และข้อจำกัดโควตา API
 10. **Decoupled Document Schema Forms (แยกฟอร์มเอกสารตามสเปกจริง):**
     - แยกสีกำกับและโครงสร้างแบบฟอร์ม Drawing (7 ฟิลด์) และ Master Sheet (8 ฟิลด์) ออกจากกันอย่างเด็ดขาดเพื่อไม่ให้มีฟิลด์ N/A สับสน
     - **Drawing PDF:** `drawing_number`, `revision`, `customer_name`, `item_code` (รหัสสินค้าลูกค้า 4000xxxx), `part_name`, `issue_date`, `package_size`
@@ -115,7 +122,36 @@
 24. **MES JIT Kitting & Closed-Loop Two-Way Handshake Architecture (สถาปัตยกรรมจัดชุดภาชนะรอบเดียว):**
     - วางแนวทางแก้ปัญหาการเบิกของ RT/RW ด้วย **Single-Batch JIT Kitting**: ห้ามเบิกของก่อนวิเคราะห์, QSMS ระบุ BOM สุทธิ, WPK จัดของครบชุดรอบเดียว, และ PDF ต้องกดยืนยันรับจริงในระบบ (Sign-off) เพื่อตัดปัญหาการโยนความรับผิดชอบ
     - รองรับสถาปัตยกรรมแจ้งเตือน 3 ระดับ: **LINE Push Notification**, **In-App Notification Bell & Sound**, และ **Role-Based Task Queues**
-
+25. **Production Security Hardening, PWA Standards & Offline Resilience (การยกระดับความปลอดภัยและมาตรฐานเว็บแอป):**
+    - **Security Headers:** กำหนด HTTP Security Headers (`X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security`, `Permissions-Policy`) ใน `next.config.ts` ป้องกัน Clickjacking, MIME Confusion และบังคับใช้ HTTPS
+    - **Brute-Force Rate Limiting:** เพิ่ม In-memory Rate Limiter บน `/api/auth/login` ป้องกันการสุ่มรหัสผ่านเกิน 5 ครั้งใน 15 นาที
+    - **Registration Lockdown:** ปิดกั้น `/api/auth/register` ให้เฉพาะ Admin ที่มีสิทธิ์ `manage_users` เท่านั้น
+    - **PWA Standards & App Icons:** สร้าง `src/app/manifest.ts`, `src/app/icon.tsx`, และ `src/app/apple-icon.tsx` รองรับการติดตั้งแบบ Standalone App บนแท็บเล็ตตรวจงาน
+    - **Factory Offline Resilience:** เพิ่ม `useOnlineStatus` hook และคอมโพเนนต์ `OfflineBanner.tsx` แจ้งเตือนเมื่อสัญญาณ Wi-Fi หลุดหายแบบ Non-intrusive
+    - **Modal A11y:** ปรับปรุง `AlertModal.tsx` รองรับปุ่ม `Escape` และคุณลักษณะ ARIA dialog มาตรฐาน
+26. **RAG AI Database Re-alignment, Schema Fixes & Multi-Status Metrics (การแก้ไขระบบตอบคำถาม RAG AI เชื่อมโยงฐานข้อมูลจริง):**
+    - **Single-Source Supabase Synchronization:** ย้ายการเชื่อมต่อฐานข้อมูล RAG จาก URL เดิมที่หมดอายุ (`bjibpmmuhggpvuaqgpjd.supabase.co`) กลับมายังฐานข้อมูลหลัก (`xbzgoqpqjdhkloqdmxby.supabase.co`) ใน `ragSupabaseServer.ts` และ `.env.local` เพื่อให้สามารถเข้าถึงตาราง `rag_documents`, `rag_document_chunks` และฟังก์ชัน RPC เวกเตอร์ (`hybrid_search_chunks`, `match_document_chunks`) ได้จริง 100%
+    - **Function Calling & Table Schema Alignment:** แก้ไขการเรียกชื่อตารางใน Function Calling (`lookup_item_master` ชี้ไปที่ `rework_master_items` แทน `item_master`, `search_engineering_drawings` ค้นหาผ่าน `rag_documents` แทน `engineering_drawings`)
+    - **5-Stage Lifecycle Analytics:** อัปเดตเมตริกการนับสถานะเคสใน `query_rework_analytics` ให้ครอบคลุมทุกสถานะจริงในระบบ (`Pending Analysis`, `Awaiting Materials`, `In-Progress`, `Blocked`, `Completed`) แทนการค้นหาเฉพาะสถานะ `Pending` แบบเดิม
+    - **Zero-`any` & Server Authorization:** ขจัด `any` ออกจากโค้ด `src/app/api/rag/route.ts` ทั้งหมด และบังคับใช้สิทธิ์ `requireServerAuth` (`manage_rag`) เพื่อความปลอดภัยระดับ Enterprise
+27. **Item Completion Validation, In-Place Queue & Case Progress Checklist (ระบบตรวจสอบความครบถ้วนของสินค้า & เช็กลิสต์ภาพรวม):**
+    - **Realistic Mandatory Fields:** ปรับปรุง `calculateItemStatus` บังคับกรอก: สาเหตุหลัก & สาเหตุย่อย (`reason` & `reasonSubtype`), ผู้รับผิดชอบหลัก & ผู้รับผิดชอบย่อย (`responsible` & `responsibleSubtype`), รูปภาพหลักฐานความเสียหายอย่างน้อย 1 ภาพ, และจำนวนกล่อง (`amount` > 0) โดยปลดล็อกให้วันผลิต (`gallonDate`) และหมายเลขล็อต (`batchNo`) เป็นฟิลด์เสริม Optional
+    - **Explicit Incomplete Badge:** แทนที่ป้ายกำกวม "อัปเดตแล้ว" ด้วยป้ายระบุฟิลด์ที่ขาดตรงๆ `[⚠️ ยังไม่ครบ (ขาด: ...)]` พร้อมไฮไลต์ข้อความเตือนสีส้มใต้ฟิลด์สาเหตุย่อย, แผนกผู้รับผิดชอบ และกล่องรูปภาพในฟอร์ม
+    - **Case Items Checklist Banner:** แผงสรุปความคืบหน้าระดับเคสด้านบนรายการสินค้า แสดงแถบ % ความสมบูรณ์ และเม็ดชิปสถานะ Interactive รายไอเทม สามารถคลิกเพื่อเปิด Accordion และเลื่อนหน้าจอไปยังรายการนั้นได้ทันที
+    - **In-Place Item Save & Loop Prevention:** ยกเลิกการสลับย้ายตำแหน่งไอเทมลงไปต่อท้ายสุด โดยบันทึกไอเทมอยู่กับที่เดิม (In-place) และเลื่อนเปิดรายการถัดไปที่ยังไม่สมบูรณ์ให้อัตโนมัติ ป้องกันความสับสนในการทำงานวนซ้ำ
+28. **Agentic Hybrid RAG, Fuzzy Case Normalization & Interactive Evidence Citations (สถาปัตยกรรมตอบคำถามไฮบริด & ลิงก์หลักฐานเปิดเคสจริง):**
+    - **Fuzzy Case Normalization:** เพิ่ม `src/app/api/rag/caseNormalizer.ts` แปลงและวิเคราะห์รหัสเคสไม่เต็มรูป (เช่น `RW001`, `001`, `rw 888`) ให้จับคู่กับรหัสเคสจริงในฐานข้อมูล (`rework_cases`) อัตโนมัติ
+    - **Database Tool & Proactive Trigger:** เพิ่ม Tool `search_rework_case` ใน Gemini Function Declarations พร้อมระบบตรวจจับ Proactive Fallback หากโมเดลข้าม Tool แต่ผู้ใช้ระบุรหัสเคสในคำถาม ระบบจะดึงข้อมูลจริงจาก `rework_cases` + `rework_items` มาป้อนเป็น Context ทันที
+    - **Strict Anti-Hallucination Guardrails:** กำหนดกฎใน System Prompt ห้ามแต่งชื่อสินค้า สเปก หรือสร้าง URL สมมติ (`https://qsms.internal/...`) โดยเด็ดขาด หากค้นหาไม่พบ ให้แจ้งผู้ใช้ตามความจริงว่าไม่พบเคสในระบบ QSMS พร้อมแนะนำรูปแบบรหัสที่ถูกต้อง
+    - **Interactive Evidence Cards & Deep Linking:** แปลงข้อความอ้างอิง `action:case:<CaseID>` ใน `RagApp.tsx` เป็นการ์ดหลักฐานสีฟ้าพร้อมปุ่มคลิก `"เปิดดูเคสนี้"` ซึ่งจะส่ง CustomEvent `open-rework-case` ให้ `App.tsx` และ `OverallTab.tsx` สลับหน้าจอเปิด [`CaseUpdateView`](file:///c:/Workplace/QSMS_project/src/modules/rework/views/CaseUpdateView.tsx) ของเคสนั้นทันที
+29. **Ground Truth Benchmark Datasets & OCR Accuracy Evaluation (ชุดทดสอบมาตรฐานและการประเมินความเที่ยงตรง):**
+    - **Customer Drawing Benchmark (50 ฉบับ):** จัดเก็บใน `Drawing files/Test_50_Unique/` พร้อม `test_manifest.csv` กำกับรหัสแฮช SHA-256 และสถานะ `GroundTruthStatus = "Verified"` ครบทุกรายการ
+    - **Internal Master Benchmark (50 ฉบับ):** จัดเก็บใน `Master files/Test_50_Unique/` พร้อม `test_manifest.csv` กำกับรหัสแฮช SHA-256 และสถานะ `GroundTruthStatus = "Verified"` ครบทุกรายการ
+    - **Standard Manual Entry Form:** แบบฟอร์ม [`Ground_Truth_Manual_Entry_Form.xlsx`](file:///c:/Workplace/QSMS_project/Ground_Truth_Manual_Entry_Form.xlsx) บันทึกและสอบทานค่าเฉลยมาตรฐาน 20 คอลัมน์ ครบ 100 รายการ โดยคงโครงสร้างหัวตารางและข้อความกำกับไม่ระบุของระบบเดิม 100%
+    - **Empirical AI Accuracy Benchmark:** ประเมินความถูกต้อง 11 ฟิลด์ผ่าน Gemini Vision ร่วมกับ Normalizers (`src/app/api/drawings/normalizers.ts`):
+      * Drawing Benchmark (5 ฟิลด์หลัก x 50 = 250): ได้ **248/250 (99.20%)**, Wilson 95% CI: **[97.13%, 99.78%]**
+      * Master Benchmark (5 ฟิลด์หลัก x 50 = 250): ได้ **249/250 (99.60%)**, Wilson 95% CI: **[97.77%, 99.93%]**
+      * ภาพรวมระดับวิชาการ 550 ฟิลด์ข้อมูล (50 ฉบับ x 11 ฟิลด์): สกัดถูกต้อง **530/550 ฟิลด์ (96.36%)**, ช่วงความเชื่อมั่น 95% Wilson Score Interval: **[94.44%, 97.64%]** สอดคล้องกับตาราง 4.4 ในเล่มวิทยานิพนธ์
 
 ---
 

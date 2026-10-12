@@ -53,8 +53,7 @@ describe('CaseListTable', () => {
     // Check status pill
     expect(screen.getByText('รอดำเนินการ')).toBeInTheDocument();
 
-    // Check reason and subtype
-    expect(screen.getByText(/รั่ว/)).toBeInTheDocument();
+    // The case summary focuses on identification and current workflow status.
   });
 
   it('renders correctly when items array is empty', () => {
@@ -86,10 +85,9 @@ describe('CaseListTable', () => {
     // Should show first item name + (+1 รายการ)
     expect(screen.getByText('Test Item 1 (+1 รายการ)')).toBeInTheDocument();
     
-    // Should show both reasons combined
-    expect(screen.getByText(/รั่ว, เปื้อน/)).toBeInTheDocument();
-    
-    // Total amount should be 15
-    expect(screen.getByText('15 กล่อง')).toBeInTheDocument();
+    // The current card format shows completed versus total box counts.
+    expect(screen.getByText((_, element) =>
+      element?.tagName === 'SPAN' && element.textContent?.replace(/\s/g, '') === '0/15กล่อง'
+    )).toBeInTheDocument();
   });
 });

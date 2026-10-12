@@ -24,7 +24,7 @@ export function DashboardTab() {
             day: 'numeric',
           })}
         </p>
-        <h1 className="text-2xl font-bold tracking-tight text-primary md:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
           แดชบอร์ด &amp; สถิติ
         </h1>
       </header>

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       case 'listUsers': {
         const { data: users, error } = await supabaseServer
           .from('users')
-          .select('id, username, name, role, employee_id, created_at')
+          .select('id, username, name, role, created_at')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -50,12 +50,10 @@ export async function POST(request: Request) {
 
       // 2. Create user (Admin-only)
       case 'createUser': {
-        const { username, password, name, role, employee_id } = body;
+        const { username, password, name, role } = body;
         const usernameClean = (username || '').trim().toLowerCase();
         const nameClean = (name || '').trim();
         const roleClean = String(role || 'PDF').trim().toUpperCase();
-        const employeeIdClean = (employee_id || '').trim().toUpperCase();
-
         if (!usernameClean || !password || !nameClean) {
           return NextResponse.json(
             { success: false, error: 'กรุณาระบุ Username, Password และชื่อ-นามสกุลให้ครบถ้วน' },
@@ -99,9 +97,8 @@ export async function POST(request: Request) {
             password_hash,
             name: nameClean,
             role: roleClean,
-            employee_id: employeeIdClean || null,
           })
-          .select('id, username, name, role, employee_id, created_at')
+          .select('id, username, name, role, created_at')
           .single();
 
         if (insertError) throw insertError;
@@ -122,7 +119,7 @@ export async function POST(request: Request) {
 
       // 3. Update user
       case 'updateUser': {
-        const { id, name, role, employee_id, password } = body;
+        const { id, name, role, password } = body;
         if (!id) {
           return NextResponse.json(
             { success: false, error: 'User ID is required' },
@@ -133,8 +130,6 @@ export async function POST(request: Request) {
         const updateData: Record<string, unknown> = {};
         if (name) updateData.name = String(name).trim();
         if (role) updateData.role = String(role).trim().toUpperCase();
-        if (employee_id !== undefined) updateData.employee_id = (employee_id || '').trim().toUpperCase() || null;
-
         if (password) {
           const passwordError = validatePassword(password);
           if (passwordError) {
@@ -153,7 +148,7 @@ export async function POST(request: Request) {
           .from('users')
           .update(updateData)
           .eq('id', id)
-          .select('id, username, name, role, employee_id, created_at')
+          .select('id, username, name, role, created_at')
           .single();
 
         if (updateError) throw updateError;

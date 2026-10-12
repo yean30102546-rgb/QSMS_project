@@ -38,20 +38,23 @@ test.describe('QSMS User Guide Presentation Deck Flow', () => {
   });
 
   test('should filter slides by Drawing & Master category', async ({ page }) => {
-    await page.click('button:has-text("Drawing & Master")');
-    await expect(page.locator('text=06 / DRAWING & MASTER MODULE').first()).toBeVisible();
+    await page.mouse.move(600, 10);
+    const categoryButton = page.getByRole('button', { name: 'Drawing & Master' });
+    await categoryButton.scrollIntoViewIfNeeded();
+    await categoryButton.click();
+    await expect(page.locator('text=16 / DRAWING & MASTER MODULE').first()).toBeVisible();
     
     await page.keyboard.press('ArrowRight');
-    await expect(page.locator('text=07 / DRAWING WORKFLOW').first()).toBeVisible();
-    await expect(page.locator('text=Drawing & Master Storage').first()).toBeVisible();
+    await expect(page.locator('text=17 / DRAWING WORKFLOW').first()).toBeVisible();
+    await expect(page.locator('text=AI OCR, แผงตรวจทาน 55/45 & Gap Analysis').first()).toBeVisible();
   });
 
   test('should filter slides by DocAI RAG category', async ({ page }) => {
-    await page.click('button:has-text("DocAI RAG")');
-    await expect(page.locator('text=08 / DOCAI RAG MODULE').first()).toBeVisible();
-
-    await page.keyboard.press('ArrowRight');
-    await expect(page.locator('text=09 / DOCAI WORKFLOW').first()).toBeVisible();
-    await expect(page.locator('text=QSMS DocAI RAG Engine').first()).toBeVisible();
+    await page.mouse.move(600, 10);
+    const categoryButton = page.getByRole('button', { name: 'DocAI RAG' });
+    await categoryButton.scrollIntoViewIfNeeded();
+    await categoryButton.click();
+    await expect(page.locator('text=20 / DOCAI WORKFLOW').first()).toBeVisible();
+    await expect(page.locator('text=ระบบถาม-ตอบคู่มือวิศวกรรมสด & Inspect Chunks').first()).toBeVisible();
   });
 });
