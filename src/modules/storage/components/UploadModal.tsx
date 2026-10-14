@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, UploadCloud, File, Loader2, Bot, AlertCircle, Trash2, CheckCircle2, Plus, RotateCw, ZoomIn, ZoomOut, Maximize2, Minimize2, RefreshCcw, Filter, LayoutGrid, LayoutList } from 'lucide-react';
+import { X, UploadCloud, File, Loader2, Bot, AlertCircle, Trash2, CheckCircle2, Plus, RotateCw, ZoomIn, ZoomOut, Maximize2, Minimize2, RefreshCcw, Filter, LayoutGrid, LayoutList, Sparkles } from 'lucide-react';
 import { useNotification } from '../../../contexts/NotificationContext';
 import type { User } from '../../../services/auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -375,15 +375,18 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
             <p className="text-xs text-slate-500 mt-0.5">Upload multiple Drawings & Masters. Filenames will be parsed automatically.</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 justify-between sm:justify-end">
-            <div className="flex items-center w-[180px] sm:w-[220px]">
+            <div className="flex items-center w-[190px] sm:w-[230px]">
               <Select value={aiModel} onValueChange={setAiModel} disabled={isUploading || isProcessing}>
-                <SelectTrigger className="h-9 bg-slate-50 dark:bg-[#2c2c2e] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
-                  <SelectValue placeholder="Select AI Model" />
+                <SelectTrigger className="h-9 bg-slate-50 hover:bg-slate-100/80 dark:bg-[#2c2c2e] dark:hover:bg-[#38383a] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 rounded-xl focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 font-medium text-xs shadow-2xs transition-all">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <SelectValue placeholder="Select AI Model" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-[#2c2c2e] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200">
-                  <SelectItem value="gemini-3.1-flash" className="focus:bg-slate-100 dark:focus:bg-white/10 cursor-pointer">Gemini 3.1 Flash (Main)</SelectItem>
-                  <SelectItem value="gemini-3.5-flash" className="focus:bg-slate-100 dark:focus:bg-white/10 cursor-pointer">Gemini 3.5 Flash</SelectItem>
-                  <SelectItem value="gemini-3.1-flash-lite" className="focus:bg-slate-100 dark:focus:bg-white/10 cursor-pointer">Gemini 3.1 Flash Lite</SelectItem>
+                  <SelectItem value="gemini-3.1-flash" className="cursor-pointer">Gemini 3.1 Flash (Main)</SelectItem>
+                  <SelectItem value="gemini-3.5-flash" className="cursor-pointer">Gemini 3.5 Flash</SelectItem>
+                  <SelectItem value="gemini-3.1-flash-lite" className="cursor-pointer">Gemini 3.1 Flash Lite</SelectItem>
                 </SelectContent>
               </Select>
             </div>

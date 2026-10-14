@@ -178,7 +178,7 @@ export function Combobox({
                         }}
                         className={cn(
                           "flex w-full items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all text-left",
-                          isSelected && "bg-amber-50 text-amber-900 font-bold hover:bg-amber-100/80 hover:text-amber-950"
+                          isSelected && "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 font-bold hover:bg-blue-100/70 dark:hover:bg-blue-500/25 hover:text-blue-700 dark:hover:text-blue-300"
                         )}
                       >
                         <span className="truncate">{option.label}</span>
