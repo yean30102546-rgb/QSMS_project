@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BarChart3, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLeft, Bot } from 'lucide-react';
+import { AlertCircle, BarChart3, FolderOpen, LayoutDashboard, LogOut, Plus, HelpCircle, X, Menu, ArrowLeft, Bot } from 'lucide-react';
 
 import type { ReworkCase, ReworkItem } from '@/src/services/api';
 import type { User } from '../../services/auth';
@@ -18,7 +18,9 @@ const DashboardTab = React.lazy(async () => {
   return { default: mod.DashboardTab };
 });
 
-type Tab = 'overall' | 'add' | 'dashboard';
+export type WorkspaceModule = 'rework' | 'storage';
+export type WorkspaceTab = 'overall' | 'add' | 'dashboard' | 'documents' | 'gap_analysis';
+type Tab = WorkspaceTab;
 
 type SaveMessage = {
   type: 'success' | 'error';
@@ -33,6 +35,7 @@ type SelectionModalState = {
 } | null;
 
 interface MainLayoutProps {
+  module?: WorkspaceModule;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   onLogout: () => void;
@@ -40,6 +43,7 @@ interface MainLayoutProps {
   userRole?: User['role'] | '';
   onOpenTutorial: () => void;
   onBackToPortal: () => void;
+  onNavigateToModule?: (module: WorkspaceModule) => void;
   onOpenRag?: () => void;
   isFocusMode?: boolean;
   isSidebarCollapsed?: boolean;
@@ -54,6 +58,7 @@ const COLLAPSE_THRESHOLD = 180;
 const STORAGE_KEY = 'qsms_sidebar_width_v2';
 
 export function MainLayout({
+  module = 'rework',
   activeTab,
   setActiveTab,
   onLogout,
@@ -61,6 +66,7 @@ export function MainLayout({
   userRole = '',
   onOpenTutorial,
   onBackToPortal,
+  onNavigateToModule,
   onOpenRag,
   isFocusMode = false,
   isSidebarCollapsed: externalSidebarCollapsed,
@@ -178,7 +184,7 @@ export function MainLayout({
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-slate-100/70 text-slate-800 font-sans relative">
+    <div className="relative flex h-full w-full overflow-hidden bg-[#f5f5f7] font-sans text-[#1d1d1f]">
       {/* Mobile Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -187,7 +193,7 @@ export function MainLayout({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeSidebar}
-            className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs md:hidden"
+        className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs md:hidden"
           />
         )}
       </AnimatePresence>
@@ -212,13 +218,14 @@ export function MainLayout({
       <aside
         style={{
           width: isCollapsed ? 0 : `${sidebarWidth}px`,
+          maxWidth: 'calc(100vw - 48px)',
         }}
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white shadow-xs md:static relative select-none ${
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#e0e0e0] bg-white md:static select-none ${
           isResizing ? 'transition-none' : 'transition-[width,opacity] duration-200 ease-out'
         } ${
           isCollapsed
             ? 'w-0 overflow-hidden opacity-0 border-r-0 p-0 pointer-events-none'
-            : 'px-4 py-6 opacity-100'
+            : 'px-4 py-5 sm:py-6 opacity-100'
         } ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         {/* Drag Resizer Handle on the Right Border (Desktop Only) */}
@@ -244,7 +251,7 @@ export function MainLayout({
 
         <motion.div
           className="mb-8 flex cursor-pointer items-center justify-between gap-3 px-1"
-          onClick={() => handleTabChange('overall')}
+          onClick={() => handleTabChange(module === 'storage' ? 'documents' : 'overall')}
           whileHover={{ scale: 1.01 }}
         >
           <div className="flex items-center gap-2.5">
@@ -252,8 +259,8 @@ export function MainLayout({
               <img src="/img/logo.png" alt="QSMS" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-wide text-slate-900 uppercase leading-tight">QSMS REWORK</h1>
-              <span className="text-[10px] font-medium text-slate-500">Operation Center</span>
+              <h1 className="text-sm font-bold tracking-wide text-[#1d1d1f] uppercase leading-tight">QSMS WORKSPACE</h1>
+              <span className="text-[10px] font-medium text-[#7a7a7a]">{module === 'storage' ? 'คลังเอกสารวิศวกรรม' : 'จัดการงาน Rework'}</span>
             </div>
           </div>
           {isFocusMode && (
@@ -271,27 +278,28 @@ export function MainLayout({
           )}
         </motion.div>
 
-        <nav className="flex-1 space-y-1">
-          <SidebarItem
-            active={activeTab === 'overall'}
-            onClick={() => handleTabChange('overall')}
-            label="ภาพรวม (Overall)"
-            icon={<LayoutDashboard size={16} />}
-          />
-          {(['ADMIN', 'QSMS', 'MANAGEMENT'].includes(String(userRole || '').toUpperCase())) && (
-            <SidebarItem
-              active={activeTab === 'dashboard'}
-              onClick={() => handleTabChange('dashboard')}
-              label="แดชบอร์ด (Dashboard)"
-              icon={<BarChart3 size={16} />}
-            />
+        <nav className="flex-1 space-y-1 overflow-y-auto min-h-0 pr-1" aria-label="เมนูหลัก">
+          {module === 'rework' ? (
+            <>
+              <SidebarItem active={activeTab === 'overall'} onClick={() => handleTabChange('overall')} label="ภาพรวม Rework" icon={<LayoutDashboard size={16} />} />
+              {(['ADMIN', 'QSMS', 'MANAGEMENT'].includes(String(userRole || '').toUpperCase())) && (
+                <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} label="แดชบอร์ด" icon={<BarChart3 size={16} />} />
+              )}
+              <SidebarItem active={activeTab === 'add'} onClick={() => handleTabChange('add')} label="เปิดเคสใหม่" icon={<Plus size={16} />} />
+            </>
+          ) : (
+            <>
+              <SidebarItem active={activeTab === 'documents'} onClick={() => handleTabChange('documents')} label="เอกสาร Drawing/Master" icon={<LayoutDashboard size={16} />} />
+              <SidebarItem active={activeTab === 'gap_analysis'} onClick={() => handleTabChange('gap_analysis')} label="ตรวจเอกสารที่ขาด" icon={<AlertCircle size={16} />} />
+            </>
           )}
-          <SidebarItem
-            active={activeTab === 'add'}
-            onClick={() => handleTabChange('add')}
-            label="เปิดเคสใหม่ (Add Case)"
-            icon={<Plus size={16} />}
-          />
+          <div className="my-3 border-t border-[#e0e0e0]" />
+          {module === 'rework' && onNavigateToModule && (
+            <SidebarItem active={false} onClick={() => onNavigateToModule('storage')} label="คลัง Drawing & Master" icon={<FolderOpen size={16} />} />
+          )}
+          {module === 'storage' && onNavigateToModule && (
+            <SidebarItem active={false} onClick={() => onNavigateToModule('rework')} label="ระบบ Rework" icon={<LayoutDashboard size={16} />} />
+          )}
           <SidebarItem
             active={false}
             onClick={() => {
@@ -301,36 +309,25 @@ export function MainLayout({
             label="กลับหน้าพอร์ทัล"
             icon={<ArrowLeft size={16} />}
           />
-          <SidebarItem
-            active={false}
-            onClick={() => {
-              onOpenTutorial();
-              closeSidebar();
-            }}
-            label="คู่มือการใช้งาน"
-            icon={<HelpCircle size={16} />}
-          />
-          <SidebarItem
-            active={false}
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
-              }
-              closeSidebar();
-            }}
-            label="DocAI Assistant"
-            icon={<Bot size={16} className="text-slate-500" />}
-          />
+          {module === 'rework' && (
+            <>
+              <SidebarItem active={false} onClick={() => { onOpenTutorial(); closeSidebar(); }} label="คู่มือการใช้งาน" icon={<HelpCircle size={16} />} />
+              <SidebarItem active={false} onClick={() => {
+                if (typeof window !== 'undefined') window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+                closeSidebar();
+              }} label="DocAI Assistant" icon={<Bot size={16} className="text-slate-500" />} />
+            </>
+          )}
         </nav>
 
-        <div className="mt-4 border-t border-slate-200/80 pt-4">
+        <div className="mt-4 border-t border-slate-200/80 pt-4 shrink-0">
           <div 
             onClick={() => setIsPermissionsModalOpen(true)}
-            className="group flex cursor-pointer items-center gap-2.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5 text-xs transition-all hover:bg-slate-100 hover:border-slate-300"
+            className="group flex cursor-pointer items-center gap-2.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5 text-xs transition-all hover:bg-slate-100 hover:border-slate-300 min-h-11"
             title="คลิกเพื่อดูสิทธิ์การใช้งาน"
           >
             {/* User Avatar Circle */}
-            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-bold flex items-center justify-center text-xs uppercase">
+            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-bold flex items-center justify-center text-xs uppercase shrink-0">
               {userName ? userName.charAt(0) : 'U'}
             </div>
             <div className="flex-1 min-w-0">
@@ -343,7 +340,7 @@ export function MainLayout({
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+            className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer min-h-11"
           >
             <LogOut size={15} />
             <span>ออกจากระบบ</span>
@@ -354,12 +351,12 @@ export function MainLayout({
       <main className="relative flex flex-1 flex-col overflow-hidden bg-transparent">
         {/* Mobile Header (Hidden in Focus Mode) */}
         {!isFocusMode && (
-          <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
+          <div className="flex min-h-14 items-center justify-between border-b border-[#e0e0e0] bg-white px-4 md:hidden">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 flex items-center justify-center rounded bg-slate-900 text-white border border-slate-800 font-bold text-xs">
                 Q
               </div>
-              <span className="text-sm font-bold text-slate-900">QSMS Rework</span>
+              <span className="text-sm font-bold text-[#1d1d1f]">{module === 'storage' ? 'Drawing & Master' : 'QSMS Rework'}</span>
             </div>
             
             <div className="flex items-center gap-2">
@@ -373,7 +370,7 @@ export function MainLayout({
 
               <button
                 onClick={toggleSidebar}
-                className="rounded-md p-1.5 text-slate-700 hover:bg-slate-100"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
               >
                 {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
@@ -409,13 +406,13 @@ function SidebarItem({ active, onClick, label, icon }: SidebarItemProps) {
         e.preventDefault();
         onClick();
       }}
-      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
+      className={`flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] ${
         active
-          ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/90 shadow-2xs'
-          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+          ? 'bg-[#eaf3ff] text-[#0066cc] font-semibold border border-[#cfe2f8]'
+          : 'text-slate-600 hover:bg-[#f5f5f7] hover:text-[#1d1d1f] border border-transparent'
       }`}
     >
-      {icon && <span className={`shrink-0 transition-colors ${active ? 'text-slate-900' : 'text-slate-400'}`}>{icon}</span>}
+      {icon && <span className={`shrink-0 transition-colors ${active ? 'text-[#0066cc]' : 'text-slate-400'}`}>{icon}</span>}
       <span className="whitespace-nowrap leading-normal">{label}</span>
     </button>
   );

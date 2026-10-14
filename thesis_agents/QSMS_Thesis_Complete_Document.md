@@ -6,6 +6,8 @@
 **Thesis Title (English):**  
 Development of Quality and Safety Management Information System for Rework and Packaging Control (QSMS) in Lubricant Blending and Packaging Industry  
 
+> **สถานะเอกสาร:** ร่างเนื้อหา Markdown สำหรับตรวจทาน ไม่ใช่รูปเล่มฉบับส่ง ต้องจัดหน้าในเทมเพลตปริญญานิพนธ์ของภาควิชาและตรวจสอบข้อมูลที่ทำเครื่องหมาย `[รอยืนยัน]` ก่อนส่ง
+
 ---
 
 ## ส่วนประกอบตอนต้น (Front Matter)
@@ -23,24 +25,25 @@ Development of Quality and Safety Management Information System for Rework and P
 ---
 
 ### หน้าอนุมัติปริญญานิพนธ์ (Approval Sheet)
-ปริญญานิพนธ์ฉบับนี้ได้รับการพิจารณาและอนุมัติให้เป็นส่วนหนึ่งของการศึกษาตามหลักสูตรวิศวกรรมศาสตรบัณฑิต สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์
+**[ใช้ข้อความอนุมัติและลงรายชื่อหลังได้รับการยืนยันจากภาควิชา/คณะกรรมการสอบเท่านั้น]**
+ร่างข้อความ: ปริญญานิพนธ์ฉบับนี้ได้รับการพิจารณาและอนุมัติให้เป็นส่วนหนึ่งของการศึกษาตามหลักสูตรวิศวกรรมศาสตรบัณฑิต สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์
 
 คณะกรรมการสอบปริญญานิพนธ์:
 - ........................................................... ประธานกรรมการสอบ  
-  (ศาสตราจารย์ ดร. สุรพล วิศวกรรมวิธาน)
+  ([รอยืนยันชื่อและตำแหน่งจากรายชื่อกรรมการสอบจริง])
 - ........................................................... กรรมการ (อาจารย์ที่ปรึกษาหลัก)  
-  (รองศาสตราจารย์ ดร. สมชาย มั่นคง)
+  ([รอยืนยันชื่อและตำแหน่งที่ปรึกษาหลัก])
 - ........................................................... กรรมการ (อาจารย์ที่ปรึกษาร่วม)  
-  (ผู้ช่วยศาสตราจารย์ ดร. วรเชษฐ์ สุวรรณเมธี)
+  ([รอยืนยันชื่อและตำแหน่งที่ปรึกษาร่วม])
 - ........................................................... กรรมการผู้ทรงคุณวุฒิภายนอก  
-  (ดร. พงษ์ศักดิ์ นวัตกรรมเทคโนโลยี)
+  ([รอยืนยันชื่อและตำแหน่งกรรมการผู้ทรงคุณวุฒิ])
 
 ---
 
 ### กิตติกรรมประกาศ (Acknowledgements)
 ปริญญานิพนธ์ฉบับนี้สำเร็จลุล่วงได้ด้วยความอนุเคราะห์และความกรุณาอย่างสูงจาก รองศาสตราจารย์ ดร. สมชาย มั่นคง อาจารย์ที่ปรึกษาหลัก และ ผู้ช่วยศาสตราจารย์ ดร. วรเชษฐ์ สุวรรณเมธี อาจารย์ที่ปรึกษาร่วม ที่ได้ให้คำแนะนำ แนวคิดเชิงทฤษฎี ระเบียบวิธีวิจัย การตรวจสอบทางสถิติ และการขัดเกลาเนื้อหาอย่างใกล้ชิดตลอดระยะเวลาการดำเนินการวิจัย ผู้จัดทำขอกราบขอบพระคุณเป็นอย่างสูง
 
-ขอขอบพระคุณคณะผู้บริหาร วิศวกร และบุคลากรหน้างานในโรงงานกรณีศึกษาอุตสาหกรรมผสมและบรรจุสารหล่อลื่น ที่ได้อนุญาตให้เข้าศึกษาและทดสอบระบบภายใต้หนังสือยินยอมความร่วมมือทางวิชาการ (หนังสือเลขที่ ENG-QMS-2026-004) โดยเฉพาะบุคลากรจากทั้ง 5 แผนก ได้แก่:
+ขอขอบพระคุณคณะผู้บริหาร วิศวกร และบุคลากรหน้างานในโรงงานกรณีศึกษาอุตสาหกรรมผสมและบรรจุสารหล่อลื่น **[รอยืนยันการอนุญาตและเลขที่หนังสือจากเอกสารจริง]** โดยเฉพาะบุคลากรจากทั้ง 5 แผนก ได้แก่:
 1. แผนกบริหารคุณภาพและความปลอดภัย (QSMS: Quality and Safety MGT System)
 2. แผนกผลิตและบรรจุ (PDFD: Production Filling Department ในระบบใช้รหัสบทบาท `PDF`)
 3. แผนกคลังสินค้าสำเร็จรูป (WFGD: W/H Finished Goods Department ในระบบใช้รหัสบทบาท `WFG`)
@@ -63,17 +66,17 @@ Development of Quality and Safety Management Information System for Rework and P
 
 กระบวนการแก้ไขชิ้นส่วนผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Rework Process) ในโรงงานผสมและบรรจุสารหล่อลื่นกรณีศึกษา ประสบปัญหาความสูญเปล่าตามแนวคิดลีน (การรอคอย การขนย้าย และกระบวนการที่เกินจำเป็น) และปัญหาจุดคอขวดในกระบวนการทำงาน 7 ประการ ได้แก่ 1) การเข้าถึงข้อมูลข้ามสายงาน 2) คอขวดจากการเบิกจ่ายบรรจุภัณฑ์ล่วงหน้าและการขนย้ายซ้ำซ้อน 3) ความผิดพลาดจากการกรอกข้อมูลสินค้าและมูลค่าของเสียด้วยมือ 4) ความเสี่ยงจากการนำแบบแปลนเก่าที่ยกเลิกแล้วมาผลิตซ่อม 5) ความล่าช้าในการเข้าถึงคู่มือขั้นตอนการปฏิบัติงานมาตรฐานในกะการผลิต 6) ภาระการจัดการไฟล์ภาพถ่ายและการจัดทำรายงานสรุปประจำงวดด้วยมือ และ 7) การขาดความสามารถในการมองเห็นจุดคอขวดข้ามแผนกแบบเรียลไทม์
 
-ปริญญานิพนธ์ฉบับนี้นำเสนอการวิเคราะห์ ออกแบบ และพัฒนาระบบสารสนเทศ QSMS ด้วยระเบียบวิธีวิจัยแบบอไจล์ (Agile SDLC) สถาปัตยกรรมระบบได้รับการจัดโครงสร้างตามแนวคิด Feature-Sliced Design ประกอบด้วย 7 โมดูลหลัก ทำงานบนสถาปัตยกรรมไฮบริดระหว่าง Next.js Serverless API Boundary และ React Single Page Application ควบคู่กับการแยกฐานข้อมูลอิสระสองชุด (Dual-Database Isolation) ระหว่าง PostgreSQL หลักสำหรับธุรกรรมการผลิต และ PostgreSQL ร่วมกับ pgvector (768 มิติ) สำหรับงานปัญญาประดิษฐ์
+ปริญญานิพนธ์ฉบับนี้นำเสนอการวิเคราะห์ ออกแบบ และพัฒนาระบบสารสนเทศ QSMS ด้วยระเบียบวิธีวิจัยแบบอไจล์ (Agile SDLC) สถาปัตยกรรมระบบได้รับการจัดโครงสร้างตามแนวคิด Feature-Sliced Design ประกอบด้วย 7 โมดูลหลัก ทำงานบน Next.js และ React โดยระบบรองรับการกำหนด Supabase สำหรับงาน RAG แยกจากฐานหลักผ่าน environment variables แต่หากไม่ได้กำหนดค่าแยกจะใช้ URL ฐานหลักเป็น fallback การยืนยันว่า deployment ที่ประเมินใช้ฐานข้อมูลแยกจริง **[รอยืนยันจากค่ากำหนด deployment]**
 
 ผลการประเมินประสิทธิภาพในสภาพแวดล้อมปฏิบัติงานจริงเป็นระยะเวลา 8 สัปดาห์ (ปริมาณงาน 78 เคส) พบว่า:
-1. การควบคุมการเข้าถึงตามบทบาท (RBAC) 6 กลุ่มงาน ผ่านการทดสอบอัตโนมัติ 42 กรณีทดสอบครอบคลุม 15 ฟังก์ชัน และไม่พบเหตุการณ์ผิดสิทธิ์ในบันทึก Audit Log ของโรงงาน (ลดลงจากเดิม 6 ครั้ง/เดือน เป็น 0 ครั้ง) โดยระบบตรวจจับและสกัดกั้นความพยายามเข้าถึงผิดสิทธิ์ได้ 14 ครั้ง และมีการบันทึกการใช้สิทธิ์ ADMIN Override ตามขั้นตอน 2 ครั้ง
-2. กระบวนการจัดชุดจ่ายวัสดุแบบครั้งเดียวทันเวลาพอดี (JIT Single-Batch Kitting) ร่วมกับการตรวจรับสองทาง (Two-Way Handshake) ลดเวลารอคอยวัสดุลง 65.11% จากเดิมเฉลี่ย 45.00 ± 5.23 นาที เหลือ 15.70 ± 2.14 นาที (Welch's t = 20.08, p < 0.001, Cohen's d_s = 7.33), ขจัดการขนย้ายซ้ำซ้อนจาก 100% เหลือ 0%, และลดข้อพิพาทของขาดจากเดิมเฉลี่ย 8 ครั้ง/เดือน เหลือ 0 ครั้ง
-3. กลไกตรวจสอบข้อมูลหลักอัตโนมัติ (Item Master Verification) ลดเวลาเปิดเคสใหม่ลง 68.75% จากเดิม 8.00 ± 1.15 นาที เหลือ 2.50 ± 0.42 นาที (Welch's t = 20.09, p < 0.001, Cohen's d_s = 6.35) โดยมีความผิดพลาดของข้อมูลสินค้าสำหรับรายการที่มีในระบบ (ความครอบคลุม 85%) ลดลงเป็น 0.0%
-4. คลังแบบแปลนวิศวกรรมดิจิทัลและโมเดล Gemini 3.1 Flash สกัดข้อมูล 11 ฟิลด์ได้แม่นยำ 96.36% (530/550 ฟิลด์, 95% CI [94.44%, 97.64%]) โดยลดเวลารวมในการค้นหา ตรวจสกัด และตรวจสอบยืนยันสเปกลง 93.44% จากเดิม 12.50 ± 1.80 นาที เหลือ 49.20 ± 8.20 วินาทีต่อฉบับ (Paired t = 37.15, p < 0.001, Cohen's d_z = 6.78) พร้อมระบบติดธง Superseded ป้องกันการแสดงผลแบบเก่าในระบบ
-5. ระบบผู้ช่วยเทคนิค Hybrid RAG (pgvector ร่วมกับ PostgreSQL FTS ผ่านขั้นตอนวิธี RRF) ลดเวลารวมในการค้นหาและทำความเข้าใจคู่มือลง 95.14% จากเดิม 14.00 ± 2.45 นาที เหลือ 40.80 ± 6.80 วินาที (Paired t = 34.36, p < 0.001, Cohen's d_z = 5.43) โดยมีความถูกต้องของคำตอบและการอ้างอิง 97.50% (39/40 คำถาม, 95% CI [87.12%, 99.56%])
-6. การบีบอัดภาพถ่ายผ่าน Canvas บนเบราว์เซอร์ลดขนาดไฟล์ลง 82.50% (จาก 2.00 ± 0.40 MB เหลือ 0.35 ± 0.03 MB, Paired t = 41.13, p < 0.001, Cohen's d_z = 4.12) โดยมีภาพ 98 จาก 100 ภาพที่มีขนาดไม่เกิน 400 KB ตามเกณฑ์ และลดเวลาจัดทำรายงานประจำงวดลง 99.99% (จาก 16.00 ± 2.50 ชั่วโมง เหลือ 4.80 ± 0.50 วินาที)
-7. แดชบอร์ดเฝ้าระวังคอขวดตามแบบจำลองภาระงานคั่งค้าง (W_d) และโหมด Defend มีเวลาตอบสนองการสืบค้น < 5 วินาที และลดเวลาในการระบุคอขวดข้ามแผนกของผู้ควบคุมงานลงเหลือ 3.50 นาที (จากเดิม 4.50 ชั่วโมง, p < 0.001) โดยมีความสอดคล้องกับการประเมินของหัวหน้างาน 92.5% (Cohen's Kappa = 0.832)
-การประเมินความสามารถในการใช้งานระบบตามมาตรฐาน System Usability Scale (SUS) จากกลุ่มผู้ใช้จริง 15 คน ได้คะแนนเฉลี่ย 83.33 ± 3.62 คะแนน (ระดับ Grade A ตามเกณฑ์ Sauro & Lewis และระดับ Good ตามเกณฑ์ Bangor et al., t = 16.41, p < 0.0001) และการวิเคราะห์ทางเศรษฐศาสตร์พบว่าโครงการมีระยะเวลาคืนทุน 9.2 เดือน อัตราผลตอบแทนจากการลงทุน 3 ปี (3-Year ROI) 194.21% และมูลค่าปัจจุบันสุทธิ (NPV ที่ส่วนลด 5%) เท่ากับ +380,905 บาท ในกรณีฐาน และยังคงมีค่าเป็นบวกในทุกฉากทัศน์ทดสอบความไว แสดงให้เห็นว่าระบบ QSMS มีประสิทธิภาพและความคุ้มค่าทางวิศวกรรมในระดับสูง
+1. การควบคุมการเข้าถึงตามบทบาท (RBAC) มี 6 บทบาทและชุดทดสอบ RBAC 42 กรณี ครอบคลุม 15 ฟังก์ชันตามรายงานโครงการ ส่วนผล audit log (จากเดิม 6 ครั้ง/เดือนเป็น 0 ครั้ง, บล็อก 14 ครั้ง และ ADMIN Override 2 ครั้ง) **[รอยืนยันจาก log จริง]**
+2. กระบวนการ JIT Kitting และ Two-Way Handshake ลดเวลารอวัสดุจาก 45.0 นาทีเหลือ 15.7 นาที (65.11%) และลดการขนย้ายซ้ำซ้อนจาก 100% เหลือ 0% ตามข้อมูลหลักของโครงการ; ผลทดสอบนัยสำคัญ **[รอยืนยันจากข้อมูลดิบ]**
+3. กลไกตรวจสอบข้อมูลหลักลดเวลาเปิดเคสจาก 8.0 นาทีเหลือ 2.5 นาที (68.75%) โดยอัตราความผิดพลาดเป็น 0% เฉพาะรายการที่มีใน Master (ความครอบคลุม 85%) ตามข้อมูลหลักของโครงการ
+4. คลังแบบแปลนวิศวกรรมดิจิทัลและโมเดล Gemini 3.1 Flash **[รอยืนยันรุ่นจาก log การเรียกใช้จริง เนื่องจากระบบมี fallback]** สกัดข้อมูล 11 ฟิลด์ได้แม่นยำ 96.36% (530/550 ฟิลด์, 95% CI [94.44%, 97.64%]) และลดเวลาตรวจสอบสเปกจาก 12.5 นาทีเหลือ 4.2 วินาทีต่อฉบับ (ลดลง 99.44%) ตามข้อมูลหลักของโครงการ ทั้งนี้สถิติส่วนเบี่ยงเบนมาตรฐานและผลทดสอบนัยสำคัญของการเปรียบเทียบเวลายัง **[รอยืนยันจากข้อมูลดิบ]** พร้อมระบบติดธง Superseded สำหรับควบคุมฉบับแบบ
+5. ระบบผู้ช่วยเทคนิค Hybrid RAG (pgvector ร่วมกับ PostgreSQL FTS ผ่านขั้นตอนวิธี RRF) มีเวลาเริ่มสตรีมคำตอบแรก (TTFT) 2.1 วินาที และมีความถูกต้องของคำตอบและการอ้างอิง 97.50% (39/40 คำถาม) ตามข้อมูลหลักของโครงการ ส่วนเวลารวมในการค้นหาและทำความเข้าใจคู่มือ รวมถึงผลทดสอบนัยสำคัญ **[รอยืนยันจากข้อมูลดิบก่อนรายงาน]**
+6. การบีบอัดภาพผ่าน Canvas ลดขนาดไฟล์เฉลี่ยจาก 2.00 MB เหลือ 0.35 MB (82.50%) โดย 98 จาก 100 ภาพมีขนาดไม่เกิน 400 KB และเวลาจัดทำรายงานลดจาก 16 ชั่วโมงเหลือ 4.8 วินาทีตามข้อมูลหลัก; สถิติทดสอบ **[รอยืนยันจากข้อมูลดิบ]**
+7. ระบบมีแดชบอร์ดภาระงานและโหมด Defend; ตัวชี้วัดเวลาตอบสนองและความสอดคล้องกับผู้ประเมิน **[รอยืนยันจากผลประเมินจริง]**
+คะแนน SUS จากตารางคะแนนในร่างมีค่าเฉลี่ย 83.33 และส่วนเบี่ยงเบนมาตรฐาน 3.62 (n=15) **[รอยืนยันแหล่งที่มาของแบบสอบถามจริง]**; ข้อสรุปความคุ้มค่าทางการเงิน **[รอยืนยันจากหลักฐานต้นทุนและกระแสเงินสดจริง]**
 
 ---
 
@@ -84,17 +87,17 @@ Development of Quality and Safety Management Information System for Rework and P
 
 The rework process for non-conforming products in lubricant blending and packaging plants encounters operational wastes (waiting, transportation, and overprocessing) and cross-departmental bottlenecks. Field observations at the case study facility identified seven primary challenges: 1) unauthorized cross-departmental data modifications, 2) premature packaging requisitions resulting in double-handling transportation and shortage disputes, 3) manual data entry errors distorting scrap valuation, 4) risks of utilizing superseded engineering drawings, 5) delayed access to standard operating procedure (SOP) manuals during shift operations, 6) network bandwidth consumption from large photo uploads and labor-intensive manual report generation, and 7) the absence of real-time visibility into cross-departmental work-in-process bottlenecks.
 
-This thesis presents the design, implementation, and empirical evaluation of the QSMS information system developed using an Agile SDLC. Structured according to Feature-Sliced Design principles, the platform encompasses seven core subsystems operating on a hybrid architecture combining a Next.js Serverless API boundary with a React Single Page Application. It employs a Dual-Database Isolation architecture separating relational Online Transaction Processing (Supabase PostgreSQL) from an AI-dedicated database (PostgreSQL with 768-dimensional pgvector).
+This thesis presents the design, implementation, and empirical evaluation of the QSMS information system developed using an Agile SDLC. Structured according to Feature-Sliced Design principles, the platform encompasses seven core subsystems built with Next.js and React. The application supports a separate Supabase project for RAG through environment variables, but falls back to the primary database URL when a separate URL is not configured; whether the evaluated deployment used separate databases remains **[pending deployment configuration verification]**.
 
 Empirical evaluation conducted across an 8-week production pilot (78 rework cases) demonstrates that:
-1. Access control across six operational roles passed all 42 automated RBAC unit tests covering 15 functional operations, eliminating field authorization errors completely (from 6 incidents/month to zero), with 14 unauthorized access attempts blocked by middleware and 2 emergency ADMIN overrides recorded.
-2. The Just-In-Time Single-Batch Kitting workflow combined with a Two-Way Handshake protocol reduced material waiting time by 65.11%, from 45.00 ± 5.23 to 15.70 ± 2.14 minutes (Welch's t = 20.08, p < 0.001, Cohen's d_s = 7.33), eliminated double-handling transport completely (100% to 0%), and reduced shortage disputes from 8 cases/month to zero.
-3. Automated on-demand item verification reduced case creation time by 68.75%, from 8.00 ± 1.15 to 2.50 ± 0.42 minutes (Welch's t = 20.09, p < 0.001, Cohen's d_s = 6.35), achieving zero errors (0.0%) for catalog-registered items (85% master coverage).
-4. The engineering drawing vault powered by Gemini 3.1 Flash extracted 11 metadata fields with 96.36% accuracy (530/550 fields, 95% CI [94.44%, 97.64%]), reducing total end-to-end task time (retrieval, extraction, and human inspection) by 93.44%, from 12.50 ± 1.80 minutes to 49.20 ± 8.20 seconds per drawing (Paired t = 37.15, p < 0.001, Cohen's d_z = 6.78), with superseded lifecycle flags preventing obsolete drawing usage.
-5. The Hybrid RAG engine (combining pgvector and PostgreSQL Full-Text Search via Reciprocal Rank Fusion) reduced total end-to-end SOP consultation time (querying, generation, and human comprehension) by 95.14%, from 14.00 ± 2.45 minutes to 40.80 ± 6.80 seconds (Paired t = 34.36, p < 0.001, Cohen's d_z = 5.43), with 97.50% factual and citation accuracy (39/40 queries, 95% CI [87.12%, 99.56%]).
-6. Client-side HTML5 canvas compression reduced evidence image size by 82.50%, from 2.00 ± 0.40 MB to 0.35 ± 0.03 MB (Paired t = 41.13, p < 0.001, Cohen's d_z = 4.12), with 98 out of 100 images staying below 400 KB, cutting monthly report compilation time by 99.99%, from 16.00 ± 2.50 hours to 4.80 ± 0.50 seconds.
-7. The bottleneck radar based on the backlog model (W_d) and shop-floor Defend Mode provided query latency < 5 seconds and reduced supervisor bottleneck identification lead time from 4.50 hours to 3.50 minutes (p < 0.001), showing 92.5% alignment with supervisor assessments (Cohen's Kappa = 0.832).
-The System Usability Scale (SUS) assessment across 15 operational users yielded an average score of 83.33 ± 3.62 (Grade A according to Sauro & Lewis, and Good rating according to Bangor et al., t = 16.41, p < 0.0001). Economic analysis revealed a payback period of 9.2 months, a 3-year ROI of 194.21%, and a Net Present Value (NPV at 5% discount rate) of +380,905 THB in the base case, maintaining positive returns across sensitivity scenarios.
+1. Access control is configured for six roles, and the project report lists 42 automated RBAC tests covering 15 operations. Audit-log claims (from 6 incidents/month to zero, 14 blocked attempts, and 2 ADMIN overrides) remain **[pending verification against actual logs]**.
+2. The JIT Kitting and Two-Way Handshake workflow reduced material waiting time from 45.0 to 15.7 minutes (65.11%) and double-handling transport from 100% to 0%, according to the project’s primary metrics. Inferential test results remain **[pending raw-data verification]**.
+3. Automated item-master verification reduced case creation time from 8.0 to 2.5 minutes (68.75%), with a 0% error rate for registered items (85% master coverage), according to the project’s primary metrics.
+4. The engineering drawing vault, using Gemini 3.1 Flash **[model version to be verified against request logs because the application has fallbacks]**, extracted 11 metadata fields with 96.36% accuracy (530/550 fields, 95% CI [94.44%, 97.64%]) and reduced drawing specification check time from 12.5 minutes to 4.2 seconds per drawing (99.44% reduction), according to the project’s primary metrics. Standard deviations and inferential statistics for this time comparison remain **[pending verification from raw data]**.
+5. The Hybrid RAG engine (combining pgvector and PostgreSQL Full-Text Search via Reciprocal Rank Fusion) achieved a 2.1-second time to first token (TTFT) and 97.50% answer and citation accuracy (39/40 queries), according to the project’s primary metrics. Total end-to-end SOP consultation time and inferential statistics remain **[pending verification from raw data]**.
+6. Client-side Canvas compression reduced average image size from 2.00 MB to 0.35 MB (82.50%); 98 of 100 images were below 400 KB, and monthly report preparation time fell from 16 hours to 4.8 seconds, according to the project’s primary metrics. Inferential test results remain **[pending raw-data verification]**.
+7. The application includes a workload dashboard and Defend Mode; reported performance and supervisor-agreement metrics remain **[pending verification from evaluation records]**.
+The SUS scores shown in the draft yield a mean of 83.33 and standard deviation of 3.62 (n=15), **[pending verification against original questionnaires]**. Financial feasibility conclusions remain **[pending verification against cost records and cash-flow assumptions]**.
 
 ---
 
@@ -130,8 +133,13 @@ The System Usability Scale (SUS) assessment across 15 operational users yielded 
   - 2.10 มาตรฐานการควบคุมเอกสารและการจัดการของเสียตาม ISO 9001 (Document Control & ISO 9001)
   - 2.11 การทบทวนงานวิจัยที่เกี่ยวข้องและระบบสำเร็จรูปเชิงพาณิชย์ (Related Works & COTS Comparison)
   - 2.12 กรอบแนวคิดการวิจัย (Conceptual Framework)
+  - 2.13 วงจรชีวิตการพัฒนาซอฟต์แวร์แบบอไจล์ (Agile Software Development Lifecycle: Scrum Framework)
+  - 2.14 ทฤษฎีและระเบียบวิธีประเมินความสามารถในการใช้งานระบบ (System Usability Scale: SUS Theory)
+  - 2.15 ระเบียบวิธีสถิติเชิงอนุมานและการวัดขนาดอิทธิพล (Inferential Statistics & Effect Size Metrics)
+  - 2.16 วิศวกรรมเศรษฐศาสตร์และการวิเคราะห์ความเป็นไปได้ทางการเงิน (Engineering Economics & Feasibility)
+  - 2.17 ระบบสารสนเทศและการประสานงานการปฏิบัติการผลิต (Manufacturing Operations Information & Workflow Automation)
 - บทที่ 3: ระเบียบวิธีวิจัยและการออกแบบระบบ (Research Methodology & System Design)
-  - 3.1 ระเบียบวิธีวิจัย แผนการดำเนินงาน และกลุ่มตัวอย่าง (Research Methodology & Project Timeline)
+  - 3.1 ระเบียบวิธีวิจัย แผนการดำเนินงาน และประวัติการปรับปรุงระบบ (Research Methodology, Timeline & Engineering Milestones)
   - 3.2 การวิเคราะห์กระบวนการทำงานเดิมเปรียบเทียบกับกระบวนการใหม่ (As-Is vs To-Be Workflows)
   - 3.3 เมทริกซ์การกำหนดสิทธิ์การใช้งาน 15 ฟังก์ชัน (Permission Matrix for 6 Roles)
   - 3.4 ข้อกำหนดความต้องการเชิงฟังก์ชันและเชิงคุณภาพ (Functional & Non-Functional Requirements)
@@ -173,6 +181,7 @@ The System Usability Scale (SUS) assessment across 15 operational users yielded 
 - ตารางที่ 1.1: ข้อมูลสถิติและปัญหาฐานเดิมของกระบวนการแก้ไขชิ้นส่วน (Baseline Data)
 - ตารางที่ 2.1: การเปรียบเทียบงานวิจัยที่เกี่ยวข้องและระบบสำเร็จรูปเชิงพาณิชย์ (Related Works & COTS Comparison)
 - ตารางที่ 3.1: แผนผังไทม์ไลน์การดำเนินงานวิจัยตลอด 6 เดือน (Project Timeline)
+- ตารางที่ 3.1 (ข): ไทม์ไลน์ประวัติการพัฒนาระบบและการปรับปรุงแก้ไขเชิงวิศวกรรมตามรอบการพัฒนาจริง (Date-Stamped Development & Improvement Timeline)
 - ตารางที่ 3.2: เมทริกซ์การกำหนดสิทธิ์ 15 ฟังก์ชันตาม 6 บทบาทหน้าที่ (Role-Permission Matrix)
 - ตารางที่ 3.3: การจับคู่ระหว่าง UI Stepper และ Finite State Machine States
 - ตารางที่ 3.4: พจนานุกรมข้อมูลตารางธุรกรรมการผลิตหลัก (Main OLTP Data Dictionary)
@@ -282,6 +291,8 @@ The System Usability Scale (SUS) assessment across 15 operational users yielded 
 ในกระบวนการผลิตจริง ย่อมหลีกเลี่ยงไม่ได้ที่จะเกิดผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Products) ในสายการผลิต เช่น ในระหว่างกระบวนการบรรจุ (Filling Line) หรือจากการตรวจรับสินค้าคืนจากคลังและลูกค้า สินค้าเหล่านี้จะต้องเข้าสู่ "กระบวนการแก้ไขชิ้นส่วน (Rework Process)" เพื่อนำมาคัดแยก ถ่ายเทน้ำมัน เปลี่ยนแกลลอน เปลี่ยนฝา หรือเปลี่ยนกล่องบรรจุภัณฑ์ใหม่ เพื่อนำกลับเข้าสู่มาตรฐานคุณภาพก่อนส่งมอบอีกครั้ง
 
 อย่างไรก็ตาม จากการศึกษาและสังเกตการณ์ในโรงงานผสมและบรรจุสารหล่อลื่นกรณีศึกษา พบว่ากระบวนการแก้ไขชิ้นส่วนเดิมดำเนินการผ่านระบบเอกสารกระดาษและสเปรดชีตแบบกระจายตัว ซึ่งขาดการบูรณาการข้อมูลระหว่างหน่วยงาน ทำให้เกิดความสูญเปล่าในการดำเนินงาน (Muda) ตามหลักการผลิตแบบลีน (Lean Manufacturing) และเกิดจุดคอขวดสะสม (Bottlenecks) ตามทฤษฎีข้อจำกัด (Theory of Constraints: TOC) ส่งผลให้ต้นทุนในการซ่อมแซมสูงขึ้น ระยะเวลาการแก้ไขงานยาวนาน และขาดความสามารถในการตรวจสอบย้อนกลับ (Traceability)
+
+โครงงานนี้จึงประยุกต์แนวคิดระบบอัตโนมัติในระดับสารสนเทศและการประสานงานกระบวนการผลิต เพื่อทำให้ข้อมูลและสถานะงานไหลผ่านหน่วยงานที่เกี่ยวข้องได้เป็นระบบ เช่น การเติมข้อมูลหลัก การสกัดข้อมูลจากแบบแปลน และการส่งต่องานตามสถานะ ทั้งนี้เป็นการสนับสนุนผู้ปฏิบัติงานในกระบวนการอุตสาหกรรม ไม่ใช่การพัฒนาหุ่นยนต์หรือระบบควบคุมเครื่องจักรโดยตรง
 
 ### 1.2 ข้อมูลบริบทโรงงานกรณีศึกษาและสถิติปัญหาฐานเดิม (Baseline Context)
 โรงงานกรณีศึกษาเป็นโรงงานผสมและบรรจุสารหล่อลื่นขนาดกลาง มีกำลังการผลิตบรรจุภัณฑ์หลายขนาด (ตั้งแต่ 0.8 ลิตร, 1 ลิตร, 4 ลิตร, 5 ลิตร, 18 ลิตร ไปจนถึงถัง 200 ลิตร) มีปริมาณเคสงานแก้ไขชิ้นส่วนเฉลี่ย 450–600 เคสต่อปี (ปริมาณงานแก้ไขประมาณ 15,000–25,000 แกลลอนต่อปี) คิดเป็นมูลค่างานที่ต้องซ่อมแซมและของเสียปีละกว่า 1.2 ล้านบาท โดยมีหน่วยงานที่เกี่ยวข้องในกระบวนการแก้ไขชิ้นส่วนจำนวน 5 แผนกหลัก ได้แก่
@@ -460,7 +471,7 @@ Bozer and McGinnis [15] ได้อธิบายหลักการจั�
 | **SAP S/4HANA QM Module [28]** | ระบบบริหารคุณภาพองค์กรระดับสากล มีโมดูล Non-conformance Management | ต้นทุนค่าสิทธิ์ใช้งาน (License) สูงมาก (> 3 ล้านบาท), ความซับซ้อนในการปรับแต่งฟอร์มสูง, ขาดระบบตรวจสเปกแบบแปลนด้วย AI และขาดความยืดหยุ่นในการทำงานบนแท็บเล็ตหน้าไลน์ |
 | **Plex Smart Manufacturing MES [29]** | ระบบคลาวด์ MES สำหรับติดตามการผลิตและการประกันคุณภาพ | มีค่าบริการรายเดือนสูงสำหรับโรงงานขนาดกลาง ไม่รองรับกระบวนการ Two-Way Handshake เฉพาะทาง และไม่ผสาน RAG ภาษาไทย |
 | **Tulip Interfaces (No-code MES) [30]** | แพลตฟอร์ม No-code สำหรับสร้างหน้าจอช่างซ่อมหน้าไลน์ | ยืดหยุ่นสูงแต่มีข้อจำกัดในการประมวลผลเวกเตอร์ภาษาไทย และค่าบริการคิดตามจำนวนสถานีงาน (Workstation) ซึ่งไม่คุ้มค่าทางเศรษฐศาสตร์สำหรับโรงงานกรณีศึกษา |
-| **ระบบ QSMS (งานวิจัยนี้)** | ระบบเฉพาะทางบูรณาการ 7 โมดูล: RBAC 6 บทบาท, JIT Kitting Handshake, Master Verify, Gemini OCR, Hybrid RAG, Canvas Compress, และ Bottleneck Radar | ออกแบบเฉพาะสำหรับกระบวนการแก้ไขบรรจุภัณฑ์สารหล่อลื่น ต้นทุนพัฒนาต่ำ คืนทุนใน 9.2 เดือน รองรับโครงสร้างพื้นฐานระดับประหยัดอย่างมีประสิทธิภาพ |
+| **ระบบ QSMS (งานวิจัยนี้)** | ระบบเฉพาะทางบูรณาการ 7 โมดูล: RBAC 6 บทบาท, JIT Kitting Handshake, Master Verify, Gemini OCR, Hybrid RAG, Canvas Compress, และ Bottleneck Radar | ออกแบบสำหรับกระบวนการแก้ไขบรรจุภัณฑ์สารหล่อลื่น; ข้ออ้างเรื่องต้นทุนและคืนทุน **[รอยืนยันจากหลักฐานการเงินจริงในบทที่ 4.9]** |
 
 ### 2.12 กรอบแนวคิดการวิจัย (Conceptual Framework)
 กรอบแนวคิดการวิจัยแสดงความเชื่อมโยงระหว่างปัญหาหน้างาน ตัวแปรอิสระ (การออกแบบระบบและสถาปัตยกรรมทางวิศวกรรม) และตัวแปรตาม (ผลลัพธ์ประสิทธิภาพเชิงปริมาณ) ดังแสดงในภาพที่ 2.1:
@@ -491,8 +502,8 @@ graph TD
         Out1["R1: ป้องกันสิทธิ์ผิดพลาดเป็นศูนย์ (Audit 0 เคส)"]
         Out2["R2: เวลารอวัสดุลบ 65.11% & ขนย้ายซ้ำซ้อน 0%"]
         Out3["R3: เวลาเปิดเคสลบ 68.75% & ข้อผิดพลาดข้อมูล 0.0%"]
-        Out4["R4: เวลารวมตรวจแบบแปลนลบ 93.44% (49.20 วินาที)"]
-        Out5["R5: เวลารวมเข้าถึงคู่มือลบ 95.14% (40.80 วินาที)"]
+        Out4["R4: เวลาตรวจสอบสเปก 12.5 นาที → 4.2 วินาที (ลดลง 99.44%)"]
+        Out5["R5: TTFT 2.1 วินาที; เวลารวม [รอยืนยัน]"]
         Out6["R6: ขนาดไฟล์ภาพลบ 82.50% & เวลาทำรายงานเหลือ 4.8 วินาที"]
         Out7["R7: ระบุคอขวดเรียลไทม์ & บันทึก Downtime สมบูรณ์"]
     end
@@ -550,11 +561,18 @@ Newnan, Eschenbach และ Lavelle [36] ได้กำหนดหลัก�
 3. **อัตราผลตอบแทนจากการลงทุนอย่างง่าย (3-Year Simple ROI)**: อัตราส่วนร้อยละของผลประโยชน์สุทธิต่อต้นทุนการลงทุนรวมตลอดอายุโครงการ 3 ปี
 4. **การวิเคราะห์ความไว (Sensitivity Analysis)**: การทดสอบความทนทานของผลตอบแทนเมื่อตัวแปรนำเข้า (เช่น สถิติของเสีย หรือปริมาณงาน) มีการเปลี่ยนแปลงไปจากกรณีฐาน
 
+### 2.17 ระบบสารสนเทศและการประสานงานการปฏิบัติการผลิต (Manufacturing Operations Information & Workflow Automation)
+มาตรฐาน ISA-95 อธิบายแบบจำลองกิจกรรมและการแลกเปลี่ยนข้อมูลระหว่างฟังก์ชันการจัดการการปฏิบัติการผลิตกับฟังก์ชันระดับองค์กร โดยครอบคลุมข้อมูลที่เกี่ยวข้องกับการผลิต คุณภาพ วัสดุ และทรัพยากร [37] กรอบนี้ช่วยวางตำแหน่งระบบสารสนเทศที่สนับสนุนงานโรงงานให้เห็นความเชื่อมโยงระหว่างข้อมูลการปฏิบัติงานกับการตัดสินใจ โดยไม่จำเป็นต้องเป็นระบบควบคุมเครื่องจักรโดยตรง
+
+QSMS ในงานวิจัยนี้ทำงานในขอบเขตการประสานงานกระบวนการแก้ไขชิ้นส่วน ได้แก่ การตรวจสอบข้อมูลหลักสินค้า การสกัดข้อมูลจากแบบแปลน การกำหนดและเปลี่ยนสถานะงาน การยืนยันส่งมอบวัสดุ การบันทึกเหตุขัดข้อง และการแสดงภาระงานคั่งค้าง กลไกเหล่านี้เป็นการทำงานอัตโนมัติระดับสารสนเทศและเวิร์กโฟลว์ โดยมีผู้ปฏิบัติงานเป็นผู้ยืนยันหรือดำเนินการทางกายภาพตามขั้นตอนที่ได้รับมอบหมาย จึงเกี่ยวข้องกับระบบอัตโนมัติในมิติการไหลของข้อมูล การประสานงาน และการสนับสนุนการตัดสินใจในโรงงาน
+
+ขอบเขตดังกล่าวแตกต่างจากระบบควบคุมทางกายภาพ (Physical Process Control) ซึ่งอ่านสัญญาณจากเซนเซอร์และสั่งงานอุปกรณ์ เช่น PLC หุ่นยนต์ หรือเครื่องจักร QSMS รุ่นที่ศึกษาไม่มีการเชื่อมต่อดังกล่าว และไม่ควรตีความว่าเป็น MES เต็มรูปแบบหรือระบบควบคุมแบบป้อนกลับอัตโนมัติ การวางตำแหน่งนี้จึงเชื่อมโยงโครงงานกับสาขาหุ่นยนต์และระบบอัตโนมัติอย่างตรงตามความสามารถที่พัฒนาและหลักฐานที่มี
+
 ---
 
 ## บทที่ 3: ระเบียบวิธีวิจัยและการออกแบบระบบ (Research Methodology & System Design)
 
-### 3.1 ระเบียบวิธีวิจัย แผนการดำเนินงาน และข้อตกลงเบื้องต้น (Research Methodology & Project Timeline)
+### 3.1 ระเบียบวิธีวิจัย แผนการดำเนินงาน และประวัติการปรับปรุงระบบ (Research Methodology, Timeline & Engineering Milestones)
 
 #### 3.1.1 แผนผังไทม์ไลน์การดำเนินงานวิจัยตลอด 6 เดือน (Project Timeline)
 การวิจัยนี้ใช้ระเบียบวิธีวิจัยเชิงพัฒนาซอฟต์แวร์ตามวงจรชีวิตแบบอไจล์ (Agile SDLC) ดำเนินการตลอดระยะเวลา 6 เดือน (ตุลาคม 2568 ถึง มีนาคม 2569 ในปีการศึกษา 2568) ดังแสดงแผนผังไทม์ไลน์ในตารางที่ 3.1:
@@ -578,7 +596,30 @@ Newnan, Eschenbach และ Lavelle [36] ได้กำหนดหลัก�
 | • นำร่องใช้งานจริง 8 สัปดาห์ (ก.พ.–มี.ค. 69 รวม 78 เคส) และบันทึก Audit Logs | | | | | ■ | ■ |
 | • การทดสอบสถิติเปรียบเทียบ (R1–R7), การประเมิน AI (OCR/RAG), และแบบสอบถาม SUS (n=15) | | | | | | ■ |
 
-#### 3.1.2 ระเบียบวิธีการเก็บข้อมูล การกำหนดขนาดกลุ่มตัวอย่าง และข้อตกลงเบื้องต้น
+#### 3.1.2 ไทม์ไลน์ประวัติการพัฒนาระบบและการปรับปรุงแก้ไขเชิงวิศวกรรม (Engineering Development & Improvement Milestones)
+เพื่อสะท้อนถึงการพัฒนาตามวงรอบอไจล์ (Agile Sprints) และการปรับปรุงแก้ไขระบบอย่างเป็นรูปธรรมตามข้อเสนอแนะหน้างานและการตรวจสอบความถูกต้องทางวิศวกรรม ตารางที่ 3.1 (ข) แสดงไทม์ไลน์บันทึกประวัติการพัฒนา การแก้ไขปัญหา และการปรับปรุงฟีเจอร์สำคัญเรียงตามลำดับวันที่ดำเนินการจริง:
+
+**ตารางที่ 3.1 (ข): ไทม์ไลน์ประวัติการพัฒนาระบบและการปรับปรุงแก้ไขเชิงวิศวกรรมตามรอบการพัฒนาจริง (Date-Stamped Development & Improvement Timeline)**
+
+| วันที่ดำเนินการ (Date) | ระยะโครงการ (Phase) | โมดูลที่เกี่ยวข้อง | กิจกรรมการพัฒนา ฟีเจอร์หลัก และการปรับปรุงแก้ไขเชิงวิศวกรรม (Key Activities & Improvements) | หลักฐานและผลลัพธ์ (Artifacts & Outcomes) |
+|---|:---:|:---:|---|---|
+| **2026-05-21** | Phase 1: Core Foundation | M1, M2, M3 | • ถ่ายโอนระบบจาก Vite สู่ Next.js App Router พร้อมแยก API Server Boundary เพื่อความปลอดภัย<br>• ยกระดับการยืนยันตัวตนสู่ Stateless JWT บน HTTP-Only Cookies พร้อมระบบ Role-Based Workspace Portal<br>• ออกแบบ UI สไตล์ Soft Glassmorphism และติดตั้งคอมโพเนนต์พื้นฐาน `shadcn/ui`<br>• เริ่มต้นสถาปัตยกรรม Dual-Database (Supabase PostgreSQL OLTP + GAS/Google Sheets สำรอง) | Migrated App Router, Stateless JWT Cookies |
+| **2026-05-23** | Phase 1: Core Foundation | M1, M2 | • ติดตั้งชุดทดสอบอัตโนมัติ Vitest 51 เคสแรก และ Playwright E2E Testing Pipeline<br>• เพิ่มบทบาท `WFG` เข้าสู่ระบบ RBAC และจัดทำ Permission Matrix<br>• แก้ไขข้อบกพร่อง BUG-011: ปรับอัลกอริทึมจัดเรียงเคส Rework ให้สถานะรอดำเนินการ (Pending) แสดงผลก่อนเสมอ | Testing Pipeline, Initial 51 Vitest Cases Passed |
+| **2026-05-28** | Phase 1: Core Foundation | M2, M3, M6 | • **Data Integrity Hardening**: พัฒนาระบบตรวจจับ Strict Identity Conflict (`itemNumber` vs `itemCode`)<br>• **Evidence Integrity**: กำหนดกฎบังคับแนบรูปถ่ายหลักฐานอย่างน้อย 1 ภาพก่อนบันทึก (`validation.ts`)<br>• **Transaction Integrity**: รับประกันความสอดคล้องของข้อมูลแบบ Atomic Submission (GAS ซิงค์สำเร็จก่อน Commit ลง Supabase) | Integrity Guards & Conflict Modal Implemented |
+| **2026-06-29** | Phase 2: Architecture & FSD | แพลตฟอร์ม | • ปรับโครงสร้างองค์ความรู้สู่ Second Brain Wiki (`.llm-wiki/`) เพื่อควบคุมและจัดระบบสถาปัตยกรรม<br>• ติดตั้งโปรโตคอลด่านตรวจนำเข้าข้อมูล (Ingestion Gate Protocol: Tier A/B/C) ป้องกัน Token Bloat | Second Brain Knowledge Base Established |
+| **2026-07-07** | Phase 2: Architecture & FSD | M2 | • **UX Spacing & Viewport Polish**: แก้ไขปัญหา Viewport Jumping ใน Update Modal โดยใช้ React Portals<br>• ล็อก Scrollbar ตารางวัสดุ และถอดช่อง "วิธีแก้ไขปัญหา (Resolution)" ตามฟีดแบ็กหน้างานเพื่อลดความซ้ำซ้อน | Modal Portals & Layout Refinement |
+| **2026-07-14** | Phase 2: Architecture & FSD | M2, M6 | • **FSD Architectural Refactoring**: ปรับโครงสร้างสถาปัตยกรรมแบบแยกส่วน (Feature-Sliced Design) สลาย Monolithic Modal 1,500 บรรทัด สู่ Provider, View, และ Edit<br>• แก้ไขข้อขัดแย้งเชิงระบบ (BUG-019): สรุปยุติการเก็บรูปบน Drive และเปลี่ยนผ่านสู่ Cloudinary 100% | Modular FSD UpdateModal, Cloudinary Direct Upload |
+| **2026-07-21** | Phase 2: Architecture & FSD | M1, M2 | • **Dynamic Auto-Status Logic**: ยกเลิกการเลือกสถานะด้วยมือ เปลี่ยนสู่การคำนวณสถานะอัตโนมัติตามยอดผลิตจริง (`completed_boxes` / `amount`)<br>• **Role Scoping**: ถอดบทบาท `FINANCE` และฟิลด์ประเมินราคาทั้งหมดออก เพื่อมุ่งเน้นการจัดการผลิตและคุณภาพ (MES/QA)<br>• ควบรวมบทบาท PDB เป็น Operator/Admin และปรับระบบเข้าสู่ Supabase เต็มรูปแบบ | Dynamic Lifecycle State Engine, Simplified Roles |
+| **2026-07-23** | Phase 3: Vault & AI Integration | M4 | • **Decoupled Document Schema Forms**: แยกฟอร์ม Customer Drawing (7 ฟิลด์) และ Internal Master (8 ฟิลด์) ตามสเปกจริง<br>• **Inspection Workspace**: พัฒนาแผงตรวจทาน Split View 55/45 พร้อมเครื่องมือหมุน PDF (0°–270°) และปุ่ม 1-Click Landscape View พร้อมบันทึกสถานะการหมุนใน `localStorage` | 55/45 Split View Panel & PDF Orientation Engine |
+| **2026-08-05** | Phase 3: Hardening & V&V | M1–M7 | • **Comprehensive Verification & Validation (V&V)**: ตรวจสอบและแก้ไขข้อบกพร่อง 22 จุด ครอบคลุมทั้ง 7 โดเมน (BUG-R01..R06, BUG-A01..A04, BUG-D01..D04, BUG-S01..S04, BUG-G01..G03, BUG-P01..P03)<br>• **Normalization Hardening**: ปรับปรุงฟังก์ชัน `normalizeBoxesPerPallet` คืนค่า "ตามความเหมาะสม" โดยตรง ป้องกัน AI สุ่มเดาตัวเลขผิดพลาด<br>• ขยายชุดทดสอบอัตโนมัติ Vitest เป็น 12 ไฟล์ (113 Passing Tests) | V&V Remediation 22 Defects Fixed, 113 Tests Passed |
+| **2026-08-19** | Phase 4: Reporting & Ergonomics | M6 | • **Automated Report Simulation**: พัฒนา Interactive Excel Preview Modal จำลองโครงสร้างจริง พร้อมระบบฝังรูปถ่ายความสูง 120 px ผ่าน ExcelJS (90 pt)<br>• พัฒนาระบบ Direct-Manipulation Zoom & Pan Engine และ Hardware-Accelerated Animation (60/120fps) | High-Performance Zoom/Pan, Embedded Excel Export |
+| **2026-08-20** | Phase 4: Reporting & Ergonomics | M2, M5 | • **Mobile UI/UX Overhaul**: พัฒนา Mobile-First Rework Card Layout สำหรับ iPhone 13 (390px), แถบ Header 2 ชั้น, และระบบพับการ์ดสินค้าแบบ Accordion<br>• ปรับตำแหน่งปุ่ม DocAI FAB ไปยังมุมขวาล่าง (`bottom-20 right-4`) ป้องกันการบดบัง Pagination<br>• พัฒนาสคริปต์สังเคราะห์เล่มวิทยานิพนธ์อัตโนมัติ (`build_academic_thesis_template.py`) | Responsive Mobile Layout & Thesis Template Generator |
+| **2026-08-26** | Phase 4: Reporting & Ergonomics | M2, M6 | • **CaseUpdateView 4-Block Parity**: ปรับสัดส่วนฟอร์มแก้ไขงานเป็น 4 บล็อกสมดุล (ข้อมูลสินค้า, สเปกล็อตการผลิต, สาเหตุของเสีย/ผู้รับผิดชอบ, รูปภาพหลักฐาน)<br>• **Per-Item Save & Focus Queue Engine**: อัปโหลดรูปภาพและบันทึกข้อมูลทีละรายการพร้อมเลื่อนคิวอัตโนมัติ<br>• เพิ่มแถบเรืองแสง Top Glowing Stripe (3px) และ Floating Save Progress Island แจ้งเตือนสถานะการบันทึก | 4-Block Ergonomic Layout, Per-Item Save Queue |
+| **2026-08-27** | Phase 4: Bottleneck & Closed-Loop | M2, M7 | • **Operations Bottleneck Radar**: พัฒนาแดชบอร์ดดัชนีภาระงานคั่งค้าง (\(W_d\)) ตรวจจับจุดคอขวดข้ามแผนกแบบเรียลไทม์ พร้อมตัวกรอง 1-Click<br>• ขยายวงจรสถานะเป็น **Full 5-Stage Lifecycle Status**: `Pending Analysis` ➔ `Awaiting Materials` ➔ `In-Progress` ➔ `Blocked` ➔ `Completed`<br>• กำหนดสถาปัตยกรรม **MES Single-Batch JIT Kitting with Two-Way Handshake** ตัดปัญหาการโยนความรับผิดชอบข้ามแผนก<br>• ปรับฟอนต์ระบบเป็น Google Font `Prompt` ทั่วทั้งแอปและขจัดจุดไข่ปลาบนเลขศูนย์ | Bottleneck Radar Dashboard, 5-Stage Lifecycle |
+| **2026-10-11** | Phase 5: Academic Defense Readiness | ทุกโมดูล | • **Engineering Decision Records (DR-001..DR-005)**: บันทึกการตัดสินใจเชิงวิศวกรรม 5 ข้อ (ตัด Presentation Deck ออกจากสโคปวิจัย, นิยาม 6 บทบาททางการ, ค้นหา Master On-demand ผ่านแว่นขยาย/Enter, แยก 2 เงื่อนไขของ Blocked, กำหนดหน่วยความสูง ExcelJS 90 pt)<br>• **Statistical & Methodological Refinements**: ปรับการคำนวณ Cohen's Kappa (\(\kappa = 0.832\)), NIST RBAC Formulation, 95% Poisson Upper Bound (1.63 ครั้ง/เดือน), แยกสมมติฐาน H4a/b และ H5a/b, และสถิติ R6 เป็น Paired t-test (\(n=100, t=41.13\))<br>• ขยายชุดทดสอบอัตโนมัติครอบคลุม **35 ไฟล์ 203 Test Cases (100% Passed)** | DR-001..DR-005 Logged, 203 Vitest Cases (100% Pass) |
+| **2026-10-12** | Phase 5: Academic Defense Readiness | M4, QA | • **Ground Truth Benchmark Verification**: อัปเดต `test_manifest.csv` ของ Drawing (50 ฉบับ) และ Master (50 ฉบับ) เป็นสถานะ **`Verified`** ครบ 100 ฉบับ (SHA256 Validated)<br>• จัดทำแบบฟอร์มบันทึกค่าเฉลยมาตรฐาน `Ground_Truth_Manual_Entry_Form.xlsx` ครบ 20 คอลัมน์เดิม<br>• ประเมินผลความแม่นยำ AI OCR 11 ฟิลด์ (ความแม่นยำรวม 96.36%, Wilson Score 95% CI [94.44%, 97.64%]) บนโมเดล Cascade (`gemini-3.1-flash`, `gemini-3.1-flash-lite`, `gemini-3.8-flash`) | 100 Verified Manifests, OCR Benchmark (96.36% Acc) |
+
+#### 3.1.3 ระเบียบวิธีการเก็บข้อมูล การกำหนดขนาดกลุ่มตัวอย่าง และข้อตกลงเบื้องต้น
 เพื่อความโปร่งใสและสามารถทำซ้ำได้ (Reproducibility) โครงการได้กำหนดนิยามจุดเริ่มต้น-สิ้นสุดของการวัดเวลาและเหตุผลของขนาดตัวอย่างดังนี้:
 1. **จุดเริ่ม-สิ้นสุดของการจับเวลา (Time Measurement Protocols)**:
    - **R2 (เวลารอคอยวัสดุ)**: เริ่มนับ (\(T_0\)) เมื่อฝ่ายคุณภาพบันทึกใบเบิกพัสดุสำเร็จ (สถานะเปลี่ยนเป็น `Awaiting Materials`) และสิ้นสุด (\(T_1\)) เมื่อฝ่ายผลิตกดยืนยันการรับมอบสองทางสำเร็จหน้าไลน์ (`In-Progress`)
@@ -722,6 +763,8 @@ sequenceDiagram
 ### 3.5 สถาปัตยกรรมระบบและโครงสร้างทางกายภาพ (System Architecture & API Boundaries)
 ระบบ QSMS ถูกออกแบบด้วยสถาปัตยกรรมแบบไฮบริด (Hybrid Architecture) ดังแสดงในภาพที่ 3.3:
 
+ในมุมมองระบบอัตโนมัติ สถาปัตยกรรมนี้ครอบคลุมการประมวลผลข้อมูลและเวิร์กโฟลว์ระหว่างผู้ใช้กับบริการซอฟต์แวร์เท่านั้น ส่วนการตัดสินใจด้านคุณภาพ การยืนยันส่งมอบวัสดุ และการปฏิบัติงานซ่อมจริงยังเกี่ยวข้องกับผู้ปฏิบัติงาน ระบบไม่มีสัญญาณ I/O หรือคำสั่งควบคุมไปยัง PLC หุ่นยนต์ หรือเครื่องจักรตามขอบเขตที่ระบุไว้ในหัวข้อ 1.6
+
 ```mermaid
 graph TB
     subgraph ClientTier["Client Tier (User Devices & Browser)"]
@@ -804,7 +847,7 @@ graph TB
 ```
 *ภาพที่ 3.3: แผนภาพสถาปัตยกรรมระบบโดยรวมและขอบเขต API (System Architecture & API Boundaries)*
 
-*เหตุผลในการแยกฐานข้อมูลอิสระ (Dual-Database Isolation):*  
+*แนวทางการแยกฐานข้อมูล:* ระบบรองรับการกำหนด RAG Supabase แยกผ่าน environment variables แต่หากไม่กำหนด URL แยกจะ fallback ไปยัง Supabase หลัก ดังนั้นการแยก instance จริงใน deployment ที่ประเมิน **[รอยืนยันจากค่ากำหนด deployment]**  
 1. **การจำกัดขอบเขตความเสี่ยงด้านโควตา (Quota Isolation)**: แพลตฟอร์ม Supabase Free Tier มีขีดจำกัดขนาดฐานข้อมูลที่ 500 MB หากนำเวกเตอร์เอ็มเบดดิง (768 มิติ) และไฟล์ PDF เอกสารคู่มือมารวมไว้ในฐานข้อมูลเดียว จะทำให้พื้นที่จัดเก็บเต็มอย่างรวดเร็วและกระทบต่อธุรกรรมการผลิตหลัก  
 2. **การแยกภาระงานประมวลผล (Compute Decoupling)**: การค้นหาเวกเตอร์แบบ HNSW และการค้นหาข้อความเต็มใช้ทรัพยากร CPU และหน่วยความจำสูง การแยกไปยังอินสแตนซ์สำรองช่วยป้องกันไม่ให้การสืบค้นคู่มือทำให้ธุรกรรมการบันทึกเคสหน้าไลน์ผลิตเกิดความล่าช้า
 
@@ -1137,13 +1180,13 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
    - สำหรับกรณีข้อผิดพลาด HTTP 429 (Rate Limit Exceeded) ระบบใช้กลไก Exponential Backoff Retry พร้อม Full Randomized Jitter สูงสุด 3 ครั้ง (หน่วงเวลาเริ่มต้น 1.0 s, 2.0 s, และ 4.0 s ตามลำดับ) เพื่อป้องกันปรากฏการณ์ Thundering Herd
 
 ### 3.11 จริยธรรมการวิจัยและการคุ้มครองข้อมูลองค์กร (Research Ethics, Data Masking, and Consent)
-โครงการวิจัยนี้ได้ปฏิบัติตามมาตรฐานจริยธรรมการวิจัยและพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA) อย่างเคร่งครัด:
+**[รอยืนยันจากคณะกรรมการจริยธรรม/ผู้รับผิดชอบ PDPA ก่อนอ้างว่าได้รับการยกเว้นหรือปฏิบัติตามข้อกำหนดครบถ้วน]** ร่างเดิมระบุว่าโครงการปฏิบัติตามมาตรฐานจริยธรรมการวิจัยและพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA):
 1. **เกณฑ์การยกเว้นการพิจารณาจริยธรรมการวิจัยในมนุษย์ (IRB Exemption Rationale)**:
-   - โครงการวิจัยนี้เข้าข่ายการประเมินประสิทธิภาพระบบสารสนเทศและการใช้งานซอฟต์แวร์ในสถานที่ทำงาน (Workplace Usability & Operational Evaluation) โดยไม่มีการทดลองทางการแพทย์ ไม่มีการเก็บสิ่งส่งตรวจทางชีวภาพ และไม่มีการกระทำที่ก่อให้เกิดความเสี่ยงทางกายภาพหรือจิตวิทยาต่อผู้เข้าร่วมวิจัย ข้อมูลที่เก็บรวบรวมประกอบด้วยเวลาการทำงานและคะแนนแบบสอบถามความพึงพอใจการใช้งานซอฟต์แวร์ที่เป็นข้อมูลนิรนามทั้งหมด จึงเข้าเกณฑ์การยกเว้นการพิจารณาจริยธรรมการวิจัยตามแนวปฏิบัติมาตรฐานของสถาบัน
+   - สถานะการยกเว้นการพิจารณาจริยธรรม **[ต้องได้รับการวินิจฉัย/ยืนยันจากหน่วยงานจริยธรรมของสถาบัน ไม่ควรสรุปเองจากลักษณะโครงการ]**
 2. **การทำความตกลงร่วมมือทางวิชาการและการปกปิดข้อมูลความลับ (Company Consent & Data Masking)**:
-   - โรงงานกรณีศึกษาได้ลงนามในหนังสือยินยอมให้ความร่วมมือทางวิชาการ (หนังสือเลขที่ ENG-QMS-2026-004 แนบในภาคผนวก จ)
+   - สถานะหนังสือยินยอมและเลขที่ **[รอยืนยันจากเอกสารจริง; ยังไม่มีสำเนาแนบในไฟล์นี้]**
    - ข้อมูลชื่อลูกค้าทางการค้า, สูตรทางเคมีของน้ำมันหล่อลื่น, และสเปกทางวิศวกรรมเฉพาะ ได้รับการพรางข้อมูล (Data Masking / Pseudonymization) ฝั่งไคลเอนต์ก่อนแสดงผลในรายงานวิชาการ เช่น การเปลี่ยนชื่อลูกค้าจริงเป็นชื่อสมมติ "Energy Corp (Thailand) [Anonymized]"
-   - ในการเรียกใช้ Gemini API ระบบส่งไฟล์ PDF ภายใต้ข้อตกลงนักพัฒนา (Enterprise / Developer Terms) ที่มีนโยบายไม่นำข้อมูลอินพุตไปใช้ฝึกฝนโมเดลต่อ (Zero Data Retention for Training) ผ่านช่องทางสื่อสารเข้ารหัส TLS 1.3
+   - การส่งไฟล์ PDF ไปยัง Gemini API และเงื่อนไขการใช้/เก็บข้อมูล **[ต้องตรวจสอบตามประเภทบัญชี ข้อตกลง และการตั้งค่าที่ใช้จริงก่อนยืนยันเรื่องการไม่นำข้อมูลไปฝึกโมเดลหรือระยะเวลาเก็บข้อมูล]**
 3. **ความยินยอมของผู้เข้าร่วมการประเมิน (Informed Consent)**:
    - พนักงานผู้เข้าร่วมการทดลองและตอบแบบประเมิน SUS ทั้ง 15 คน ได้รับการชี้แจงวัตถุประสงค์ของการวิจัย และลงนามในเอกสารแสดงความยินยอมโดยสมัครใจ (Informed Consent Form) โดยระบุชัดเจนว่าผลการประเมินจะถูกเก็บเป็นความลับและไม่มีผลกระทบต่อการประเมินผลการปฏิบัติงานประจำปี
 
@@ -1219,12 +1262,14 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 | **P1: การเข้าถึงข้อมูลโดยไม่ได้รับอนุญาต** | **O1: พัฒนาระบบยืนยันตัวตนและ RBAC 6 บทบาท** | FR1, NFR2 | M1 (หัวข้อ 4.2 ข้อ 1) | ทดสอบสิทธิ์อัตโนมัติ 42 เคส และตรวจ Audit Log 8 สัปดาห์ | **R1:** ผ่านการทดสอบ 42/42 เคส ไม่พบเหตุการณ์ผิดสิทธิ์ (0 ครั้ง/เดือน) |
 | **P2: คอขวดเบิกของล่วงหน้าและขนย้ายซ้ำซ้อน** | **O2: พัฒนาระบบ Closed-Loop JIT Kitting** | FR2 | M2 (หัวข้อ 4.2 ข้อ 2) | สังเกตการณ์หน้างานและจับเวลารอวัสดุ (n = 15 เคส) | **R2:** เวลารอวัสดุลบ 65.11% (15.70 นาที) ขนย้ายซ้ำซ้อน 0% ข้อพิพาท 0 ครั้ง |
 | **P3: บันทึกข้อมูลสินค้าและมูลค่าของเสียผิดพลาด**| **O3: พัฒนาระบบตรวจสอบ Item Master ด่วน** | FR3, NFR1 | M3 (หัวข้อ 4.2 ข้อ 3) | จับเวลาบันทึกเคส (n = 20) และตรวจความถูกต้องข้อมูล 120 รายการ | **R3:** เวลาเปิดเคสลบ 68.75% (2.50 นาที) ข้อมูลใน Master ผิดพลาด 0.0% |
-| **P4: เสี่ยงใช้แบบแปลนเก่าและขาด Master** | **O4: พัฒนาคลังแบบแปลนและ AI OCR สกัดสเปก** | FR4, NFR3, NFR4 | M4 (หัวข้อ 4.2 ข้อ 4) | จับเวลารวมตรวจสเปก (n = 30) และประเมินความแม่นยำ OCR (50 ฉบับ) | **R4:** เวลารวมตรวจแบบแปลนลบ 93.44% (49.20 วินาที) OCR แม่นยำ 96.36% |
-| **P5: ค้นหาคู่มือ SOP หนา 450 หน้าล่าช้า** | **O5: พัฒนาระบบผู้ช่วยเทคนิค Hybrid RAG** | FR5, NFR1 | M5 (หัวข้อ 4.2 ข้อ 5) | จับเวลารวมเข้าถึงคู่มือ และประเมินคำตอบ (40 คำถาม) | **R5:** เวลารวมเข้าถึงคู่มือลบ 95.14% (40.80 วินาที) ตอบถูกต้อง 97.50% |
+| **P4: เสี่ยงใช้แบบแปลนเก่าและขาด Master** | **O4: พัฒนาคลังแบบแปลนและ AI OCR สกัดสเปก** | FR4, NFR3, NFR4 | M4 (หัวข้อ 4.2 ข้อ 4) | จับเวลาตรวจสเปก (n = 30) และประเมินความแม่นยำ OCR (50 ฉบับ) | **R4:** เวลาตรวจสอบสเปกลดลง 99.44% (12.5 นาทีเหลือ 4.2 วินาที); OCR 96.36%; ผลนัยสำคัญ **[รอยืนยัน]** |
+| **P5: ค้นหาคู่มือ SOP หนา 450 หน้าล่าช้า** | **O5: พัฒนาระบบผู้ช่วยเทคนิค Hybrid RAG** | FR5, NFR1 | M5 (หัวข้อ 4.2 ข้อ 5) | ตัวชี้วัด TTFT และประเมินคำตอบ (40 คำถาม) | **R5:** TTFT 2.1 วินาที; ตอบถูกต้อง 97.50%; เวลารวมปรึกษาคู่มือ **[รอยืนยัน]** |
 | **P6: ภาระไฟล์ภาพใหญ่และรายงานทำมือ 16 ชม.** | **O6: พัฒนาระบบบีบอัดภาพและสร้างรายงาน Excel**| FR6 | M6 (หัวข้อ 4.2 ข้อ 6) | บันทึกขนาดไฟล์ (100 รูป) และจับเวลาสร้างรายงานประจำงวด (12 งวด) | **R6:** ขนาดภาพลดลง 82.50% (0.35 MB) เวลาทำรายงานเหลือ 4.80 วินาที |
 | **P7: จุดบอดคอขวดและขาดการบันทึก Downtime** | **O7: พัฒนาเรดาร์คอขวดและโหมด Defend** | FR7 | M7 (หัวข้อ 4.2 ข้อ 7) | วัดเวลาในการระบุคอขวดข้ามแผนก และตรวจสอบ Audit Trail | **R7:** ระบุคอขวดได้ทันที (< 5 วินาที) บันทึก Downtime สมบูรณ์ 100% |
 
 ### 4.5 ผลการประเมินประสิทธิภาพเชิงปริมาณ (Empirical Results: R1–R7)
+
+**หมายเหตุการตรวจสอบหลักฐาน:** ผลการทดสอบนำร่อง 8 สัปดาห์/78 เคสและค่าสถิติจากร่างนี้ยังต้องเทียบกับ audit log และชุดข้อมูลดิบก่อนใช้เป็นข้อค้นพบ ในไฟล์นี้ยังไม่มีชุดข้อมูลหรือสคริปต์คำนวณที่ทำซ้ำค่า SD, t, p-value, CI และ effect size ได้
 ผลการประเมินประสิทธิภาพของระบบในสภาพแวดล้อมปฏิบัติงานจริงเป็นระยะเวลา 8 สัปดาห์ (ปริมาณงานรวม 78 เคส) เปรียบเทียบกับค่าสถิติฐานเดิม สรุปได้ดังตารางที่ 4.3:
 
 **ตารางที่ 4.3: ผลการประเมินประสิทธิภาพเชิงปริมาณเปรียบเทียบก่อน-หลังปรับปรุง (Empirical Evaluation: R1–R7)**
@@ -1237,8 +1282,8 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 | **R2: จำนวนข้อพิพาทของขาด** | 8.00 ± 1.50 ครั้ง/เดือน | 0 ครั้ง/เดือน | ลดลง 100% | สังเกตการณ์ตลอด 8 สัปดาห์ (78 เคส) | N/A |
 | **R3: เวลาบันทึกเปิดเคสใหม่** | 8.00 ± 1.15 นาที | 2.50 ± 0.42 นาที | ลดลง 68.75% | Welch's \(t = 20.09, df = 23.98, p < 0.001\) (\(n = 20\)) | \(d_s = 6.35\) (ขนาดใหญ่มาก) |
 | **R3: อัตราผิดพลาดข้อมูลใน Master**| 14.2% (17/120 รายการ) | 0.0% (0/102 รายการ)* | ลดลงเป็นศูนย์ (0.0%) | รายการใน Master ผิดพลาด 0/102 รายการ, รายการนอก Master ผิดพลาด 1/18 รายการ | N/A |
-| **R4: เวลารวมตรวจสเปกแบบแปลน** | 12.50 ± 1.80 นาที (750 s) | 49.20 ± 8.20 วินาที** | ลดลง 93.44% | Paired \(t = 37.15, df = 29, p < 0.001\) (\(n = 30\)) | \(d_z = 6.78\) (ขนาดใหญ่มาก) |
-| **R5: เวลารวมเข้าถึงคู่มือ SOP** | 14.00 ± 2.45 นาที (840 s) | 40.80 ± 6.80 วินาที*** | ลดลง 95.14% | Paired \(t = 34.36, df = 39, p < 0.001\) (\(n = 40\)) | \(d_z = 5.43\) (ขนาดใหญ่มาก) |
+| **R4: เวลาตรวจสอบสเปกแบบแปลน** | 12.5 นาที | 4.2 วินาที | ลดลง 99.44% | จำนวนตัวอย่างตามข้อมูลหลัก \(n = 30\); สถิติทดสอบ **[รอยืนยันจากข้อมูลดิบ]** | **[รอยืนยัน]** |
+| **R5: เวลาเริ่มสตรีมคำตอบคู่มือ (TTFT)** | **[ไม่มีค่าฐานที่วัดด้วยนิยามเดียวกัน]** | 2.1 วินาทีตามข้อมูลหลัก | **ยังคำนวณอัตราการลดลงไม่ได้** | วิธีวัด/จำนวนตัวอย่าง **[รอยืนยัน]** | **[รอยืนยัน]** |
 | **R6: ขนาดไฟล์ภาพถ่ายเฉลี่ย** | 2.00 ± 0.40 MB | 0.35 ± 0.03 MB**** | ลดลง 82.50% | Paired \(t = 41.13, df = 99, p < 0.001\) (\(n = 100\text{ คู่ภาพ}\)) | \(d_z = 4.12\) (ขนาดใหญ่มาก) |
 | **R6: เวลาจัดทำรายงานประจำงวด** | 16.00 ± 2.50 ชั่วโมง | 4.80 ± 0.50 วินาที | ลดลง 99.99% | ประเมินรายงานย้อนหลัง 12 งวด | N/A |
 | **R7: เวลาสืบค้นคอขวดบนระบบ** | 4.50 ± 1.20 ชั่วโมง | < 5 วินาที (สืบค้นสด) | ลดลง 99.97% | คิวรีฐานข้อมูลดัชนี \(W_d\) | N/A |
@@ -1246,8 +1291,8 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 
 *หมายเหตุเชิงสถิติ: \(d_s\) หมายถึง Cohen's d คำนวณจากค่าเบี่ยงเบนมาตรฐานร่วมแบบอิสระสองกลุ่ม (Pooled Standard Deviation) ส่วน \(d_z\) หมายถึง Cohen's d คำนวณจากค่าเบี่ยงเบนมาตรฐานของผลต่างรายคู่ (Standard Deviation of Paired Differences) ตามสูตรในหัวข้อ 2.15*  
 *\*คำอธิบายสำหรับ R3: จากการสุ่มตรวจ 120 รายการ พบสินค้าที่มีข้อมูลใน Master 102 รายการ (85.0%) ซึ่งข้อมูลถูกต้องครบถ้วนสมบูรณ์ 100% (อัตราผิดพลาด 0.0%) ส่วนสินค้าใหม่ที่อยู่นอก Master จำนวน 18 รายการ (15.0%) ซึ่งต้องกรอกข้อมูลด้วยตนเอง พบข้อผิดพลาดจากการพิมพ์ 1 รายการ (5.56%) แต่ได้รับการตรวจทานแก้ไขก่อนเริ่มกระบวนการซ่อม ส่งผลให้อัตราความผิดพลาดของข้อมูลสินค้าโดยรวมทั้งระบบลดลงเหลือ 1/120 รายการ (0.83%)*  
-*\*\*คำอธิบายสำหรับ R4: เวลารวม 49.20 ± 8.20 วินาที ประกอบด้วยเวลาที่ระบบ AI OCR สกัดข้อมูล (4.20 ± 0.35 วินาที) และเวลาที่วิศวกรทำการตรวจทานยืนยันความถูกต้องซ้ำ (45.00 ± 8.00 วินาที) โดยทดสอบแบบจับคู่บนแบบแปลนชุดเดียวกัน 30 ฉบับ*  
-*\*\*\*คำอธิบายสำหรับ R5: เวลารวม 40.80 ± 6.80 วินาที ประกอบด้วยเวลาที่ระบบตอบคำถามสมบูรณ์ (5.80 ± 0.65 วินาที โดยเริ่มสตรีมโทเค็นแรก TTFT ที่ 2.10 ± 0.28 วินาที) และเวลาที่ผู้ใช้อ่านและทำความเข้าใจคำตอบ (35.00 ± 6.50 วินาที) โดยทดสอบแบบจับคู่บนชุดคำถามเดียวกัน 40 คำถาม*  
+**หมายเหตุ R4:** ฐานตัวเลขหลักระบุเวลาตรวจสอบสเปก 12.5 นาที เหลือ 4.2 วินาที (30 ฉบับ) ยังไม่มีข้อมูลดิบประกอบค่าเฉลี่ย/ส่วนเบี่ยงเบนมาตรฐานและการทดสอบนัยสำคัญ จึงไม่รายงานค่าสถิติเหล่านั้นในฉบับนี้  
+**หมายเหตุ R5:** ฐานตัวเลขหลักระบุ TTFT 2.1 วินาที และความถูกต้อง 39/40 คำถาม ไม่ใช่เวลารวมที่ผู้ใช้อ่านและทำความเข้าใจ ต้องรายงานเวลารวมแยกต่างหากเมื่อมีบันทึกเวลาและนิยามตัวชี้วัดครบถ้วน  
 *\*\*\*\*คำอธิบายสำหรับ R6: ขนาดไฟล์หลังการบีบอัดมีค่าเฉลี่ย 0.35 ± 0.03 MB โดยภาพถ่ายจำนวน 98 จาก 100 ภาพ (98.0%) มีขนาดไม่เกิน 400 KB ตามเกณฑ์ที่กำหนดใน FR6*  
 *\*\*\*\*\*คำอธิบายสำหรับ R7 และการตรวจสอบความเที่ยงตรงของแบบจำลอง \(W_d\) (40-Shift Validation):*  
 จากการเปรียบเทียบการแจ้งเตือนคอขวดของระบบ QSMS กับการตัดสินใจอิสระของหัวหน้าแผนกผลิตตลอด 40 กะการทำงาน ได้ตารางความสอดคล้อง (Confusion Matrix) ดังนี้:
@@ -1289,7 +1334,7 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 *การวิเคราะห์ข้อผิดพลาด (Error Analysis):* จากข้อผิดพลาด 20 ฟิลด์ที่พบ พบว่าเกิดจากคุณภาพของเอกสารสแกนต้นฉบับที่มีรอยพับหรือหมึกเลือนราง 14 ฟิลด์ (70%) และเกิดจากการจัดวางตำแหน่งตารางที่ผิดมาตรฐาน 6 ฟิลด์ (30%) ทั้งนี้ หน้าจอตรวจทานแบบ Split View 55/45 ช่วยให้วิศวกรสามารถตรวจพบและแก้ไขข้อผิดพลาดเหล่านี้ได้ภายในเวลาเฉลี่ย 45 วินาที
 
 #### 4.6.2 ผลการทดสอบเปรียบเทียบกลไกการสืบค้นคู่มือ (Retrieval Ablation Study: Vector vs FTS vs Hybrid)
-ทำการประเมินประสิทธิภาพการสืบค้นคู่มือขั้นตอนการปฏิบัติงานมาตรฐาน (SOP) ด้วยชุดคำถามทดสอบจริงจำนวน 40 คำถาม (ที่ไม่เคยใช้ในการ Fine-tune หรือปรับแต่งระบบมาก่อน) โดยเปรียบเทียบ 3 สถาปัตยกรรม: 1) ค้นหาด้วยเวกเตอร์ล้วน (Dense-only), 2) ค้นหาด้วยคำสำคัญล้วน (FTS-only), และ 3) ค้นหาแบบผสมผสาน (Hybrid RAG with RRF) ดังแสดงในตารางที่ 4.5:
+ทำการประเมินการสืบค้นคู่มือ SOP ด้วยชุดคำถามที่ร่างระบุว่ามี 40 ข้อ โดยเปรียบเทียบ Dense-only, FTS-only และ Hybrid RAG with RRF ดังแสดงในตารางที่ 4.5 **[รอยืนยันชุดคำถามเต็ม คะแนนรายข้อ และบันทึกผลการทดลองก่อนรายงานค่า accuracy หรือ p-value]**:
 
 **ตารางที่ 4.5: ผลการทดสอบเปรียบเทียบกลไกการสืบค้นคู่มือ (Retrieval Ablation Study: Vector vs FTS vs Hybrid)**
 
@@ -1329,15 +1374,17 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 
 | ข้อกำหนดเชิงคุณภาพ | เกณฑ์มาตรฐานที่กำหนด | ผลลัพธ์ที่ได้จากการวัดจริง | สถานะการประเมิน |
 |---|---|---|:---:|
-| **NFR1: เวลาตอบสนองของระบบ** | สืบค้น Master < 500 ms<br>TTFT ของ AI < 3.0 s | สืบค้น Master เฉลี่ย 120 ± 25 ms<br>TTFT เฉลี่ย 2.10 ± 0.28 s | ผ่านตามเกณฑ์ |
+| **NFR1: เวลาตอบสนองของระบบ** | สืบค้น Master < 500 ms<br>TTFT ของ AI < 3.0 s | สืบค้น Master เฉลี่ย 120 ± 25 ms<br>TTFT เฉลี่ย 2.10 ± 0.28 s **[รอยืนยันจาก log ทดสอบ]** | **[รอยืนยันผลทดสอบซ้ำ]** |
 | **NFR2: ความมั่นคงปลอดภัย** | คุกกี้ HTTP-Only, SameSite=Strict<br>ตรวจ MIME type ภาพที่ Preset<br>รหัสผ่าน Bcrypt (Cost=10) & PIN Rate Limit | คุกกี้ไม่สามารถเข้าถึงผ่าน JS ได้<br>Preset บล็อกไฟล์ที่ไม่ใช่ JPEG/PNG<br>ล็อกบัญชี 15 นาทีเมื่อกรอก PIN ผิดเกิน 5 ครั้ง | ผ่านตามเกณฑ์ |
 | **NFR3: ความทนทานต่อความผิดพลาด**| Cascade Fallback เมื่อโมเดลหลักขัดข้อง | จำลอง HTTP 503 ระบบสลับไปยัง `3.1-flash-lite` ใน 850 ms โดยไม่ล่ม | ผ่านตามเกณฑ์ |
 | **NFR4: การแสดงผลหลายอุปกรณ์** | รองรับหน้าจอตั้งแต่ 320 px ถึง 2560 px | ผ่านการทดสอบบนอุปกรณ์จริง (สมาร์ตโฟน 320px/390px, แท็บเล็ต 768px/820px, PC 1280px/1920px) | ผ่านตามเกณฑ์ |
 
 ### 4.9 การวิเคราะห์ต้นทุน ประโยชน์ทางการเงิน และความคุ้มค่าของการลงทุน (Cost-Benefit & Financial Feasibility)
-การประเมินความคุ้มค่าของการพัฒนาระบบ QSMS พิจารณาจากต้นทุนในการพัฒนาและผลประโยชน์ทางการเงินที่ประหยัดได้ต่อปีของโรงงานกรณีศึกษา (กำหนดอัตราค่าแรงเฉลี่ยของบุคลากรทางเทคนิคและวิศวกรที่เกี่ยวข้องที่ **300 บาทต่อชั่วโมง**) โดยจำแนกเป็นค่าใช้จ่ายเพื่อการลงทุน (CapEx) และค่าใช้จ่ายในการดำเนินงาน (OpEx) ดังแสดงในตารางที่ 4.8:
+การประเมินความคุ้มค่าของการพัฒนาระบบ QSMS ในร่างนี้ใช้สมมติฐานอัตราค่าแรงเฉลี่ย **300 บาทต่อชั่วโมง** และจำแนกเป็นค่าใช้จ่ายเพื่อการลงทุน (CapEx) กับค่าใช้จ่ายในการดำเนินงาน (OpEx) **[รอยืนยันสมมติฐานด้วยหลักฐานจริงก่อนสรุปผล]** ดังแสดงในตารางที่ 4.8:
 
 **ตารางที่ 4.8: การวิเคราะห์ต้นทุน ประโยชน์ทางการเงิน และความคุ้มค่าของการลงทุน (Cost-Benefit & Financial Analysis)**
+
+**[รอยืนยันก่อนสรุปความคุ้มค่า:]** ตัวเลขต้นทุน เงินประหยัด อัตราคิดลด และกระแสเงินสดด้านล่างยังไม่มีเอกสารต้นทางแนบในไฟล์นี้ ให้ถือเป็นประมาณการร่างจนกว่าจะตรวจหลักฐานต้นทุน/ปริมาณงานจริงและสมมติฐานกับผู้รับผิดชอบ
 
 | รายการทางการเงิน (Financial Items) | ปีที่ 0 (CapEx) | ปีที่ 1 (บาท) | ปีที่ 2 (บาท) | ปีที่ 3 (บาท) |
 |---|:---:|:---:|:---:|:---:|
@@ -1382,8 +1429,8 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 1. **การควบคุมการเข้าถึงตามบทบาท (บรรลุวัตถุประสงค์ O1)**: ระบบควบคุมสิทธิ์ตาม 6 บทบาทหน้าที่ได้อย่างถูกต้องตามชุดทดสอบอัตโนมัติ 42 กรณีทดสอบครอบคลุม 15 ฟังก์ชัน และลดเหตุการณ์ผิดสิทธิ์ในบันทึก Audit Log ของโรงงานจากเดิม 6 ครั้ง/เดือน เหลือ 0 ครั้ง ตลอดช่วงการทดสอบนำร่อง 8 สัปดาห์ (78 เคส)
 2. **การบริหารงานแก้ไขชิ้นส่วนแบบวงจรปิด (บรรลุวัตถุประสงค์ O2)**: กระบวนการ JIT Single-Batch Kitting ร่วมกับการตรวจรับสองทาง (Two-Way Handshake) ลดระยะเวลารอคอยวัสดุลง 65.11% (จาก 45.00 เหลือ 15.70 นาที, \(p < 0.001\)), ขจัดการขนย้ายซ้ำซ้อนจาก 100% เหลือ 0%, และลดข้อพิพาทเรื่องของขาดจาก 8 ครั้ง/เดือน เหลือ 0 ครั้ง
 3. **การตรวจสอบข้อมูลสินค้าหลักอัตโนมัติ (บรรลุวัตถุประสงค์ O3)**: กลไก On-demand Master Query ลดระยะเวลาในการเปิดบันทึกเคสใหม่ลง 68.75% (จาก 8.00 เหลือ 2.50 นาที, \(p < 0.001\)) และลดอัตราความผิดพลาดของข้อมูลสินค้าสำหรับรายการที่มีใน Master ลงเป็น 0.0%
-4. **คลังแบบแปลนวิศวกรรมดิจิทัลและ AI OCR (บรรลุวัตถุประสงค์ O4)**: โมเดล Gemini 3.1 Flash สกัดข้อมูลสเปก 11 ฟิลด์ได้แม่นยำ 96.36% ช่วยลดเวลารวมในการค้นหา ตรวจสกัด และตรวจสอบยืนยันสเปกลง 93.44% (จาก 12.50 นาที เหลือ 49.20 วินาที, \(p < 0.001\)) โดยมีระบบควบคุมเวอร์ชันที่ติดธง Superseded ป้องกันการแสดงผลแบบเก่าเป็นฉบับใช้งานในระบบซอฟต์แวร์ได้อย่างสมบูรณ์
-5. **ระบบผู้ช่วยเทคนิคอัจฉริยะ DocAI (บรรลุวัตถุประสงค์ O5)**: สถาปัตยกรรม Hybrid RAG (pgvector ร่วมกับ FTS ผ่าน RRF) ลดเวลารวมในการค้นหาและทำความเข้าใจคู่มือลง 95.14% (จาก 14.00 นาที เหลือ 40.80 วินาที, \(p < 0.001\)) โดยมีเวลาเริ่มสตรีมคำตอบแรก (TTFT) 2.10 วินาที และมีความถูกต้องของเนื้อหาและแหล่งอ้างอิง 97.50% ช่วยให้พนักงานกะกลางคืนเข้าถึงความรู้เทคนิคได้อย่างรวดเร็ว
+4. **คลังแบบแปลนวิศวกรรมดิจิทัลและ AI OCR (บรรลุวัตถุประสงค์ O4)**: ข้อมูลหลักของโครงการรายงานความแม่นยำ OCR 96.36% และเวลาตรวจสอบสเปกลดจาก 12.5 นาทีเหลือ 4.2 วินาที (99.44%) แต่ผล H4b ยังไม่ยืนยันว่าอัตราความแม่นยำสูงกว่าเกณฑ์ 95% อย่างมีนัยสำคัญ และสถิติเปรียบเทียบเวลา **[รอยืนยันจากข้อมูลดิบ]**
+5. **ระบบผู้ช่วยเทคนิคอัจฉริยะ DocAI (บรรลุวัตถุประสงค์ O5)**: ข้อมูลหลักของโครงการระบุ TTFT 2.1 วินาที และความถูกต้องของคำตอบ/แหล่งอ้างอิง 97.50% (39/40 คำถาม) ส่วนเวลารวมค้นหาและทำความเข้าใจคู่มือ **[รอยืนยันจากข้อมูลดิบก่อนสรุปผล]**
 6. **การประมวลผลภาพถ่ายและรายงานดิจิทัล (บรรลุวัตถุประสงค์ O6)**: การบีบอัดภาพถ่ายผ่าน Canvas บนเบราว์เซอร์ลดขนาดไฟล์ภาพลง 82.50% (จาก 2.00 MB เหลือ 0.35 MB, \(p < 0.001\)) และระบบส่งออกรายงาน Excel ฝังรูปภาพอัตโนมัติลดเวลาจัดทำรายงานประจำงวดลง 99.99% (จาก 16.00 ชั่วโมง เหลือ 4.80 วินาที)
 7. **เรดาร์เฝ้าระวังคอขวดและโหมด Defend (บรรลุวัตถุประสงค์ O7)**: แดชบอร์ดดัชนีภาระงาน (\(W_d\)) และโหมด Defend ช่วยให้ผู้บริหารระบุจุดติดขัดข้ามแผนกได้แบบเรียลไทม์ (< 5 วินาที เทียบกับเดิม 4.50 ชั่วโมง) โดยมีความสอดคล้องกับการประเมินของหัวหน้างาน 92.5% (\(\kappa = 0.832\)) และมีระบบบันทึกประวัติการหยุดชะงักของสายการผลิตซ่อมเพื่อใช้เป็นหลักฐานยืนยันสาเหตุ Downtime อย่างเป็นรูปธรรม
 
@@ -1396,12 +1443,12 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 | **H1 (สิทธิ์การเข้าถึงข้อมูล)** | อัตราเหตุการณ์ผิดสิทธิ์ใน Audit Log | Exact Poisson Rate Test (One-sided) | 78 เคส (สังเกตการณ์ 56 วัน) | อัตราจริง = 0 ครั้ง/ด. (เดิม 6.00) | \(p < 0.001\) | One-sided 95% Upper Bound = 1.63 ครั้ง/ด.* | ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,1}\)) |
 | **H2 (เวลารอคอยวัสดุ)** | เวลารอคอยพัสดุ (Kitting Lead Time) | Welch's Two-Sample t-test | \(n_1=15, n_2=15, df=18.56\) | \(t = 20.08\) (\(d_s = 7.33\)) | \(p < 0.001\) | \([26.25, 32.35]\) นาที | ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,2}\)) |
 | **H3 (เวลาบันทึกเปิดเคส)** | ระยะเวลาบันทึกเปิดเคสใหม่เข้าระบบ | Welch's Two-Sample t-test | \(n_1=20, n_2=20, df=23.98\) | \(t = 20.09\) (\(d_s = 6.35\)) | \(p < 0.001\) | \([4.93, 6.07]\) นาที | ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,3}\)) |
-| • **H4a: เวลาตรวจแบบแปลน** | เวลารวมตรวจทานแบบแปลนลดลง | Paired t-test | \(n=30, df=29\) ฉบับ | Paired \(t = 37.15\) (\(d_z = 6.78\)) | \(p < 0.001\) | \([661.85, 739.75]\) วินาที | ปฏิเสธ \(H_{0,4a}\) (เวลาลดลงจริง) |
-| • **H4b: ความแม่นยำ AI OCR** | สัดส่วนความถูกต้องรายฟิลด์ (เกณฑ์ \(\ge 95\%\)) | Exact Binomial Test vs 95% | 550 ฟิลด์ (50 ฉบับ) | ถูกต้อง 530/550 (96.36%) | \(p = 0.046\) | Wilson 95% CI: \([94.44\%, 97.64\%]\) | ปฏิเสธ \(H_{0,4b}\) (ผ่านเกณฑ์ \(\ge 95\%\)) |
-| **สรุปผล H4 รวม** | เวลารวมลดลง และความแม่นยำ OCR \(\ge 95\%\) | Composite Decision Rule | \(n=30\) / 550 ฟิลด์ | บรรลุเกณฑ์ทั้งสองข้อ | \(p < 0.001\) | ผ่านเกณฑ์ทั้งด้านเวลาและความแม่นยำ | **ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,4}\))** |
-| • **H5a: เวลาเข้าถึงคู่มือ** | เวลารวมค้นหาและทำความเข้าใจคู่มือลดลง | Paired t-test | \(n=40, df=39\) คำถาม | Paired \(t = 34.36\) (\(d_z = 5.43\)) | \(p < 0.001\) | \([752.20, 846.20]\) วินาที | ปฏิเสธ \(H_{0,5a}\) (เวลาลดลงจริง) |
-| • **H5b: ความถูกต้องคำตอบ RAG**| สัดส่วนความถูกต้องของคำตอบ (เกณฑ์ \(\ge 95\%\)) | Exact McNemar (vs FTS) & Binomial | \(n=40\) คำถาม | ถูกต้อง 39/40 (97.50%) | \(p = 0.021\) | Wilson 95% CI: \([87.12\%, 99.56\%]\) | ปฏิเสธ \(H_{0,5b}\) (ผ่านเกณฑ์ \(\ge 95\%\)) |
-| **สรุปผล H5 รวม** | เวลารวมลดลง และความถูกต้อง RAG \(\ge 95\%\) | Composite Decision Rule | \(n=40, df=39\) คำถาม | บรรลุเกณฑ์ทั้งสองข้อ | \(p < 0.001\) | ผ่านเกณฑ์ทั้งด้านเวลาและความแม่นยำ | **ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,5}\))** |
+| • **H4a: เวลาตรวจแบบแปลน** | เวลาตรวจสอบสเปกลดลง | เปรียบเทียบก่อน–หลัง; สถิติทดสอบ **[รอยืนยันจากข้อมูลดิบ]** | \(n=30\) ฉบับตามข้อมูลหลัก | จาก 12.5 นาทีเหลือ 4.2 วินาที | **[รอยืนยัน]** | **[รอยืนยัน]** | รายงานการลดลงตามข้อมูลหลัก; ยังไม่สรุปนัยสำคัญ |
+| • **H4b: ความแม่นยำ AI OCR** | สัดส่วนความถูกต้องรายฟิลด์ (เกณฑ์ \(\ge 95\%\)) | Exact Binomial Test แบบด้านเดียว เทียบ \(p_0=0.95\) | 550 ฟิลด์ (50 ฉบับ) | ถูกต้อง 530/550 (96.36%) | \(p = 0.0807\) | Wilson 95% CI: \([94.44\%, 97.64\%]\) | ยังไม่ปฏิเสธ \(H_{0,4b}\); หลักฐานยังไม่พอที่จะยืนยันว่าอัตราจริงสูงกว่า 95% |
+| **สรุปผล H4 รวม** | เวลาตรวจสอบลดลงและความแม่นยำ OCR สูงกว่าเกณฑ์ 95% | Composite Decision Rule | \(n=30\) / 550 ฟิลด์ | เวลาเปลี่ยนตามค่าที่รายงาน; H4b ยังไม่ผ่านนัยสำคัญ | **[สรุปไม่ได้]** | ผลเวลาและเกณฑ์ความแม่นยำยังยืนยันร่วมกันไม่ได้ | **ยังไม่สรุปผล H4 รวม** |
+| • **H5a: เวลาเข้าถึงคู่มือ** | เวลารวมค้นหาและทำความเข้าใจคู่มือลดลง | **[รอยืนยันจากข้อมูลดิบและนิยามการจับเวลา]** | **[รอยืนยัน]** | เวลารวม **[ยังไม่มีข้อมูลยืนยัน]**; TTFT 2.1 วินาทีตามข้อมูลหลัก | **[รอยืนยัน]** | **[รอยืนยัน]** | ยังไม่สรุปนัยสำคัญ |
+| • **H5b: ความถูกต้องคำตอบ RAG**| สัดส่วนความถูกต้องของคำตอบ (เกณฑ์ \(\ge 95\%\)) | เปรียบเทียบกับเกณฑ์ 95%; การทดสอบเทียบ FTS **[รอยืนยันจากผลรายข้อ]** | \(n=40\) คำถามตามข้อมูลหลัก | ถูกต้อง 39/40 (97.50%) | **[รอยืนยัน]** | Wilson 95% CI: \([87.12\%, 99.56\%]\) | ยังไม่ยืนยันว่าอัตราจริงสูงกว่า 95% |
+| **สรุปผล H5 รวม** | เวลารวมลดลง และความถูกต้อง RAG \(\ge 95\%\) | Composite Decision Rule | \(n=40\) คำถามสำหรับ accuracy; เวลารวม **[รอยืนยัน]** | ความถูกต้อง 39/40 (97.50%); เวลารวม **[รอยืนยัน]** | **[สรุปไม่ได้]** | Wilson 95% CI ของ accuracy: \([87.12\%, 99.56\%]\) | ยังไม่สรุปผล H5 รวม |
 | **H6 (ขนาดไฟล์ภาพถ่าย)** | ขนาดไฟล์ภาพถ่ายเฉลี่ยหลังการบีบอัด | Paired t-test | \(n=100\text{ คู่ภาพ}, df=99\) | Paired \(t = 41.13\) (\(d_z = 4.12\)) | \(p < 0.001\) | \([1.57, 1.73]\) MB | ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,6}\)) |
 | **H7 (เวลาระบุคอขวด)** | เวลาระบุคอขวดข้ามแผนกและดัชนี \(W_d\) | Two-Sample t-test & Cohen's \(\kappa\) | 40 กะการทำงาน | สด \(< 5\) s, สั่งการเหลือ 3.50 min, \(\kappa = 0.832\) | \(p < 0.001\) | เวลาสั่งการ: \([241.6, 291.4]\) นาที | ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,7}\)) |
 | **สมมติฐานเสริม (H_SUS)** | คะแนนความสามารถในการใช้งานระบบ (SUS) | One-Sample t-test vs 68.0 | \(n=15, df=14\) คน | \(t = 16.41\) (Mean = 83.33) | \(p < 0.0001\) | \([81.33, 85.33]\) คะแนน | ปฏิเสธ \(H_0\) (ยอมรับ \(H_{a,\text{SUS}}\)) |
@@ -1411,7 +1458,7 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 ### 5.2 การอภิปรายผลการวิจัยเปรียบเทียบกับทฤษฎีและงานวิจัยก่อนหน้า (Discussion of Findings)
 1. **กลไกการลดความสูญเปล่าตามแนวคิดลีนและการจัดชุดพัสดุ (JIT Kitting)**: การลดลงของเวลารอคอยวัสดุ (65.11%) และการขจัดการขนย้ายซ้ำซ้อน สอดคล้องกับทฤษฎีของ Womack & Jones [2] และ Bozer & McGinnis [15] ที่ระบุว่าการรวมชุดชิ้นส่วนที่จำเป็นครบถ้วนในรอบเดียว (Kitting) จะช่วยลดความสูญเปล่าในการเคลื่อนย้ายและเวลารอคอย โดยจุดเปลี่ยนสำคัญคือการปรับลำดับกระบวนการให้ฝ่ายคุณภาพวิเคราะห์สเปกให้เสร็จสิ้นก่อนออกใบเบิกชุดเดียว แทนที่จะให้คลังยกของมารอก่อนแบบเดิม สอดคล้องกับข้อเสนอแนะในการจัดการ Rework ของ Flapper et al. [17]
 2. **ความสำเร็จของ Two-Way Handshake และการแบ่งแยกหน้าที่**: การที่ข้อพิพาทเรื่องของขาดลดลงเป็นศูนย์ เป็นผลมาจากการประยุกต์ใช้หลักการแบ่งแยกหน้าที่ (Separation of Duty: SoD) ในการตรวจสอบและยืนยันการรับมอบสองทาง ซึ่งช่วยสร้างความรับผิดชอบร่วมกัน (Mutual Accountability) ระหว่างผู้จ่ายและผู้รับพัสดุ ปิดช่องโหว่การโยนความรับผิดชอบที่มักพบในระบบที่บันทึกข้อมูลฝ่ายเดียว
-3. **ประสิทธิภาพของสถาปัตยกรรม Hybrid RAG**: ผลการทดลอง Ablation Study ในตารางที่ 4.5 แสดงให้เห็นว่าสถาปัตยกรรม Hybrid RAG (97.50%) มีความถูกต้องเหนือกว่า Full-Text Search อย่างมีนัยสำคัญทางสถิติ (\(p = 0.021\)) และในทางปฏิบัติสามารถทำผลงานได้ดีกว่า Vector-only แม้ค่า p ของ Exact McNemar เทียบกับ Vector-only จะอยู่ที่ 0.070 (ซึ่งมากกว่าระดับนัยสำคัญ 0.05 เล็กน้อยเนื่องจากขนาดตัวอย่างทดสอบ 40 คำถาม) แต่ข้อมูลเชิงประจักษ์ยืนยันว่าการค้นหาด้วยเวกเตอร์เพียงอย่างเดียวมีจุดอ่อนในการจับคู่รหัสสเปกเฉพาะทางวิศวกรรม ซึ่งการผสาน Full-Text Search ผ่านขั้นตอนวิธี Reciprocal Rank Fusion (RRF) ช่วยปิดช่องโหว่นี้ได้อย่างมีประสิทธิภาพ สอดคล้องกับข้อค้นพบของ Cormack et al. [12] และ Karpukhin et al. [11]
+3. **ประสิทธิภาพของสถาปัตยกรรม Hybrid RAG**: ข้อสรุปเรื่องความเหนือกว่าของ Hybrid RAG เมื่อเทียบกับ FTS หรือ Vector-only และค่า (p) ใน Ablation Study **[รอยืนยันจากคะแนนรายข้อของทั้งสามวิธีและการคำนวณ McNemar ที่ทำซ้ำได้]** จึงยังไม่สรุปความแตกต่างเชิงนัยสำคัญในฉบับนี้
 
 ### 5.3 ภัยคุกคามต่อความถูกต้องของการวิจัย (Threats to Validity)
 1. **ภัยคุกคามต่อความถูกต้องภายใน (Internal Validity)**:
@@ -1436,6 +1483,7 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 1. **การเชื่อมต่อกับระบบ ERP องค์กร (Enterprise ERP Integration)**: พัฒนา API Connector แบบสองทางเพื่อเชื่อมโยงข้อมูลเคส Rework เข้ากับระบบ ERP ของโรงงาน (เช่น SAP หรือ Oracle) เพื่อทำการตัดยอดสต็อกพัสดุและบันทึกต้นทุนทางบัญชีโดยอัตโนมัติ
 2. **การประมวลผลภาพปัญญาประดิษฐ์ที่ขอบข่ายสายการผลิต (Edge Computer Vision for Defect Detection)**: ติดตั้งกล้องอุตสาหกรรมร่วมกับโมเดล Edge AI (เช่น YOLOv8) บริเวณสายพานลำเลียงเพื่อตรวจจับของเสีย (เช่น แกลลอนรั่ว หรือฉลากเอียง) และเปิดเคส Rework เข้าสู่ระบบ QSMS แบบอัตโนมัติ
 3. **การพยากรณ์ความเสี่ยงคุณภาพเชิงรุก (Predictive Quality Analytics)**: นำข้อมูลสถิติของเสียและประวัติการหยุดชะงักที่บันทึกผ่านโหมด Defend มาพัฒนาโมเดลการเรียนรู้ของเครื่อง (Machine Learning) เพื่อพยากรณ์ความเสื่อมสภาพของแม่พิมพ์และแจ้งเตือนการบำรุงรักษาเชิงป้องกันก่อนเกิดของเสีย
+4. **การเชื่อมโยงข้อมูลหน้างานกับระบบควบคุมในอนาคต**: หากจะเชื่อมข้อมูลจากเซนเซอร์หรือ PLC เพื่อสร้างการแจ้งเตือนหรือเปิดเคสโดยอัตโนมัติ ควรกำหนดขอบเขตการแลกเปลี่ยนข้อมูล สิทธิ์สั่งงาน การยืนยันโดยมนุษย์ และการทดสอบความปลอดภัยแยกเป็นโครงการต่อยอด โดยไม่ถือเป็นความสามารถของระบบ QSMS ฉบับปัจจุบัน
 
 ---
 
@@ -1477,6 +1525,7 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 [34] J. Cohen, *Statistical Power Analysis for the Behavioral Sciences*, 2nd ed., Hillsdale, NJ: Lawrence Erlbaum Associates, 1988.  
 [35] E. B. Wilson, "Probable inference, the law of succession, and statistical inference," *Journal of the American Statistical Association*, vol. 22, no. 158, pp. 209–212, 1927.  
 [36] D. G. Newnan, T. G. Eschenbach, and J. P. Lavelle, *Engineering Economic Analysis*, 14th ed., New York: Oxford University Press, 2020.  
+[37] International Society of Automation (ISA), “ISA-95 Standard: Enterprise-Control System Integration,” ISA. [Online]. Available: https://www.isa.org/standards-and-publications/isa-standards/isa-95-standard (accessed Oct. 2026).
 
 ---
 
@@ -1589,7 +1638,7 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 #### ค.4 ข้อคำถามแบบสอบถามความสามารถในการใช้งานระบบภาษาไทย 10 ข้อ (Thai SUS Questionnaire Items)
 แบบสอบถามประเมินความสามารถในการใช้งานของระบบตามมาตรฐานสากล System Usability Scale (SUS) แปลและปรับปรุงเป็นภาษาไทยตามกรอบของ Sauro & Lewis (มาตรวัด Likert 5 ระดับ: 1 = ไม่เห็นด้วยอย่างยิ่ง ถึง 5 = เห็นด้วยอย่างยิ่ง):
 1. **Q1 (เชิงบวก)**: ข้าพเจ้าคิดว่าต้องการใช้งานระบบสารสนเทศ QSMS นี้เป็นประจำในการปฏิบัติงาน
-2. **Q2* (เชิงลบ)**: ข้าพเจ้าพบว่าระบบสารสนเทศนี้มีความซับซ้อนเกินความจำเป็นโดยไม่จำเป็น
+2. **Q2* (เชิงลบ)**: ข้าพเจ้าพบว่าระบบนี้มีความซับซ้อนเกินความจำเป็น
 3. **Q3 (เชิงบวก)**: ข้าพเจ้าคิดว่าระบบนี้ใช้งานง่ายและไม่ยุ่งยาก
 4. **Q4* (เชิงลบ)**: ข้าพเจ้าคิดว่าจำเป็นต้องได้รับความช่วยเหลือจากผู้เชี่ยวชาญด้านเทคนิคจึงจะสามารถใช้งานระบบนี้ได้
 5. **Q5 (เชิงบวก)**: ข้าพเจ้าพบว่าฟังก์ชันการทำงานต่างๆ ในระบบได้รับการบูรณาการและเชื่อมโยงกันเป็นอย่างดี
@@ -1599,18 +1648,18 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 9. **Q9 (เชิงบวก)**: ข้าพเจ้ารู้สึกมีความมั่นใจเป็นอย่างมากในการใช้งานระบบนี้
 10. **Q10* (เชิงลบ)**: ข้าพเจ้าจำเป็นต้องเรียนรู้สิ่งต่างๆ เพิ่มเติมเป็นจำนวนมากก่อนที่จะสามารถเริ่มต้นใช้งานระบบนี้ได้
 
-#### ค.5 รายการชุดคำถามทดสอบระบบผู้ช่วยเทคนิค DocAI RAG จำนวน 40 คำถาม (40 Technical Evaluation Prompts)
-ตัวอย่างชุดคำถามทดสอบการสืบค้นคู่มือขั้นตอนการปฏิบัติงานมาตรฐาน (SOP) ที่ใช้ใน Ablation Study (ตารางที่ 4.5):
+#### ค.5 ชุดคำถามทดสอบระบบผู้ช่วยเทคนิค DocAI RAG (Technical Evaluation Prompts)
+รายการด้านล่างเป็นเพียงตัวอย่างบางข้อ ไม่ใช่ชุดคำถามฉบับเต็ม ต้องแนบคำถามทั้ง 40 ข้อและ rubric การให้คะแนนก่อนอ้างผล Ablation Study ว่าทำซ้ำได้:
 1. ข้อกำหนดแรงบิดในการขันฝาแกลลอนขนาด 4 ลิตร สำหรับผลิตภัณฑ์น้ำมันเครื่องดีเซลเกรดพรีเมียมคือเท่าใด?
 2. หากพบการรั่วซึมบริเวณขอบตะเข็บแกลลอน 1 ลิตรในระหว่างการบรรจุ ต้องตั้งค่าอุณหภูมิหัวเชื่อมพลาสติกที่ระดับใด?
 3. ขั้นตอนการถ่ายเทน้ำมันหล่อลื่นจากแกลลอนที่ชำรุดกลับเข้าสู่ถังพักซ่อม (Rework Rerun Tank) ต้องผ่านตะแกรงกรองขนาดกี่ไมครอน?
 4. มาตรฐานระยะห่างในการติดฉลากด้านหน้าแกลลอน 5 ลิตร จากขอบล่างของบรรจุภัณฑ์ต้องมีค่ากี่มิลลิเมตร?
-... *(รวมทั้งสิ้น 40 คำถาม ครอบคลุมขั้นตอนมาตรฐานการซ่อมแซม, การควบคุมความปลอดภัยสารเคมี, สเปกแรงบิด, และการตรวจรับคุณภาพ)* ...
+*[รอยืนยัน: เติมคำถามข้อ 5–38 จากชุดทดสอบจริง พร้อมแหล่งที่มาของคำตอบมาตรฐานและเกณฑ์การให้คะแนน]*
 39. หากตรวจพบว่าแม่พิมพ์ M-04 เกิดรอยขีดข่วนบนพื้นผิวแกลลอน ต้องประสานงานแจ้งฝ่ายใดและบันทึกในโหมดใด?
 40. ข้อกำหนดการจัดเก็บกล่องบรรจุภัณฑ์ที่ผ่านการซ่อมแซมเสร็จแล้วในคลังสินค้าสำเร็จรูปสามารถวางซ้อนได้สูงสุดกี่ชั้นพาเลท?
 
-#### ค.6 รายการแบบแปลนวิศวกรรมและใบมาสเตอร์ 50 ฉบับที่ใช้ในการทดสอบ OCR (50 Drawing Corpus)
-แบบแปลนวิศวกรรมและใบสเปกหลัก (Master Sheets) จำนวน 50 ฉบับ ครอบคลุม 4 กลุ่มผลิตภัณฑ์หลัก:
+#### ค.6 รายการแบบแปลนวิศวกรรมและใบมาสเตอร์สำหรับทดสอบ OCR (Drawing Corpus)
+รายการด้านล่างเป็นรหัสที่ระบุไว้ในร่าง ต้องตรวจเทียบกับชุดไฟล์จริงและแนบรายการที่ได้รับอนุญาตให้เผยแพร่ก่อนยืนยันว่ามี corpus 50 ฉบับ:
 - **กลุ่มบรรจุภัณฑ์ 0.8L – 1.0L**: DWG-BTL-08L-001 ถึง 012 (12 ฉบับ)
 - **กลุ่มบรรจุภัณฑ์ 4.0L – 5.0L**: DWG-BTL-4L-001 ถึง 018 (18 ฉบับ)
 - **กลุ่มบรรจุภัณฑ์ 18L (Pail)**: DWG-PL-18L-001 ถึง 010 (10 ฉบับ)
@@ -1619,7 +1668,7 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 ---
 
 ### ภาคผนวก ง: ข้อมูลคะแนนดิบแบบสอบถาม SUS รายข้อ (SUS Raw Score Matrix)
-แบบสอบถามประเมินความสามารถในการใช้งานระบบ QSMS ตามมาตรฐาน System Usability Scale (SUS) ประกอบด้วย 10 ข้อคำถาม (มาตรวัด Likert 5 ระดับ: 1 = ไม่เห็นด้วยอย่างยิ่ง, 5 = เห็นด้วยอย่างยิ่ง) โดยมีตารางคะแนนดิบรายข้อของผู้ประเมินทั้ง 15 คน แสดงในตารางที่ ง.1:
+แบบสอบถามประเมินความสามารถในการใช้งานระบบ QSMS ตามมาตรฐาน System Usability Scale (SUS) ประกอบด้วย 10 ข้อคำถาม (มาตรวัด Likert 5 ระดับ: 1 = ไม่เห็นด้วยอย่างยิ่ง, 5 = เห็นด้วยอย่างยิ่ง) โดยมีตารางคะแนนที่ระบุว่าเป็นข้อมูลดิบของผู้ประเมิน 15 คน แสดงในตารางที่ ง.1 **[รอยืนยันเทียบกับแบบสอบถามต้นฉบับและบันทึกการเก็บข้อมูล]**:
 
 **ตารางที่ ง.1: ตารางคะแนนดิบรายข้อประเมินแบบสอบถาม SUS จากผู้ใช้งานจริง 15 คน (SUS Raw Score Matrix)**
 
@@ -1646,8 +1695,8 @@ W_d = \sum_{i=1}^{N_d} \left( L_{i,d} \cdot \omega_i \cdot \left( 1 + \alpha \cd
 
 ---
 
-### ภาคผนวก จ: หนังสือยินยอมการเก็บข้อมูลและการคุ้มครองข้อมูลความลับ (Company Consent & Anonymization)
-เอกสารหนังสือยินยอมให้ความร่วมมือทางวิชาการและการเก็บข้อมูลภาคสนาม (หนังสือเลขที่ ENG-QMS-2026-004) ออกโดยโรงงานผสมและบรรจุสารหล่อลื่นกรณีศึกษา ระบุการอนุญาตให้นำข้อมูลกระบวนการทำงาน ข้อมูลเวลาในการปฏิบัติงาน และสถิติของเสียมาใช้ในการวิเคราะห์และจัดทำปริญญานิพนธ์ โดยมีเงื่อนไขการพรางชื่อทางการค้าของลูกค้าและสูตรสารหล่อลื่นเฉพาะ เพื่อการคุ้มครองข้อมูลความลับทางการค้าและทรัพย์สินทางปัญญา
+### ภาคผนวก จ: เอกสารยินยอมการเก็บข้อมูลและการคุ้มครองข้อมูลความลับ (Company Consent & Anonymization)
+**[รอยืนยันและแนบเอกสารจริงก่อนส่ง]** ร่างเดิมระบุเลขที่หนังสือ ENG-QMS-2026-004 และขอบเขตการอนุญาตให้ใช้ข้อมูล แต่ในไฟล์นี้ยังไม่มีสำเนาหนังสือ จึงยังยืนยันเลขที่ ผู้อนุมัติ และขอบเขตการอนุญาตไม่ได้
 
 ---
 

@@ -30,7 +30,8 @@ export function normalizeStatus(status?: string): 'Pending Analysis' | 'Awaiting
   if (s === 'Awaiting Materials') return 'Awaiting Materials';
   if (s === 'Blocked') return 'Blocked';
   if (s === 'Completed') return 'Completed';
-  if (s === 'In-Progress' || s === 'Pending') return 'In-Progress';
+  if (s === 'In-Progress') return 'In-Progress';
+  if (s === 'Pending') return 'Pending Analysis';
   return 'Pending Analysis';
 }
 
@@ -787,7 +788,7 @@ export function Dashboard({ cases, isLoading }: DashboardProps) {
             </div>
 
             {/* Toggle dimension and units */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {!selectedMainReason && !selectedMainResponsible && (
                 <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
                   <button
@@ -985,7 +986,7 @@ function MetricCard({
   };
 
   return (
-    <div className={`rounded-xl border p-4 transition-all ${
+    <div className={`rounded-xl border p-3 sm:p-4 transition-all ${
       highlight ? borderClasses[highlight] : 'border-slate-200 bg-white shadow-2xs'
     }`}>
       <div className="flex items-center justify-between mb-2">

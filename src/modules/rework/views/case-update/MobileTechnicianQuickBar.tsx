@@ -42,7 +42,7 @@ export const MobileTechnicianQuickBar: React.FC<MobileTechnicianQuickBarProps> =
   return (
     <aside
       aria-label="แถบควบคุมด่วนช่างซ่อมบนมือถือ"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3.5 py-2.5 shadow-[0_-6px_25px_rgba(0,0,0,0.08)] lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3.5 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-[0_-6px_25px_rgba(0,0,0,0.08)] lg:hidden"
     >
       <div className="max-w-xl mx-auto flex items-center justify-between gap-2.5">
         {/* Progress Pill */}
@@ -56,7 +56,7 @@ export const MobileTechnicianQuickBar: React.FC<MobileTechnicianQuickBarProps> =
               {percentCompleted}%
             </span>
           </div>
-          <div className="w-24 sm:w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+          <div className="w-20 sm:w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
             <div
               className={`h-full transition-all duration-300 ${
                 isAllDone ? 'bg-emerald-600' : 'bg-slate-900'
@@ -74,7 +74,7 @@ export const MobileTechnicianQuickBar: React.FC<MobileTechnicianQuickBarProps> =
               onClick={handleQuickAddOne}
               disabled={isSaving}
               aria-label="เพิ่มยอดซ่อม 1 กล่องด่วน"
-              className="h-10 px-3 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 border border-slate-200 cursor-pointer"
+              className="min-h-11 h-11 px-3 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 border border-slate-200 cursor-pointer"
             >
               <Plus size={14} className="stroke-[3]" />
               <span>1 กล่อง</span>
@@ -87,7 +87,7 @@ export const MobileTechnicianQuickBar: React.FC<MobileTechnicianQuickBarProps> =
               onClick={() => handlePDFSave(true, false)}
               disabled={isSaving}
               aria-label="บันทึกซ่อมเสร็จแล้ว 100%"
-              className="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="min-h-11 h-11 px-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <CheckCheck size={15} />
               <span>ส่ง QC 100%</span>
@@ -98,7 +98,7 @@ export const MobileTechnicianQuickBar: React.FC<MobileTechnicianQuickBarProps> =
               onClick={() => handlePDFSave(false, false)}
               disabled={isSaving}
               aria-label="บันทึกยอดซ่อม"
-              className="h-10 px-3.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="min-h-11 h-11 px-3.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Save size={14} />
               <span>บันทึกยอด</span>

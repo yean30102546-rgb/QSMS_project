@@ -4,6 +4,7 @@ import { promisify } from 'util';
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { assertPermission, AuthError, generateToken, requireServerAuth } from '../../../lib/serverAuth';
 import { generateCaseId } from '../../../utils/helpers';
+import { calculateReworkSummary } from '../../../utils/statusNormalizer';
 import { LineNotificationService } from '../../../services/lineNotificationService';
 
 const scryptAsync = promisify(crypto.scrypt);
@@ -182,18 +183,7 @@ export async function POST(request: Request) {
         if (monthLeavesRes.error) throw monthLeavesRes.error;
 
         // 1. Rework calculations
-        let pending = 0;
-        let inProgress = 0;
-        let completed = 0;
-
-        (casesRes.data || []).forEach((c: { status: string }) => {
-          if (c.status === 'Pending') pending++;
-          else if (c.status === 'In-Progress') inProgress++;
-          else if (c.status === 'Completed') completed++;
-        });
-
-        const totalCases = pending + inProgress + completed;
-        const completionRate = totalCases > 0 ? parseFloat(((completed / totalCases) * 100).toFixed(1)) : 0;
+        const reworkSummary = calculateReworkSummary(casesRes.data || []);
 
         // 2. Roster calculations
         const totalEmployees = empRes.data.length;
@@ -221,13 +211,7 @@ export async function POST(request: Request) {
           {
             success: true,
             data: {
-              rework: {
-                total: totalCases,
-                pending,
-                inProgress,
-                completed,
-                completionRate
-              },
+              rework: reworkSummary,
               roster: {
                 totalEmployees,
                 staffPresentCount,

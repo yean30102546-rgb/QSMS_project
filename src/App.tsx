@@ -266,11 +266,28 @@ function AuthWrapper() {
       />
     );
   } else if (currentView === 'storage') {
-    content = <StorageApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
+    content = (
+      <StorageApp
+        user={appUser}
+        onBackToPortal={() => setCurrentView('portal')}
+        onLogout={handleLogout}
+        onNavigateToModule={(module) => setCurrentView(module)}
+      />
+    );
   } else if (currentView === 'admin') {
     content = <AdminMonitorApp user={appUser} onBackToPortal={() => setCurrentView('portal')} />;
   } else {
-    content = <ReworkApp user={appUser} onLogout={handleLogout} onBackToPortal={() => setCurrentView('portal')} initialCaseId={deepLinkCaseId ?? undefined} />;
+    content = (
+      <ReworkApp
+        user={appUser}
+        onLogout={handleLogout}
+        onBackToPortal={() => setCurrentView('portal')}
+        onNavigateToModule={appUser?.role?.toUpperCase() === 'OPERATOR'
+          ? undefined
+          : (module) => setCurrentView(module)}
+        initialCaseId={deepLinkCaseId ?? undefined}
+      />
+    );
   }
 
   return (
@@ -316,7 +333,12 @@ function AuthWrapper() {
       </motion.div>
 
       {/* Global RAG Chat Modal */}
-      <RagApp user={appUser} open={isRagOpen} onOpenChange={setIsRagOpen} />
+      <RagApp
+        user={appUser}
+        open={isRagOpen}
+        onOpenChange={setIsRagOpen}
+        activeModule={currentView === 'storage' ? 'storage' : 'rework'}
+      />
 
       {/* Global Feedback Modal */}
       <FeedbackModal
@@ -325,8 +347,8 @@ function AuthWrapper() {
         activeView={currentView}
       />
 
-      {/* Global Floating Glassmorphic AI Pill Button (Draggable) */}
-      {currentView !== 'login' && currentView !== 'forgot-password' && (
+      {/* Floating Glassmorphic AI Pill Button (Rework and Drawing/Master modules only) */}
+      {(currentView === 'rework' || currentView === 'storage') && (
         <motion.div
           drag
           dragMomentum={false}

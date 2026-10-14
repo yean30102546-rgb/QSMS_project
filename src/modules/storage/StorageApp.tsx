@@ -1,20 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  ArrowLeft, 
-  FolderOpen, 
   Search, 
   Upload, 
   FileText, 
-  AlertCircle,
-  Database,
   RefreshCw,
   Plus,
   Keyboard,
-  X,
-  Command
+  X
 } from 'lucide-react';
 import type { User } from '../../services/auth';
+import { MainLayout, type WorkspaceModule } from '../../components/layout/MainLayout';
+import { useNotification } from '../../contexts/NotificationContext';
 import { DocumentList } from './components/DocumentList';
 import { GapAnalysis } from './components/GapAnalysis';
 import { UploadModal } from './components/UploadModal';
@@ -26,17 +23,20 @@ import { UploadMiniDock } from './components/UploadMiniDock';
 interface StorageAppProps {
   user: User | null;
   onBackToPortal: () => void;
+  onLogout: () => void;
+  onNavigateToModule?: (module: WorkspaceModule) => void;
 }
 
 export type StorageTab = 'documents' | 'gap_analysis';
 
-export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
+export function StorageApp({ user, onBackToPortal, onLogout, onNavigateToModule }: StorageAppProps) {
   const canEdit = user?.role === 'ADMIN' || user?.role === 'QSMS';
   const [activeTab, setActiveTab] = useState<StorageTab>('documents');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadInitialData, setUploadInitialData] = useState<UploadInitialData | undefined>(undefined);
   const uploadQueue = useUploadQueue(uploadInitialData);
     const [searchQuery, setSearchQuery] = useState('');
+  const { showToast } = useNotification();
   const [refreshKey, setRefreshKey] = useState(0); // Used to force refetch
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -90,166 +90,96 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
     setIsDragging(false);
     if (!canEdit) return;
     
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const files = droppedFiles.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     if (files.length > 0) {
       uploadQueue.addFiles(files);
       setIsUploadOpen(true);
     }
+    if (droppedFiles.length > files.length) {
+      showToast('รองรับเฉพาะไฟล์ PDF ไฟล์อื่นไม่ได้ถูกเพิ่ม', 'warning');
+    }
   };
 
   return (
-    <div 
-      className="relative flex h-screen w-full flex-col overflow-hidden bg-slate-50 dark:bg-[#111111]"
+    <div
+      className="relative h-full w-full"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+    <MainLayout
+      module="storage"
+      activeTab={activeTab}
+      setActiveTab={(tab) => {
+        if (tab === 'documents' || tab === 'gap_analysis') setActiveTab(tab);
+      }}
+      onLogout={onLogout}
+      onBackToPortal={onBackToPortal}
+      onNavigateToModule={onNavigateToModule}
+      userName={user?.name || ''}
+      userRole={user?.role || ''}
+      onOpenTutorial={() => undefined}
+    >
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
       {/* Drag & Drop Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-amber-500/10 backdrop-blur-xs border-4 border-dashed border-amber-500">
-          <div className="flex flex-col items-center bg-white dark:bg-slate-900 p-8 rounded-xl shadow-2xl pointer-events-none border border-amber-300">
-            <Upload className="h-12 w-12 text-amber-600 mb-4 animate-bounce" />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Drop PDF files here</h2>
-            <p className="text-slate-500 dark:text-slate-400 mt-2">Release to open upload modal</p>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-blue-500/10 backdrop-blur-xs border-4 border-dashed border-blue-500">
+          <div className="flex flex-col items-center rounded-2xl border border-[#e0e0e0] bg-white p-8 pointer-events-none">
+            <Upload className="mb-4 h-12 w-12 text-[#0066cc]" />
+            <h2 className="text-xl font-bold text-[#1d1d1f]">วางไฟล์ PDF ที่นี่</h2>
+            <p className="mt-2 text-[#7a7a7a]">ปล่อยเมาส์เพื่อเพิ่มไฟล์เข้ารายการอัปโหลด</p>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <header className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-4 md:px-6">
-        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-          <button
-            onClick={onBackToPortal}
-            className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
-            title="กลับไปที่พอร์ทัล"
-          >
-            <ArrowLeft className="h-4 w-4 text-slate-600 group-hover:-translate-x-0.5 transition-transform" />
-          </button>
-          
-          <div className="flex flex-col min-w-0">
-            <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 truncate">
-              Drawing & Master Storage
+      <header className="shrink-0 border-b border-[#e0e0e0] bg-white px-4 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-[#1d1d1f] sm:text-xl">
+              {activeTab === 'documents' ? 'เอกสาร Drawing และ Master' : 'ตรวจสอบเอกสารที่ขาด'}
             </h1>
-            <p className="text-xs text-slate-500 truncate hidden sm:block">
-              Supabase RAG Engineering File Vault
+            <p className="mt-1 text-xs text-[#7a7a7a] sm:text-sm">
+              {activeTab === 'documents' ? 'ค้นหา ตรวจสอบเวอร์ชัน และจัดการเอกสารวิศวกรรม' : 'ตรวจหาคู่ Drawing และ Master ที่ยังไม่ครบ'}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setRefreshKey(prev => prev + 1)} className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white text-slate-600 transition-colors hover:bg-[#f5f5f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]" title="โหลดข้อมูลใหม่" aria-label="โหลดข้อมูลใหม่">
+              <RefreshCw className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => setIsShortcutsOpen(true)} className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white text-slate-600 transition-colors hover:bg-[#f5f5f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]" title="ดูปุ่มลัด" aria-label="ดูปุ่มลัด">
+              <Keyboard className="h-4 w-4" />
+            </button>
+            {canEdit ? (
+              <button type="button" onClick={() => setIsUploadOpen(true)} className="flex min-h-11 items-center gap-2 rounded-full bg-[#0066cc] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]">
+                <Plus className="h-4 w-4 shrink-0" />
+                <span>อัปโหลดไฟล์</span>
+              </button>
+            ) : (
+              <span className="flex min-h-11 items-center gap-2 rounded-lg border border-[#e0e0e0] bg-[#f5f5f7] px-3 text-xs font-medium text-slate-600" title="สิทธิ์ของคุณเป็นโหมดดูและดาวน์โหลดเท่านั้น">
+                <FileText className="h-4 w-4 text-slate-500" />
+                <span>ดูและดาวน์โหลด</span>
+              </span>
+            )}
+          </div>
         </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Search Bar */}
-          <div className="relative hidden md:flex items-center">
-            <div className="absolute left-3 text-slate-400">
-              <Search className="h-4 w-4" />
-            </div>
+        {activeTab === 'documents' && (
+          <div className="relative mt-3 w-full sm:max-w-xl">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
-              placeholder="Search by item code, number, drawing no, part..."
+              type="search"
+              aria-label="ค้นหาเอกสาร Drawing และ Master"
+              placeholder="ค้นหาด้วยรหัสสินค้า เลขแบบ หรือชื่อชิ้นส่วน"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-64 lg:w-96 rounded-md border border-slate-300 bg-white pl-9 pr-4 text-xs text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+              className="h-11 w-full rounded-lg border border-[#d1d5db] bg-white pl-10 pr-4 text-sm text-[#1d1d1f] outline-none transition-colors placeholder:text-slate-500 focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20"
             />
           </div>
-
-          <button
-            onClick={() => setRefreshKey(prev => prev + 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-slate-600"
-            title="Refresh Data"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </button>
-          
-          <button
-            onClick={() => setIsShortcutsOpen(true)}
-            className="hidden md:flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-slate-600"
-            title="Keyboard Shortcuts"
-          >
-            <Keyboard className="h-4 w-4" />
-          </button>
-
-          {canEdit ? (
-            <button
-              onClick={() => setIsUploadOpen(true)}
-              className="flex h-9 items-center gap-1.5 sm:gap-2 rounded-md bg-amber-500 hover:bg-amber-600 px-2.5 sm:px-3.5 text-xs font-bold text-slate-950 transition-all shadow-xs active:scale-95 cursor-pointer"
-            >
-              <Plus className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Upload File</span>
-              <span className="sm:hidden">Upload</span>
-            </button>
-          ) : (
-            <span
-              className="flex h-9 items-center gap-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 sm:px-3 text-xs font-medium text-slate-500 dark:text-slate-400 select-none"
-              title="สิทธิ์ของคุณเป็นโหมดดูและดาวน์โหลดเท่านั้น (Read & Download Only)"
-            >
-              <FileText className="h-3.5 w-3.5 text-slate-400" />
-              <span className="hidden sm:inline">โหมดอ่านอย่างเดียว</span>
-              <span className="sm:hidden">อ่านอย่างเดียว</span>
-            </span>
-          )}
-        </div>
+        )}
       </header>
 
-      {/* Mobile Navigation Segmented Switcher (Visible on <md screens: 320px - 767px) */}
-      <div className="flex md:hidden items-center justify-center px-3 py-2 bg-slate-100/80 dark:bg-black/30 border-b border-slate-200 dark:border-white/10 shrink-0">
-        <div className="flex items-center w-full max-w-sm bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-white/10 shadow-xs text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setActiveTab('documents')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md transition-colors ${
-              activeTab === 'documents'
-                ? 'bg-slate-900 text-white dark:bg-blue-600 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
-          >
-            <Database className="h-3.5 w-3.5" />
-            <span>All Documents</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('gap_analysis')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md transition-colors ${
-              activeTab === 'gap_analysis'
-                ? 'bg-slate-900 text-white dark:bg-blue-600 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
-          >
-            <AlertCircle className="h-3.5 w-3.5" />
-            <span>Gap Analysis</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar Tabs */}
-        <div className="w-56 shrink-0 border-r border-slate-200 dark:border-white/10 bg-white/40 dark:bg-black/20 p-4 hidden md:flex flex-col gap-2">
-          <button
-            onClick={() => setActiveTab('documents')}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === 'documents'
-                ? 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white'
-                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-200'
-            }`}
-          >
-            <Database className="h-4 w-4" />
-            <span>All Documents</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('gap_analysis')}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === 'gap_analysis'
-                ? 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white'
-                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-200'
-            }`}
-          >
-            <AlertCircle className="h-4 w-4" />
-            <span>Gap Analysis</span>
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <main className="relative flex-1 overflow-hidden p-3 md:p-4 lg:p-6">
+      <section className="relative min-h-0 flex-1 overflow-hidden p-3 sm:p-4 lg:p-6" aria-label={activeTab === 'documents' ? 'รายการเอกสาร' : 'ผลตรวจเอกสารที่ขาด'}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -266,8 +196,7 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
               )}
             </motion.div>
           </AnimatePresence>
-        </main>
-      </div>
+      </section>
 
       {/* Upload Modal */}
       <AnimatePresence>
@@ -309,11 +238,12 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
                   <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <Keyboard className="h-4 w-4" />
                   </div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Keyboard Shortcuts</h2>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">ปุ่มลัดแป้นพิมพ์</h2>
                 </div>
                 <button 
                   onClick={() => setIsShortcutsOpen(false)}
                   className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-500"
+                  aria-label="ปิดหน้าต่างปุ่มลัด"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -321,24 +251,24 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
               <div className="p-6 overflow-y-auto">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 dark:text-slate-300">Navigate Documents List</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">เลื่อนดูรายการเอกสาร</span>
                     <div className="flex gap-1.5">
                       <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">↑</kbd>
                       <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">↓</kbd>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 dark:text-slate-300">Close Inspection Panel</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">ปิดแผงตรวจสอบ</span>
                     <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">Esc</kbd>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 dark:text-slate-300">Rotate PDF</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">หมุน PDF</span>
                     <div className="flex gap-1.5 items-center">
                       <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">R</kbd>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 dark:text-slate-300">Search Documents</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">ค้นหาเอกสาร</span>
                     <div className="flex gap-1.5 items-center">
                       <kbd className="px-2 py-1 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">Ctrl</kbd>
                       <span className="text-xs text-slate-400">+</span>
@@ -351,6 +281,8 @@ export function StorageApp({ user, onBackToPortal }: StorageAppProps) {
           </div>
         )}
       </AnimatePresence>
+    </div>
+    </MainLayout>
     </div>
   );
 }

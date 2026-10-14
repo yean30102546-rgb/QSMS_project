@@ -219,7 +219,7 @@ export function OverallTab({
                   <button
                     onClick={loadCases}
                     disabled={isLoadingCases}
-                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-[#E5E5E7] bg-white text-[#1D1D1F] transition-colors hover:bg-[#F5F5F7] disabled:opacity-50 active:scale-95 cursor-pointer"
+                    className="flex h-11 w-11 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-[#E5E5E7] bg-white text-[#1D1D1F] transition-colors hover:bg-[#F5F5F7] disabled:opacity-50 active:scale-95 cursor-pointer"
                   >
                     <RefreshCw size={14} className={isLoadingCases ? 'animate-spin text-[#0071E3]' : ''} />
                   </button>
@@ -785,7 +785,7 @@ function StatCard({ label, value, trend, variant = 'total' }: StatCardProps) {
     'bg-emerald-50 text-emerald-800 border-emerald-200';
 
   return (
-    <div className="rounded-2xl border border-[#E5E5E7] bg-white p-4 shadow-xs transition-all hover:border-[#0071E3]/30">
+    <div className="rounded-2xl border border-[#E5E5E7] bg-white p-3 sm:p-4 shadow-xs transition-all hover:border-[#0071E3]/30">
       <div className="flex items-center justify-between gap-1 mb-2">
         <p className="text-xs font-medium tracking-tight text-[#86868B] truncate">
           {label}
@@ -793,7 +793,7 @@ function StatCard({ label, value, trend, variant = 'total' }: StatCardProps) {
         <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
       </div>
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-2xl sm:text-3xl font-bold font-mono tabular-nums tracking-tight text-[#1D1D1F]">{value}</h3>
+        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold font-mono tabular-nums tracking-tight text-[#1D1D1F]">{value}</h3>
         {trend && (
           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold font-mono border ${badgeStyle}`}>
             {trend}

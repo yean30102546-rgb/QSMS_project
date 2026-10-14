@@ -48,6 +48,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   [UserRole.ADMIN]: [
     'manage_users',
     'manage_masters',
+    'manage_rag',
+    'manage_integrations',
+    'view_feedback',
     'view_dashboard',
     'view_overall',
     'create_case',
@@ -64,6 +67,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'export_data',
   ],
   [UserRole.QSMS]: [
+    'manage_masters',
+    'manage_rag',
+    'manage_integrations',
+    'view_feedback',
     'view_dashboard',
     'view_overall',
     'create_case',

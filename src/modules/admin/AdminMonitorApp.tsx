@@ -259,6 +259,8 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200"><ShieldCheck size={12} /> QSMS (QC)</span>;
       case 'WFG':
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-700 border border-cyan-200"><Package size={12} /> WFG (คลังสินค้าสำเร็จรูป)</span>;
+      case 'CS':
+        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200"><UserCheck size={12} /> CS (บริการลูกค้า)</span>;
       case 'WPK':
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200"><Package size={12} /> WPK (คลัง)</span>;
       case 'PDF':
@@ -443,6 +445,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                         <SelectItem value="ADMIN" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">Admin (ผู้ดูแลระบบ)</SelectItem>
                         <SelectItem value="QSMS" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">QSMS (ฝ่ายคุณภาพ)</SelectItem>
                         <SelectItem value="WFG" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WFG (คลังสินค้าสำเร็จรูป)</SelectItem>
+                        <SelectItem value="CS" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">CS (ฝ่ายบริการลูกค้า)</SelectItem>
                         <SelectItem value="WPK" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WPK (คลัง/บรรจุภัณฑ์)</SelectItem>
                         <SelectItem value="PDF" className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">PDF (ฝ่ายซ่อม)</SelectItem>
                       </SelectContent>
@@ -742,6 +745,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                         <SelectItem value={UserRole.ADMIN} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">Admin (ผู้ดูแลระบบ)</SelectItem>
                         <SelectItem value={UserRole.QSMS} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">QSMS (ฝ่ายคุณภาพ)</SelectItem>
                         <SelectItem value={UserRole.WFG} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WFG (คลังสินค้าสำเร็จรูป)</SelectItem>
+                        <SelectItem value={UserRole.CS} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">CS (ฝ่ายบริการลูกค้า)</SelectItem>
                         <SelectItem value={UserRole.WPK} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WPK (คลัง/บรรจุภัณฑ์)</SelectItem>
                         <SelectItem value={UserRole.PDF} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">PDF (ฝ่ายซ่อม)</SelectItem>
                       </SelectContent>
@@ -821,6 +825,7 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                         <SelectItem value={UserRole.ADMIN} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">Admin (ผู้ดูแลระบบ)</SelectItem>
                         <SelectItem value={UserRole.QSMS} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">QSMS (ฝ่ายคุณภาพ)</SelectItem>
                         <SelectItem value={UserRole.WFG} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WFG (คลังสินค้าสำเร็จรูป)</SelectItem>
+                        <SelectItem value={UserRole.CS} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">CS (ฝ่ายบริการลูกค้า)</SelectItem>
                         <SelectItem value={UserRole.WPK} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">WPK (คลัง/บรรจุภัณฑ์)</SelectItem>
                         <SelectItem value={UserRole.PDF} className="rounded-lg text-xs font-semibold text-slate-700 focus:bg-indigo-50 focus:text-indigo-900 cursor-pointer">PDF (ฝ่ายซ่อม)</SelectItem>
                       </SelectContent>

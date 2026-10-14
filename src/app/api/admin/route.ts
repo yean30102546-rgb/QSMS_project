@@ -54,6 +54,13 @@ export async function POST(request: Request) {
         const usernameClean = (username || '').trim().toLowerCase();
         const nameClean = (name || '').trim();
         const roleClean = String(role || 'PDF').trim().toUpperCase();
+        const validRoles = ['ADMIN', 'QSMS', 'WFG', 'CS', 'WPK', 'PDF', 'OPERATOR'];
+        if (!validRoles.includes(roleClean)) {
+          return NextResponse.json(
+            { success: false, error: `บทบาท "${roleClean}" ไม่ถูกต้องในระบบ RBAC` },
+            { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+          );
+        }
         if (!usernameClean || !password || !nameClean) {
           return NextResponse.json(
             { success: false, error: 'กรุณาระบุ Username, Password และชื่อ-นามสกุลให้ครบถ้วน' },
@@ -129,7 +136,17 @@ export async function POST(request: Request) {
 
         const updateData: Record<string, unknown> = {};
         if (name) updateData.name = String(name).trim();
-        if (role) updateData.role = String(role).trim().toUpperCase();
+        if (role) {
+          const roleUpper = String(role).trim().toUpperCase();
+          const validRoles = ['ADMIN', 'QSMS', 'WFG', 'CS', 'WPK', 'PDF', 'OPERATOR'];
+          if (!validRoles.includes(roleUpper)) {
+            return NextResponse.json(
+              { success: false, error: `บทบาท "${roleUpper}" ไม่ถูกต้องในระบบ RBAC` },
+              { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+            );
+          }
+          updateData.role = roleUpper;
+        }
         if (password) {
           const passwordError = validatePassword(password);
           if (passwordError) {
@@ -238,6 +255,8 @@ export async function POST(request: Request) {
         const userRoleCounts: Record<string, number> = {
           ADMIN: 0,
           QSMS: 0,
+          WFG: 0,
+          CS: 0,
           WPK: 0,
           PDF: 0,
         };

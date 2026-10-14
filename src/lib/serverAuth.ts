@@ -5,7 +5,6 @@ function getAuthSecret(): string {
 }
 
 const PROFILE_ALIASES: Record<string, string> = {
-  WFG: 'WPK',
   OPERATOR: 'PDF',
 };
 
@@ -32,6 +31,7 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'export_data',
   ],
   QSMS: [
+    'manage_masters',
     'manage_rag',
     'manage_integrations',
     'view_feedback',
@@ -54,6 +54,7 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'export_data',
   ],
   WFG: [
+    'view_dashboard',
     'view_overall',
     'create_case',
     'update_status',
@@ -62,6 +63,7 @@ const PROFILE_PERMISSIONS: Record<string, string[]> = {
     'export_data',
   ],
   CS: [
+    'view_dashboard',
     'view_overall',
     'create_case',
     'update_status',

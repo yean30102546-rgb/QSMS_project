@@ -1082,7 +1082,7 @@ export function AddCaseTab({ onOpenTutorial }: AddCaseTabProps) {
                         </div>
                         <div className="col-span-1"><InputField label="Mold" className="font-mono uppercase font-semibold text-center" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
                         <div className="col-span-1"><InputField label="Line" className="font-mono uppercase font-semibold text-center" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                        <div className="col-span-1"><InputField label="จำนวนกล่อง (ลัง) *" type="number" className="font-mono font-bold text-center" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
+                        <div className="col-span-2 sm:col-span-1"><InputField label="จำนวนกล่อง (ลัง) *" type="number" className="font-mono font-bold text-center" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
                       </div>
 
                       <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">

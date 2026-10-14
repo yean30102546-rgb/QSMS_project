@@ -326,25 +326,26 @@ export function MobileFastTrackApp({ onComplete, onCancel, initialSource, initia
     <div className="fixed inset-0 z-[70] flex items-center justify-center md:bg-slate-900/50 md:backdrop-blur-sm md:p-6">
       <div className="flex flex-col w-full h-[100dvh] md:max-w-[500px] md:max-h-[850px] md:h-[90vh] md:rounded-[2.5rem] md:overflow-hidden bg-slate-50 text-slate-900 font-sans overflow-hidden shadow-2xl relative md:border md:border-slate-300/50">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-sm relative">
+      <header className="bg-white border-b border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between flex-shrink-0 shadow-sm relative min-w-0">
         {onCancel && (
           <button
             onClick={onCancel}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 -ml-2 text-slate-400 hover:text-slate-600 transition-colors"
+            aria-label="ย้อนกลับ"
+            className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors min-h-11 min-w-11 flex items-center justify-center -ml-1 mr-1 shrink-0"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={22} />
           </button>
         )}
-        <div className={`flex items-center gap-2 ${onCancel ? 'ml-8' : ''}`}>
-          <div className="bg-blue-600 p-1.5 rounded-lg"><Package className="text-white w-5 h-5" /></div>
-          <div>
-            <h1 className="text-lg font-bold leading-tight">Fast-Track</h1>
-            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Assistant</p>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="bg-blue-600 p-1.5 rounded-lg shrink-0"><Package className="text-white w-4 h-4 sm:w-5 sm:h-5" /></div>
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-lg font-bold leading-tight truncate">Fast-Track</h1>
+            <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium uppercase tracking-wider truncate">Assistant</p>
           </div>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200 shadow-inner">
-          <button onClick={() => setActiveTab('entry')} className={`px-4 py-1.5 rounded-full text-xs font-black transition-all ${activeTab === 'entry' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>บันทึก</button>
-          <button onClick={() => setActiveTab('queue')} className={`px-4 py-1.5 rounded-full text-xs font-black transition-all flex items-center gap-1.5 ${activeTab === 'queue' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>
+        <div className="flex bg-slate-100 p-0.5 sm:p-1 rounded-full border border-slate-200 shadow-inner shrink-0 ml-2">
+          <button onClick={() => setActiveTab('entry')} className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-black transition-all ${activeTab === 'entry' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>บันทึก</button>
+          <button onClick={() => setActiveTab('queue')} className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-black transition-all flex items-center gap-1.5 ${activeTab === 'queue' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>
             คิว {draft.items.length > 0 && <span className="bg-blue-600 text-white text-[10px] min-w-[18px] h-4.5 rounded-full flex items-center justify-center font-bold">{draft.items.length}</span>}
           </button>
         </div>

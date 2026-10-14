@@ -4,7 +4,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
-import { MainLayout } from '../../components/layout/MainLayout';
+import { MainLayout, type WorkspaceModule } from '../../components/layout/MainLayout';
 import { TutorialModal } from '../../components/modals/TutorialModal';
 import { ReworkDataProvider } from '@/src/contexts/ReworkDataContext';
 
@@ -20,6 +20,7 @@ interface ReworkAppProps {
   user: User | null;
   onLogout: () => void;
   onBackToPortal: () => void;
+  onNavigateToModule?: (module: WorkspaceModule) => void;
   initialCaseId?: string;
 }
 
@@ -35,7 +36,7 @@ function TabFallback() {
   );
 }
 
-function ReworkAppContent({ user, onLogout, onBackToPortal, initialCaseId }: ReworkAppProps) {
+function ReworkAppContent({ user, onLogout, onBackToPortal, onNavigateToModule, initialCaseId }: ReworkAppProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overall');
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
@@ -43,10 +44,14 @@ function ReworkAppContent({ user, onLogout, onBackToPortal, initialCaseId }: Rew
   return (
     <>
       <MainLayout
+        module="rework"
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          if (tab === 'overall' || tab === 'add' || tab === 'dashboard') setActiveTab(tab);
+        }}
         onLogout={onLogout}
         onBackToPortal={onBackToPortal}
+        onNavigateToModule={onNavigateToModule}
         userName={user?.name || ''}
         userRole={user?.role || ''}
         onOpenTutorial={() => setIsTutorialOpen(true)}

@@ -18,6 +18,7 @@ import { motion } from 'motion/react';
 
 import type { User } from '../../../services/auth';
 import type { PortalAppDefinition } from '../../../modules/platform/types';
+import { STATUS_FILTER_GROUPS } from '../../../utils/statusNormalizer';
 
 interface WorkspacePortalProps {
   user: User | null;
@@ -46,7 +47,9 @@ export function WorkspacePortal({
     total: 0,
     pending: 0,
     inProgress: 0,
+    blocked: 0,
     completed: 0,
+    other: 0,
     completionRate: 0,
     hasData: false,
   });
@@ -80,11 +83,13 @@ export function WorkspacePortal({
           if (resJson.success && resJson.data) {
             const { rework, roster } = resJson.data;
             setReworkStats({
-              total: rework.total,
-              pending: rework.pending,
-              inProgress: rework.inProgress,
-              completed: rework.completed,
-              completionRate: rework.completionRate,
+              total: rework.total ?? 0,
+              pending: rework.pending ?? 0,
+              inProgress: rework.inProgress ?? 0,
+              blocked: rework.blocked ?? 0,
+              completed: rework.completed ?? 0,
+              other: rework.other ?? 0,
+              completionRate: rework.completionRate ?? 0,
               hasData: true
             });
             setRosterStats({
@@ -130,9 +135,18 @@ export function WorkspacePortal({
     fetchStorageOverview();
   }, []);
 
-  const handleDirectFilterJump = (status: 'Pending' | 'In-Progress' | 'Completed') => {
+  const handleDirectFilterJump = (statusGroup: 'Pending' | 'In-Progress' | 'Blocked' | 'Completed') => {
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('rework_initial_status_filter', status);
+      const filterStatuses =
+        statusGroup === 'Pending'
+          ? [...STATUS_FILTER_GROUPS.pending]
+          : statusGroup === 'In-Progress'
+          ? [...STATUS_FILTER_GROUPS.inProgress]
+          : statusGroup === 'Blocked'
+          ? [...STATUS_FILTER_GROUPS.blocked]
+          : [...STATUS_FILTER_GROUPS.completed];
+
+      sessionStorage.setItem('rework_initial_status_filter', JSON.stringify(filterStatuses));
     }
     onOpenApp('rework');
   };
@@ -348,6 +362,16 @@ export function WorkspacePortal({
                           title={`กำลังดำเนินการ: ${reworkStats.inProgress} เคส (${Math.round((reworkStats.inProgress / reworkStats.total) * 100)}%) — คลิกเพื่อเปิด`}
                         />
                       )}
+                      {reworkStats.blocked > 0 && (
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(reworkStats.blocked / reworkStats.total) * 100}%` }}
+                          transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+                          onClick={() => handleDirectFilterJump('Blocked')}
+                          className="h-full bg-rose-500 hover:brightness-110 cursor-pointer transition-all"
+                          title={`ติดปัญหา: ${reworkStats.blocked} เคส (${Math.round((reworkStats.blocked / reworkStats.total) * 100)}%) — คลิกเพื่อเปิด`}
+                        />
+                      )}
                       {reworkStats.completed > 0 && (
                         <motion.div
                           initial={{ width: 0 }}
@@ -358,19 +382,28 @@ export function WorkspacePortal({
                           title={`เสร็จสิ้น: ${reworkStats.completed} เคส (${Math.round((reworkStats.completed / reworkStats.total) * 100)}%) — คลิกเพื่อเปิด`}
                         />
                       )}
+                      {reworkStats.other > 0 && (
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(reworkStats.other / reworkStats.total) * 100}%` }}
+                          transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+                          className="h-full bg-slate-400 hover:brightness-110 transition-all"
+                          title={`สถานะอื่น: ${reworkStats.other} เคส (${Math.round((reworkStats.other / reworkStats.total) * 100)}%)`}
+                        />
+                      )}
                     </>
                   )}
                 </div>
 
-                {/* 3 Clickable Metric Boxes with Direct Filter Jumping */}
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200 text-center">
+                {/* 4 Clickable Metric Boxes with Direct Filter Jumping */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-200 text-center">
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
                     type="button"
                     onClick={() => handleDirectFilterJump('Pending')}
                     className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100/80 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer"
-                    title="คลิกเพื่อดูกลุ่มเคสรอดำเนินการทันที"
+                    title="คลิกเพื่อดูกลุ่มเคสรอดำเนินการทันที (รอวิเคราะห์, รอเบิกวัสดุ, Pending)"
                   >
                     <span className="text-[11px] font-medium text-slate-700 flex items-center justify-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
@@ -390,7 +423,7 @@ export function WorkspacePortal({
                     whileTap={{ scale: 0.99 }}
                     type="button"
                     onClick={() => handleDirectFilterJump('In-Progress')}
-                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100/80 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer border-x border-slate-200"
+                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100/80 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer"
                     title="คลิกเพื่อดูกลุ่มเคสที่กำลังทำทันที"
                   >
                     <span className="text-[11px] font-medium text-slate-700 flex items-center justify-center gap-1">
@@ -399,6 +432,27 @@ export function WorkspacePortal({
                     </span>
                     <span className="text-xl md:text-2xl font-semibold text-slate-900 font-mono tabular-nums">
                       {reworkStats.hasData ? reworkStats.inProgress : '--'}
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+                      <span>กรองกลุ่มนี้</span>
+                      <ArrowUpRight size={10} />
+                    </span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    type="button"
+                    onClick={() => handleDirectFilterJump('Blocked')}
+                    className="group/stat flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100/80 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer"
+                    title="คลิกเพื่อดูกลุ่มเคสที่ติดปัญหาทันที"
+                  >
+                    <span className="text-[11px] font-medium text-slate-700 flex items-center justify-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                      ติดปัญหา
+                    </span>
+                    <span className="text-xl md:text-2xl font-semibold text-slate-900 font-mono tabular-nums">
+                      {reworkStats.hasData ? reworkStats.blocked : '--'}
                     </span>
                     <span className="text-[9px] text-slate-500 font-medium opacity-0 group-hover/stat:opacity-100 transition-opacity inline-flex items-center gap-0.5">
                       <span>กรองกลุ่มนี้</span>
@@ -427,6 +481,14 @@ export function WorkspacePortal({
                     </span>
                   </motion.button>
                 </div>
+
+                {/* Optional Unknown / Foreign Status Indicator */}
+                {reworkStats.hasData && reworkStats.other > 0 && (
+                  <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 py-1 px-2 rounded border border-slate-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                    <span>สถานะอื่นนอกมาตรฐาน: {reworkStats.other} เคส (นับรวมในฐานข้อมูลทั้งหมด {reworkStats.total} เคส)</span>
+                  </div>
+                )}
               </div>
 
               {/* Description & Key Feature Badges */}
@@ -551,83 +613,6 @@ export function WorkspacePortal({
               </motion.article>
             )}
 
-            {/* Bottom Right Split: DocAI RAG & Presentation Guide */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-              {/* DocAI Card */}
-              <motion.article
-                whileHover={{ y: -2 }}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition-all"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-500">AI Assistant</span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Online
-                    </span>
-                  </div>
-                  <h4 className="mt-1.5 text-base font-semibold tracking-tight text-slate-900">
-                    DocAI Assistant
-                  </h4>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-                    สืบค้นคู่มือเทคนิคและแนวทางแก้ไขงานผ่านเวกเตอร์ AI
-                  </p>
-                </div>
-
-                <div className="mt-3 pt-2.5 border-t border-slate-100">
-                  <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    type="button"
-                    onClick={onOpenRag}
-                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold transition-colors border border-slate-900 shadow-xs"
-                  >
-                    <span>ถาม AI Assistant</span>
-                    <ArrowRight size={13} />
-                  </motion.button>
-                </div>
-              </motion.article>
-
-              {/* Presentation Card */}
-              <motion.article
-                whileHover={{ y: -2 }}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.25 }}
-                className="flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition-all"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-700">คู่มือแนะนำ</span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                      Deck
-                    </span>
-                  </div>
-                  <h4 className="mt-1.5 text-base font-semibold tracking-tight text-slate-900">
-                    Presentation Deck
-                  </h4>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-                    สไลด์นำเสนอระบบและจำลองการใช้งานแบบ Interactive
-                  </p>
-                </div>
-
-                <div className="mt-3 pt-2.5 border-t border-slate-100">
-                  <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    type="button"
-                    onClick={() => onOpenApp('guide')}
-                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 text-xs font-medium transition-colors border border-slate-200"
-                  >
-                    <span>เปิดคู่มือสไลด์</span>
-                    <ArrowRight size={13} />
-                  </motion.button>
-                </div>
-              </motion.article>
-            </div>
           </div>
         </section>
       </div>

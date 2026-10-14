@@ -21,10 +21,14 @@ interface RagAppProps {
   user: User | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  activeModule?: 'rework' | 'storage';
 }
 
 interface MessageSource {
   content: string;
+  filename?: string;
+  source_type?: string;
+  quote_snippet?: string;
   image_urls?: string[];
   similarity: number;
 }
@@ -53,9 +57,18 @@ interface UploadQueueItem {
 
 const WELCOME_MESSAGE = 'สวัสดีครับ ผมคือ QSMS Enterprise AI Assistant ยินดีให้บริการครับ \n\nผมสามารถช่วยคุณสืบค้นและวิเคราะห์ข้อมูลสดจากทุกโมดูลในระบบ:\n1. สถิติเคส Rework & รายการสินค้าชำรุด (รั่ว/เปื้อน)\n2. สเปกสินค้ากลาง (Item Master / พาเลท / กลุ่มน้ำมัน)\n3. แบบแปลนวิศวกรรม & Master Sheets (Drawing No / Revision)\n4. คู่มือการปฏิบัติงาน & เอกสารเทคนิค RAG PDF\n\nพิมพ์คำถามของคุณได้เลยครับ!';
 
-export function RagApp({ user, open, onOpenChange }: RagAppProps) {
+export function RagApp({ user, open, onOpenChange, activeModule = 'rework' }: RagAppProps) {
   const { showAlert, showConfirm } = useNotification();
   const [activeTab, setActiveTab] = useState<'chat' | 'documents'>('chat');
+  const [searchScope, setSearchScope] = useState<'rework' | 'storage'>(activeModule);
+  const [expandCrossModule, setExpandCrossModule] = useState(false);
+
+  useEffect(() => {
+    if (activeModule) {
+      setSearchScope(activeModule);
+    }
+  }, [activeModule]);
+
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: WELCOME_MESSAGE }
   ]);
@@ -290,7 +303,9 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
         body: JSON.stringify({ 
           action: 'chat', 
           message: finalQuery,
-          messages: messageHistory
+          messages: messageHistory,
+          moduleContext: searchScope,
+          expandCrossModule
         })
       });
 
@@ -707,6 +722,26 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                   
                   {/* Chat Tab */}
                   <div className={`absolute inset-0 flex-col overflow-hidden ${activeTab === 'chat' ? 'flex z-10' : 'hidden z-0'}`}>
+                    {/* Module Scope & Cross-Module Bar */}
+                    <div className="flex items-center justify-between gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100 dark:bg-slate-800/60 dark:border-slate-700/50 text-[11px] shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500 dark:text-slate-400">สโคป:</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-200/80 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40">
+                          {searchScope === 'storage' ? 'Drawing & Master' : 'Rework System'}
+                        </span>
+                      </div>
+
+                      <label className="flex items-center gap-1.5 cursor-pointer select-none text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={expandCrossModule}
+                          onChange={(e) => setExpandCrossModule(e.target.checked)}
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+                        />
+                        <span className="text-[11px] font-medium">ค้นหาข้ามโมดูล</span>
+                      </label>
+                    </div>
+
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                       <div className="flex justify-center">
@@ -767,16 +802,28 @@ export function RagApp({ user, open, onOpenChange }: RagAppProps) {
                                 <details className="group [&_summary::-webkit-details-marker]:hidden">
                                   <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors dark:text-slate-400">
                                     <FileText size={12} />
-                                    <span>อ้างอิงจาก {m.sources.length} แหล่งข้อมูล</span>
+                                    <span>อ้างอิงจาก {m.sources.length} แหล่งข้อมูลเอกสาร</span>
                                     <span className="transition duration-300 group-open:-rotate-180">
                                       <svg fill="none" height="12" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="12"><path d="M6 9l6 6 6-6"></path></svg>
                                     </span>
                                   </summary>
                                   <div className="mt-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 dark:border-slate-700 dark:bg-slate-800/50">
                                     {m.sources.map((src, sIdx) => (
-                                      <div key={sIdx} className="text-[11px] text-slate-600 dark:text-slate-300 bg-white dark:bg-[#1c1c1e] p-2 rounded border border-slate-100 dark:border-slate-700/50 shadow-sm leading-relaxed whitespace-pre-wrap">
-                                        <div className="font-semibold text-blue-600 dark:text-blue-400 mb-1">ส่วนที่ {sIdx + 1}</div>
-                                        {src.content.length > 200 ? src.content.substring(0, 200) + '...' : src.content}
+                                      <div key={sIdx} className="text-[11px] text-slate-600 dark:text-slate-300 bg-white dark:bg-[#1c1c1e] p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50 shadow-xs leading-relaxed space-y-1">
+                                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1">
+                                          <div className="flex items-center gap-1.5 font-semibold text-blue-600 dark:text-blue-400 truncate">
+                                            <FileText size={11} className="shrink-0" />
+                                            <span className="truncate">{src.filename || `เอกสารอ้างอิง #${sIdx + 1}`}</span>
+                                          </div>
+                                          {typeof src.similarity === 'number' && (
+                                            <span className="shrink-0 text-[10px] text-slate-400 font-mono">
+                                              ความตรง {Math.round(src.similarity * 100)}%
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="text-[10.5px] text-slate-500 dark:text-slate-400 italic line-clamp-3">
+                                          &quot;{src.quote_snippet || (src.content.length > 200 ? src.content.substring(0, 200) + '...' : src.content)}&quot;
+                                        </div>
                                       </div>
                                     ))}
                                   </div>

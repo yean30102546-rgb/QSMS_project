@@ -20,10 +20,23 @@ export function useOverallFilters(cases: ReworkCase[], searchQuery: string) {
   // One-shot initial status filter check from Central Portal jumping
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const initialStatus = sessionStorage.getItem('rework_initial_status_filter') as CaseStatus | null;
-      if (initialStatus) {
-        setStatusFilter([initialStatus]);
-        setShowFilters(true);
+      const stored = sessionStorage.getItem('rework_initial_status_filter');
+      if (stored) {
+        try {
+          if (stored.startsWith('[') && stored.endsWith(']')) {
+            const parsed = JSON.parse(stored) as CaseStatus[];
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setStatusFilter(parsed);
+              setShowFilters(true);
+            }
+          } else {
+            setStatusFilter([stored as CaseStatus]);
+            setShowFilters(true);
+          }
+        } catch {
+          setStatusFilter([stored as CaseStatus]);
+          setShowFilters(true);
+        }
         sessionStorage.removeItem('rework_initial_status_filter');
       }
     }

@@ -29,15 +29,6 @@ export const portalAppRegistry: PortalAppDefinition[] = [
     accent: 'purple',
   },
   {
-    id: 'guide',
-    title: 'Presentation & Guide',
-    subtitle: 'Interactive User Guide',
-    description: 'Explore high-fidelity interactive tutorials and documentation for the QSMS platform.',
-    route: 'guide',
-    status: 'active',
-    accent: 'blue',
-  },
-  {
     id: 'admin',
     title: 'Admin Console & Monitor',
     subtitle: 'User management & workflow audit',

@@ -143,16 +143,8 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'drawing' | 'master' | 'link'>('drawing');
-  const [isXlScreen, setIsXlScreen] = useState(true);
-
-  useEffect(() => {
-    const checkWidth = () => {
-      setIsXlScreen(window.innerWidth >= 1280);
-    };
-    checkWidth();
-    window.addEventListener('resize', checkWidth);
-    return () => window.removeEventListener('resize', checkWidth);
-  }, []);
+  const [isXlScreen, setIsXlScreen] = useState(false);
+  const [isCompactList, setIsCompactList] = useState(true);
   
   // Pagination & Server State
   const [page, setPage] = useState(1);
@@ -183,6 +175,22 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
   const [splitRatio, setSplitRatio] = useState(55); // Left panel percentage
   const [isDraggingSplitter, setIsDraggingSplitter] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listPaneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const workspace = containerRef.current;
+    const listPane = listPaneRef.current;
+    if (!workspace || !listPane) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === workspace) setIsXlScreen(entry.contentRect.width >= 1100);
+        if (entry.target === listPane) setIsCompactList(entry.contentRect.width < 800);
+      }
+    });
+    observer.observe(workspace);
+    observer.observe(listPane);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isDraggingSplitter) return;
@@ -644,8 +652,8 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
               }`}
           >
             <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="hidden sm:inline">Customer Drawings</span>
-            <span className="sm:hidden">Drawings</span>
+            <span className="hidden sm:inline">Drawing ลูกค้า</span>
+            <span className="sm:hidden">Drawing</span>
             {drawingCount !== null ? ` (${drawingCount})` : ''}
           </button>
           <button
@@ -656,8 +664,8 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
               }`}
           >
             <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="hidden sm:inline">Master Specifications</span>
-            <span className="sm:hidden">Master Sheets</span>
+            <span className="hidden sm:inline">เอกสาร Master</span>
+            <span className="sm:hidden">Master</span>
             {masterCount !== null ? ` (${masterCount})` : ''}
           </button>
           <button
@@ -668,8 +676,8 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
               }`}
           >
             <Link className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="hidden sm:inline">Link Overview</span>
-            <span className="sm:hidden">Links</span>
+            <span className="hidden sm:inline">ภาพรวมการจับคู่</span>
+            <span className="sm:hidden">คู่เอกสาร</span>
             {activeTab === 'link' && loading ? ' ( ... )' : linkCount !== null ? ` (${linkCount})` : ''}
           </button>
         </div>
@@ -683,7 +691,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
               }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>Filters</span>
+            <span>ตัวกรอง</span>
             {activeFiltersCount > 0 && (
               <span className="bg-blue-600 dark:bg-blue-500 text-white rounded-full px-1.5 py-0.5 text-[9px] font-bold">
                 {activeFiltersCount}
@@ -695,10 +703,10 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
             <button
               onClick={resetFilters}
               className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-              title="Reset Filters"
+              title="ล้างตัวกรอง"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
+              <span>ล้าง</span>
             </button>
           )}
         </div>
@@ -717,29 +725,28 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {/* Customer Filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Customer</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider">ลูกค้า</label>
                 <MultiSelect 
                   options={filterOptions.customers} 
                   value={customerFilter} 
                   onChange={setCustomerFilter} 
-                  placeholder="All Customers" 
-                />
+                  placeholder="ลูกค้าทั้งหมด"/>
               </div>
 
               {/* Package Size Filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Package Size</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider">ขนาดบรรจุภัณฑ์</label>
                 <Select value={packageSizeFilter} onValueChange={setPackageSizeFilter}>
                   <SelectTrigger className="w-full h-[34px] bg-white dark:bg-[#2c2c2e] border border-slate-200 dark:border-white/10 rounded-lg text-xs outline-none text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 px-3">
-                    <SelectValue placeholder="All Sizes" />
+                    <SelectValue placeholder="ทุกขนาด" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px] bg-white dark:bg-[#2c2c2e] border-slate-200 dark:border-white/10 shadow-lg z-[100]">
-                    <SelectItem value="all" className="focus:bg-slate-100 dark:focus:bg-white/10">All Sizes</SelectItem>
+                    <SelectItem value="all" className="focus:bg-slate-100 dark:focus:bg-white/10">ทุกขนาด</SelectItem>
 
                     {filterOptions.packageSizes.small.length > 0 && (
                       <SelectGroup>
-                        <SelectLabel className="text-[10px] text-slate-500 tracking-wider">Small (0.1 - 19)</SelectLabel>
-                        <SelectItem value="GROUP:Small" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">-- All Small --</SelectItem>
+                        <SelectLabel className="text-[10px] text-slate-500 tracking-wider">ขนาดเล็ก (0.1 - 19)</SelectLabel>
+                        <SelectItem value="GROUP:Small" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">ทุกขนาดเล็ก</SelectItem>
                         {filterOptions.packageSizes.small.map(s => <SelectItem key={s} value={s} className="focus:bg-slate-100 dark:focus:bg-white/10">{s}</SelectItem>)}
                         <SelectSeparator />
                       </SelectGroup>
@@ -747,8 +754,8 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
 
                     {filterOptions.packageSizes.pail.length > 0 && (
                       <SelectGroup>
-                        <SelectLabel className="text-[10px] text-slate-500 tracking-wider">Pail (20 - 999)</SelectLabel>
-                        <SelectItem value="GROUP:Pail" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">-- All Pail --</SelectItem>
+                        <SelectLabel className="text-[10px] text-slate-500 tracking-wider">ถัง (20 - 999)</SelectLabel>
+                        <SelectItem value="GROUP:Pail" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">ทุกขนาดถัง</SelectItem>
                         {filterOptions.packageSizes.pail.map(s => <SelectItem key={s} value={s} className="focus:bg-slate-100 dark:focus:bg-white/10">{s}</SelectItem>)}
                         <SelectSeparator />
                       </SelectGroup>
@@ -757,7 +764,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
                     {filterOptions.packageSizes.ibc.length > 0 && (
                       <SelectGroup>
                         <SelectLabel className="text-[10px] text-slate-500 tracking-wider">IBC (&gt;= 1000)</SelectLabel>
-                        <SelectItem value="GROUP:IBC" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">-- All IBC --</SelectItem>
+                        <SelectItem value="GROUP:IBC" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">ทุกขนาด IBC</SelectItem>
                         {filterOptions.packageSizes.ibc.map(s => <SelectItem key={s} value={s} className="focus:bg-slate-100 dark:focus:bg-white/10">{s}</SelectItem>)}
                         <SelectSeparator />
                       </SelectGroup>
@@ -765,8 +772,8 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
 
                     {filterOptions.packageSizes.other.length > 0 && (
                       <SelectGroup>
-                        <SelectLabel className="text-[10px] text-slate-500 tracking-wider">Other</SelectLabel>
-                        <SelectItem value="GROUP:Other" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">-- All Other --</SelectItem>
+                        <SelectLabel className="text-[10px] text-slate-500 tracking-wider">อื่น ๆ</SelectLabel>
+                        <SelectItem value="GROUP:Other" className="font-semibold text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:text-blue-700 dark:focus:text-blue-300">ทั้งหมดในกลุ่มอื่น</SelectItem>
                         {filterOptions.packageSizes.other.map(s => <SelectItem key={s} value={s} className="focus:bg-slate-100 dark:focus:bg-white/10">{s}</SelectItem>)}
                       </SelectGroup>
                     )}
@@ -776,51 +783,48 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
 
               {/* Oil Group Filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Oil Group</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider">กลุ่มน้ำมัน</label>
                 <MultiSelect 
                   options={filterOptions.oilGroups} 
                   value={oilGroupFilter} 
                   onChange={setOilGroupFilter} 
-                  placeholder="All Groups" 
-                />
+                  placeholder="ทุกกลุ่ม"/>
               </div>
 
               {/* Revision Filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Revision</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider">Revision</label>
                 <MultiSelect 
                   options={filterOptions.revisions} 
                   value={revisionFilter} 
                   onChange={setRevisionFilter} 
-                  placeholder="All Revisions" 
-                />
+                  placeholder="ทุก Revision"/>
               </div>
 
               {/* Pallet Type / Link Status Filter */}
               {activeTab === 'link' ? (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Link Status</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider">สถานะการจับคู่</label>
                   <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as any)}>
                     <SelectTrigger className="w-full h-[34px] bg-white dark:bg-[#2c2c2e] border border-slate-200 dark:border-white/10 rounded-lg text-xs outline-none text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 px-3">
-                      <SelectValue placeholder="All Statuses" />
+                      <SelectValue placeholder="ทุกสถานะ" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px] bg-white dark:bg-[#2c2c2e] border-slate-200 dark:border-white/10 shadow-lg z-[100]">
-                      <SelectItem value="all" className="focus:bg-slate-100 dark:focus:bg-white/10">All Statuses</SelectItem>
-                      <SelectItem value="complete" className="focus:bg-slate-100 dark:focus:bg-white/10">Link Complete</SelectItem>
-                      <SelectItem value="missing_master" className="focus:bg-slate-100 dark:focus:bg-white/10">Missing Master</SelectItem>
-                      <SelectItem value="missing_drawing" className="focus:bg-slate-100 dark:focus:bg-white/10">Missing Drawing</SelectItem>
+                      <SelectItem value="all" className="focus:bg-slate-100 dark:focus:bg-white/10">ทุกสถานะ</SelectItem>
+                      <SelectItem value="complete" className="focus:bg-slate-100 dark:focus:bg-white/10">จับคู่ครบ</SelectItem>
+                      <SelectItem value="missing_master" className="focus:bg-slate-100 dark:focus:bg-white/10">ขาด Master</SelectItem>
+                      <SelectItem value="missing_drawing" className="focus:bg-slate-100 dark:focus:bg-white/10">ขาด Drawing</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Pallet Type</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider">ประเภทพาเลท</label>
                   <MultiSelect 
                     options={filterOptions.palletTypes} 
                     value={palletTypeFilter} 
                     onChange={setPalletTypeFilter} 
-                    placeholder="All Pallets" 
-                  />
+                    placeholder="ทุกประเภท"/>
                 </div>
               )}
             </div>
@@ -831,7 +835,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
       {/* Active Filter Badges */}
       {activeFiltersCount > 0 && (
         <div className="px-3 sm:px-6 py-2 sm:py-2.5 bg-slate-50/30 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 flex flex-wrap gap-2 items-center">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mr-1">Active Filters:</span>
+          <span className="text-[9px] font-bold text-slate-500 tracking-wider mr-1">ตัวกรองที่ใช้:</span>
           {customerFilter.length > 0 && (
             <span className="flex items-center gap-1 bg-white dark:bg-[#2c2c2e] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 px-2 py-0.5 rounded-full text-xs shadow-sm">
               <span>Customer: {customerFilter.length} selected</span>
@@ -872,8 +876,9 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
       )}
 
       {/* Master-Detail Split Workspace Wrapper */}
-      <div ref={containerRef} className={`flex flex-col xl:flex-row items-stretch flex-1 overflow-hidden border-t border-slate-200 dark:border-white/10 ${selectedInspectionDoc ? 'divide-x-0 xl:divide-x divide-slate-200 dark:divide-white/10' : ''}`}>
-        <div 
+      <div ref={containerRef} className={`flex ${isXlScreen ? 'flex-row divide-x' : 'flex-col'} items-stretch flex-1 min-h-0 overflow-hidden border-t border-slate-200 dark:border-white/10 ${selectedInspectionDoc ? 'divide-slate-200 dark:divide-white/10' : ''}`}>
+        <div
+          ref={listPaneRef}
           className={`transition-all duration-300 min-w-0 h-full flex flex-col ${!isDraggingSplitter ? 'ease-in-out' : ''} ${!isXlScreen && selectedInspectionDoc ? 'hidden' : ''}`}
           style={{ width: isXlScreen && selectedInspectionDoc ? `${splitRatio}%` : '100%' }}
         >
@@ -882,11 +887,11 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
             {activeTab === 'drawing' && (
               <>
                 {/* Mobile Card View (md:hidden) */}
-                <div className="md:hidden p-3 space-y-3">
+                <div className={`${isCompactList ? 'block' : 'hidden'} p-3 space-y-3`}>
                   {loading ? (
                     <div className="py-12 text-center text-slate-500 text-xs">กำลังโหลดแบบแปลน...</div>
                   ) : filteredDrawings.length === 0 ? (
-                    <div className="py-12 text-center text-slate-500 text-xs">No drawings found.</div>
+                <div className="py-12 text-center text-slate-500 text-xs">ไม่พบ Drawing ที่ตรงกับเงื่อนไข</div>
                   ) : (
                     filteredDrawings.map((doc) => (
                       <div
@@ -966,16 +971,16 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
                 </div>
 
                 {/* Desktop Table View (hidden md:table) */}
-                <table className="hidden md:table w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <table className={`${isCompactList ? 'hidden' : 'table'} w-full text-left text-sm text-slate-600 dark:text-slate-300`}>
                   <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
                     <tr>
-                      <th className="px-6 py-4">Drawing No.</th>
-                      <th className="px-6 py-4">Part Name</th>
-                      <th className="px-6 py-4">Customer</th>
-                      <th className="px-6 py-4">Item Code</th>
-                      <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Issue Date</th>
-                      <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>Package Size</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4">เลข Drawing</th>
+                      <th className="px-6 py-4">ชื่อชิ้นส่วน</th>
+                      <th className="px-6 py-4">ลูกค้า</th>
+                      <th className="px-6 py-4">รหัสสินค้า</th>
+                      <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>วันที่เอกสาร</th>
+                      <th className={`px-6 py-4 transition-all duration-300 ${selectedInspectionDoc ? 'hidden' : ''}`}>ขนาดบรรจุ</th>
+                      <th className="px-6 py-4 text-right">การทำงาน</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -1070,7 +1075,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
         {activeTab === 'master' && (
           <>
             {/* Mobile Card View (md:hidden) */}
-            <div className="md:hidden p-3 space-y-3">
+            <div className={`${isCompactList ? 'block' : 'hidden'} p-3 space-y-3`}>
               {loading ? (
                 <div className="py-12 text-center text-slate-500 text-xs">กำลังโหลดเอกสาร Master...</div>
               ) : filteredMasters.length === 0 ? (
@@ -1164,7 +1169,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
             </div>
 
             {/* Desktop Table View (hidden md:table) */}
-            <table className="hidden md:table w-full text-left text-sm text-slate-600 dark:text-slate-300">
+            <table className={`${isCompactList ? 'hidden' : 'table'} w-full text-left text-sm text-slate-600 dark:text-slate-300`}>
               <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="px-6 py-4">Master Doc No.</th>
@@ -1328,7 +1333,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
             </div>
 
             {/* Mobile Link Cards (md:hidden) */}
-            <div className="md:hidden p-3 space-y-3">
+            <div className={`${isCompactList ? 'block' : 'hidden'} p-3 space-y-3`}>
               {loading ? (
                 <div className="py-12 text-center text-slate-500 text-xs">กำลังโหลดรายการเชื่อมโยง...</div>
               ) : filteredLinks.length === 0 ? (
@@ -1451,7 +1456,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
               )}
             </div>
 
-            <table className="hidden md:table w-full text-left text-sm text-slate-600 dark:text-slate-300">
+            <table className={`${isCompactList ? 'hidden' : 'table'} w-full text-left text-sm text-slate-600 dark:text-slate-300`}>
               <thead className="bg-slate-50 dark:bg-black/20 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="px-6 py-4">Identifiers</th>
@@ -1710,7 +1715,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
         {/* Resizable Divider Handle (Only visible when panel is open on desktop) */}
         {selectedInspectionDoc && (
           <div 
-            className="hidden xl:flex w-1 hover:w-1.5 cursor-col-resize bg-transparent hover:bg-blue-500/50 active:bg-blue-500 z-40 transition-all items-center justify-center -ml-0.5 -mr-0.5"
+            className={`${isXlScreen ? 'flex' : 'hidden'} w-1 hover:w-1.5 cursor-col-resize bg-transparent hover:bg-blue-500/50 active:bg-blue-500 z-40 transition-all items-center justify-center -ml-0.5 -mr-0.5`}
             onMouseDown={(e) => { e.preventDefault(); setIsDraggingSplitter(true); }}
           >
             <div className="h-8 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
@@ -1720,7 +1725,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
         {/* Right Side Inspection Panel (Master-Detail Split Workspace) */}
         {selectedInspectionDoc && (
           <div 
-            className={`w-full xl:w-auto h-full xl:h-[calc(100vh-160px)] sticky top-0 shrink-0 animate-in slide-in-from-right-4 duration-300 z-30 flex flex-col min-w-0 ${!isDraggingSplitter ? 'ease-in-out transition-all' : ''}`}
+            className={`w-full h-full min-h-0 sticky top-0 shrink-0 animate-in slide-in-from-right-4 duration-300 z-30 flex flex-col min-w-0 ${!isDraggingSplitter ? 'ease-in-out transition-all' : ''}`}
             style={{ width: isXlScreen ? `${100 - splitRatio}%` : '100%' }}
           >
             {!isXlScreen && (
@@ -1728,7 +1733,7 @@ export function DocumentList({ searchQuery, refreshKey, canEdit = true }: { sear
                 <button
                   type="button"
                   onClick={() => handleDocumentSelect(null)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  className="min-h-11 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline px-1 py-1 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>กลับไปรายการเอกสารทั้งหมด</span>

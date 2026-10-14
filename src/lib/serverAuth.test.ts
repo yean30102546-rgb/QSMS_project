@@ -56,15 +56,18 @@ describe('Server Auth Library', () => {
       expect(() => assertPermission(adminAuth, 'manage_users')).not.toThrow();
       expect(() => assertPermission(adminAuth, 'delete_case')).not.toThrow();
       expect(() => assertPermission(adminAuth, 'manage_rag')).not.toThrow();
+      expect(() => assertPermission(adminAuth, 'manage_masters')).not.toThrow();
 
       const qsmsAuth = { email: 'qsms@example.com', profile: 'QSMS' };
       expect(() => assertPermission(qsmsAuth, 'view_dashboard')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'edit_case')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'delete_case')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'manage_rag')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'manage_masters')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'export_data')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'fill_analysis')).not.toThrow();
       expect(() => assertPermission(qsmsAuth, 'request_materials')).not.toThrow();
+      expect(() => assertPermission(qsmsAuth, 'manage_users')).toThrow(AuthError);
     });
 
     it('should allow WPK to create case and issue materials, but block repair_case', () => {
@@ -87,6 +90,28 @@ describe('Server Auth Library', () => {
       expect(() => assertPermission(pdfAuth, 'manage_users')).toThrow(AuthError);
     });
 
+    it('should allow WFG to initiate case, view dashboard, request materials but block repair_case and manage_users', () => {
+      const wfgAuth = { email: 'wfg@example.com', profile: 'WFG' };
+      expect(() => assertPermission(wfgAuth, 'view_overall')).not.toThrow();
+      expect(() => assertPermission(wfgAuth, 'view_dashboard')).not.toThrow();
+      expect(() => assertPermission(wfgAuth, 'create_case')).not.toThrow();
+      expect(() => assertPermission(wfgAuth, 'request_materials')).not.toThrow();
+      expect(() => assertPermission(wfgAuth, 'repair_case')).toThrow(AuthError);
+      expect(() => assertPermission(wfgAuth, 'manage_users')).toThrow(AuthError);
+    });
+
+    it('should allow CS to initiate case and view dashboard but block delete_case and request_materials', () => {
+      const csAuth = { email: 'cs@example.com', profile: 'CS' };
+      expect(() => assertPermission(csAuth, 'view_overall')).not.toThrow();
+      expect(() => assertPermission(csAuth, 'view_dashboard')).not.toThrow();
+      expect(() => assertPermission(csAuth, 'create_case')).not.toThrow();
+      expect(() => assertPermission(csAuth, 'update_status')).not.toThrow();
+      expect(() => assertPermission(csAuth, 'export_data')).not.toThrow();
+      expect(() => assertPermission(csAuth, 'delete_case')).toThrow(AuthError);
+      expect(() => assertPermission(csAuth, 'request_materials')).toThrow(AuthError);
+      expect(() => assertPermission(csAuth, 'manage_users')).toThrow(AuthError);
+    });
+
     it('should allow basic permissions for OPERATOR profile but block delete_case and export_data', () => {
       const auth = { email: 'op@example.com', profile: 'OPERATOR' };
       expect(() => assertPermission(auth, 'view_overall')).not.toThrow();
@@ -94,6 +119,13 @@ describe('Server Auth Library', () => {
       expect(() => assertPermission(auth, 'update_status')).not.toThrow();
       expect(() => assertPermission(auth, 'delete_case')).toThrow(AuthError);
       expect(() => assertPermission(auth, 'export_data')).toThrow(AuthError);
+    });
+
+    it('should reject all permissions for unknown profile', () => {
+      const unknownAuth = { email: 'unknown@example.com', profile: 'NON_EXISTENT_ROLE' };
+      expect(() => assertPermission(unknownAuth, 'view_overall')).toThrow(AuthError);
+      expect(() => assertPermission(unknownAuth, 'create_case')).toThrow(AuthError);
+      expect(() => assertPermission(unknownAuth, 'manage_users')).toThrow(AuthError);
     });
   });
 });

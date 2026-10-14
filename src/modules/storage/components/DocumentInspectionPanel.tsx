@@ -279,7 +279,7 @@ export function DocumentInspectionPanel({
           <div className="flex items-center gap-0.5 sm:gap-1 mr-1 sm:mr-2 pr-1 sm:pr-2 border-r border-slate-200 dark:border-white/10">
             <button
               onClick={() => handleRotate(90)}
-              className="p-1.5 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center gap-1"
+              className="min-h-9 min-w-9 sm:min-h-8 sm:min-w-8 p-1.5 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-1"
               title="หมุน 90 องศา"
             >
               <RotateCw className="w-4 h-4" />
@@ -305,7 +305,7 @@ export function DocumentInspectionPanel({
               href={previewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1.5 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+              className="min-h-9 min-w-9 sm:min-h-8 sm:min-w-8 p-1.5 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center justify-center"
               title="เปิดในแท็บใหม่"
             >
               <ExternalLink className="w-4 h-4" />
@@ -320,7 +320,7 @@ export function DocumentInspectionPanel({
           </button>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+            className="min-h-9 min-w-9 sm:min-h-8 sm:min-w-8 p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center justify-center"
             title="ปิดแผงตรวจทาน (Esc)"
           >
             <X className="w-4 h-4" />

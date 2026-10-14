@@ -367,15 +367,15 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="w-full max-w-[95vw] 2xl:max-w-[1400px] bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-xl overflow-hidden flex flex-col h-[95vh]"
+        className="w-full max-w-[95vw] 2xl:max-w-[1400px] bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-xl overflow-hidden flex flex-col h-[95dvh] max-h-[95dvh]"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-white/10 shrink-0 gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Smart Bulk Upload</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Smart Bulk Upload</h2>
             <p className="text-xs text-slate-500 mt-0.5">Upload multiple Drawings & Masters. Filenames will be parsed automatically.</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center w-[220px]">
+          <div className="flex items-center gap-2 sm:gap-4 justify-between sm:justify-end">
+            <div className="flex items-center w-[180px] sm:w-[220px]">
               <Select value={aiModel} onValueChange={setAiModel} disabled={isUploading || isProcessing}>
                 <SelectTrigger className="h-9 bg-slate-50 dark:bg-[#2c2c2e] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
                   <SelectValue placeholder="Select AI Model" />
@@ -387,7 +387,7 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
                 </SelectContent>
               </Select>
             </div>
-            <button onClick={handleCloseAttempt} disabled={isUploading} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50">
+            <button onClick={handleCloseAttempt} disabled={isUploading} className="min-h-11 min-w-11 flex items-center justify-center p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50">
               <X className="h-5 w-5 text-slate-500" />
             </button>
           </div>
@@ -897,12 +897,12 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
         {items.length > 0 && (
           <div className="p-4 bg-white dark:bg-[#1c1c1e] border-t border-slate-200 dark:border-white/10 flex items-center justify-end shrink-0">
             
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3 flex-wrap justify-end">
               <button
                 type="button"
                 onClick={handleCloseAttempt}
                 disabled={isUploading}
-                className="px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors disabled:opacity-50"
+                className="min-h-11 px-4 sm:px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -912,7 +912,7 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
                   type="button"
                   onClick={handleSaveAll}
                   disabled={isProcessing || items.length === 0}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:hover:shadow-none"
+                  className="min-h-11 inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:hover:shadow-none"
                 >
                   {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
                   Save All {items.length > 0 ? `(${items.length})` : ''}
@@ -921,7 +921,7 @@ export function UploadModal({ user, initialData, queue, onMinimize, onSuccess }:
                 <button
                   type="button"
                   onClick={onMinimize}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-sm"
+                  className="min-h-11 inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-sm"
                 >
                   Done
                 </button>

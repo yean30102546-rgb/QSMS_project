@@ -6,11 +6,14 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { MarkdownTextSplitter } from '@langchain/textsplitters';
 import * as XLSX from 'xlsx';
 import { normalizeCaseQuery } from './caseNormalizer';
+import { canRoleAccessAnalytics, canRoleAccessDrawings, getScopedToolDeclarations } from './toolDefinitions';
 
 interface DocumentChunk {
   content: string;
   image_urls?: string[];
   similarity: number;
+  document_id?: string;
+  filename?: string;
 }
 
 // Initialize the Google Gen AI client with the API Key
@@ -339,7 +342,7 @@ export async function POST(request: Request) {
       }
 
       case 'chat': {
-        const { message, messages = [] } = body;
+        const { message, messages = [], moduleContext, expandCrossModule } = body;
         if (!message) {
           return NextResponse.json({ success: false, error: 'Missing query message' }, { status: 400 });
         }
@@ -541,32 +544,70 @@ export async function POST(request: Request) {
 
         const chunks = rerankedChunks;
 
+        // Fetch document filenames for high-fidelity citations
+        const docIds = Array.from(
+          new Set(
+            chunks
+              .map((c: DocumentChunk) => c.document_id)
+              .filter((id): id is string => Boolean(id))
+          )
+        );
+        const docMap = new Map<string, string>();
+        if (docIds.length > 0) {
+          try {
+            const { data: docRecords } = await ragSupabaseServer
+              .from('rag_documents')
+              .select('id, filename')
+              .in('id', docIds);
+            if (docRecords) {
+              docRecords.forEach((d: { id: string; filename: string }) => {
+                docMap.set(d.id, d.filename);
+              });
+            }
+          } catch (docErr) {
+            console.warn('[RAG API] Error fetching filenames for citations:', docErr);
+          }
+        }
+
+        // Attach filename directly to chunk objects
+        chunks.forEach((c: DocumentChunk) => {
+          if (c.document_id && docMap.has(c.document_id)) {
+            c.filename = docMap.get(c.document_id);
+          }
+        });
+
         // 3. Construct Context
         const contextText = chunks
-          .map((chunk, index: number) => `[Source Block #${index + 1}]:\n${chunk.content}\nRelated Images: ${JSON.stringify(chunk.image_urls || [])}`)
+          .map((chunk, index: number) => {
+            const docName = chunk.filename || 'เอกสารคู่มือ SOP / ข้อกำหนดทางเทคนิค';
+            return `[Source Block #${index + 1} | ไฟล์: ${docName}]:\n${chunk.content}\nRelated Images: ${JSON.stringify(chunk.image_urls || [])}`;
+          })
           .join('\n\n');
 
         // 4. Formulate System Prompt and request answer from Gemini
-        const systemPrompt = `You are the "QSMS AI Assistant", the DocAI RAG assistant and Data Analyst for QSMS.
-Persona: Professional, concise, highly knowledgeable, and helpful. You communicate in a clear, supportive tone suitable for an enterprise environment. Use polite particles (ครับ/ค่ะ) appropriately but avoid excessive emojis. You are an expert on product packaging specifications, Master Small Packs, factory procedures, and real-time rework statistics.
+        const systemPrompt = `You are the "QSMS Enterprise AI Assistant", the DocAI RAG assistant and Technical Data Analyst for QSMS.
+Persona: Professional, concise, highly knowledgeable, and helpful. You communicate in a clear, supportive tone suitable for an enterprise environment. Use polite particles (ครับ/ค่ะ) appropriately but avoid excessive emojis. You are an expert on product packaging specifications, Master Small Packs, factory procedures, engineering drawings, and real-time rework statistics.
 
 Retrieved Context:
 ${contextText}
 
 Instructions:
-1. Answer in the Thai language. Keep the tone professional and concise.
-2. Be precise and detail-oriented regarding numbers, revisions, item codes, and packaging details from the Context or System Data.
-3. If the context contains image URLs in the image_urls list, you MUST reference them in your markdown response using standard markdown image syntax: ![description](url) so the UI can display them.
-4. If the information is not in the context or system data, state politely that you do not have that specific detail, and offer to help with something else.
-5. DO NOT use markdown asterisks (* or **) for text formatting (like bolding or bullet points). Use plain text, numbers, or dashes (-) instead.
+1. ตอบคำถามเป็นภาษาไทยอย่างกระชับ ตรงประเด็น และเป็นมืออาชีพ
+2. ระบุตัวเลข, Revision, รหัสสินค้า (Item Code/Item No), เลขที่แบบ (Drawing No), และสเปกบรรจุภัณฑ์ให้แม่นยำตาม Context หรือ System Data
+3. กฎการอ้างอิงเอกสาร (Strict Evidence Citations):
+- ทุกคำตอบที่ดึงมาจากเอกสารคู่มือหรือสเปก ต้องระบุชื่อเอกสาร (เช่น [📄 ชื่อไฟล์.pdf]), Revision หรือหน้าอ้างอิง และข้อความยืนยันสั้นๆ (Quote Snippet) เสมอ
+- หากตอบจากฐานข้อมูลระบบ ให้ระบุแหล่งข้อมูลชัดเจน เช่น [ข้อมูลเคสจริง], [คลังแบบแปลนวิศวกรรม], หรือ [ข้อมูลสินค้ากลาง]
+- แยกความแตกต่างของข้อมูลชัดเจนระหว่าง: ข้อมูลคู่มือทางเทคนิค (RAG Documents) กับ ข้อมูลสดจากระบบธุรกรรม (Engineering Drawings Registry, Rework Database, Item Master)
+4. Anti-Hallucination & Strict Grounding:
+- คุณต้องตอบโดยอ้างอิงจาก Retrieved Context หรือ [System Data] เท่านั้น
+- ห้ามคิดค้นหรือเดาข้อมูลสินค้า, สเปกบรรจุภัณฑ์, อาการเสีย หรือสร้างลิงก์ URL สมมติ (เช่น https://qsms.internal/... หรือชื่อไฟล์ที่ไม่มีอยู่จริงในระบบ) โดยเด็ดขาด
+- หากสืบค้นแล้วไม่พบข้อมูล หรือข้อมูลไม่เพียงพอ ให้ตอบตามตรงว่า "ไม่พบข้อมูลในเอกสารหรือฐานข้อมูลของระบบ QSMS" และแนะนำคำค้นหา (Keyword) หรือเอกสารที่ผู้ใช้ควรนำเข้าหรือตรวจสอบเพิ่มเติม โดยห้ามคาดเดาจากความรู้ทั่วไปเด็ดขาด
+5. Case Action Links & Navigation:
+- เมื่อตอบข้อมูลเกี่ยวกับเคส Rework จริงที่ได้รับจาก [System Data] คุณต้องแนบ Action Link รูปแบบ [🔍 เปิดดูเคส <CaseID>](action:case:<CaseID>) ไว้ในคำตอบเสมอ เพื่อให้ผู้ใช้สามารถคลิกเปิดหน้าเคสในระบบได้ทันที
 6. Suggestion Chips: At the very end of your response, you MUST append a hidden JSON block containing 3 suggested follow-up questions relevant to the topic. Format exactly like this: \`\`\`json\n{"suggested_questions": ["Question 1?", "Question 2?", "Question 3?"]}\n\`\`\`
 7. File Attachments: If System Data contains drawing/master PDF file links [📄 filename](url), include them cleanly in your answer so users can view the attached document.
-8. Anti-Hallucination & Strict Grounding:
-- คุณต้องตอบโดยอ้างอิงจาก Retrieved Context หรือ [System Data] เท่านั้น
-- ห้ามคิดค้นหรือเดาข้อมูลสินค้า, สเปกบรรจุภัณฑ์, อาการเสีย, หรือสร้างลิงก์ URL สมมติ (เช่น https://qsms.internal/... หรือชื่อไฟล์ที่ไม่มีอยู่จริงในระบบ) โดยเด็ดขาด
-- หากใน [System Data] ระบุว่า "ไม่พบเคส" หรือไม่พบข้อมูลสินค้า ให้แจ้งผู้ใช้ตามความจริงอย่างสุภาพว่าไม่พบข้อมูลในระบบ QSMS พร้อมระบุคำค้นหาที่ใช้ และแนะนำรูปแบบเลขเคสที่ถูกต้อง (เช่น RW-2026-xxx หรือ RT-2026-xxx) โดยห้ามเดาหรือสร้างข้อมูลเท็จขึ้นมาแทน
-9. Case Action Links & Navigation:
-- เมื่อตอบข้อมูลเกี่ยวกับเคส Rework จริงที่ได้รับจาก [System Data] คุณต้องแนบ Action Link รูปแบบ [🔍 เปิดดูเคส <CaseID>](action:case:<CaseID>) ไว้ในคำตอบเสมอ เพื่อให้ผู้ใช้สามารถคลิกเปิดหน้าเคสในระบบได้ทันที
+8. DO NOT use markdown asterisks (* or **) for text formatting (like bolding or bullet points). Use plain text, numbers, or dashes (-) instead.
+9. If the context contains image URLs in the image_urls list, you MUST reference them in your markdown response using standard markdown image syntax: ![description](url) so the UI can display them.
 `;
 
         console.log('[RAG API] Requesting streaming response from Gemini chat model (using gemini-3.1-flash-lite)...');
@@ -681,87 +722,31 @@ ${itemList}
           return `\n\n[System Data - ผลการค้นหาเคส Rework]: ไม่พบเคสที่ตรงกับรหัส '${caseQuery}' ในฐานข้อมูลระบบ QSMS (ตรวจสอบทั้งรหัสตรงและรูปแบบใกล้เคียงแล้วไม่พบ)\n(คำแนะนำสำหรับ AI: แจ้งผู้ใช้ตามความจริงว่าไม่พบเคส '${caseQuery}' ในระบบ และห้ามแต่งข้อมูลสินค้าหรือชื่อเคสขึ้นมาเองเด็ดขาด ให้แนะนำผู้ใช้ตรวจสอบเลขเคส เช่น รูปแบบ RW-2026-xxx หรือ RT-2026-xxx)\n`;
         };
         try {
-          // Pre-flight Agentic Tool Check across All Modules
-          console.log('[RAG API] Checking if query requires system data tools across modules...');
-          const toolResponse = await ai.models.generateContent({
-            model: 'gemini-3.1-flash-lite',
-            contents: [
-              ...historyContents,
-              { role: 'user', parts: [{ text: `คำถามปัจจุบัน: ${message}` }] }
-            ],
-            config: {
-              tools: [{
-                functionDeclarations: [
-                  {
-                    name: 'search_rework_case',
-                    description: 'Search and inspect a specific rework case by its case ID, case number, or reference (e.g. RW-2026-001, RT-2026-001, RW001, 001, RT002, RW888). Returns real case status, source, defect summaries, and all rework items within the case.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        caseQuery: {
-                          type: Type.STRING,
-                          description: 'The case ID, case number, or reference to search for (e.g. RW001, RW-2026-001, 001, RT002, RW888)'
-                        }
-                      },
-                      required: ['caseQuery']
-                    }
-                  },
-                  {
-                    name: 'query_rework_analytics',
-                    description: 'Fetch real-time statistics and details about rework cases, defects (leak/รั่ว or stain/เปื้อน), box counts, case status (Pending, In-Progress, Completed), and resolution progress from the operational database.'
-                  },
-                  {
-                    name: 'lookup_item_master',
-                    description: 'Lookup item specifications from the central Item Master database (item_master), including item code, item number, oil group, pallet type, boxes per pallet, and shelf life.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        keyword: { type: Type.STRING, description: 'Item code or item number to search for (e.g. 40001234 or 61653013A700A)' }
-                      }
-                    }
-                  },
-                  {
-                    name: 'search_engineering_drawings',
-                    description: 'Search engineering drawings and internal master sheets (engineering_drawings), including drawing numbers, customer names, revisions, issue dates, and package sizes.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        query: { type: Type.STRING, description: 'Search term for drawing number, customer name, or part name' }
-                      }
-                    }
-                  },
-                  {
-                    name: 'get_rework_statistics',
-                    description: 'Fetch real-time statistics about rework cases from the system database (e.g., total rework items, counts of defects like leak (รั่ว) or stain (เปื้อน)).'
-                  },
-                  {
-                    name: 'search_rework_history',
-                    description: 'Search recent rework cases from the operational database.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        limit: { type: Type.NUMBER, description: 'Number of recent cases to fetch (default 5)' }
-                      }
-                    }
-                  },
-                  {
-                    name: 'get_rework_item_detail',
-                    description: 'Get details of a specific rework item by its item code or item number.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        keyword: { type: Type.STRING, description: 'The item code or item number to search for' }
-                      },
-                      required: ['keyword']
-                    }
-                  }
-                ]
-              }]
-            }
-          });
+          // Pre-flight Agentic Tool Check scoped to current module context and user permissions
+          const scopedTools = getScopedToolDeclarations(
+            typeof moduleContext === 'string' ? moduleContext : undefined,
+            Boolean(expandCrossModule),
+            auth.profile
+          );
 
-          if (toolResponse.functionCalls && toolResponse.functionCalls.length > 0) {
-            const call = toolResponse.functionCalls[0];
+          if (scopedTools.length > 0) {
+            console.log(`[RAG API] Pre-flight tool check (${scopedTools.length} tools for module: ${moduleContext || 'rework'}, expand: ${Boolean(expandCrossModule)}, role: ${auth.profile})...`);
+            const toolResponse = await ai.models.generateContent({
+              model: 'gemini-3.1-flash-lite',
+              contents: [
+                ...historyContents,
+                { role: 'user', parts: [{ text: `คำถามปัจจุบัน: ${message}` }] }
+              ],
+              config: {
+                tools: [{
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  functionDeclarations: scopedTools as any
+                }]
+              }
+            });
+
+            if (toolResponse.functionCalls && toolResponse.functionCalls.length > 0) {
+              const call = toolResponse.functionCalls[0];
             
             if (call.name === 'search_rework_case') {
               console.log('[RAG API] Model requested search_rework_case tool. Executing query...');
@@ -789,7 +774,7 @@ ${itemList}
                   completed = casesData.filter(c => c.status === 'Completed').length;
                 }
 
-                functionResponseContext = `\n\n[System Data - Real-Time Rework Analytics]:\n- Total Rework Items: ${total}\n- Defect Breakdown: Leak (รั่ว): ${leaks}, Stain (เปื้อน): ${stains}\n- Case Status Breakdown: รอวิเคราะห์ (Pending Analysis): ${pendingAnalysis}, รอเบิกวัสดุ (Awaiting Materials): ${awaitingMaterials}, กำลังซ่อม (In-Progress): ${inProgress}, ติดปัญหา (Blocked): ${blocked}, เสร็จสิ้น (Completed): ${completed}\n`;
+                functionResponseContext = `\n\n[System Data - สถิติเคส Rework สด (Operational Database)]:\n- จำนวนรายการสินค้าที่พบปัญหาทั้งหมด: ${total} รายการ\n- จำแนกประเภทความเสียหาย: รั่ว (Leak): ${leaks} รายการ, เปื้อน (Stain): ${stains} รายการ\n- จำแนกสถานะเคส: รอวิเคราะห์ (Pending Analysis): ${pendingAnalysis}, รอเบิกวัสดุ (Awaiting Materials): ${awaitingMaterials}, กำลังซ่อม (In-Progress): ${inProgress}, ติดปัญหา (Blocked): ${blocked}, เสร็จสิ้น (Completed): ${completed}\n`;
                 console.log(`[RAG API] Analytics tool executed. Total items: ${total}, Leaks: ${leaks}, Stains: ${stains}`);
               } else {
                 console.error('Failed to fetch rework analytics:', statsError);
@@ -806,29 +791,44 @@ ${itemList}
 
               const { data: itemsData, error: itemsError } = await query;
               if (!itemsError && itemsData && itemsData.length > 0) {
-                const itemStr = itemsData.map(i => `- ItemCode: ${i.item_code}, ItemNo: ${i.item_number || 'N/A'}, Name: ${i.item_name || 'N/A'}`).join('\n');
-                functionResponseContext = `\n\n[System Data - Central Item Master (${keyword || 'All'})]:\n${itemStr}\n`;
+                const itemStr = itemsData.map(i => `- รหัสสินค้า (Item Code): ${i.item_code} | รหัสสูตรผลิต (Item No): ${i.item_number || 'N/A'} | ชื่อสินค้า: ${i.item_name || 'N/A'}`).join('\n');
+                functionResponseContext = `\n\n[System Data - ข้อมูลสเปกสินค้ากลาง (Central Item Master: ${keyword || 'All'})]:\n${itemStr}\n`;
                 console.log(`[RAG API] Item master lookup executed. Found ${itemsData.length} items.`);
               } else {
-                functionResponseContext = `\n\n[System Data - Item Master]: No matching item master specifications found for keyword '${keyword}'.\n`;
+                functionResponseContext = `\n\n[System Data - ข้อมูลสินค้ากลาง (Item Master)]: ไม่พบสเปกสินค้าที่ตรงกับคำค้นหา '${keyword}' ในฐานข้อมูล Item Master\n`;
               }
             } else if (call.name === 'search_engineering_drawings') {
               console.log('[RAG API] Model requested search_engineering_drawings tool. Executing query...');
               const args = call.args as Record<string, unknown> | undefined;
               const searchQuery = typeof args?.query === 'string' ? args.query.trim() : '';
 
-              let query = ragSupabaseServer.from('rag_documents').select('id, filename, file_type, created_at').order('created_at', { ascending: false }).limit(5);
-              if (searchQuery) {
-                query = query.ilike('filename', `%${searchQuery}%`);
-              }
-
-              const { data: drawData, error: drawError } = await query;
-              if (!drawError && drawData && drawData.length > 0) {
-                const drawStr = drawData.map(d => `- Document: [📄 ${d.filename}] (Type: ${d.file_type || 'PDF'}, Date: ${d.created_at})`).join('\n');
-                functionResponseContext = `\n\n[System Data - Engineering Documents & Drawing PDFs (${searchQuery || 'Recent'})]:\n${drawStr}\n`;
-                console.log(`[RAG API] Drawing/Document search executed. Found ${drawData.length} records.`);
+              if (!canRoleAccessDrawings(auth.profile)) {
+                functionResponseContext = `\n\n[System Data - คลังแบบแปลนวิศวกรรม]: ปฏิเสธการเข้าถึง - ผู้ใช้งานบทบาท ${auth.profile} ไม่มีสิทธิ์เข้าถึงแบบแปลนวิศวกรรมและ Master Sheet\n`;
               } else {
-                functionResponseContext = `\n\n[System Data - Engineering Documents]: No documents found matching '${searchQuery}'.\n`;
+                let query = ragSupabaseServer
+                  .from('engineering_drawings')
+                  .select('id, drawing_number, revision, part_name, customer_name, item_code, item_number, package_size, oil_group, pallet_type, boxes_per_pallet, shelf_life, type, file_url, issue_date')
+                  .eq('is_active', true)
+                  .order('created_at', { ascending: false })
+                  .limit(5);
+
+                if (searchQuery) {
+                  query = query.or(
+                    `drawing_number.ilike.%${searchQuery}%,part_name.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,item_code.ilike.%${searchQuery}%,item_number.ilike.%${searchQuery}%`
+                  );
+                }
+
+                const { data: drawData, error: drawError } = await query;
+                if (!drawError && drawData && drawData.length > 0) {
+                  const drawStr = drawData.map(d => {
+                    const typeLabel = d.type === 'master' ? 'Master Sheet' : 'Engineering Drawing';
+                    return `- [${typeLabel}] เลขที่แบบ/เอกสาร: ${d.drawing_number} | Rev: ${d.revision || '-'} | ชิ้นส่วน: ${d.part_name || '-'} | ลูกค้า: ${d.customer_name || '-'} | Item Code: ${d.item_code || '-'} | Item No: ${d.item_number || '-'} | บรรจุภัณฑ์: ${d.package_size || '-'} | กลุ่มน้ำมัน: ${d.oil_group || '-'} | พาเลท: ${d.pallet_type || '-'} | กล่อง/พาเลท: ${d.boxes_per_pallet || '-'} ${d.file_url ? `| ลิงก์ไฟล์: [📄 ${d.drawing_number}](${d.file_url})` : ''}`;
+                  }).join('\n');
+                  functionResponseContext = `\n\n[System Data - คลังแบบแปลนวิศวกรรม & Master Sheets (Engineering Drawings Registry)]:\n${drawStr}\n`;
+                  console.log(`[RAG API] Real engineering_drawings search executed. Found ${drawData.length} records.`);
+                } else {
+                  functionResponseContext = `\n\n[System Data - คลังแบบแปลนวิศวกรรม (Engineering Drawings Registry)]: ไม่พบแบบแปลนหรือ Master Sheet ที่ตรงกับคำค้นหา '${searchQuery}' ในระบบ (กรุณาตรวจสอบเลขที่แบบ Drawing Number, Item Code, หรือชื่อชิ้นส่วน)\n`;
+                }
               }
             } else if (call.name === 'search_rework_history') {
               console.log('[RAG API] Model requested search_rework_history tool. Executing query...');
@@ -868,7 +868,8 @@ ${itemList}
               }
             }
           }
-        } catch (e) {
+        }
+      } catch (e) {
           console.error('Tool check failed, proceeding normally', e);
         }
 
@@ -897,11 +898,17 @@ ${itemList}
             async start(controller) {
               // Send metadata first (sources)
               const metadata = {
-                sources: chunks.map((c: DocumentChunk) => ({
-                  content: c.content,
-                  image_urls: c.image_urls,
-                  similarity: c.similarity
-                }))
+                sources: chunks.map((c: DocumentChunk) => {
+                  const filename = c.filename || (c.document_id ? docMap.get(c.document_id) : undefined) || 'เอกสารคู่มือ SOP / ข้อกำหนดทางเทคนิค';
+                  return {
+                    content: c.content,
+                    filename,
+                    source_type: 'rag_document',
+                    quote_snippet: c.content.length > 200 ? c.content.substring(0, 200) + '...' : c.content,
+                    image_urls: c.image_urls,
+                    similarity: c.similarity
+                  };
+                })
               };
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'metadata', data: metadata })}\n\n`));
 

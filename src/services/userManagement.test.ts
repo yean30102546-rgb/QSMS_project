@@ -89,9 +89,45 @@ describe('User Management Service & Admin API Client', () => {
     expect(res.data?.username).toBe('newuser');
   });
 
+  it('validates updateUser ID before making API request', async () => {
+    const res = await updateUser({
+      id: '',
+      role: UserRole.CS,
+    });
+    expect(res.success).toBe(false);
+    expect(res.error).toBe('User ID is required');
+  });
+
+  it('calls updateUser API with role update payload', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({
+        success: true,
+        data: { id: 'user-1', name: 'Somying Updated', role: UserRole.CS },
+      }),
+    } as unknown as Response);
+
+    const res = await updateUser({
+      id: 'user-1',
+      name: 'Somying Updated',
+      role: UserRole.CS,
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.data?.role).toBe(UserRole.CS);
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'updateUser',
+        id: 'user-1',
+        name: 'Somying Updated',
+        role: UserRole.CS,
+      }),
+    }));
+  });
+
   it('calls fetchMonitorMetrics and returns pipeline stats', async () => {
     const mockMetrics = {
-      users: { total: 4, roleCounts: { ADMIN: 1, QSMS: 1, WPK: 1, PDF: 1 } },
+      users: { total: 6, roleCounts: { ADMIN: 1, QSMS: 1, WFG: 1, CS: 1, WPK: 1, PDF: 1 } },
       cases: { pendingAnalysis: 2, awaitingMaterials: 1, inProgress: 3, blocked: 1, completed: 5, total: 12 },
       blockedCases: [
         { id: 'RW-2026-001', caseName: 'Defect batch', customerName: 'SFC', reasonCategory: 'waiting_oil' }
