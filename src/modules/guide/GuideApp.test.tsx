@@ -18,36 +18,34 @@ describe('GuideApp Component', () => {
     const onBackMock = vi.fn();
     render(<GuideApp onBackToPortal={onBackMock} />);
 
-    expect(screen.getByText('01 / INTRODUCTION')).toBeInTheDocument();
-    expect(screen.getByText('QSMS Platform Ecosystem')).toBeInTheDocument();
-    expect(screen.getByText('Operations & Technical Intelligence Suite')).toBeInTheDocument();
+    expect(screen.getByText('SECTION 01 / INDUSTRIAL CONTEXT & PROBLEM')).toBeInTheDocument();
+    expect(screen.getByText('QSMS Rework Management Platform')).toBeInTheDocument();
+    expect(screen.getByText('Closed-Loop MES & Multimodal AI Operations Architecture')).toBeInTheDocument();
   });
 
-  it('advances slide on ArrowRight keyboard event and reaches timeline', () => {
+  it('advances slide on ArrowRight keyboard event', () => {
     const onBackMock = vi.fn();
     render(<GuideApp onBackToPortal={onBackMock} />);
 
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(screen.getByText('02 / OBJECTIVES')).toBeInTheDocument();
+    expect(screen.getByText('01.2 / OPERATIONAL PAIN POINTS')).toBeInTheDocument();
+    expect(screen.getByText('Legacy Operational Waste Chain')).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(screen.getByText('03 / PROBLEM STATEMENT')).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(screen.getByText('04 / DEVELOPMENT TIMELINE')).toBeInTheDocument();
-    expect(screen.getByText('Methodology & 4-Month Timeline')).toBeInTheDocument();
+    expect(screen.getByText('01.3 / PROJECT OBJECTIVES')).toBeInTheDocument();
+    expect(screen.getByText('4 Measurable Engineering Targets')).toBeInTheDocument();
   });
 
-  it('filters slides by category correctly', () => {
+  it('filters slides by 5-section category correctly', () => {
     const onBackMock = vi.fn();
     render(<GuideApp onBackToPortal={onBackMock} />);
 
-    // Click 'Architecture & ERD' category pill
-    const archButton = screen.getByRole('button', { name: /Architecture & ERD/i });
+    // Click '3. สถาปัตยกรรมเชิงลึก' category pill
+    const archButton = screen.getByRole('button', { name: /3\. สถาปัตยกรรม/i });
     fireEvent.click(archButton);
 
-    expect(screen.getByText('05 / SYSTEM ARCHITECTURE')).toBeInTheDocument();
-    expect(screen.getByText('Hybrid Next.js & Serverless Boundary')).toBeInTheDocument();
+    expect(screen.getByText('SECTION 03 / SYSTEM ARCHITECTURE')).toBeInTheDocument();
+    expect(screen.getByText('4-Layer Enterprise System Topology')).toBeInTheDocument();
   });
 
   it('handles zoom in, zoom out, and reset zoom controls', () => {
