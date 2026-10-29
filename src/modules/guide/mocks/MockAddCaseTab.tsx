@@ -110,12 +110,12 @@ const initialFormItem = {
   itemNumber: '',
   itemCode: '',
   itemName: '',
-  batchNo: '',
-  gallonDate: '',
-  boxNumber: '',
-  mold: '',
-  line: '',
-  amount: 0,
+  batchNo: '29/10/2026',
+  gallonDate: '25/10/2026',
+  boxNumber: '12',
+  mold: 'M-02',
+  line: 'L-3',
+  amount: 48,
   reason: '',
   reasonSubtype: '',
   responsible: '',
@@ -259,25 +259,26 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
     let isCancelled = false;
 
     const runSim = async () => {
+      if (preset === 'ptt-or') return;
       setSimHighlightedFields([]);
 
-      // 1. Reset form item
+      // 1. Reset form item with realistic granular lot fields & non-zero restriction
       setValue('caseSource', 'SFC');
       setValue('caseNumber', '012');
       setValue('items.0.customerName', 'PTT OR');
       setValue('items.0.itemNumber', '');
       setValue('items.0.itemCode', '');
       setValue('items.0.itemName', '');
-      setValue('items.0.batchNo', '');
-      setValue('items.0.gallonDate', '');
-      setValue('items.0.mold', '');
-      setValue('items.0.line', '');
-      setValue('items.0.amount', 0);
-      setValue('items.0.boxNumber', '');
+      setValue('items.0.batchNo', '29/10/2026');
+      setValue('items.0.gallonDate', '25/10/2026');
+      setValue('items.0.mold', 'M-02');
+      setValue('items.0.line', 'L-3');
+      setValue('items.0.amount', 48);
+      setValue('items.0.boxNumber', '12');
       setValue('items.0.verificationStatus', 'idle');
       setValue('items.0.lastActiveField', undefined);
 
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 600));
       if (isCancelled) return;
 
       // 2. Focus & highlight barcode field, type 60001234A character by character
@@ -288,26 +289,31 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
       for (let i = 1; i <= barcodeTarget.length; i++) {
         if (isCancelled) return;
         setValue('items.0.itemNumber', barcodeTarget.slice(0, i));
-        await new Promise((r) => setTimeout(r, 150));
+        await new Promise((r) => setTimeout(r, 140));
       }
 
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 400));
       if (isCancelled) return;
 
-      // 3. Trigger verification search loading state
+      // 3. Highlight Magnifying Glass Button (Manual Search Trigger)
+      setSimHighlightedFields(['itemNumber', 'search-btn-0']);
+      await new Promise((r) => setTimeout(r, 900));
+      if (isCancelled) return;
+
+      // 4. Trigger verification search loading state after clicking magnifying glass
       setValue('items.0.verificationStatus', 'checking');
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 1100));
       if (isCancelled) return;
 
-      // 4. Auto-populate Item Code & Item Name from Item Master
+      // 5. Auto-populate Item Code & Item Name from Item Master
       setValue('items.0.verificationStatus', 'verified');
       setValue('items.0.itemCode', '40001234');
       setValue('items.0.itemName', 'น้ำมันเครื่อง Dynamic Synthetic Plus 5W-30 (1L)');
 
-      // 5. Highlight auto-filled fields with gentle pulse
-      setSimHighlightedFields(['itemNumber', 'itemCode', 'itemName']);
+      // 6. Highlight auto-filled fields & granular lot fields with gentle pulse
+      setSimHighlightedFields(['itemNumber', 'itemCode', 'itemName', 'batchNo']);
 
-      await new Promise((r) => setTimeout(r, 3000));
+      await new Promise((r) => setTimeout(r, 3200));
       if (isCancelled) return;
 
       setSimHighlightedFields([]);
@@ -337,16 +343,20 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
     const runPttOrSim = async () => {
       setSimHighlightedFields([]);
 
-      // Reset: 2 items, customer blank, reason blank
-      setValue('caseSource', 'Customer');
+      // Reset: Start in SFC (RW) then switch to Customer (RT) to demonstrate RT Document Gate
+      setValue('caseSource', 'SFC');
       setValue('caseNumber', '999');
-      setValue('items.0.customerName', '');
+      setValue('items.0.customerName', 'OR');
       setValue('items.0.itemNumber', '60001234A');
+      setValue('items.0.itemCode', '40001234');
+      setValue('items.0.itemName', 'น้ำมันเครื่อง Dynamic Synthetic Plus 5W-30 (1L)');
       setValue('items.0.verificationStatus', 'verified');
       setValue('items.0.reason', 'รั่ว');
       setValue('items.0.reasonSubtype', 'รั่วซึม');
-      setValue('items.1.customerName', '');
+      setValue('items.1.customerName', 'OR');
       setValue('items.1.itemNumber', '60001234B');
+      setValue('items.1.itemCode', '40001235');
+      setValue('items.1.itemName', 'น้ำมันเครื่อง Performa Super Synthetic 0W-20 (4L)');
       setValue('items.1.verificationStatus', 'verified');
       setValue('items.1.reason', '');
       setValue('items.1.reasonSubtype', '');
@@ -356,13 +366,12 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
       setOrFiles([]);
       setIsParsingOr(false);
 
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 700));
       if (isCancelled) return;
 
-      // Step 1: Change customer to OR → Upload Zone appears
-      setSimHighlightedFields(['customerName-0']);
-      setValue('items.0.customerName', 'OR');
-      setValue('items.1.customerName', 'OR');
+      // Step 1: Switch Segmented Mode to Customer (RT) -> Mandatory RT Document Gate triggers
+      setSimHighlightedFields(['source-switcher', 'rt-gate-alert']);
+      setValue('caseSource', 'Customer');
 
       await new Promise((r) => setTimeout(r, 1400));
       if (isCancelled) return;
@@ -643,14 +652,40 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
           <div className="glass-card bg-white p-6">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="ml-1 text-xs font-semibold text-slate-500">แหล่งที่มาของงาน (Source) *</label>
-                <select
-                  {...register('caseSource')}
-                  className="w-full rounded-xl border border-border bg-slate-50/50 px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
+                <label className="ml-1 text-xs font-semibold text-slate-500">ประเภทเคส / แหล่งที่มา (Case Type & Source) *</label>
+                <div
+                  id="source-switcher"
+                  className={`grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 p-1.5 border transition-all duration-500 ${
+                    simHighlightedFields.includes('source-switcher')
+                      ? 'border-blue-500 ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]'
+                      : 'border-slate-200/80'
+                  }`}
                 >
-                  <option value="SFC">SFC</option>
-                  <option value="Customer">Customer</option>
-                </select>
+                  <button
+                    type="button"
+                    onClick={() => setValue('caseSource', 'SFC')}
+                    className={`rounded-lg py-2.5 px-3 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      String(caseSource).toLowerCase() !== 'customer'
+                        ? 'bg-white text-blue-600 shadow-xs border border-blue-200/80'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[10px]">RW</span>
+                    <span>SFC (งานภายในโรงงาน)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue('caseSource', 'Customer')}
+                    className={`rounded-lg py-2.5 px-3 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      String(caseSource).toLowerCase() === 'customer'
+                        ? 'bg-white text-rose-600 shadow-xs border border-rose-200/80'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-mono text-[10px]">RT</span>
+                    <span>Customer (เคลมลูกค้า)</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -697,16 +732,50 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
               </div>
             </div>
 
-            {formItems.length > 0 && formItems.every(item => item.customerName === 'OR') && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mt-6 border-t border-slate-100 pt-6">
+            {String(caseSource).toLowerCase() === 'customer' && (
+              <div
+                id="rt-gate-alert"
+                className={`mt-5 rounded-xl px-4 py-3 border flex items-center justify-between gap-3 transition-all duration-500 ${
+                  simHighlightedFields.includes('rt-gate-alert')
+                    ? 'bg-rose-50 border-rose-400 ring-4 ring-rose-500/25 shadow-[0_0_20px_rgba(244,63,94,0.2)]'
+                    : orFiles.length === 0
+                    ? 'bg-rose-50/80 border-rose-200 text-rose-800'
+                    : 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 text-xs font-bold">
+                  {orFiles.length === 0 ? (
+                    <>
+                      <AlertTriangle size={16} className="text-rose-600 shrink-0" />
+                      <span>RT Document Gate: เคสเคลมลูกค้า (RT) บังคับต้องแนบเอกสารอ้างอิงอย่างน้อย 1 ไฟล์ก่อนเปิดเคส</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                      <span>RT Document Gate Unlocked: แนบเอกสารอ้างอิงครบถ้วน พร้อมเปิดเคส RT</span>
+                    </>
+                  )}
+                </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                  orFiles.length === 0 ? 'bg-rose-200/80 text-rose-900' : 'bg-emerald-200/80 text-emerald-900'
+                }`}>
+                  {orFiles.length === 0 ? 'LOCKED (REQUIRED)' : 'UNLOCKED'}
+                </span>
+              </div>
+            )}
+
+            {(String(caseSource).toLowerCase() === 'customer' || (formItems.length > 0 && formItems.some(item => item.customerName === 'OR'))) && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="mt-5 border-t border-slate-100 pt-5">
                 <div id="or-upload-container" className={`rounded-2xl bg-amber-50 p-6 border relative transition-all duration-500 ${simHighlightedFields.includes('or-upload') ? 'border-blue-400 ring-4 ring-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.25)]' : 'border-amber-100'}`}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
                       <HelpCircle size={20} />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-amber-900">เอกสารสำหรับ OR (Optional)</h4>
-                      <p className="text-xs text-amber-700/80">แนบไฟล์ Excel, PDF หรือ PNG (สูงสุด 2 ไฟล์)</p>
+                      <h4 className="text-sm font-bold text-amber-900">
+                        {String(caseSource).toLowerCase() === 'customer' ? 'เอกสารอ้างอิงเคลมลูกค้า RT / PTT OR (Required *)' : 'เอกสารสำหรับ OR (Optional)'}
+                      </h4>
+                      <p className="text-xs text-amber-700/80">แนบไฟล์ใบแจ้งเคลม Excel, PDF หรือ PNG (พร้อมสกัดรหัส QIR จาก Sheet 2 อัตโนมัติ)</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-4">
@@ -852,10 +921,20 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
                               type="button"
                               onClick={() => triggerDebouncedVerification(item.id, idx, 'itemNumber', item.itemNumber)}
                               disabled={isSaving || !item.itemNumber}
-                              className="absolute right-3 text-slate-400 hover:text-slate-900 disabled:opacity-30 transition-colors"
+                              className={`absolute right-2 p-1.5 rounded-lg transition-all ${
+                                simHighlightedFields.includes(`search-btn-${idx}`)
+                                  ? 'bg-blue-600 text-white ring-4 ring-blue-400/50 scale-115 shadow-lg'
+                                  : 'text-slate-400 hover:text-slate-900 disabled:opacity-30'
+                              }`}
+                              title="กดปุ่มแว่นขยายเพื่อค้นหาจาก Item Master"
                             >
                               <Search size={16} />
                             </button>
+                            {simHighlightedFields.includes(`search-btn-${idx}`) && (
+                              <span className="absolute -top-8 right-0 bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md whitespace-nowrap animate-bounce">
+                                🔍 กดปุ่มแว่นขยายเพื่อค้นหา Master
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -907,11 +986,18 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
                         />
                       </div>
 
-                      <div className={`mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 p-4 rounded-2xl border transition-all duration-300 ${
+                      <div className={`mb-8 p-4 rounded-2xl border transition-all duration-300 ${
                         simHighlightedFields.includes('batchNo')
                           ? 'bg-blue-50/40 border-blue-400 ring-4 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)]'
                           : 'bg-slate-50/50 border-slate-100'
                       }`}>
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/60">
+                          <span className="text-[11px] font-bold text-slate-600">ข้อมูลล็อตการผลิต & ยอดบรรจุ (Granular Lot Fields)</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            Zero-Value Restriction: ห้ามระบุจำนวน = 0
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                         <div className="col-span-2 sm:col-span-1">
                           <Controller
                             control={control}
@@ -942,8 +1028,9 @@ export function MockAddCaseTab({ onOpenTutorial, preset = 'empty', onCaseInfoCha
                         </div>
                         <div className="col-span-1"><InputField label="Mold" {...register(`items.${idx}.mold`)} disabled={isSaving} /></div>
                         <div className="col-span-1"><InputField label="Line" {...register(`items.${idx}.line`)} disabled={isSaving} /></div>
-                        <div className="col-span-1"><InputField label="จำนวนกล่อง" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
-                        <div className="col-span-1"><InputField label="จำนวนขวดหรือแกลลอน" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนกล่อง (>0)" {...register(`items.${idx}.boxNumber`)} disabled={isSaving} /></div>
+                        <div className="col-span-1"><InputField label="จำนวนขวด/แกลลอน (>0)" type="number" {...register(`items.${idx}.amount`, { valueAsNumber: true })} disabled={isSaving} /></div>
+                        </div>
                       </div>
 
                       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">

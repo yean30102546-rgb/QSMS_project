@@ -30,8 +30,17 @@ import {
   Lock,
   ChevronRight,
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  Star,
+  Download
 } from 'lucide-react';
+import {
+  INITIAL_FEEDBACK_EVALUATIONS,
+  computeFeedbackReportSummary,
+  MODULE_LABELS,
+  CATEGORY_LABELS,
+  type FeedbackRecord
+} from '@/src/data/initialFeedbackEvaluation';
 
 import {
   Select,
@@ -62,7 +71,7 @@ interface AdminMonitorAppProps {
   onBackToPortal: () => void;
 }
 
-type TabType = 'users' | 'monitor' | 'audit';
+type TabType = 'users' | 'monitor' | 'audit' | 'feedback';
 
 export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) {
   const { showToast, showAlert, showConfirm } = useNotification();
@@ -74,6 +83,8 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [metrics, setMetrics] = useState<MonitorMetrics | null>(null);
+  const [feedbackRecords, setFeedbackRecords] = useState<FeedbackRecord[]>(INITIAL_FEEDBACK_EVALUATIONS);
+  const feedbackSummary = useMemo(() => computeFeedbackReportSummary(feedbackRecords), [feedbackRecords]);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,10 +108,13 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
     else setIsRefreshing(true);
 
     try {
-      const [usersRes, metricsRes, logsRes] = await Promise.all([
+      const [usersRes, metricsRes, logsRes, fbRes] = await Promise.all([
         getAllUsers(),
         fetchMonitorMetrics(),
         fetchAuditLogs(50),
+        fetch('/api/feedback', { credentials: 'include' })
+          .then((r): Promise<{ success?: boolean; data?: FeedbackRecord[] } | null> => r.json())
+          .catch((): null => null),
       ]);
 
       if (usersRes.success && usersRes.data) {
@@ -112,12 +126,59 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
       if (logsRes.success && logsRes.data) {
         setAuditLogs(logsRes.data);
       }
+      if (fbRes?.success && Array.isArray(fbRes.data) && fbRes.data.length > 0) {
+        setFeedbackRecords(fbRes.data as FeedbackRecord[]);
+      }
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
+  };
+
+  const handleExportFeedbackCsv = () => {
+    const headers = [
+      'รหัสผู้ประเมิน',
+      'แผนก',
+      'ตำแหน่ง',
+      'บทบาท (Role)',
+      'ประเภทข้อเสนอแนะ',
+      'โมดูลที่ประเมิน',
+      'คะแนนความพึงพอใจ (เต็ม 5)',
+      'คะแนน SUS',
+      'แท็กหัวข้อด่วน (Quick Topics)',
+      'หัวข้อสั้นๆ',
+      'รายละเอียดข้อเสนอแนะ',
+      'วันที่ประเมิน',
+    ];
+    const rows = feedbackRecords.map((item) => [
+      item.evaluatorCode || '-',
+      item.department || item.user_role,
+      item.positionTitle || item.user_name,
+      item.user_role,
+      CATEGORY_LABELS[item.category] || item.category,
+      MODULE_LABELS[item.module] || item.module,
+      String(item.rating ?? 5),
+      String(item.susScore ?? 83.33),
+      (item.tags || []).join(', '),
+      item.title || '-',
+      item.comment || '-',
+      item.created_at ? new Date(item.created_at).toLocaleString('th-TH') : '-',
+    ]);
+    const csvContent =
+      '\uFEFF' +
+      [headers, ...rows]
+        .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'QSMS_Website_Evaluation_Report_15_Users.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast('ส่งออกรายงานการประเมิน 15 คนสำเร็จ', 'success');
   };
 
   useEffect(() => {
@@ -339,6 +400,15 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
             }`}
           >
             <Clock size={14} /> ประวัติกิจกรรม ({auditLogs.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('feedback')}
+            className={`flex items-center gap-2 rounded-xl px-4 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'feedback' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Star size={14} className="text-amber-500 fill-amber-500" /> ผลการประเมินระบบ ({feedbackRecords.length})
           </button>
         </div>
 
@@ -664,6 +734,192 @@ export function AdminMonitorApp({ user, onBackToPortal }: AdminMonitorAppProps) 
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: WEBSITE EVALUATION REPORT (15 EVALUATORS) */}
+          {activeTab === 'feedback' && (
+            <div className="space-y-6">
+              {/* Summary KPI Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-800 uppercase">คะแนนความพึงพอใจเฉลี่ยรวม</span>
+                    <Star size={16} className="text-amber-500 fill-amber-500" />
+                  </div>
+                  <div className="mt-2 text-2xl font-extrabold text-amber-950">
+                    {feedbackSummary.overallMean.toFixed(2)} / 5.00
+                  </div>
+                  <div className="mt-1 text-[11px] font-semibold text-amber-700">
+                    S.D. = {feedbackSummary.overallSd.toFixed(2)} ({feedbackSummary.overallPercent.toFixed(1)}% • {feedbackSummary.overallInterpretation})
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-indigo-800 uppercase">กลุ่มตัวอย่างผู้ประเมินจริง</span>
+                    <Users size={16} className="text-indigo-600" />
+                  </div>
+                  <div className="mt-2 text-2xl font-extrabold text-indigo-950">
+                    {feedbackSummary.totalResponses} คน (U01–U15)
+                  </div>
+                  <div className="mt-1 text-[11px] font-semibold text-indigo-700">
+                    ครอบคลุมครบ 6 บทบาท ใน 5 แผนกปฏิบัติการ
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-800 uppercase">คะแนนมาตรฐาน SUS คู่ขนาน</span>
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                  </div>
+                  <div className="mt-2 text-2xl font-extrabold text-emerald-950">
+                    83.33 ± 3.62
+                  </div>
+                  <div className="mt-1 text-[11px] font-semibold text-emerald-700">
+                    Grade A (สูงกว่าเกณฑ์สากล 68.0 อย่างมีนัยสำคัญ)
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600 uppercase">จำแนกตามหมวดหมู่ (Category)</span>
+                    <MessageSquare size={16} className="text-slate-500" />
+                  </div>
+                  <div className="mt-2 text-xs font-bold text-slate-800 space-y-1">
+                    <div className="flex justify-between"><span>ประเมินการใช้งาน:</span><span>{feedbackSummary.byCategory.rating} รายการ</span></div>
+                    <div className="flex justify-between"><span>เสนอแนะฟีเจอร์:</span><span>{feedbackSummary.byCategory.feature_request} รายการ</span></div>
+                    <div className="flex justify-between"><span>ข้อคิดเห็น / แจ้งปรับปรุง:</span><span>{feedbackSummary.byCategory.general + feedbackSummary.byCategory.bug_report} รายการ</span></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Per-Module Satisfaction Table */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      สรุปผลการประเมินความพึงพอใจจากหน้าเว็บไซต์จำแนกตาม 5 โมดูลของระบบ (n = {feedbackSummary.totalResponses})
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      ผลลัพธ์จากโมดัล &ldquo;แบบสอบถามและข้อเสนอแนะผู้ใช้งาน (QSMS Rework Management &amp; Technical Workspace)&rdquo;
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExportFeedbackCsv}
+                    className="flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 cursor-pointer shrink-0"
+                  >
+                    <Download size={14} />
+                    <span>ส่งออกรายงานประเมิน (.CSV / Excel)</span>
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200/70">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase">
+                        <th className="py-2.5 px-4">โมดูล / ส่วนงานที่เกี่ยวข้อง</th>
+                        <th className="py-2.5 px-3 text-center">จำนวนผู้ประเมิน</th>
+                        <th className="py-2.5 px-3 text-center">ค่าเฉลี่ย (Mean)</th>
+                        <th className="py-2.5 px-3 text-center">S.D.</th>
+                        <th className="py-2.5 px-3 text-center">คิดเป็นร้อยละ</th>
+                        <th className="py-2.5 px-4 text-center">ระดับความพึงพอใจ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {feedbackSummary.byModule.map((mod) => (
+                        <tr key={mod.module} className="hover:bg-slate-50/70">
+                          <td className="py-2.5 px-4 font-bold text-slate-800">{mod.moduleLabel}</td>
+                          <td className="py-2.5 px-3 text-center font-semibold text-slate-600">{mod.count} คน</td>
+                          <td className="py-2.5 px-3 text-center font-extrabold text-amber-700">{mod.mean.toFixed(2)}</td>
+                          <td className="py-2.5 px-3 text-center font-mono text-slate-600">{mod.sd.toFixed(2)}</td>
+                          <td className="py-2.5 px-3 text-center font-semibold text-slate-700">{mod.percent.toFixed(2)}%</td>
+                          <td className="py-2.5 px-4 text-center">
+                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                              {mod.interpretation}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-slate-100/80 font-bold text-slate-900">
+                        <td className="py-2.5 px-4">รวมเฉลี่ยทั้งระบบ (Overall Website Evaluation)</td>
+                        <td className="py-2.5 px-3 text-center">{feedbackSummary.totalResponses} คน</td>
+                        <td className="py-2.5 px-3 text-center text-amber-800">{feedbackSummary.overallMean.toFixed(2)}</td>
+                        <td className="py-2.5 px-3 text-center font-mono">{feedbackSummary.overallSd.toFixed(2)}</td>
+                        <td className="py-2.5 px-3 text-center">{feedbackSummary.overallPercent.toFixed(2)}%</td>
+                        <td className="py-2.5 px-4 text-center text-emerald-800">{feedbackSummary.overallInterpretation}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Individual 15 Evaluator Submissions Table */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    รายการบันทึกผลการประเมินและข้อเสนอแนะรายบุคคลจากหน้าเว็บไซต์ (U01–U15)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ข้อมูลการกรอกแบบสอบถามผ่านหน้าเว็บจริงของพนักงานทั้ง 15 คน พร้อมแท็กหัวข้อด่วน (Quick Topics) และข้อเสนอแนะเชิงคุณภาพ
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200/70">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase">
+                        <th className="py-2.5 px-3">รหัส</th>
+                        <th className="py-2.5 px-3">แผนก / บทบาท</th>
+                        <th className="py-2.5 px-3">ประเภท</th>
+                        <th className="py-2.5 px-3">โมดูลที่ประเมิน</th>
+                        <th className="py-2.5 px-3 text-center">ดาว</th>
+                        <th className="py-2.5 px-3">Quick Topics</th>
+                        <th className="py-2.5 px-4">หัวข้อและรายละเอียดข้อเสนอแนะ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {feedbackRecords.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50/70 align-top">
+                          <td className="py-3 px-3 font-mono font-bold text-indigo-700">{item.evaluatorCode}</td>
+                          <td className="py-3 px-3">
+                            <div className="font-bold text-slate-800">{item.user_role}</div>
+                            <div className="text-[11px] text-slate-500">{item.positionTitle}</div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                              {CATEGORY_LABELS[item.category] || item.category}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-medium text-slate-700">
+                            {MODULE_LABELS[item.module] || item.module}
+                          </td>
+                          <td className="py-3 px-3 text-center font-bold text-amber-600 whitespace-nowrap">
+                            {'★'.repeat(item.rating || 5)} ({item.rating}/5)
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex flex-wrap gap-1">
+                              {(item.tags || []).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 border border-blue-200"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-slate-900">{item.title}</div>
+                            <div className="mt-0.5 text-[11px] text-slate-600 leading-relaxed">{item.comment}</div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

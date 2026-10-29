@@ -80,6 +80,20 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
   const [selectedCategory, setSelectedCategory] = useState<SlideCategory>("all");
   const [currentIdx, setCurrentIdx] = useState(0);
   const [direction, setDirection] = useState(0);
+
+  // Allow deep linking via ?slide=<index>
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const slideParam = params.get('slide');
+      if (slideParam !== null) {
+        const target = parseInt(slideParam, 10);
+        if (!isNaN(target) && target >= 0) {
+          setCurrentIdx(target);
+        }
+      }
+    }
+  }, []);
   const [scale, setScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -342,12 +356,12 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         {
           phase: "PHASE 03-04",
           period: "กรกฎาคม 2026",
-          title: "Lifecycle & Multimodal AI",
-          desc: "Dynamic Auto-Status Lifecycle (Pending ➔ In-Progress ➔ Completed), Material Shortage Blockers, Drawing OCR, DocAI Vector Search",
+          title: "Cross-Dept Workflow & AI",
+          desc: "5-Stage Cross-Department Workflow (QSMS ➔ WPK ➔ PDF ➔ QC), Two-Way Material Handshake, Drawing OCR, DocAI Vector Search",
           deliverables: [
-            "คำนวณสถานะอัตโนมัติจากยอดกล่องจริง",
-            "ระบบบันทึกอุปสรรค ขาดกล่อง/แกลลอน/น้ำมัน",
-            "ระบบสกัด Drawing/Master ด้วย Gemini OCR + pgvector"
+            "5-Stage Status Lifecycle ข้าม 4 แผนก (QSMS/WPK/PDF/ADMIN)",
+            "ใบเบิกวัสดุซ่อม BOM & Two-Way Handshake ยืนยันรับของ",
+            "สกัด Drawing/Master ด้วย Gemini OCR + pgvector"
           ],
           icon: <Cpu className="w-5 h-5 text-purple-600" />,
           status: "COMPLETED",
@@ -357,11 +371,11 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
           phase: "PHASE 05-06",
           period: "สิงหาคม 2026",
           title: "UI Overhaul & V&V Ready",
-          desc: "Apple Liquid Glass Design System, Interactive Presentation Deck 22 สไลด์, Keynote Spring Physics, 129 Unit Tests Passed 100%",
+          desc: "Apple Liquid Glass UI, Ground Truth OCR Evaluation แม่นยำ 96.36% (100 เอกสาร), 130 Automated Tests Passed 100%",
           deliverables: [
             "ขจัด AI Slop สู่ Modern Industrial Minimal UI",
-            "Interactive Presentation Deck พร้อม Live Sandbox",
-            "ผ่านการทดสอบ Automated Tests 129 รายการ 100%"
+            "Ground Truth OCR Benchmark 96.36% (530/550 ฟิลด์)",
+            "ผ่านการทดสอบ Automated Tests 130 รายการ 100%"
           ],
           icon: <Award className="w-5 h-5 text-emerald-600" />,
           status: "PRODUCTION READY",
@@ -415,7 +429,7 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
           subitems: [
             "React 19 Shell & Motion Animation",
             "Client-side Image Compression (300KB)",
-            "Role Separation (QSMS Admin / Operator)"
+            "4-Department RBAC (QSMS / WPK / PDF / ADMIN)"
           ]
         },
         {
@@ -479,12 +493,12 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
           columns: [
             { name: "id", type: "UUID / String", isKey: true, desc: "Primary Key (RTxxx-YYYY / RWxxx-YYYY)" },
             { name: "customer_name", type: "VARCHAR(100)", desc: "Customer Identifier (OR / SFC)" },
-            { name: "status", type: "VARCHAR(20)", desc: "Dynamic: Pending / In-Progress / Completed" },
-            { name: "total_boxes", type: "INTEGER", desc: "Total planned box count" },
+            { name: "status", type: "VARCHAR(30)", desc: "5-Stage: Pending Analysis / Awaiting Materials / In-Progress / Blocked / Completed" },
+            { name: "total_boxes", type: "INTEGER", desc: "Total planned box count (>0)" },
             { name: "completed_boxes", type: "INTEGER", desc: "Real completed box progress" },
-            { name: "missing_boxes", type: "INTEGER", desc: "Shortage: Missing boxes blocker" },
-            { name: "missing_gallons", type: "INTEGER", desc: "Shortage: Missing gallons blocker" },
-            { name: "missing_oil", type: "INTEGER", desc: "Shortage: Missing oil blocker" }
+            { name: "material_requests", type: "JSONB", desc: "QSMS BOM Requisition Slip & WPK Issue Tracking" },
+            { name: "materials_confirmed", type: "BOOLEAN", desc: "Two-Way Handshake (PDF Confirmed Receipt)" },
+            { name: "shortage_blockers", type: "INTEGER", desc: "Shortage Blockers (Missing Boxes / Gallons / Oil)" }
           ]
         },
         {
@@ -540,20 +554,32 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       category: "architecture",
       type: "split",
       chapter: "08 / USER ROLES & RBAC",
-      title: "Role-Based Access Control Matrix",
-      description: "ทฤษฎีการแบ่งแยกหน้าที่การทำงาน (Separation of Duties) ผ่านระบบความปลอดภัย RBAC",
+      title: "4-Department RBAC & Separation of Duties",
+      description: "การแบ่งแยกหน้าที่และความรับผิดชอบข้าม 4 แผนกหลัก (QSMS ➔ WPK ➔ PDF ➔ ADMIN) เพื่อความโปร่งใสและตรวจสอบย้อนกลับได้ทุกขั้นตอน",
       bullets: [
         {
-          title: "Operator Role (หน้างาน)",
-          desc: "สร้างเคส Rework, บันทึกรูปถ่ายหลักฐาน, อัปเดตความคืบหน้ายอดกล่องเสร็จจริง และระบุอุปสรรคหน้างาน (ขาดกล่อง/แกลลอน/น้ำมัน)",
-          badge: "OPERATOR",
-          icon: <Users className="w-6 h-6 text-amber-600" />
+          title: "QSMS Role (ฝ่ายควบคุมคุณภาพ & วิเคราะห์)",
+          desc: "เปิดเคส RT/RW, วิเคราะห์สาเหตุความเสียหาย, ออกใบเบิกวัสดุซ่อม (BOM Requisition), และตรวจรับงานขั้นสุดท้าย (QC Sign-off)",
+          badge: "QSMS",
+          icon: <ShieldCheck className="w-6 h-6 text-blue-600" />
         },
         {
-          title: "QSMS Admin Role (ผู้ดูแลและควบคุมคุณภาพ)",
-          desc: "สิทธิ์เต็มระบบ: ตรวจสอบและอนุมัติเคส, จัดการ Item Master & Drawing Storage, สกัดแบบแปลนด้วย AI, และส่งออกรายงาน Excel ฝังรูป",
-          badge: "QSMS ADMIN",
-          icon: <ShieldCheck className="w-6 h-6 text-blue-600" />
+          title: "WPK Role (ฝ่ายคลังสินค้า & เบิกจ่ายภาชนะ)",
+          desc: "ตรวจสอบใบเบิกวัสดุจาก QSMS, จัดเตรียมกล่อง/แกลลอน/ฝา/สติกเกอร์ และบันทึกยอดจ่ายวัสดุให้ฝ่ายผลิต",
+          badge: "WPK",
+          icon: <Layers className="w-6 h-6 text-amber-600" />
+        },
+        {
+          title: "PDF Role (ฝ่ายผลิต & ปฏิบัติการซ่อมแซม)",
+          desc: "กดยืนยันตรวจรับวัสดุ (Two-Way Handshake), บันทึกยอดกล่องที่ซ่อมเสร็จจริง หรือแจ้งติดปัญหาหน้างาน (Blocked / Defend Mode)",
+          badge: "PDF",
+          icon: <Workflow className="w-6 h-6 text-indigo-600" />
+        },
+        {
+          title: "ADMIN Role (ผู้ดูแลระบบสูงสุด)",
+          desc: "สิทธิ์เต็มระบบทุกโมดูล: อนุมัติข้ามขั้นตอน, จัดการฐานข้อมูล Item Master & Drawing Storage, และส่งออกรายงานบริหาร",
+          badge: "ADMIN",
+          icon: <Users className="w-6 h-6 text-emerald-600" />
         }
       ]
     },
@@ -638,13 +664,14 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         />
       ),
       tourCard: {
-        title: "การเปิดเคสแบบ Smart & บังคับหลักฐาน",
+        title: "การเปิดเคสแบบกดแว่นขยายค้นหา & บังคับหลักฐาน",
         description: (
           <>
-            ลดความผิดพลาดในการกรอกข้อมูลด้วยระบบ Auto-fill และมั่นใจได้ด้วยหลักฐานภาพถ่าย<br />
+            ลดความผิดพลาดในการคีย์ข้อมูลด้วยปุ่มแว่นขยายค้นหา Master และฟิลด์ล็อตการผลิตละเอียด<br />
             <br />
-            • <b>Auto-fill:</b> เพียงกรอกรหัสและกดค้นหา ระบบจะตรวจสอบและดึงข้อมูลจาก Item Master (หรือสร้างรายการใหม่) อัตโนมัติ<br />
-            • <b>Evidence Integrity:</b> บังคับแนบรูปภาพ พร้อมระบบบีบอัดภาพก่อนอัปโหลดเพื่อประหยัด Storage
+            • <b>Magnifying Glass Search:</b> กดปุ่ม 🔍 หรือ Enter เพื่อดึงข้อมูลจาก Item Master ไม่เด้งทับขณะพิมพ์<br />
+            • <b>Granular Lot & Zero Restriction:</b> เก็บครบทั้ง Batch No, วันผลิตแกลลอน, Mold, Line และล็อกห้ามระบุจำนวนเป็น 0<br />
+            • <b>Evidence Integrity:</b> บังคับแนบรูปหลักฐานพร้อมบีบอัดภาพฝั่ง Client (300KB)
           </>
         ),
         position: "bottom-12 left-12"
@@ -656,9 +683,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       category: "rework",
       type: "tour",
       chapter: "13 / REWORK WORKFLOW",
-      title: "Smart Features & Cross-Item Link",
+      title: "RT Document Gate, QIR Auto-Parse & Cross-Item Link",
       hasSimulation: true,
-      simulationLabel: { play: 'เล่นจำลอง Smart Features', playing: 'กำลังจำลอง Smart Features...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
+      simulationLabel: { play: 'เล่นจำลอง RT Gate & Cross-Link', playing: 'กำลังจำลอง RT Gate & Cross-Link...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
       mockComponent: (
         <MockAddCase
           onNavigate={() => setCurrentIdx(13)}
@@ -668,13 +695,14 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         />
       ),
       tourCard: {
-        title: "ฟีเจอร์ช่วยเหลืออัจฉริยะ",
+        title: "RT Document Gate, สกัด QIR & เชื่อมโยงสาเหตุ",
         description: (
           <>
-            ระบบรองรับเงื่อนไขเฉพาะของลูกค้า เช่นบังคับแนบไฟล์เมื่อเป็น PTT OR<br />
+            แยกเงื่อนไขเอกสารระหว่างเคสเคลมลูกค้า (RT) และเคสภายในโรงงาน (RW) อย่างชัดเจน<br />
             <br />
-            และมีระบบเชื่อมโยงสาเหตุ (Cross-Item Link) ระหว่างไอเทม
-            ช่วยวิเคราะห์และลดภาระการพิมพ์ข้อมูลซ้ำซ้อน
+            • <b>RT Mandatory Document Gate:</b> เคส RT บังคับแนบเอกสารอ้างอิงอย่างน้อย 1 ไฟล์ก่อนเปิดเคส (RW เปิดได้ทันที)<br />
+            • <b>QIR Sheet 2 Extraction:</b> สกัดรหัส QIR จากไฟล์เคลม PTT OR เข้าสู่รายการอัตโนมัติ<br />
+            • <b>Cross-Item Link:</b> เชื่อมโยงสินค้า &apos;เปื้อน&apos; ไปยังไอเทมต้นเหตุที่ &apos;รั่ว&apos; ในเคสเดียวกัน
           </>
         ),
         position: "bottom-12 left-12"
@@ -686,9 +714,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       category: "rework",
       type: "tour",
       chapter: "14 / REWORK WORKFLOW",
-      title: "Dynamic Auto-Status, Blockers & Excel Export",
+      title: "4-Step Cross-Department Workflow & Excel Export",
       hasSimulation: true,
-      simulationLabel: { play: 'เล่นจำลองการอัปเดต & ส่งออก Excel', playing: 'กำลังจำลองการทำงาน...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
+      simulationLabel: { play: 'เล่นจำลองส่งมอบงาน 4 แผนก & ส่งออก Excel', playing: 'กำลังจำลอง 4-Step Workflow...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
       mockComponent: (
         <MockUpdateModal
           onNavigate={() => setCurrentIdx(14)}
@@ -697,14 +725,14 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         />
       ),
       tourCard: {
-        title: "อัปเดตสถานะ, จัดการอุปสรรค & ส่งออก Excel",
+        title: "ส่งมอบงานข้าม 4 แผนก, Two-Way Handshake & ส่งออก Excel",
         description: (
           <>
-            ระบบคำนวณสถานะอัตโนมัติ (Dynamic Auto-Status) ตามยอดกล่องที่ทำเสร็จจริง<br />
+            ควบคุมวงจรงานซ่อม 5 สถานะผ่าน 4-Step Workflow Stepper ตั้งแต่วิเคราะห์จนถึงปิดเคส<br />
             <br />
-            • <b>Auto-Status & Accordion:</b> ปรับสถานะตามยอดผลิตจริง พร้อม Accordion สรุปวัสดุที่ขาด<br />
-            • <b>Evidence Photos:</b> แนบและตรวจสอบรูปภาพหลักฐานความผิดปกติระดับไอเทม<br />
-            • <b>Direct Excel Export:</b> ส่งออกตารางรายงานพร้อม <b>ฝังรูปภาพหลักฐานลงในเซลล์ Excel โดยตรง</b> จากหน้าจัดการเคส
+            • <b>QSMS BOM ➔ WPK ➔ PDF Handshake:</b> ออกใบเบิกวัสดุซ่อม จ่ายของ และกดยืนยันรับวัสดุสองทาง<br />
+            • <b>PDF Repair & QC Sign-off:</b> บันทึกยอดซ่อม 100% หรือแจ้งติดปัญหา (Blocked) ก่อน QSMS ตรวจรับปิดเคส<br />
+            • <b>Direct Excel Export:</b> ส่งออกรายงาน .xlsx พร้อม <b>ฝังรูปภาพหลักฐานลงในเซลล์ (Row Height: 120px)</b>
           </>
         ),
         position: "bottom-16 left-16"
@@ -739,21 +767,30 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       type: "split",
       chapter: "16 / DRAWING & MASTER MODULE",
       title: "Drawing & Master Storage",
-      description: "จัดการแบบแปลนลูกค้าและ Master Sheet ด้วย AI OCR และแผงตรวจทานคู่ขนาน",
+      description: "จัดการแบบแปลนลูกค้าและ Master Sheet ด้วย Gemini Vision OCR และแผงตรวจทานคู่ขนาน",
       bullets: [
         {
           title: "Gemini Vision OCR Multi-field",
-          desc: "สกัดฟิลด์ Drawing (7 ฟิลด์) และ Master Sheet (8 ฟิลด์) อัตโนมัติ ป้องกันความผิดพลาดจากการคีย์ด้วยมือ",
+          desc: "สกัดฟิลด์ Drawing (7 ฟิลด์) และ Master Sheet (8 ฟิลด์) อัตโนมัติในรูปแบบ Structured JSON พร้อมระบบ Cascade Fallback",
+          badge: "GEMINI 3.1 FLASH",
           icon: <Layers className="w-6 h-6 text-amber-500" />
         },
         {
-          title: "55/45 Inspection Workspace",
-          desc: "แผงตรวจทาน Side-by-Side ดู PDF ฝั่งซ้ายพร้อมแก้ไข Metadata ฝั่งขวา สลับดูแบบแปลนด้วยลูกศร",
+          title: "Ground Truth OCR Benchmark: 96.36%",
+          desc: "ผ่านการทดสอบเทียบเคียง Ground Truth 100 เอกสารจริง (550 ฟิลด์) สกัดถูกต้อง 530 ฟิลด์ (Drawing แม่นยำ 97.71% / Master 94.50%)",
+          badge: "96.36% ACCURACY",
+          icon: <Award className="w-6 h-6 text-indigo-600" />
+        },
+        {
+          title: "55/45 Inspection Workspace & Orientation",
+          desc: "แผงตรวจทาน Side-by-Side ดู PDF คู่กับ Metadata พร้อมปุ่มหมุน Landscape 90° ที่จำองศาลง localStorage อัตโนมัติ",
+          badge: "55/45 SPLIT VIEW",
           icon: <LayoutGrid className="w-6 h-6 text-blue-500" />
         },
         {
           title: "Boxes per Pallet Normalization",
-          desc: "ปรับแปลงค่า 'ตามความเหมาะสม' เข้าสู่ระบบอย่างถูกต้องแม่นยำ ไม่สุ่มเดาตัวเลข",
+          desc: "ตรวจจับและคงค่าข้อความ 'ตามความเหมาะสม' เข้าสู่ระบบอย่างถูกต้องแม่นยำ ป้องกัน AI สุ่มเดาตัวเลขผิดพลาด",
+          badge: "NORMALIZED",
           icon: <CheckCircle2 className="w-6 h-6 text-emerald-500" />
         }
       ]
@@ -764,26 +801,26 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       category: "storage",
       type: "tour",
       chapter: "17 / DRAWING WORKFLOW",
-      title: "AI Drawing & Master Storage Workflow",
+      title: "AI Vision OCR Extraction (96.36% Accuracy)",
       hasSimulation: true,
-      simulationLabel: { play: 'เล่นจำลอง AI Drawing & Inspection', playing: 'กำลังจำลองการทำงาน...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
+      simulationLabel: { play: 'เล่นจำลอง AI Vision OCR', playing: 'กำลังจำลอง AI OCR...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
       mockComponent: (
         <MockDrawingMaster
           onNavigate={() => setCurrentIdx(17)}
+          focusMode="ocr"
           simulationTrigger={simTrigger}
           onSimulationComplete={handleSimulationComplete}
         />
       ),
       tourCard: {
-        title: "AI OCR, แผงตรวจทาน 55/45 & Gap Analysis",
+        title: "สกัดข้อมูลแบบแปลนอัตโนมัติด้วย Gemini 3.1 Flash OCR",
         description: (
           <>
-            จัดการแบบแปลนลูกค้าและ Master Sheet ด้วย AI Vision OCR และแผงตรวจทานคู่ขนาน<br />
+            อัปโหลดไฟล์ PDF แบบแปลนเพื่อให้ AI สกัด Metadata ออกมาเป็น Structured JSON ทันที<br />
             <br />
-            • <b>Gemini Vision OCR:</b> สกัดสเปกอัตโนมัติ (Drawing 7 ฟิลด์ / Master 8 ฟิลด์)<br />
-            • <b>PDF Orientation Toolbar:</b> หมุน PDF 90° Landscape 1-click และจำองศาลงระบบ<br />
-            • <b>Boxes/Pallet Normalization:</b> ตรวจจับและแปลงค่า "ตามความเหมาะสม" แม่นยำ<br />
-            • <b>Gap Analysis Report:</b> ตรวจจับแบบแปลนที่ยังขาด Master และส่งออกไฟล์ Excel
+            • <b>Ground Truth Verified (96.36%):</b> ทดสอบจริง 100 เอกสาร (530/550 ฟิลด์ถูกต้อง)<br />
+            • <b>Cascade Fallback:</b> สลับโมเดลสำรองอัตโนมัติเมื่อเกิดโหลดสูง (503 High Demand)<br />
+            • <b>Human-in-the-Loop:</b> ตรวจสอบและแก้ไขข้อมูลก่อนกดยืนยันบันทึกลงฐานข้อมูล
           </>
         ),
         position: "bottom-12 right-12"
@@ -795,24 +832,26 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       category: "storage",
       type: "tour",
       chapter: "18 / STORAGE WORKFLOW",
-      title: "Master Sheet Schema & Form Separation",
+      title: "Decoupled Schemas & Boxes/Pallet Normalization",
       hasSimulation: true,
-      simulationLabel: { play: 'จำลองการแยกฟอร์ม Master', playing: 'กำลังจำลอง...', replay: 'จำลองใหม่อีกครั้ง' },
+      simulationLabel: { play: 'จำลองการแยกฟอร์ม 7 vs 8 ฟิลด์', playing: 'กำลังจำลอง...', replay: 'จำลองใหม่อีกครั้ง' },
       mockComponent: (
         <MockDrawingMaster
           onNavigate={() => setCurrentIdx(18)}
+          focusMode="schema"
           simulationTrigger={simTrigger}
           onSimulationComplete={handleSimulationComplete}
         />
       ),
       tourCard: {
-        title: "การแยกโครงสร้างแบบฟอร์ม Drawing และ Master",
+        title: "แยกโครงสร้าง Drawing (7 ฟิลด์) vs Master (8 ฟิลด์)",
         description: (
           <>
-            แยกโครงสร้างข้อมูล Drawing (7 ฟิลด์) และ Master Sheet (8 ฟิลด์) ออกจากกันอย่างเด็ดขาด<br />
+            แยกโครงสร้างข้อมูล Drawing และ Master Sheet ออกจากกันอย่างเด็ดขาด ไม่ปะปนกัน<br />
             <br />
-            • กำหนดสีกำกับเฉพาะ (Drawing = สีน้ำเงิน / Master = สีม่วงเข้ม)<br />
-            • ป้องกันฟิลด์ N/A สับสน และรองรับการค้นหาข้ามตารางทันที
+            • <b>Drawing Schema (7 ฟิลด์):</b> เน้นรหัสแบบแปลน ลูกค้า รหัส 4000xxxx และขนาดบรรจุ<br />
+            • <b>Master Schema (8 ฟิลด์):</b> เน้นรหัสสูตรผลิต 61653013A700A กลุ่มน้ำมัน พาเลท และอายุเก็บรักษา<br />
+            • <b>Boxes/Pallet Normalization:</b> แปลงค่า &quot;ตามความเหมาะสม&quot; ตรงตามเอกสารจริง
           </>
         ),
         position: "bottom-12 right-12"
@@ -824,24 +863,26 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       category: "storage",
       type: "tour",
       chapter: "19 / STORAGE WORKFLOW",
-      title: "55/45 Split View & PDF Auto-Orientation",
+      title: "55/45 Split View, PDF Orientation & Gap Analysis",
       hasSimulation: true,
-      simulationLabel: { play: 'จำลอง Split View & Landscape', playing: 'กำลังจำลอง...', replay: 'จำลองใหม่อีกครั้ง' },
+      simulationLabel: { play: 'จำลอง Split View & Gap Analysis', playing: 'กำลังจำลอง...', replay: 'จำลองใหม่อีกครั้ง' },
       mockComponent: (
         <MockDrawingMaster
           onNavigate={() => setCurrentIdx(19)}
+          focusMode="splitview"
           simulationTrigger={simTrigger}
           onSimulationComplete={handleSimulationComplete}
         />
       ),
       tourCard: {
-        title: "แผงตรวจทานเอกสาร 55/45 & หมุน PDF แนวนอน",
+        title: "แผงตรวจทาน 55/45, หมุน PDF 90° & Gap Analysis",
         description: (
           <>
-            เปิดแผงตรวจทานฝั่งขวาทันทีเมื่อคลิกเลือกแถวในตาราง<br />
+            เปิดแผงตรวจทานฝั่งขวาทันทีเมื่อคลิกเลือกแถวในตาราง พร้อมตรวจสอบความครบถ้วนของเอกสาร<br />
             <br />
-            • <b>Landscape View 1-Click:</b> หมุน PDF 90° ให้อ่านง่ายทันที<br />
-            • <b>Persistent Orientation:</b> บันทึกองศาการหมุนลง localStorage ถาวร
+            • <b>Landscape View 1-Click:</b> หมุน PDF 90° ให้อ่านง่ายและจำองศาลง localStorage ถาวร<br />
+            • <b>Cross-Document Link:</b> สลับดูระหว่าง Drawing และ Master Sheet ที่ผูกกันได้ทันที<br />
+            • <b>Gap Analysis Report:</b> ตรวจจับ Drawing ที่ยังขาด Master Sheet พร้อมส่งออกรายงาน Excel
           </>
         ),
         position: "bottom-12 right-12"
@@ -853,9 +894,9 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
       category: "rag",
       type: "tour",
       chapter: "20 / DOCAI WORKFLOW",
-      title: "Interactive AI Chatbot & Manual Search",
+      title: "DocAI RAG Assistant & Live Function Calling",
       hasSimulation: true,
-      simulationLabel: { play: 'เล่นจำลอง DocAI RAG & Inspect Chunks', playing: 'กำลังจำลองการทำงาน...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
+      simulationLabel: { play: 'เล่นจำลอง DocAI RAG & สถิติสด', playing: 'กำลังจำลองการทำงาน...', replay: 'จำลองใหม่อีกครั้ง (Replay Demo)' },
       mockComponent: (
         <MockDocAIRAG
           onNavigate={() => setCurrentIdx(20)}
@@ -864,14 +905,14 @@ export function GuideApp({ onBackToPortal }: { onBackToPortal?: () => void }) {
         />
       ),
       tourCard: {
-        title: "ระบบถาม-ตอบคู่มือวิศวกรรมสด & Inspect Chunks",
+        title: "ถาม-ตอบคู่มือวิศวกรรม & ดึงสถิติสด 5 สถานะ",
         description: (
           <>
-            ผู้ช่วย AI อัจฉริยะสืบค้นคู่มือเทคนิคและแนวทางการแก้ไขงาน Rework ด้วย Vector pgvector<br />
+            ผสานการค้นหาเวกเตอร์คู่มือ PDF (pgvector 768-D) เข้ากับการดึงสถิติสดจากฐานข้อมูล<br />
             <br />
-            • <b>Gemini SSE Streaming:</b> ตอบคำถามสดพร้อมหลอดวิเคราะห์ Defect Correlation<br />
-            • <b>Sources Citation:</b> ระบุชื่อไฟล์ PDF, เลขหน้า และเปอร์เซ็นต์ Match แม่นยำ<br />
-            • <b>Knowledge Base & Chunks:</b> ดูคลัง PDF 768-D และเปิด Inspector ดูเวกเตอร์ชิ้นส่วนจริง
+            • <b>Live Function Calling:</b> เรียก <code>get_rework_statistics()</code> สรุปยอดเคสแยกตาม 5 สถานะจริง<br />
+            • <b>Semantic Manual Search:</b> สืบค้นแนวทางแก้ไขงานซ่อมและค่ามาตรฐาน (เช่น Torque 4.5 Nm)<br />
+            • <b>Document Checklist & Bulk Delete:</b> จัดการคลังคู่มือ PDF และลบเวกเตอร์เป็นกลุ่มได้ในคลิกเดียว
           </>
         ),
         position: "bottom-12 right-12"

@@ -46,24 +46,7 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   }
 
   const displayUrl = toDisplayImageUrl(decodedUrl, 1600);
-  const urlsToTry = [toInternalProxyUrl(displayUrl), displayUrl, toCorsProxyUrl(displayUrl)];
-
-  try {
-    // Add a timeout to the API fetch
-    const fetchPromise = fetchImageDataUrl(decodedUrl);
-    const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Image fetch timeout')), IMAGE_TIMEOUT_MS)
-    );
-    const result = await Promise.race([fetchPromise, timeoutPromise]);
-    if (result && result.startsWith('data:')) {
-      return result;
-    } else {
-      console.warn(`API image fetch returned a raw URL, falling back to Blob download: ${result}`);
-      throw new Error('API fetch did not return base64');
-    }
-  } catch (err) {
-    console.warn(`API image fetch failed for ${decodedUrl}:`, err);
-  }
+  const urlsToTry = [toInternalProxyUrl(displayUrl), toCorsProxyUrl(displayUrl), displayUrl];
 
   for (const candidateUrl of urlsToTry) {
     try {
@@ -252,7 +235,7 @@ export function useExportReport() {
               // Instead of overlapping, we use a simple horizontal offset approach inside the Image column
               // In ExcelJS, an image can span cells or just float. To float it nicely, we use fractions.
               worksheet.addImage(imageId, {
-                tl: { col: colOffset + (i * 1.8), row: rowNumber - 1 + 0.1 }, 
+                tl: { col: colOffset + (i * 0.28) + 0.02, row: rowNumber - 1 + 0.08 }, 
                 ext: { width: 100, height: 100 }
               });
               

@@ -60,11 +60,27 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(imageUrl, {
-      headers: { 'User-Agent': 'QSMS image proxy' },
-      redirect: 'error',
-      signal: AbortSignal.timeout(15000),
-    });
+    let response: Response;
+    try {
+      response = await fetch(imageUrl, {
+        headers: { 'User-Agent': 'QSMS image proxy' },
+        redirect: 'error',
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (fetchError) {
+      // If drive.google.com fails due to HTTP 302 redirect, safely fetch directly from Google's static CDN (lh3)
+      const driveMatch = sourceUrl.match(/[?&]id=([^&]+)/) || sourceUrl.match(/\/d\/([^/?]+)/);
+      if (driveMatch && (imageUrl.hostname === 'drive.google.com' || imageUrl.hostname === 'lh3.googleusercontent.com')) {
+        const directLh3Url = new URL(`https://lh3.googleusercontent.com/d/${encodeURIComponent(driveMatch[1])}=w1600`);
+        response = await fetch(directLh3Url, {
+          headers: { 'User-Agent': 'QSMS image proxy' },
+          redirect: 'error',
+          signal: AbortSignal.timeout(15000),
+        });
+      } else {
+        throw fetchError;
+      }
+    }
 
     if (!response.ok) {
       return new NextResponse('Failed to fetch image', { status: 502 });

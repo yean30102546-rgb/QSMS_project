@@ -20,7 +20,7 @@ export function extractGoogleDriveFileId(url: string): string | null {
 export function toDisplayImageUrl(url: string, size = 1200): string {
   const fileId = extractGoogleDriveFileId(url);
   if (!fileId) return url;
-  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w${size}`;
+  return `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=w${size}`;
 }
 
 export function toCorsProxyUrl(url: string): string {

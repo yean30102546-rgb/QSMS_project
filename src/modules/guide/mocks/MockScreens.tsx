@@ -428,13 +428,13 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 border border-slate-200/60">
-                  Hybrid Case ID
+                  RT vs RW Document Gate
                 </span>
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 border border-slate-200/60">
-                  Two-Way Verification
+                  4-Department Handover
                 </span>
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 border border-slate-200/60">
-                  Dynamic Auto-Status
+                  5-Stage Status Lifecycle
                 </span>
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 border border-slate-200/60">
                   Excel & Evidence
@@ -608,7 +608,7 @@ export function MockPortal({ onNavigate }: { onNavigate?: () => void }) {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-blue-600">คู่มือแนะนำ</span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 border border-blue-200/60">
-                      17 Slides
+                      23 Slides
                     </span>
                   </div>
                   <h4 className="mt-2 text-lg font-bold tracking-tight text-[#1d1d1f]">
@@ -760,10 +760,12 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
                   </div>
 
                   <div className="flex items-center gap-2 px-1 pb-2 overflow-x-auto scrollbar-hide">
-                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-slate-500">สถานะ:</span>
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-slate-500">สถานะ 5 ขั้นตอน:</span>
                     <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-[#1d1d1f] text-white shadow-md border border-transparent">ทั้งหมด <span className="opacity-90 text-[10px]">120</span></button>
-                    <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">รอดำเนินการ <span className="opacity-65 text-[10px]">15</span></button>
-                    <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">กำลังดำเนินการ <span className="opacity-65 text-[10px]">40</span></button>
+                    <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">รอวิเคราะห์ (QSMS) <span className="opacity-65 text-[10px]">12</span></button>
+                    <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">รอเบิกภาชนะ (WPK) <span className="opacity-65 text-[10px]">15</span></button>
+                    <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">กำลังซ่อม (PDF) <span className="opacity-65 text-[10px]">42</span></button>
+                    <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-rose-50/80 border border-rose-200 text-rose-700 shadow-sm hover:bg-rose-100">ติดปัญหา (Blocked) <span className="opacity-80 text-[10px]">6</span></button>
                     <button className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold bg-white/45 border border-white/45 text-slate-600 shadow-sm hover:bg-white/60">เสร็จสิ้น <span className="opacity-65 text-[10px]">45</span></button>
                   </div>
                 </div>
@@ -874,7 +876,7 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
                         </div>
                         <p className="text-[10px] font-medium text-slate-400 mt-0.5 truncate max-w-full">ฝารั่ว</p>
                       </div>
-                      <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-amber-100/90 text-amber-900 border-amber-300/70 shadow-sm shadow-amber-500/5">รอดำเนินการ</span>
+                      <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-amber-100/90 text-amber-900 border-amber-300/70 shadow-sm shadow-amber-500/5">รอเบิกภาชนะ (WPK)</span>
                     </div>
 
                     {/* Row 4 (Pending - Danger) */}
@@ -910,7 +912,7 @@ export function MockOverall({ onNavigate }: { onNavigate?: () => void }) {
                         </div>
                         <p className="text-[10px] font-medium text-slate-400 mt-0.5 truncate max-w-full">สีถลอก</p>
                       </div>
-                      <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-red-100/90 text-red-950 border-red-300/70 shadow-sm shadow-red-500/5">รอดำเนินการ</span>
+                      <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-red-100/90 text-red-950 border-red-300/70 shadow-sm shadow-red-500/5">ติดปัญหา (Blocked)</span>
                     </div>
 
                   </div>
@@ -936,16 +938,21 @@ export function MockUpdateModal({
   onSimulationComplete?: () => void;
 }) {
   const [simStep, setSimStep] = useState<number>(0);
+  const [activeWorkStep, setActiveWorkStep] = useState<1 | 2 | 3 | 4>(1);
+  const [bomFilled, setBomFilled] = useState<boolean>(false);
+  const [wpkIssued, setWpkIssued] = useState<boolean>(false);
+  const [pdfConfirmed, setPdfConfirmed] = useState<boolean>(false);
+  const [qcSignedOff, setQcSignedOff] = useState<boolean>(false);
   const [completedItem1, setCompletedItem1] = useState<number>(0);
   const [completedItem2, setCompletedItem2] = useState<number>(0);
   const [globalInputVal, setGlobalInputVal] = useState<string>('');
   const [missingBoxesVal, setMissingBoxesVal] = useState<number>(2);
-  const [statusVal, setStatusVal] = useState<'Pending' | 'In-Progress' | 'Completed'>('Pending');
+  const [statusVal, setStatusVal] = useState<'Pending Analysis' | 'Awaiting Materials' | 'In-Progress' | 'Blocked' | 'Completed'>('Pending Analysis');
   const [isMaxPressed, setIsMaxPressed] = useState<boolean>(false);
   const [isEditingItem1, setIsEditingItem1] = useState<boolean>(false);
   const [item1Photos, setItem1Photos] = useState<Array<{ id: string; label: string; previewColor: string; iconType: string }>>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
-  const [isObstaclesOpen, setIsObstaclesOpen] = useState<boolean>(true);
+  const [isObstaclesOpen, setIsObstaclesOpen] = useState<boolean>(false);
   const [isExportingSim, setIsExportingSim] = useState<boolean>(false);
   const [exportProgressSim, setExportProgressSim] = useState<string>('');
   const [showExportToast, setShowExportToast] = useState<boolean>(false);
@@ -992,14 +999,19 @@ export function MockUpdateModal({
 
     const runStepSim = async () => {
       // ----------------------------------------------------
-      // Step 1: Initial Review (Pending, 0/13, Blocker: 2, No Photos)
+      // Step 1: SFC / Initial Review & Evidence Photo Upload (Pending Analysis)
       // ----------------------------------------------------
       setSimStep(1);
+      setActiveWorkStep(1);
+      setBomFilled(false);
+      setWpkIssued(false);
+      setPdfConfirmed(false);
+      setQcSignedOff(false);
       setCompletedItem1(0);
       setCompletedItem2(0);
       setGlobalInputVal('');
       setMissingBoxesVal(2);
-      setStatusVal('Pending');
+      setStatusVal('Pending Analysis');
       setIsMaxPressed(false);
       setItem1Photos([]);
       setIsUploadingPhoto(false);
@@ -1008,16 +1020,12 @@ export function MockUpdateModal({
       setShowExportToast(false);
       setShowExcelPreviewModal(false);
 
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(r => setTimeout(r, 900));
       if (isCancelled) return;
 
-      // ----------------------------------------------------
-      // Step 2: Simulate Evidence Photo Upload
-      // ----------------------------------------------------
       setSimStep(2);
       setIsUploadingPhoto(true);
-
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise(r => setTimeout(r, 600));
       if (isCancelled) return;
 
       setIsUploadingPhoto(false);
@@ -1026,64 +1034,79 @@ export function MockUpdateModal({
         { id: 'p2', label: 'ป้าย Lot No.', previewColor: 'from-blue-100 to-slate-200', iconType: 'label' }
       ]);
 
-      await new Promise(r => setTimeout(r, 1400));
-      if (isCancelled) return;
-
-      // ----------------------------------------------------
-      // Step 3: Highlight Global Progress & Click Max Button
-      // ----------------------------------------------------
-      setSimStep(3);
-      setIsMaxPressed(true);
-
-      await new Promise(r => setTimeout(r, 600));
-      if (isCancelled) return;
-
-      setGlobalInputVal('13');
-
       await new Promise(r => setTimeout(r, 1100));
       if (isCancelled) return;
 
       // ----------------------------------------------------
-      // Step 4: Distribute Progress to Items (1/1 & 12/12)
+      // Step 2: QSMS Analysis & BOM Requisition Slip -> Awaiting Materials
       // ----------------------------------------------------
+      setActiveWorkStep(2);
+      setBomFilled(true);
+      setStatusVal('Awaiting Materials');
+
+      await new Promise(r => setTimeout(r, 1400));
+      if (isCancelled) return;
+
+      // ----------------------------------------------------
+      // Step 3: WPK Material Issue & PDF Two-Way Handshake -> In-Progress
+      // ----------------------------------------------------
+      setActiveWorkStep(3);
+      setWpkIssued(true);
+      await new Promise(r => setTimeout(r, 800));
+      if (isCancelled) return;
+
+      setPdfConfirmed(true);
+      setStatusVal('In-Progress');
+      setMissingBoxesVal(0);
+
+      await new Promise(r => setTimeout(r, 1200));
+      if (isCancelled) return;
+
+      // ----------------------------------------------------
+      // Step 4: PDF Repair 13/13 Boxes (100%) & QSMS QC Sign-off -> Completed
+      // ----------------------------------------------------
+      setActiveWorkStep(4);
+      setSimStep(3);
+      setIsMaxPressed(true);
+      setGlobalInputVal('13');
+
+      await new Promise(r => setTimeout(r, 700));
+      if (isCancelled) return;
+
       setSimStep(4);
       setIsMaxPressed(false);
       setCompletedItem1(1);
       setCompletedItem2(12);
-      setStatusVal('In-Progress');
 
-      await new Promise(r => setTimeout(r, 1600));
+      await new Promise(r => setTimeout(r, 900));
       if (isCancelled) return;
 
-      // ----------------------------------------------------
-      // Step 5: Dynamic Auto-Status Completed & Clear Blockers
-      // ----------------------------------------------------
       setSimStep(5);
+      setQcSignedOff(true);
       setStatusVal('Completed');
-      setMissingBoxesVal(0);
 
-      await new Promise(r => setTimeout(r, 1800));
+      await new Promise(r => setTimeout(r, 1300));
       if (isCancelled) return;
 
       // ----------------------------------------------------
-      // Step 6: Highlight Export Button & Trigger Excel Generation
+      // Step 5: Highlight Export Button & Trigger Excel Generation
       // ----------------------------------------------------
       setSimStep(6);
       setIsExportBtnGlowing(true);
 
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 900));
       if (isCancelled) return;
 
       setIsExportBtnGlowing(false);
       setIsExportingSim(true);
       setExportProgressSim('กำลังดึงรูปภาพหลักฐานและจัดโครงสร้างตาราง Excel...');
 
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(r => setTimeout(r, 1000));
       if (isCancelled) return;
 
       setExportProgressSim('บีบอัดรูปภาพและฝังลงในเซลล์รายงาน (Row Height: 120px)...');
 
-      await new Promise(r => setTimeout(r, 1100));
+      await new Promise(r => setTimeout(r, 900));
       if (isCancelled) return;
 
       setIsExportingSim(false);
@@ -1186,15 +1209,23 @@ export function MockUpdateModal({
                       ? 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-400/30'
                       : statusVal === 'In-Progress'
                       ? 'bg-sky-100 text-sky-800 border-sky-200'
-                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                      : statusVal === 'Awaiting Materials'
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : statusVal === 'Blocked'
+                      ? 'bg-rose-100 text-rose-800 border-rose-300'
+                      : 'bg-indigo-50 text-indigo-800 border-indigo-200'
                   }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-current mr-1 animate-pulse" />
                   {statusVal === 'Completed'
-                    ? 'เสร็จสิ้น (COMPLETED)'
+                    ? 'เสร็จสิ้น • QC PASSED (COMPLETED)'
                     : statusVal === 'In-Progress'
-                    ? 'กำลังดำเนินการ (IN-PROGRESS)'
-                    : 'รอดำเนินการ (PENDING)'}
+                    ? 'กำลังซ่อม • PDF (IN-PROGRESS)'
+                    : statusVal === 'Awaiting Materials'
+                    ? 'รอเบิกภาชนะ • WPK (AWAITING MATERIALS)'
+                    : statusVal === 'Blocked'
+                    ? 'ติดปัญหาหน้างาน (BLOCKED)'
+                    : 'รอวิเคราะห์ • QSMS (PENDING ANALYSIS)'}
                 </motion.span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 font-mono whitespace-nowrap">
@@ -1253,6 +1284,153 @@ export function MockUpdateModal({
 
         {/* Scrollable Form Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-5">
+          {/* SECTION 0: 4-Step Cross-Department WorkflowStepperBar & Handover Panel */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-200">
+                  4-Department Handover
+                </span>
+                <h3 className="text-xs font-bold text-slate-800">
+                  ลำดับขั้นการทำงานข้ามแผนก (Workflow Stepper)
+                </h3>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">
+                คลิกที่แต่ละสเต็ปเพื่อสลับดูการทำงานของแต่ละแผนก
+              </span>
+            </div>
+
+            {/* 4 Stepper Pills */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {[
+                { step: 1 as const, dept: 'SFC / ผู้แจ้ง', label: '1. ข้อมูล & รูปหลักฐาน', done: item1Photos.length > 0 },
+                { step: 2 as const, dept: 'QSMS', label: '2. วิเคราะห์ & ใบเบิก BOM', done: bomFilled },
+                { step: 3 as const, dept: 'WPK ➔ PDF', label: '3. จ่ายของ & ยืนยันรับ', done: pdfConfirmed },
+                { step: 4 as const, dept: 'PDF ➔ QSMS QC', label: '4. ซ่อม 100% & QC ปิดเคส', done: qcSignedOff },
+              ].map((s) => {
+                const isActive = activeWorkStep === s.step;
+                return (
+                  <button
+                    key={s.step}
+                    type="button"
+                    onClick={() => setActiveWorkStep(s.step)}
+                    className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                      isActive
+                        ? 'bg-blue-50/90 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                        : s.done
+                        ? 'bg-emerald-50/50 border-emerald-200 hover:bg-emerald-50'
+                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                        isActive ? 'bg-blue-600 text-white' : s.done ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {s.dept}
+                      </span>
+                      {s.done && <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />}
+                    </div>
+                    <div className="text-xs font-bold text-slate-900 mt-1">{s.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Contextual Step Details Box */}
+            <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs">
+              {activeWorkStep === 1 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="font-bold text-slate-800">Step 1 — ตรวจสอบรายการชำรุดและรูปถ่ายหลักฐาน: </span>
+                    <span className="text-slate-600">บังคับแนบรูปหลักฐานระดับไอเทม (Evidence Integrity) ก่อนส่งให้ QSMS วิเคราะห์</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-200 shrink-0">
+                    สถานะ: Pending Analysis
+                  </span>
+                </div>
+              )}
+              {activeWorkStep === 2 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>Step 2 — ใบเบิกวัสดุซ่อมแซม (QSMS Material Requisition Slip / BOM)</span>
+                      <span className="px-2 py-0.2 rounded bg-amber-100 text-amber-800 text-[10px] font-black">ส่งต่อแผนกคลัง WPK</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1 font-mono text-[11px]">
+                      <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 font-bold">
+                        📦 กล่องลูกฟูก 5L: <b className="text-blue-600">13 ใบ</b>
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 font-bold">
+                        🔩 ฝาแกลลอน 45mm: <b className="text-blue-600">13 ชิ้น</b>
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 font-bold">
+                        🏷️ สติกเกอร์ Lot No.: <b className="text-blue-600">13 แผ่น</b>
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBomFilled(true);
+                      setStatusVal('Awaiting Materials');
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold shrink-0 cursor-pointer"
+                  >
+                    ส่งใบเบิกให้ WPK ➔
+                  </button>
+                </div>
+              )}
+              {activeWorkStep === 3 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="font-bold text-slate-900 flex items-center gap-2">
+                      <span>Step 3 — คลัง WPK จ่ายของ & ฝ่ายผลิต PDF กดยืนยันรับของ (Two-Way Handshake)</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
+                        ✅ WPK จ่ายครบ: กล่อง 13 ใบ / ฝา 13 ชิ้น
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-lg font-bold border ${
+                        pdfConfirmed
+                          ? 'bg-sky-50 border-sky-300 text-sky-800'
+                          : 'bg-amber-50 border-amber-200 text-amber-800'
+                      }`}>
+                        {pdfConfirmed ? '🤝 PDF ยืนยันตรวจรับวัสดุครบแล้ว (เริ่มซ่อม)' : '⏳ รอฝ่ายผลิต PDF กดตรวจรับของ'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWpkIssued(true);
+                      setPdfConfirmed(true);
+                      setStatusVal('In-Progress');
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold shrink-0 cursor-pointer"
+                  >
+                    PDF ยืนยันรับของ ➔
+                  </button>
+                </div>
+              )}
+              {activeWorkStep === 4 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="font-bold text-slate-900 flex items-center gap-2">
+                      <span>Step 4 — บันทึกยอดซ่อม PDF (13/13 กล่อง) & QSMS ตรวจรับมาตรฐาน (QC Sign-off)</span>
+                    </div>
+                    <p className="text-slate-600">
+                      เมื่อฝ่ายผลิตซ่อมครบ 100% ฝ่าย QSMS จะตรวจสอบคุณภาพขั้นสุดท้ายและกด <b>QC Sign-off</b> เพื่อปิดเคสบริบูรณ์
+                    </p>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold shrink-0 flex items-center gap-1.5">
+                    <CheckCircle2 size={14} />
+                    <span>QC Sign-off • เสร็จสิ้น 100%</span>
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* SECTION 1: Overall Progress */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2683,17 +2861,19 @@ export function MockDashboard({ onNavigate }: { onNavigate?: () => void }) {
 // 6. Mock Drawing & Master Storage (100% Authentic StorageApp & DocumentInspectionPanel)
 export function MockDrawingMaster({
   onNavigate,
+  focusMode = 'ocr',
   simulationTrigger,
   onSimulationComplete
 }: {
   onNavigate?: () => void;
+  focusMode?: 'ocr' | 'schema' | 'splitview';
   simulationTrigger?: number;
   onSimulationComplete?: () => void;
 }) {
   const [simStep, setSimStep] = useState<number>(0);
   const [sidebarTab, setSidebarTab] = useState<'documents' | 'gap_analysis'>('documents');
-  const [tableTab, setTableTab] = useState<'drawing' | 'master' | 'link'>('drawing');
-  const [selectedDocId, setSelectedDocId] = useState<string | null>('dwg-1');
+  const [tableTab, setTableTab] = useState<'drawing' | 'master' | 'link'>(focusMode === 'schema' ? 'master' : 'drawing');
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(focusMode === 'schema' ? 'mst-1' : 'dwg-1');
   const [rotation, setRotation] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
@@ -2828,101 +3008,98 @@ export function MockDrawingMaster({
     let isCancelled = false;
 
     const runSim = async () => {
-      // ----------------------------------------------------
-      // Step 1: Open AI Upload Modal & Drop PDF
-      // ----------------------------------------------------
-      setSimStep(1);
-      setSelectedDocId(null);
-      setSidebarTab('documents');
-      setTableTab('drawing');
-      setIsUploadOpen(true);
-      setIsAiProcessing(false);
-      setAiExtractedData(null);
-      setRotation(0);
-      setToastMessage(null);
+      if (focusMode === 'ocr') {
+        // Slide 17: Focused AI Vision OCR & Ground Truth Extraction Demo
+        setSimStep(1);
+        setSelectedDocId(null);
+        setSidebarTab('documents');
+        setTableTab('drawing');
+        setIsUploadOpen(true);
+        setIsAiProcessing(false);
+        setAiExtractedData(null);
+        setRotation(0);
+        setToastMessage('อัปโหลดไฟล์ DWG-40001234-A.pdf เข้าสู่ AI Vision OCR Pipeline');
 
-      await new Promise(r => setTimeout(r, 1400));
-      if (isCancelled) return;
+        await new Promise(r => setTimeout(r, 1300));
+        if (isCancelled) return;
 
-      // ----------------------------------------------------
-      // Step 2: Gemini 3.1 Flash Vision OCR Processing
-      // ----------------------------------------------------
-      setSimStep(2);
-      setIsAiProcessing(true);
-      setToastMessage('Gemini 3.1 Flash กำลังประมวลผล OCR และสกัด Metadata...');
+        setSimStep(2);
+        setIsAiProcessing(true);
+        setToastMessage('Gemini 3.1 Flash กำลังสกัด Metadata แบบ Structured JSON (ความแม่นยำ 96.36%)...');
 
-      await new Promise(r => setTimeout(r, 1800));
-      if (isCancelled) return;
+        await new Promise(r => setTimeout(r, 1700));
+        if (isCancelled) return;
 
-      setIsAiProcessing(false);
-      setAiExtractedData({
-        drawing_number: 'DWG-40001234-A',
-        revision: '02',
-        customer_name: 'PTT OR',
-        item_code: '40001234',
-        part_name: 'Gallon 5L Cap Seal Spec',
-        issue_date: '2026-03-15',
-        package_size: '5L Gallon (Cap: 45mm)'
-      });
-      setToastMessage('สกัดข้อมูลสำเร็จ 7 ฟิลด์ (Drawing Schema)');
+        setIsAiProcessing(false);
+        setAiExtractedData({
+          drawing_number: 'DWG-40001234-A',
+          revision: '02',
+          customer_name: 'PTT OR',
+          item_code: '40001234',
+          part_name: 'Gallon 5L Cap Seal Spec',
+          issue_date: '2026-03-15',
+          package_size: '5L Gallon (Cap: 45mm)'
+        });
+        setToastMessage('สกัดสำเร็จ 7 ฟิลด์ (Ground Truth Benchmark: 96.36% / 530 จาก 550 ฟิลด์)');
 
-      await new Promise(r => setTimeout(r, 1600));
-      if (isCancelled) return;
+        await new Promise(r => setTimeout(r, 1800));
+        if (isCancelled) return;
 
-      // ----------------------------------------------------
-      // Step 3: Open Document Inspection Panel (Side-by-Side)
-      // ----------------------------------------------------
-      setSimStep(3);
-      setIsUploadOpen(false);
-      setSelectedDocId('dwg-1');
-      setTableTab('drawing');
-      setToastMessage('เปิดแผงตรวจทานแบบแปลน (Document Inspection Workspace)');
+        setSimStep(3);
+        setIsUploadOpen(false);
+        setSelectedDocId('dwg-1');
+        setTableTab('drawing');
+        setToastMessage('บันทึกและเปิดแผงตรวจทานคู่ขนาน Side-by-Side สำเร็จ');
 
-      await new Promise(r => setTimeout(r, 1600));
-      if (isCancelled) return;
+        await new Promise(r => setTimeout(r, 2000));
+        if (isCancelled) return;
+      } else if (focusMode === 'schema') {
+        // Slide 18: Focused Decoupled Schema (7 Drawing Fields vs 8 Master Fields) & Normalization
+        setSimStep(3);
+        setIsUploadOpen(false);
+        setSidebarTab('documents');
+        setTableTab('drawing');
+        setSelectedDocId('dwg-1');
+        setRotation(0);
+        setToastMessage('โครงสร้าง Drawing Schema: สกัดเฉพาะ 7 ฟิลด์ของแบบแปลนลูกค้า');
 
-      // ----------------------------------------------------
-      // Step 4: PDF Rotation Toolbar (90° Landscape)
-      // ----------------------------------------------------
-      setSimStep(4);
-      setToastMessage('กดปุ่มหมุน PDF 90° เพื่อปรับทิศทางแบบแปลนให้อ่านง่าย');
+        await new Promise(r => setTimeout(r, 1800));
+        if (isCancelled) return;
 
-      await new Promise(r => setTimeout(r, 800));
-      if (isCancelled) return;
+        setSimStep(5);
+        setTableTab('master');
+        setSelectedDocId('mst-1');
+        setToastMessage('สลับมาดู Master Sheet (8 ฟิลด์) + Boxes/Pallet Normalization: "ตามความเหมาะสม"');
 
-      setRotation(90);
-      setToastMessage('หมุนแบบแปลน 90° สำเร็จ และจำทิศทางลง localStorage');
+        await new Promise(r => setTimeout(r, 2600));
+        if (isCancelled) return;
+      } else {
+        // Slide 19: Focused 55/45 Split View, 90° Landscape Rotation & Gap Analysis
+        setSimStep(3);
+        setIsUploadOpen(false);
+        setSidebarTab('documents');
+        setTableTab('drawing');
+        setSelectedDocId('dwg-1');
+        setRotation(0);
+        setToastMessage('เปิดแผงตรวจทาน 55/45 Split View: ดูแบบแปลนคู่กับ Metadata');
 
-      await new Promise(r => setTimeout(r, 2000));
-      if (isCancelled) return;
+        await new Promise(r => setTimeout(r, 1400));
+        if (isCancelled) return;
 
-      // ----------------------------------------------------
-      // Step 5: Switch to Linked Master Specification
-      // ----------------------------------------------------
-      setSimStep(5);
-      setSidebarTab('documents');
-      setTableTab('master');
-      setSelectedDocId('mst-1');
-      setRotation(0);
-      setToastMessage('สลับไปดู Master Sheet: ตรวจจับ "ตามความเหมาะสม" (Normalized)');
+        setSimStep(4);
+        setRotation(90);
+        setToastMessage('หมุน PDF 90° Landscape 1-Click และจำองศาลง localStorage (qsms_pdf_rot_dwg-1)');
 
-      await new Promise(r => setTimeout(r, 2600));
-      if (isCancelled) return;
+        await new Promise(r => setTimeout(r, 2200));
+        if (isCancelled) return;
 
-      // ----------------------------------------------------
-      // Step 6: Gap Analysis Tab (Missing Master & Export)
-      // ----------------------------------------------------
-      setSimStep(6);
-      setSidebarTab('gap_analysis');
-      setToastMessage('สลับมาดู Gap Analysis: ตรวจพบ Drawing ที่ยังไม่มี Master Sheet 1 รายการ');
+        setSimStep(6);
+        setSidebarTab('gap_analysis');
+        setToastMessage('ตรวจสอบ Gap Analysis: พบ Drawing ที่ยังขาด Master Sheet 1 รายการ พร้อมส่งออก Excel');
 
-      await new Promise(r => setTimeout(r, 2400));
-      if (isCancelled) return;
-
-      setToastMessage('จำลองส่งออกรายงาน Gap_Analysis_Report.xlsx สำเร็จ');
-
-      await new Promise(r => setTimeout(r, 2000));
-      if (isCancelled) return;
+        await new Promise(r => setTimeout(r, 2200));
+        if (isCancelled) return;
+      }
 
       setSimStep(0);
       setToastMessage(null);
@@ -2936,7 +3113,7 @@ export function MockDrawingMaster({
     return () => {
       isCancelled = true;
     };
-  }, [simulationTrigger, onSimulationComplete]);
+  }, [simulationTrigger, onSimulationComplete, focusMode]);
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-50 font-sans overflow-hidden pointer-events-auto text-slate-800 select-none relative">
@@ -3684,20 +3861,23 @@ const RAG_WELCOME_TEXT = `สวัสดีครับ ผมคือ QSMS En
 
 พิมพ์คำถามของคุณได้เลยครับ!`;
 
-const REWORK_SUMMARY_ANSWER = `สรุปข้อมูลงาน Rework ในปัจจุบันมีรายละเอียดดังนี้ครับ
+const REWORK_SUMMARY_ANSWER = `สรุปข้อมูลงาน Rework สดจากฐานข้อมูล (Function Call: get_rework_statistics) มีรายละเอียดดังนี้ครับ
 
 จำนวนรายการ Rework ทั้งหมด: 80 รายการ
 
 รายละเอียดของข้อบกพร่องที่พบ:
 - รั่ว (Leak): 68 รายการ
-- เปื้อน (Stain): 3 รายการ
+- เปื้อน (Stain): 9 รายการ
+- ฝาชำรุด/เกลียวปีน: 3 รายการ
 
-สถานะการดำเนินงานปัจจุบัน:
-- อยู่ระหว่างรอดำเนินการ (Pending): 12 รายการ
-- กำลังดำเนินการ (In-Progress): 6 รายการ
-- ดำเนินการเสร็จสิ้น (Completed): 5 รายการ
+สถานะการดำเนินงาน 5 ขั้นตอนข้ามแผนก (5-Stage Status Lifecycle):
+- รอวิเคราะห์ (Pending Analysis - QSMS): 12 รายการ
+- รอเบิกภาชนะ (Awaiting Materials - WPK): 15 รายการ
+- กำลังซ่อมแซม (In-Progress - PDF): 42 รายการ
+- ติดปัญหาหน้างาน (Blocked / Defend): 6 รายการ
+- ดำเนินการเสร็จสิ้น (Completed / QC Signed-off): 5 รายการ
 
-หากต้องการให้ผมเจาะจงข้อมูลส่วนใดเพิ่มเติม เช่น รายละเอียดของรหัสสินค้าที่มีปัญหามากที่สุด หรือต้องการให้สรุปข้อมูลในมุมมองอื่น สามารถแจ้งได้ทันทีครับ`;
+หากต้องการให้ผมเจาะจงข้อมูลส่วนใดเพิ่มเติม เช่น รายละเอียดของรหัสสินค้าที่มีปัญหามากที่สุด หรือสืบค้นคู่มือการซ่อม สามารถแจ้งได้ทันทีครับ`;
 
 const LEAK_CAUSE_ANSWER = `จากการวิเคราะห์ข้อมูลทางสถิติและคู่มือวิศวกรรม (rework_standard_v2.pdf):
 
